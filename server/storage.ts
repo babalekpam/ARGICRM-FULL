@@ -21,16 +21,18 @@ import {
   type CoreWebVital, type InsertCoreWebVital,
   type ReportConfig, type InsertReportConfig,
   type GeneratedReport, type InsertGeneratedReport,
+  type ApiKey, type InsertApiKey,
+  type ApiUsage, type InsertApiUsage,
   type User, type UpsertUser,
   type Tenant, type InsertTenant,
   projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth, 
   backlinkOpportunities, outreachCampaigns, outreachContacts, backlinkGaps, keywordRankHistory, 
   competitorRankSnapshots, contentBriefs, contentScorecards, serpSnapshots, auditScans, pageMetrics, 
-  coreWebVitals, reportConfigs, generatedReports, users, tenants
+  coreWebVitals, reportConfigs, generatedReports, apiKeys, apiUsage, users, tenants
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gte, lte } from "drizzle-orm";
 import ws from "ws";
 
 neonConfig.webSocketConstructor = ws;
@@ -143,6 +145,18 @@ export interface IStorage {
   getReportsByProject(tenantId: string, projectId: string): Promise<GeneratedReport[]>;
   createGeneratedReport(tenantId: string, report: InsertGeneratedReport): Promise<GeneratedReport>;
   deleteGeneratedReport(tenantId: string, id: string): Promise<boolean>;
+  
+  // API Keys - tenant-scoped
+  getApiKeysByTenant(tenantId: string): Promise<ApiKey[]>;
+  getApiKeyByKey(key: string): Promise<ApiKey | undefined>;
+  createApiKey(tenantId: string, apiKey: InsertApiKey): Promise<ApiKey>;
+  updateApiKey(tenantId: string, id: string, apiKey: Partial<InsertApiKey>): Promise<ApiKey | undefined>;
+  deleteApiKey(tenantId: string, id: string): Promise<boolean>;
+  
+  // API Usage - tenant-scoped
+  getApiUsageByKey(tenantId: string, apiKeyId: string, limit?: number): Promise<ApiUsage[]>;
+  getApiUsageByTenant(tenantId: string, startDate?: Date, endDate?: Date): Promise<ApiUsage[]>;
+  createApiUsage(tenantId: string, usage: InsertApiUsage): Promise<ApiUsage>;
 }
 
 // Database Storage Implementation
@@ -545,6 +559,68 @@ export class DbStorage implements IStorage {
       .where(and(eq(generatedReports.tenantId, tenantId), eq(generatedReports.id, id)))
       .returning();
     return result.length > 0;
+  }
+
+  // API Keys
+  async getApiKeysByTenant(tenantId: string): Promise<ApiKey[]> {
+    return await this.db.select().from(apiKeys)
+      .where(eq(apiKeys.tenantId, tenantId))
+      .orderBy(desc(apiKeys.createdAt));
+  }
+
+  async getApiKeyByKey(key: string): Promise<ApiKey | undefined> {
+    const result = await this.db.select().from(apiKeys)
+      .where(eq(apiKeys.key, key))
+      .limit(1);
+    return result[0];
+  }
+
+  async createApiKey(tenantId: string, insertApiKey: InsertApiKey): Promise<ApiKey> {
+    const result = await this.db.insert(apiKeys).values({ ...insertApiKey, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateApiKey(tenantId: string, id: string, updateApiKey: Partial<InsertApiKey>): Promise<ApiKey | undefined> {
+    const result = await this.db.update(apiKeys)
+      .set(updateApiKey)
+      .where(and(eq(apiKeys.tenantId, tenantId), eq(apiKeys.id, id)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteApiKey(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(apiKeys)
+      .where(and(eq(apiKeys.tenantId, tenantId), eq(apiKeys.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // API Usage
+  async getApiUsageByKey(tenantId: string, apiKeyId: string, limit: number = 100): Promise<ApiUsage[]> {
+    return await this.db.select().from(apiUsage)
+      .where(and(eq(apiUsage.tenantId, tenantId), eq(apiUsage.apiKeyId, apiKeyId)))
+      .orderBy(desc(apiUsage.requestedAt))
+      .limit(limit);
+  }
+
+  async getApiUsageByTenant(tenantId: string, startDate?: Date, endDate?: Date): Promise<ApiUsage[]> {
+    const conditions = [eq(apiUsage.tenantId, tenantId)];
+    
+    if (startDate) {
+      conditions.push(gte(apiUsage.requestedAt, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(apiUsage.requestedAt, endDate));
+    }
+
+    return await this.db.select().from(apiUsage)
+      .where(and(...conditions))
+      .orderBy(desc(apiUsage.requestedAt));
+  }
+
+  async createApiUsage(tenantId: string, insertUsage: InsertApiUsage): Promise<ApiUsage> {
+    const result = await this.db.insert(apiUsage).values({ ...insertUsage, tenantId }).returning();
+    return result[0];
   }
 }
 

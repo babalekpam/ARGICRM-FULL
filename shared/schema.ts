@@ -344,6 +344,34 @@ export const generatedReports = pgTable("generated_reports", {
   generatedAt: timestamp("generated_at").defaultNow(),
 });
 
+// API Keys - Developer API access management
+export const apiKeys = pgTable("api_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // User-friendly name for the key
+  key: varchar("key").notNull().unique(), // The actual API key (hashed)
+  permissions: text("permissions").array().notNull().default(sql`ARRAY['read']::text[]`), // read, write, delete
+  rateLimit: integer("rate_limit").notNull().default(1000), // Requests per hour
+  isActive: integer("is_active").notNull().default(1), // Boolean as int
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"), // Optional expiration
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// API Usage - Track API consumption and rate limiting
+export const apiUsage = pgTable("api_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  apiKeyId: varchar("api_key_id").notNull().references(() => apiKeys.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull(), // API endpoint called
+  method: text("method").notNull(), // GET, POST, PUT, DELETE
+  statusCode: integer("status_code").notNull(), // HTTP status code
+  responseTime: integer("response_time"), // Milliseconds
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  requestedAt: timestamp("requested_at").defaultNow(),
+});
+
 // Insert schemas - omit id, createdAt/updatedAt, and tenantId (provided by server)
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, tenantId: true });
@@ -368,6 +396,8 @@ export const insertPageMetricSchema = createInsertSchema(pageMetrics).omit({ id:
 export const insertCoreWebVitalSchema = createInsertSchema(coreWebVitals).omit({ id: true, measuredAt: true, tenantId: true });
 export const insertReportConfigSchema = createInsertSchema(reportConfigs).omit({ id: true, createdAt: true, tenantId: true });
 export const insertGeneratedReportSchema = createInsertSchema(generatedReports).omit({ id: true, generatedAt: true, tenantId: true });
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({ id: true, createdAt: true, tenantId: true });
+export const insertApiUsageSchema = createInsertSchema(apiUsage).omit({ id: true, requestedAt: true, tenantId: true });
 
 // User types - Required for Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
@@ -443,3 +473,9 @@ export type ReportConfig = typeof reportConfigs.$inferSelect;
 
 export type InsertGeneratedReport = z.infer<typeof insertGeneratedReportSchema>;
 export type GeneratedReport = typeof generatedReports.$inferSelect;
+
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = typeof apiKeys.$inferSelect;
+
+export type InsertApiUsage = z.infer<typeof insertApiUsageSchema>;
+export type ApiUsage = typeof apiUsage.$inferSelect;

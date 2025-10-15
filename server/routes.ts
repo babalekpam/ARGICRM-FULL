@@ -901,6 +901,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API Keys Management
+  app.get("/api/keys", requireAuth, async (req: any, res: Response) => {
+    try {
+      const keys = await storage.getApiKeysByTenant(req.tenantId);
+      // Don't return the actual key value for security
+      const sanitizedKeys = keys.map(({ key, ...rest }) => ({
+        ...rest,
+        keyPreview: `${key.substring(0, 8)}...${key.substring(key.length - 4)}`
+      }));
+      res.json(sanitizedKeys);
+    } catch (error) {
+      console.error("Error fetching API keys:", error);
+      res.status(500).json({ error: "Failed to fetch API keys" });
+    }
+  });
+
+  app.post("/api/keys", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertApiKeySchema } = await import("@shared/schema");
+      const crypto = await import("crypto");
+      
+      // Generate a random API key
+      const apiKey = `arg_${crypto.randomBytes(32).toString('hex')}`;
+      
+      // Hash the key for storage
+      const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+      
+      const validatedData = insertApiKeySchema.parse({
+        ...req.body,
+        key: hashedKey
+      });
+      
+      const createdKey = await storage.createApiKey(req.tenantId, validatedData);
+      
+      // Return the actual key only once (on creation)
+      res.json({
+        ...createdKey,
+        apiKey, // The unhashed key - shown only once
+        keyPreview: `${hashedKey.substring(0, 8)}...${hashedKey.substring(hashedKey.length - 4)}`
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid API key data" });
+      }
+      console.error("Error creating API key:", error);
+      res.status(500).json({ error: "Failed to create API key" });
+    }
+  });
+
+  app.patch("/api/keys/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertApiKeySchema } = await import("@shared/schema");
+      const partialSchema = insertApiKeySchema.partial().omit({ key: true });
+      const validatedData = partialSchema.parse(req.body);
+      const apiKey = await storage.updateApiKey(req.tenantId, req.params.id, validatedData);
+      if (!apiKey) {
+        return res.status(404).json({ error: "API key not found" });
+      }
+      res.json(apiKey);
+    } catch (error) {
+      console.error("Error updating API key:", error);
+      res.status(500).json({ error: "Failed to update API key" });
+    }
+  });
+
+  app.delete("/api/keys/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const deleted = await storage.deleteApiKey(req.tenantId, req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "API key not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting API key:", error);
+      res.status(500).json({ error: "Failed to delete API key" });
+    }
+  });
+
+  // API Usage Statistics
+  app.get("/api/keys/:id/usage", requireAuth, async (req: any, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const usage = await storage.getApiUsageByKey(req.tenantId, req.params.id, limit);
+      res.json(usage);
+    } catch (error) {
+      console.error("Error fetching API usage:", error);
+      res.status(500).json({ error: "Failed to fetch API usage" });
+    }
+  });
+
+  app.get("/api/usage", requireAuth, async (req: any, res: Response) => {
+    try {
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const usage = await storage.getApiUsageByTenant(req.tenantId, startDate, endDate);
+      res.json(usage);
+    } catch (error) {
+      console.error("Error fetching API usage:", error);
+      res.status(500).json({ error: "Failed to fetch API usage" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
