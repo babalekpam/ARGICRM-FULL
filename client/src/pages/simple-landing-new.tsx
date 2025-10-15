@@ -12,7 +12,7 @@ import { Brain, Heart, TrendingUp, Users, MessageSquare, BarChart3, Shield, Zap,
 import Logo from "@/components/logo";
 import { SEO } from "@/components/SEO";
 import { useConversionTracking } from "@/components/conversion-tracking";
-import aiCrmSoftwareImage from "@assets/IMG_7550_1758396656836.png";
+import aiCrmSoftwareImage from "@assets/image_1760534282689.png";
 
 export default function SimpleLanding() {
   const { toast } = useToast();
