@@ -37,9 +37,9 @@ export default function Pricing() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
+        <h1 className="text-4xl font-bold mb-4">Choose Your Lifetime Plan</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Unlock powerful SEO analytics and AI-powered insights to grow your organic traffic
+          Pay once, own forever. Unlock powerful SEO analytics and AI-powered insights with no recurring fees.
         </p>
       </div>
 
@@ -77,14 +77,14 @@ export default function Pricing() {
                     ${plan.price}
                   </span>
                   <span className="text-muted-foreground text-sm">
-                    {isLifetime ? 'one-time' : '/year'}
+                    one-time
                   </span>
                 </div>
                 <CardDescription>
-                  {isLifetime && 'Pay once, use forever'}
-                  {planKey === 'individual' && 'Perfect for solo marketers'}
-                  {planKey === 'business' && 'For growing teams'}
-                  {planKey === 'enterprise' && 'Advanced SEO at scale'}
+                  {planKey === 'lifetime' && 'Ultimate plan - Unlimited everything'}
+                  {planKey === 'individual' && 'Pay once, use forever'}
+                  {planKey === 'business' && 'Pay once, use forever'}
+                  {planKey === 'enterprise' && 'Pay once, use forever'}
                 </CardDescription>
               </CardHeader>
 
@@ -154,14 +154,8 @@ export default function Pricing() {
                   onClick={() => handleSelectPlan(planKey)}
                   data-testid={`button-select-${planKey}`}
                 >
-                  {isLifetime ? (
-                    <>
-                      <Infinity className="mr-2 h-4 w-4" />
-                      Get Lifetime Access
-                    </>
-                  ) : (
-                    'Get Started'
-                  )}
+                  <Infinity className="mr-2 h-4 w-4" />
+                  Get Lifetime Access
                 </Button>
               </CardFooter>
             </Card>
