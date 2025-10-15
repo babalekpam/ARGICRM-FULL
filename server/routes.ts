@@ -1008,6 +1008,245 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ====== Local SEO Routes ======
+
+  // Local Rankings
+  app.get("/api/projects/:projectId/local-rankings", requireAuth, async (req: any, res: Response) => {
+    try {
+      const rankings = await storage.getLocalRankingsByProject(req.tenantId, req.params.projectId);
+      res.json(rankings);
+    } catch (error) {
+      console.error("Error fetching local rankings:", error);
+      res.status(500).json({ error: "Failed to fetch local rankings" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/local-rankings", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertLocalRankingSchema } = await import("@shared/schema");
+      const validatedData = insertLocalRankingSchema.parse({ ...req.body, projectId: req.params.projectId });
+      const ranking = await storage.createLocalRanking(req.tenantId, validatedData);
+      res.json(ranking);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid local ranking data" });
+      }
+      console.error("Error creating local ranking:", error);
+      res.status(500).json({ error: "Failed to create local ranking" });
+    }
+  });
+
+  app.delete("/api/local-rankings/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const deleted = await storage.deleteLocalRanking(req.tenantId, req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Local ranking not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting local ranking:", error);
+      res.status(500).json({ error: "Failed to delete local ranking" });
+    }
+  });
+
+  // Google Business Profile
+  app.get("/api/projects/:projectId/google-business-profile", requireAuth, async (req: any, res: Response) => {
+    try {
+      const profile = await storage.getGoogleBusinessProfileByProject(req.tenantId, req.params.projectId);
+      res.json(profile);
+    } catch (error) {
+      console.error("Error fetching Google Business Profile:", error);
+      res.status(500).json({ error: "Failed to fetch Google Business Profile" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/google-business-profile", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertGoogleBusinessProfileSchema } = await import("@shared/schema");
+      const validatedData = insertGoogleBusinessProfileSchema.parse({ ...req.body, projectId: req.params.projectId });
+      const profile = await storage.createGoogleBusinessProfile(req.tenantId, validatedData);
+      res.json(profile);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid Google Business Profile data" });
+      }
+      console.error("Error creating Google Business Profile:", error);
+      res.status(500).json({ error: "Failed to create Google Business Profile" });
+    }
+  });
+
+  app.patch("/api/google-business-profiles/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertGoogleBusinessProfileSchema } = await import("@shared/schema");
+      const updateSchema = insertGoogleBusinessProfileSchema.partial();
+      const validatedData = updateSchema.parse(req.body);
+      const profile = await storage.updateGoogleBusinessProfile(req.tenantId, req.params.id, validatedData);
+      if (!profile) {
+        return res.status(404).json({ error: "Google Business Profile not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid update data" });
+      }
+      console.error("Error updating Google Business Profile:", error);
+      res.status(500).json({ error: "Failed to update Google Business Profile" });
+    }
+  });
+
+  // Local Citations
+  app.get("/api/projects/:projectId/local-citations", requireAuth, async (req: any, res: Response) => {
+    try {
+      const citations = await storage.getLocalCitationsByProject(req.tenantId, req.params.projectId);
+      res.json(citations);
+    } catch (error) {
+      console.error("Error fetching local citations:", error);
+      res.status(500).json({ error: "Failed to fetch local citations" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/local-citations", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertLocalCitationSchema } = await import("@shared/schema");
+      const validatedData = insertLocalCitationSchema.parse({ ...req.body, projectId: req.params.projectId });
+      const citation = await storage.createLocalCitation(req.tenantId, validatedData);
+      res.json(citation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid local citation data" });
+      }
+      console.error("Error creating local citation:", error);
+      res.status(500).json({ error: "Failed to create local citation" });
+    }
+  });
+
+  app.patch("/api/local-citations/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertLocalCitationSchema } = await import("@shared/schema");
+      const updateSchema = insertLocalCitationSchema.partial();
+      const validatedData = updateSchema.parse(req.body);
+      const citation = await storage.updateLocalCitation(req.tenantId, req.params.id, validatedData);
+      if (!citation) {
+        return res.status(404).json({ error: "Local citation not found" });
+      }
+      res.json(citation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid update data" });
+      }
+      console.error("Error updating local citation:", error);
+      res.status(500).json({ error: "Failed to update local citation" });
+    }
+  });
+
+  app.delete("/api/local-citations/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const deleted = await storage.deleteLocalCitation(req.tenantId, req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Local citation not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting local citation:", error);
+      res.status(500).json({ error: "Failed to delete local citation" });
+    }
+  });
+
+  // ====== Social Media Monitoring Routes ======
+
+  // Social Accounts
+  app.get("/api/projects/:projectId/social-accounts", requireAuth, async (req: any, res: Response) => {
+    try {
+      const accounts = await storage.getSocialAccountsByProject(req.tenantId, req.params.projectId);
+      res.json(accounts);
+    } catch (error) {
+      console.error("Error fetching social accounts:", error);
+      res.status(500).json({ error: "Failed to fetch social accounts" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/social-accounts", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertSocialAccountSchema } = await import("@shared/schema");
+      const validatedData = insertSocialAccountSchema.parse({ ...req.body, projectId: req.params.projectId });
+      const account = await storage.createSocialAccount(req.tenantId, validatedData);
+      res.json(account);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid social account data" });
+      }
+      console.error("Error creating social account:", error);
+      res.status(500).json({ error: "Failed to create social account" });
+    }
+  });
+
+  app.delete("/api/social-accounts/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const deleted = await storage.deleteSocialAccount(req.tenantId, req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Social account not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting social account:", error);
+      res.status(500).json({ error: "Failed to delete social account" });
+    }
+  });
+
+  // Social Posts
+  app.get("/api/social-accounts/:accountId/posts", requireAuth, async (req: any, res: Response) => {
+    try {
+      const posts = await storage.getSocialPostsByAccount(req.tenantId, req.params.accountId);
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching social posts:", error);
+      res.status(500).json({ error: "Failed to fetch social posts" });
+    }
+  });
+
+  app.post("/api/social-accounts/:accountId/posts", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertSocialPostSchema } = await import("@shared/schema");
+      const validatedData = insertSocialPostSchema.parse({ ...req.body, accountId: req.params.accountId });
+      const post = await storage.createSocialPost(req.tenantId, validatedData);
+      res.json(post);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid social post data" });
+      }
+      console.error("Error creating social post:", error);
+      res.status(500).json({ error: "Failed to create social post" });
+    }
+  });
+
+  // Social Metrics
+  app.get("/api/social-accounts/:accountId/metrics", requireAuth, async (req: any, res: Response) => {
+    try {
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      const metrics = await storage.getSocialMetricsByAccount(req.tenantId, req.params.accountId, startDate, endDate);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching social metrics:", error);
+      res.status(500).json({ error: "Failed to fetch social metrics" });
+    }
+  });
+
+  app.post("/api/social-accounts/:accountId/metrics", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertSocialMetricSchema } = await import("@shared/schema");
+      const validatedData = insertSocialMetricSchema.parse({ ...req.body, accountId: req.params.accountId });
+      const metric = await storage.createSocialMetric(req.tenantId, validatedData);
+      res.json(metric);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid social metric data" });
+      }
+      console.error("Error creating social metric:", error);
+      res.status(500).json({ error: "Failed to create social metric" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
