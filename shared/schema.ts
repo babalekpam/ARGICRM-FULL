@@ -189,6 +189,31 @@ export const backlinkGaps = pgTable("backlink_gaps", {
   status: text("status").notNull().default('open'), // open, in_progress, acquired, dismissed
 });
 
+// Keyword Rank History - Daily ranking snapshots for keywords
+export const keywordRankHistory = pgTable("keyword_rank_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  keywordId: varchar("keyword_id").notNull().references(() => keywords.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  position: integer("position").notNull(),
+  searchVolume: integer("search_volume").notNull().default(0),
+  url: text("url"), // URL that ranked for this keyword
+  change: integer("change").default(0), // Change from previous day
+});
+
+// Competitor Rank Snapshots - Track competitor rankings for comparison
+export const competitorRankSnapshots = pgTable("competitor_rank_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  competitorId: varchar("competitor_id").notNull().references(() => competitors.id, { onDelete: "cascade" }),
+  keywordId: varchar("keyword_id").notNull().references(() => keywords.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  position: integer("position").notNull(),
+  url: text("url"), // Competitor URL that ranked
+});
+
 // Insert schemas - omit id, createdAt/updatedAt, and tenantId (provided by server)
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, tenantId: true });
@@ -203,6 +228,8 @@ export const insertBacklinkOpportunitySchema = createInsertSchema(backlinkOpport
 export const insertOutreachCampaignSchema = createInsertSchema(outreachCampaigns).omit({ id: true, createdAt: true, tenantId: true });
 export const insertOutreachContactSchema = createInsertSchema(outreachContacts).omit({ id: true, tenantId: true });
 export const insertBacklinkGapSchema = createInsertSchema(backlinkGaps).omit({ id: true, tenantId: true });
+export const insertKeywordRankHistorySchema = createInsertSchema(keywordRankHistory).omit({ id: true, tenantId: true });
+export const insertCompetitorRankSnapshotSchema = createInsertSchema(competitorRankSnapshots).omit({ id: true, tenantId: true });
 
 // User types - Required for Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
@@ -248,3 +275,9 @@ export type OutreachContact = typeof outreachContacts.$inferSelect;
 
 export type InsertBacklinkGap = z.infer<typeof insertBacklinkGapSchema>;
 export type BacklinkGap = typeof backlinkGaps.$inferSelect;
+
+export type InsertKeywordRankHistory = z.infer<typeof insertKeywordRankHistorySchema>;
+export type KeywordRankHistory = typeof keywordRankHistory.$inferSelect;
+
+export type InsertCompetitorRankSnapshot = z.infer<typeof insertCompetitorRankSnapshotSchema>;
+export type CompetitorRankSnapshot = typeof competitorRankSnapshots.$inferSelect;

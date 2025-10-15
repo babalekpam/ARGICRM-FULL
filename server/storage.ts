@@ -11,10 +11,13 @@ import {
   type OutreachCampaign, type InsertOutreachCampaign,
   type OutreachContact, type InsertOutreachContact,
   type BacklinkGap, type InsertBacklinkGap,
+  type KeywordRankHistory, type InsertKeywordRankHistory,
+  type CompetitorRankSnapshot, type InsertCompetitorRankSnapshot,
   type User, type UpsertUser,
   type Tenant, type InsertTenant,
   projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth, 
-  backlinkOpportunities, outreachCampaigns, outreachContacts, backlinkGaps, users, tenants
+  backlinkOpportunities, outreachCampaigns, outreachContacts, backlinkGaps, keywordRankHistory, 
+  competitorRankSnapshots, users, tenants
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -80,6 +83,16 @@ export interface IStorage {
   getGapsByProject(tenantId: string, projectId: string): Promise<BacklinkGap[]>;
   createGap(tenantId: string, gap: InsertBacklinkGap): Promise<BacklinkGap>;
   updateGap(tenantId: string, id: string, gap: Partial<InsertBacklinkGap>): Promise<BacklinkGap | undefined>;
+  
+  // Rank Tracking - tenant-scoped
+  getRankHistoryByKeyword(tenantId: string, keywordId: string, startDate?: string, endDate?: string): Promise<KeywordRankHistory[]>;
+  getRankHistoryByProject(tenantId: string, projectId: string, startDate?: string, endDate?: string): Promise<KeywordRankHistory[]>;
+  createRankHistory(tenantId: string, rankHistory: InsertKeywordRankHistory): Promise<KeywordRankHistory>;
+  
+  // Competitor Rank Snapshots - tenant-scoped
+  getCompetitorRanksByProject(tenantId: string, projectId: string, startDate?: string, endDate?: string): Promise<CompetitorRankSnapshot[]>;
+  getCompetitorRanksByKeyword(tenantId: string, keywordId: string): Promise<CompetitorRankSnapshot[]>;
+  createCompetitorRankSnapshot(tenantId: string, snapshot: InsertCompetitorRankSnapshot): Promise<CompetitorRankSnapshot>;
 }
 
 // Database Storage Implementation
@@ -281,6 +294,44 @@ export class DbStorage implements IStorage {
     const result = await this.db.update(backlinkGaps).set(insertGap)
       .where(and(eq(backlinkGaps.tenantId, tenantId), eq(backlinkGaps.id, id)))
       .returning();
+    return result[0];
+  }
+
+  // Rank Tracking
+  async getRankHistoryByKeyword(tenantId: string, keywordId: string, startDate?: string, endDate?: string): Promise<KeywordRankHistory[]> {
+    let query = this.db.select().from(keywordRankHistory)
+      .where(and(eq(keywordRankHistory.tenantId, tenantId), eq(keywordRankHistory.keywordId, keywordId)))
+      .$dynamic();
+    
+    return await query.orderBy(keywordRankHistory.date);
+  }
+
+  async getRankHistoryByProject(tenantId: string, projectId: string, startDate?: string, endDate?: string): Promise<KeywordRankHistory[]> {
+    return await this.db.select().from(keywordRankHistory)
+      .where(and(eq(keywordRankHistory.tenantId, tenantId), eq(keywordRankHistory.projectId, projectId)))
+      .orderBy(keywordRankHistory.date);
+  }
+
+  async createRankHistory(tenantId: string, insertRankHistory: InsertKeywordRankHistory): Promise<KeywordRankHistory> {
+    const result = await this.db.insert(keywordRankHistory).values({ ...insertRankHistory, tenantId }).returning();
+    return result[0];
+  }
+
+  // Competitor Rank Snapshots
+  async getCompetitorRanksByProject(tenantId: string, projectId: string, startDate?: string, endDate?: string): Promise<CompetitorRankSnapshot[]> {
+    return await this.db.select().from(competitorRankSnapshots)
+      .where(and(eq(competitorRankSnapshots.tenantId, tenantId), eq(competitorRankSnapshots.projectId, projectId)))
+      .orderBy(competitorRankSnapshots.date);
+  }
+
+  async getCompetitorRanksByKeyword(tenantId: string, keywordId: string): Promise<CompetitorRankSnapshot[]> {
+    return await this.db.select().from(competitorRankSnapshots)
+      .where(and(eq(competitorRankSnapshots.tenantId, tenantId), eq(competitorRankSnapshots.keywordId, keywordId)))
+      .orderBy(competitorRankSnapshots.date);
+  }
+
+  async createCompetitorRankSnapshot(tenantId: string, insertSnapshot: InsertCompetitorRankSnapshot): Promise<CompetitorRankSnapshot> {
+    const result = await this.db.insert(competitorRankSnapshots).values({ ...insertSnapshot, tenantId }).returning();
     return result[0];
   }
 }
