@@ -121,7 +121,7 @@ export default function MobileNavigation() {
       category: "AI & Intelligence",
       items: [
         { name: "AI Automation", href: "/ai-autonomous", icon: Brain, permission: "sentiment.read" },
-        { name: "Emotional Intelligence", href: "/sentiment", icon: Brain, permission: "sentiment.read" },
+        { name: "Sentiment Analysis", href: "/sentiment", icon: Brain, permission: "sentiment.read" },
         { name: "Unified Communications", href: "/unified-inbox", icon: Mail, permission: "communications.read" },
         { name: "Forms & Surveys", href: "/forms-surveys", icon: FileText, permission: "forms.read" },
       ]
