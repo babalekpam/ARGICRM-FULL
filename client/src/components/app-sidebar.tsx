@@ -7,6 +7,7 @@ import {
   Users,
   LayoutDashboard,
   Sparkles,
+  CreditCard,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -32,6 +33,10 @@ const navigation = [
   { title: "AI Assistant", url: "/ai-assistant", icon: Sparkles },
 ];
 
+const accountNav = [
+  { title: "Pricing & Plans", url: "/pricing", icon: CreditCard },
+];
+
 export function AppSidebar() {
   const [location] = useLocation();
 
@@ -51,6 +56,26 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => {
+                const isActive = location === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                      <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {accountNav.map((item) => {
                 const isActive = location === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>

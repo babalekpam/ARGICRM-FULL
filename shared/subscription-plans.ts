@@ -1,9 +1,12 @@
-export type SubscriptionPlan = 'free' | 'individual' | 'business' | 'enterprise';
+export type SubscriptionPlan = 'free' | 'individual' | 'business' | 'enterprise' | 'lifetime';
+
+export type BillingCycle = 'yearly' | 'lifetime';
 
 export interface PlanFeatures {
   name: string;
   displayName: string;
   price: number;
+  billingCycle: BillingCycle;
   priceId?: string; // Stripe price ID
   features: {
     maxProjects: number;
@@ -25,6 +28,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
     name: 'free',
     displayName: 'Free',
     price: 0,
+    billingCycle: 'yearly',
     features: {
       maxProjects: 1,
       maxKeywords: 10,
@@ -42,7 +46,8 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
   individual: {
     name: 'individual',
     displayName: 'Individual',
-    price: 29,
+    price: 290, // $290/year (was $29/month)
+    billingCycle: 'yearly',
     features: {
       maxProjects: 5,
       maxKeywords: 100,
@@ -60,7 +65,8 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
   business: {
     name: 'business',
     displayName: 'Business',
-    price: 79,
+    price: 790, // $790/year (was $79/month)
+    billingCycle: 'yearly',
     features: {
       maxProjects: 25,
       maxKeywords: 500,
@@ -78,7 +84,27 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
   enterprise: {
     name: 'enterprise',
     displayName: 'Enterprise',
-    price: 199,
+    price: 1990, // $1,990/year (was $199/month)
+    billingCycle: 'yearly',
+    features: {
+      maxProjects: 100,
+      maxKeywords: 2000,
+      maxCompetitors: 50,
+      aiInsights: true,
+      aiAnalysis: true,
+      seoAudit: true,
+      backlinks: true,
+      trafficAnalytics: true,
+      prioritySupport: true,
+      customReports: true,
+      apiAccess: true,
+    },
+  },
+  lifetime: {
+    name: 'lifetime',
+    displayName: 'Lifetime',
+    price: 4990, // $4,990 one-time payment
+    billingCycle: 'lifetime',
     features: {
       maxProjects: 9999,
       maxKeywords: 9999,

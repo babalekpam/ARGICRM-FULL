@@ -25,6 +25,7 @@ import {
 import { Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import Landing from "@/pages/landing";
+import Pricing from "@/pages/pricing";
 import Dashboard from "@/pages/dashboard";
 import Keywords from "@/pages/keywords";
 import Traffic from "@/pages/traffic";
@@ -183,6 +184,9 @@ function AppContent() {
             <Switch>
               <Route path="/">
                 {() => <Dashboard projectId={effectiveProjectId} />}
+              </Route>
+              <Route path="/pricing">
+                <Pricing />
               </Route>
               <Route path="/keywords">
                 {() => <Keywords projectId={effectiveProjectId} />}
