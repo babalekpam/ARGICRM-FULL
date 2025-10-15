@@ -130,6 +130,65 @@ export const backlinkGrowth = pgTable("backlink_growth", {
   backlinkCount: integer("backlink_count").notNull().default(0),
 });
 
+// Backlink Opportunities - Potential websites to get backlinks from
+export const backlinkOpportunities = pgTable("backlink_opportunities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  domain: text("domain").notNull(),
+  url: text("url").notNull(),
+  domainAuthority: integer("domain_authority").notNull().default(0),
+  pageAuthority: integer("page_authority").notNull().default(0),
+  relevanceScore: integer("relevance_score").notNull().default(0), // 0-100
+  contactEmail: text("contact_email"),
+  status: text("status").notNull().default('discovered'), // discovered, contacted, rejected, acquired
+  notes: text("notes"),
+  discoveredDate: text("discovered_date").notNull(),
+  acquiredDate: text("acquired_date"),
+});
+
+// Outreach Campaigns - Email outreach campaigns for link building
+export const outreachCampaigns = pgTable("outreach_campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  emailTemplate: text("email_template").notNull(),
+  status: text("status").notNull().default('draft'), // draft, active, paused, completed
+  totalSent: integer("total_sent").notNull().default(0),
+  totalReplies: integer("total_replies").notNull().default(0),
+  successfulLinks: integer("successful_links").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Outreach Contacts - Individual contacts in outreach campaigns
+export const outreachContacts = pgTable("outreach_contacts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  campaignId: varchar("campaign_id").notNull().references(() => outreachCampaigns.id, { onDelete: "cascade" }),
+  opportunityId: varchar("opportunity_id").references(() => backlinkOpportunities.id, { onDelete: "set null" }),
+  email: text("email").notNull(),
+  status: text("status").notNull().default('pending'), // pending, sent, replied, accepted, rejected
+  sentDate: text("sent_date"),
+  repliedDate: text("replied_date"),
+  notes: text("notes"),
+});
+
+// Backlink Gap Analysis - Competitor backlink gaps
+export const backlinkGaps = pgTable("backlink_gaps", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  competitorDomain: text("competitor_domain").notNull(),
+  backlinkUrl: text("backlink_url").notNull(),
+  linkingDomain: text("linking_domain").notNull(),
+  domainAuthority: integer("domain_authority").notNull().default(0),
+  anchorText: text("anchor_text"),
+  priority: text("priority").notNull().default('medium'), // high, medium, low
+  status: text("status").notNull().default('open'), // open, in_progress, acquired, dismissed
+});
+
 // Insert schemas - omit id, createdAt/updatedAt, and tenantId (provided by server)
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, tenantId: true });
@@ -140,6 +199,10 @@ export const insertBacklinkSchema = createInsertSchema(backlinks).omit({ id: tru
 export const insertCompetitorSchema = createInsertSchema(competitors).omit({ id: true, tenantId: true });
 export const insertSeoIssueSchema = createInsertSchema(seoIssues).omit({ id: true, tenantId: true });
 export const insertBacklinkGrowthSchema = createInsertSchema(backlinkGrowth).omit({ id: true, tenantId: true });
+export const insertBacklinkOpportunitySchema = createInsertSchema(backlinkOpportunities).omit({ id: true, tenantId: true });
+export const insertOutreachCampaignSchema = createInsertSchema(outreachCampaigns).omit({ id: true, createdAt: true, tenantId: true });
+export const insertOutreachContactSchema = createInsertSchema(outreachContacts).omit({ id: true, tenantId: true });
+export const insertBacklinkGapSchema = createInsertSchema(backlinkGaps).omit({ id: true, tenantId: true });
 
 // User types - Required for Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
@@ -173,3 +236,15 @@ export type SeoIssue = typeof seoIssues.$inferSelect;
 
 export type InsertBacklinkGrowth = z.infer<typeof insertBacklinkGrowthSchema>;
 export type BacklinkGrowth = typeof backlinkGrowth.$inferSelect;
+
+export type InsertBacklinkOpportunity = z.infer<typeof insertBacklinkOpportunitySchema>;
+export type BacklinkOpportunity = typeof backlinkOpportunities.$inferSelect;
+
+export type InsertOutreachCampaign = z.infer<typeof insertOutreachCampaignSchema>;
+export type OutreachCampaign = typeof outreachCampaigns.$inferSelect;
+
+export type InsertOutreachContact = z.infer<typeof insertOutreachContactSchema>;
+export type OutreachContact = typeof outreachContacts.$inferSelect;
+
+export type InsertBacklinkGap = z.infer<typeof insertBacklinkGapSchema>;
+export type BacklinkGap = typeof backlinkGaps.$inferSelect;
