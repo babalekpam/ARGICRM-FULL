@@ -151,6 +151,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/keywords", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertKeywordSchema } = await import("@shared/schema");
+      const validatedData = insertKeywordSchema.parse(req.body);
+      const keyword = await storage.createKeyword(req.tenantId, validatedData);
+      res.json(keyword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid keyword data" });
+      }
+      console.error("Error creating keyword:", error);
+      res.status(500).json({ error: "Failed to create keyword" });
+    }
+  });
+
   // Traffic endpoints
   app.get("/api/traffic", requireAuth, async (req: any, res: Response) => {
     try {

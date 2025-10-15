@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Keyword } from "@shared/schema";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Keyword, insertKeywordSchema } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Minus, Plus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,19 +14,72 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
 
 interface KeywordsProps {
   projectId: string;
 }
 
+type KeywordFormValues = z.infer<typeof insertKeywordSchema>;
+
 export default function Keywords({ projectId }: KeywordsProps) {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const { data: keywords, isLoading } = useQuery<Keyword[]>({
     queryKey: ["/api/keywords", projectId],
     queryFn: async () => {
       const res = await fetch(`/api/keywords?projectId=${projectId}`);
       if (!res.ok) throw new Error("Failed to fetch keywords");
       return res.json();
+    },
+  });
+
+  const form = useForm<KeywordFormValues>({
+    resolver: zodResolver(insertKeywordSchema),
+    defaultValues: {
+      projectId,
+      keyword: "",
+      searchVolume: 0,
+      difficulty: 0,
+      cpc: 0,
+      position: undefined,
+      trend: "stable",
+    },
+  });
+
+  const createKeywordMutation = useMutation({
+    mutationFn: async (data: KeywordFormValues) => {
+      return await apiRequest("POST", "/api/keywords", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/keywords", projectId] });
+      toast({ title: "Keyword added successfully" });
+      setDialogOpen(false);
+      form.reset();
+    },
+    onError: () => {
+      toast({ title: "Failed to add keyword", variant: "destructive" });
     },
   });
 
@@ -64,9 +117,89 @@ export default function Keywords({ projectId }: KeywordsProps) {
 
   return (
     <div className="p-6 space-y-6" data-testid="keywords-page">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Keyword Research</h1>
-        <p className="text-muted-foreground">Track and analyze your keyword rankings</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Keyword Research</h1>
+          <p className="text-muted-foreground">Track and analyze your keyword rankings</p>
+        </div>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button data-testid="button-add-keyword">
+              <Plus className="mr-2 h-4 w-4" /> Add Keyword
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Keyword</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit((data) => createKeywordMutation.mutate(data))} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="keyword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Keyword</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter keyword..." {...field} data-testid="input-keyword" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="searchVolume"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Search Volume</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} data-testid="input-search-volume" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="difficulty"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Difficulty (0-100)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" max="100" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} data-testid="input-difficulty" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="cpc"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPC ($)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} value={field.value ?? 0} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} data-testid="input-cpc" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} data-testid="button-cancel-keyword">
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={createKeywordMutation.isPending} data-testid="button-submit-keyword">
+                    {createKeywordMutation.isPending ? "Adding..." : "Add Keyword"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
