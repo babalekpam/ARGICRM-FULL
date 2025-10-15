@@ -46,9 +46,23 @@ The platform uses a modern full-stack architecture:
 - Utilizes Replit Auth for OpenID Connect authentication (Google, GitHub, X, Apple, email/password).
 - Implements a strict multi-tenant architecture where all data tables include a `tenantId` for isolation and security, ensuring users only access their own data.
 
+### Local SEO Tracking
+- Monitors location-based search rankings across multiple cities and regions.
+- Google Business Profile metrics tracking (views, searches, actions, calls, directions).
+- Local citations management showing business listings across directories.
+- Location selector for targeted local SEO analysis.
+
+### Social Media Monitoring
+- Multi-platform social media tracking (Twitter, Facebook, Instagram, LinkedIn, TikTok).
+- Metrics tracking: followers, engagement rate, posts, reach, likes, comments, shares.
+- Account connection dialog with platform selector and profile details.
+- Post performance analysis with engagement metrics.
+- Historical metrics tracking for trend analysis.
+
 ### Database Schema
 - PostgreSQL database with UUID primary keys.
-- Core tables include `projects`, `keywords`, `keywordRankings`, `trafficData`, `backlinks`, `backlinkGrowth`, `competitors`, `seoIssues`, `apiKeys`, and `apiUsage`, all linked to `tenantId`.
+- Core tables include `projects`, `keywords`, `keywordRankings`, `trafficData`, `backlinks`, `backlinkGrowth`, `competitors`, `seoIssues`, `apiKeys`, `apiUsage`, all linked to `tenantId`.
+- **Phase 6 additions**: `localRankings`, `googleBusinessProfile`, `localCitations`, `socialAccounts`, `socialPosts`, `socialMetrics` - all with tenantId and CASCADE DELETE.
 - Features `CASCADE DELETE` on foreign key relationships for data integrity.
 - API keys table stores hashed keys (SHA-256) with metadata including permissions, rate limits, and expiration dates.
 - API usage table tracks all API calls with endpoint, method, status code, response time, and timestamp for analytics.
