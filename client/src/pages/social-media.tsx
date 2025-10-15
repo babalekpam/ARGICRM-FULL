@@ -58,9 +58,8 @@ interface SocialMediaProps {
   projectId: string;
 }
 
-const connectAccountFormSchema = insertSocialAccountSchema.omit({ id: true, tenantId: true, createdAt: true }).extend({
+const connectAccountFormSchema = insertSocialAccountSchema.extend({
   projectId: z.string(),
-  followers: z.number().min(0).default(0),
 });
 
 export default function SocialMedia({ projectId }: SocialMediaProps) {
@@ -83,11 +82,17 @@ export default function SocialMedia({ projectId }: SocialMediaProps) {
     mutationFn: async (data: z.infer<typeof connectAccountFormSchema>) => {
       return await apiRequest("POST", "/api/social-accounts", data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "social-accounts"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/projects", projectId, "social-accounts"] });
       toast({ title: "Social account connected successfully" });
       setDialogOpen(false);
-      form.reset();
+      form.reset({
+        projectId,
+        platform: "twitter",
+        username: "",
+        profileUrl: "",
+        followers: 0,
+      });
     },
     onError: () => {
       toast({ title: "Failed to connect account", variant: "destructive" });
