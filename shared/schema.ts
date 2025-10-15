@@ -214,6 +214,51 @@ export const competitorRankSnapshots = pgTable("competitor_rank_snapshots", {
   url: text("url"), // Competitor URL that ranked
 });
 
+// Content Briefs - AI-generated content outlines
+export const contentBriefs = pgTable("content_briefs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  targetKeyword: text("target_keyword").notNull(),
+  title: text("title").notNull(),
+  outline: jsonb("outline").notNull(), // Array of sections with headings and subheadings
+  wordCountTarget: integer("word_count_target").notNull().default(1500),
+  contentType: text("content_type").notNull().default('blog_post'), // blog_post, landing_page, product_page
+  seoTips: jsonb("seo_tips"), // AI-generated SEO recommendations
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Content Scorecards - SEO content analysis results
+export const contentScorecards = pgTable("content_scorecards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  targetKeyword: text("target_keyword").notNull(),
+  seoScore: integer("seo_score").notNull().default(0), // 0-100
+  readabilityScore: integer("readability_score").notNull().default(0), // 0-100
+  keywordDensity: real("keyword_density").notNull().default(0), // Percentage
+  wordCount: integer("word_count").notNull().default(0),
+  headingsCount: integer("headings_count").notNull().default(0),
+  imageCount: integer("image_count").notNull().default(0),
+  linksCount: integer("links_count").notNull().default(0),
+  suggestions: jsonb("suggestions"), // Array of improvement suggestions
+  analyzedAt: timestamp("analyzed_at").defaultNow(),
+});
+
+// SERP Snapshots - Search result page analysis
+export const serpSnapshots = pgTable("serp_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  keyword: text("keyword").notNull(),
+  location: text("location").default('United States'), // Geographic location for search
+  serpResults: jsonb("serp_results").notNull(), // Array of {position, url, title, snippet, domain}
+  featuredSnippet: jsonb("featured_snippet"), // If present: {type, content, url}
+  peopleAlsoAsk: jsonb("people_also_ask"), // Array of related questions
+  relatedSearches: jsonb("related_searches"), // Array of related search terms
+  capturedAt: timestamp("captured_at").defaultNow(),
+});
+
 // Insert schemas - omit id, createdAt/updatedAt, and tenantId (provided by server)
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, tenantId: true });
@@ -230,6 +275,9 @@ export const insertOutreachContactSchema = createInsertSchema(outreachContacts).
 export const insertBacklinkGapSchema = createInsertSchema(backlinkGaps).omit({ id: true, tenantId: true });
 export const insertKeywordRankHistorySchema = createInsertSchema(keywordRankHistory).omit({ id: true, tenantId: true });
 export const insertCompetitorRankSnapshotSchema = createInsertSchema(competitorRankSnapshots).omit({ id: true, tenantId: true });
+export const insertContentBriefSchema = createInsertSchema(contentBriefs).omit({ id: true, createdAt: true, tenantId: true });
+export const insertContentScorecardSchema = createInsertSchema(contentScorecards).omit({ id: true, analyzedAt: true, tenantId: true });
+export const insertSerpSnapshotSchema = createInsertSchema(serpSnapshots).omit({ id: true, capturedAt: true, tenantId: true });
 
 // User types - Required for Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
@@ -281,3 +329,12 @@ export type KeywordRankHistory = typeof keywordRankHistory.$inferSelect;
 
 export type InsertCompetitorRankSnapshot = z.infer<typeof insertCompetitorRankSnapshotSchema>;
 export type CompetitorRankSnapshot = typeof competitorRankSnapshots.$inferSelect;
+
+export type InsertContentBrief = z.infer<typeof insertContentBriefSchema>;
+export type ContentBrief = typeof contentBriefs.$inferSelect;
+
+export type InsertContentScorecard = z.infer<typeof insertContentScorecardSchema>;
+export type ContentScorecard = typeof contentScorecards.$inferSelect;
+
+export type InsertSerpSnapshot = z.infer<typeof insertSerpSnapshotSchema>;
+export type SerpSnapshot = typeof serpSnapshots.$inferSelect;

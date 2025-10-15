@@ -13,11 +13,14 @@ import {
   type BacklinkGap, type InsertBacklinkGap,
   type KeywordRankHistory, type InsertKeywordRankHistory,
   type CompetitorRankSnapshot, type InsertCompetitorRankSnapshot,
+  type ContentBrief, type InsertContentBrief,
+  type ContentScorecard, type InsertContentScorecard,
+  type SerpSnapshot, type InsertSerpSnapshot,
   type User, type UpsertUser,
   type Tenant, type InsertTenant,
   projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth, 
   backlinkOpportunities, outreachCampaigns, outreachContacts, backlinkGaps, keywordRankHistory, 
-  competitorRankSnapshots, users, tenants
+  competitorRankSnapshots, contentBriefs, contentScorecards, serpSnapshots, users, tenants
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -93,6 +96,21 @@ export interface IStorage {
   getCompetitorRanksByProject(tenantId: string, projectId: string, startDate?: string, endDate?: string): Promise<CompetitorRankSnapshot[]>;
   getCompetitorRanksByKeyword(tenantId: string, keywordId: string): Promise<CompetitorRankSnapshot[]>;
   createCompetitorRankSnapshot(tenantId: string, snapshot: InsertCompetitorRankSnapshot): Promise<CompetitorRankSnapshot>;
+  
+  // Content Briefs - tenant-scoped
+  getBriefsByProject(tenantId: string, projectId: string): Promise<ContentBrief[]>;
+  createBrief(tenantId: string, brief: InsertContentBrief): Promise<ContentBrief>;
+  deleteBrief(tenantId: string, id: string): Promise<boolean>;
+  
+  // Content Scorecards - tenant-scoped
+  getScorecardsByProject(tenantId: string, projectId: string): Promise<ContentScorecard[]>;
+  createScorecard(tenantId: string, scorecard: InsertContentScorecard): Promise<ContentScorecard>;
+  deleteScorecard(tenantId: string, id: string): Promise<boolean>;
+  
+  // SERP Snapshots - tenant-scoped
+  getSerpSnapshotsByTenant(tenantId: string): Promise<SerpSnapshot[]>;
+  createSerpSnapshot(tenantId: string, snapshot: InsertSerpSnapshot): Promise<SerpSnapshot>;
+  deleteSerpSnapshot(tenantId: string, id: string): Promise<boolean>;
 }
 
 // Database Storage Implementation
@@ -333,6 +351,63 @@ export class DbStorage implements IStorage {
   async createCompetitorRankSnapshot(tenantId: string, insertSnapshot: InsertCompetitorRankSnapshot): Promise<CompetitorRankSnapshot> {
     const result = await this.db.insert(competitorRankSnapshots).values({ ...insertSnapshot, tenantId }).returning();
     return result[0];
+  }
+
+  // Content Briefs
+  async getBriefsByProject(tenantId: string, projectId: string): Promise<ContentBrief[]> {
+    return await this.db.select().from(contentBriefs)
+      .where(and(eq(contentBriefs.tenantId, tenantId), eq(contentBriefs.projectId, projectId)))
+      .orderBy(desc(contentBriefs.createdAt));
+  }
+
+  async createBrief(tenantId: string, insertBrief: InsertContentBrief): Promise<ContentBrief> {
+    const result = await this.db.insert(contentBriefs).values({ ...insertBrief, tenantId }).returning();
+    return result[0];
+  }
+
+  async deleteBrief(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(contentBriefs)
+      .where(and(eq(contentBriefs.tenantId, tenantId), eq(contentBriefs.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Content Scorecards
+  async getScorecardsByProject(tenantId: string, projectId: string): Promise<ContentScorecard[]> {
+    return await this.db.select().from(contentScorecards)
+      .where(and(eq(contentScorecards.tenantId, tenantId), eq(contentScorecards.projectId, projectId)))
+      .orderBy(desc(contentScorecards.analyzedAt));
+  }
+
+  async createScorecard(tenantId: string, insertScorecard: InsertContentScorecard): Promise<ContentScorecard> {
+    const result = await this.db.insert(contentScorecards).values({ ...insertScorecard, tenantId }).returning();
+    return result[0];
+  }
+
+  async deleteScorecard(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(contentScorecards)
+      .where(and(eq(contentScorecards.tenantId, tenantId), eq(contentScorecards.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // SERP Snapshots
+  async getSerpSnapshotsByTenant(tenantId: string): Promise<SerpSnapshot[]> {
+    return await this.db.select().from(serpSnapshots)
+      .where(eq(serpSnapshots.tenantId, tenantId))
+      .orderBy(desc(serpSnapshots.capturedAt));
+  }
+
+  async createSerpSnapshot(tenantId: string, insertSnapshot: InsertSerpSnapshot): Promise<SerpSnapshot> {
+    const result = await this.db.insert(serpSnapshots).values({ ...insertSnapshot, tenantId }).returning();
+    return result[0];
+  }
+
+  async deleteSerpSnapshot(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(serpSnapshots)
+      .where(and(eq(serpSnapshots.tenantId, tenantId), eq(serpSnapshots.id, id)))
+      .returning();
+    return result.length > 0;
   }
 }
 

@@ -200,6 +200,223 @@ Be specific, actionable, and data-driven. Focus on realistic, high-quality oppor
     return textContent ? textContent.text : 'Unable to generate backlink recommendations.';
   }
 
+  async generateContentBrief(targetKeyword: string, contentType: string = 'blog_post', wordCount: number = 1500): Promise<{
+    title: string;
+    outline: any[];
+    seoTips: string[];
+  }> {
+    const prompt = `Create a comprehensive SEO content brief for a ${contentType} targeting the keyword: "${targetKeyword}"
+
+Target word count: ${wordCount} words
+
+Provide a JSON response with this structure:
+{
+  "title": "Compelling, SEO-optimized title including the target keyword",
+  "outline": [
+    {
+      "section": "Introduction",
+      "heading": "H2 heading text",
+      "subheadings": ["H3 subheading 1", "H3 subheading 2"],
+      "keyPoints": ["Key point 1", "Key point 2"],
+      "wordCount": 200
+    }
+  ],
+  "seoTips": [
+    "SEO tip 1",
+    "SEO tip 2",
+    "SEO tip 3"
+  ]
+}
+
+Focus on:
+1. Natural keyword integration
+2. Search intent matching
+3. Comprehensive topic coverage
+4. Logical content flow
+5. User engagement`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    try {
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent) throw new Error('No response');
+      
+      const result = JSON.parse(textContent.text);
+      return result;
+    } catch {
+      return {
+        title: `Ultimate Guide to ${targetKeyword}`,
+        outline: [{ section: 'Introduction', heading: 'Introduction', subheadings: [], keyPoints: [], wordCount: 200 }],
+        seoTips: ['Include target keyword in title', 'Use semantic keywords', 'Add internal links']
+      };
+    }
+  }
+
+  async scoreContent(url: string, content: string, targetKeyword: string): Promise<{
+    seoScore: number;
+    readabilityScore: number;
+    keywordDensity: number;
+    wordCount: number;
+    headingsCount: number;
+    imageCount: number;
+    linksCount: number;
+    suggestions: string[];
+  }> {
+    const wordCount = content.split(/\s+/).length;
+    const headingsCount = (content.match(/<h[1-6]/gi) || []).length;
+    const imageCount = (content.match(/<img/gi) || []).length;
+    const linksCount = (content.match(/<a /gi) || []).length;
+    
+    const keywordMatches = content.toLowerCase().split(targetKeyword.toLowerCase()).length - 1;
+    const keywordDensity = (keywordMatches / wordCount) * 100;
+
+    const prompt = `Analyze this content for SEO quality and provide scoring:
+
+URL: ${url}
+Target Keyword: "${targetKeyword}"
+Word Count: ${wordCount}
+Headings: ${headingsCount}
+Images: ${imageCount}
+Links: ${linksCount}
+Keyword Density: ${keywordDensity.toFixed(2)}%
+
+Content excerpt: ${content.substring(0, 1000)}...
+
+Provide a JSON response:
+{
+  "seoScore": 0-100,
+  "readabilityScore": 0-100,
+  "suggestions": [
+    "Specific improvement 1",
+    "Specific improvement 2",
+    "Specific improvement 3"
+  ]
+}
+
+Consider: keyword usage, content structure, readability, comprehensiveness, user intent match.`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    try {
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent) throw new Error('No response');
+      
+      const aiScores = JSON.parse(textContent.text);
+      return {
+        seoScore: aiScores.seoScore || 50,
+        readabilityScore: aiScores.readabilityScore || 50,
+        keywordDensity: parseFloat(keywordDensity.toFixed(2)),
+        wordCount,
+        headingsCount,
+        imageCount,
+        linksCount,
+        suggestions: aiScores.suggestions || []
+      };
+    } catch {
+      return {
+        seoScore: 50,
+        readabilityScore: 50,
+        keywordDensity: parseFloat(keywordDensity.toFixed(2)),
+        wordCount,
+        headingsCount,
+        imageCount,
+        linksCount,
+        suggestions: ['Improve keyword usage', 'Add more headings', 'Include relevant images']
+      };
+    }
+  }
+
+  async analyzeSERP(keyword: string, serpResults: any[]): Promise<{
+    insights: string;
+    contentGaps: string[];
+    recommendedWordCount: number;
+  }> {
+    const topResults = serpResults.slice(0, 10).map((r, i) => 
+      `${i + 1}. ${r.title} (${r.domain})\n   ${r.snippet}`
+    ).join('\n\n');
+
+    const prompt = `Analyze these SERP results for keyword: "${keyword}"
+
+Top 10 Results:
+${topResults}
+
+Provide a JSON response:
+{
+  "insights": "Overall analysis of what's ranking and why (2-3 paragraphs)",
+  "contentGaps": [
+    "Underserved angle 1",
+    "Underserved angle 2",
+    "Underserved angle 3"
+  ],
+  "recommendedWordCount": 1500
+}
+
+Focus on: search intent, content patterns, ranking factors, content opportunities.`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 1536,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    try {
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent) throw new Error('No response');
+      
+      return JSON.parse(textContent.text);
+    } catch {
+      return {
+        insights: 'Analysis unavailable',
+        contentGaps: [],
+        recommendedWordCount: 1500
+      };
+    }
+  }
+
+  async analyzeContentGaps(project: Project, keywords: Keyword[], competitors?: Competitor[]): Promise<string> {
+    const keywordsSummary = keywords.slice(0, 20).map(k => 
+      `${k.keyword} - Vol: ${k.searchVolume}, Difficulty: ${k.difficulty}, Our Position: ${k.position || 'Not ranking'}`
+    ).join('\n');
+
+    const competitorsSummary = competitors?.map(c => 
+      `${c.domain} - Traffic: ${c.estimatedTraffic}, Common Keywords: ${c.commonKeywords}`
+    ).join('\n') || 'No competitor data';
+
+    const prompt = `Identify content gaps and opportunities for: ${project.domain || project.name}
+
+Our Keywords:
+${keywordsSummary}
+
+Competitors:
+${competitorsSummary}
+
+Provide:
+1. Underserved topics we should create content for
+2. Content types that would perform well (guides, comparisons, tutorials, etc.)
+3. Quick wins (easy-to-rank keywords we're missing)
+4. Long-term content strategy recommendations
+5. Specific content ideas with target keywords
+
+Be specific and actionable. Focus on realistic opportunities.`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 1536,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const textContent = message.content.find(block => block.type === 'text');
+    return textContent ? textContent.text : 'Unable to analyze content gaps.';
+  }
+
   private buildSystemPrompt(context?: SEOContext): string {
     let prompt = `You are an expert SEO analyst and consultant. You provide data-driven insights and actionable recommendations to improve search engine rankings, organic traffic, and overall SEO performance.
 
