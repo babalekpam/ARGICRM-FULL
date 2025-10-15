@@ -73,6 +73,7 @@ export interface IStorage {
   // Backlinks - tenant-scoped
   getBacklinksByProject(tenantId: string, projectId: string): Promise<Backlink[]>;
   getBacklinkGrowth(tenantId: string, projectId: string): Promise<Array<{ date: string; backlinks: number }>>;
+  createBacklink(tenantId: string, backlink: InsertBacklink): Promise<Backlink>;
   
   // Competitors - tenant-scoped
   getCompetitorsByProject(tenantId: string, projectId: string): Promise<Competitor[]>;
@@ -294,6 +295,13 @@ export class DbStorage implements IStorage {
       date: g.date.substring(5), // Format: MM-DD
       backlinks: g.backlinkCount
     }));
+  }
+
+  async createBacklink(tenantId: string, backlink: InsertBacklink): Promise<Backlink> {
+    const [newBacklink] = await this.db.insert(backlinks)
+      .values({ ...backlink, tenantId })
+      .returning();
+    return newBacklink;
   }
 
   async getCompetitorsByProject(tenantId: string, projectId: string): Promise<Competitor[]> {

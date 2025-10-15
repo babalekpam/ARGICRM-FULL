@@ -199,6 +199,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/backlinks/fetch", requireAuth, async (req: any, res: Response) => {
+    try {
+      const fetchBacklinksSchema = z.object({
+        domain: z.string().min(1, "Domain is required"),
+        projectId: z.string().min(1, "Project ID is required"),
+        limit: z.number().int().min(1).max(1000).default(100),
+      });
+
+      const { domain, projectId, limit } = fetchBacklinksSchema.parse(req.body);
+      
+      // Verify project belongs to tenant
+      const project = await storage.getProject(req.tenantId, projectId);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found or access denied" });
+      }
+
+      const { createDataForSEOService } = await import("./dataforseo");
+      const dataforSEO = createDataForSEOService();
+      
+      const { backlinks: apiBacklinks, totalCount } = await dataforSEO.fetchBacklinks(domain, limit);
+      
+      // Transform and store backlinks
+      const storedBacklinks = [];
+      for (const item of apiBacklinks) {
+        const backlinkData = dataforSEO.transformToBacklink(item, projectId);
+        const stored = await storage.createBacklink(req.tenantId, backlinkData);
+        storedBacklinks.push(stored);
+      }
+
+      res.json({
+        backlinks: storedBacklinks,
+        totalCount,
+        fetched: storedBacklinks.length
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      console.error("Fetch backlinks error:", error);
+      res.status(500).json({ error: "Failed to fetch backlinks from DataForSEO" });
+    }
+  });
+
   // Competitors endpoints
   app.get("/api/competitors", requireAuth, async (req: any, res: Response) => {
     try {

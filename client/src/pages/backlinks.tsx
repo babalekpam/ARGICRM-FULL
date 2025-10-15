@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Backlink } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Download } from "lucide-react";
+import { ExternalLink, Download, RefreshCw } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,18 +14,63 @@ import {
 } from "@/components/ui/table";
 import { MetricCard } from "@/components/metric-card";
 import { Link as LinkIcon, Globe, TrendingUp } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface BacklinksProps {
   projectId: string;
 }
 
 export default function Backlinks({ projectId }: BacklinksProps) {
+  const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [domain, setDomain] = useState("");
+  const [limit, setLimit] = useState(100);
+
   const { data: backlinks, isLoading } = useQuery<Backlink[]>({
     queryKey: ["/api/backlinks", projectId],
     queryFn: async () => {
       const res = await fetch(`/api/backlinks?projectId=${projectId}`);
       if (!res.ok) throw new Error("Failed to fetch backlinks");
       return res.json();
+    },
+  });
+
+  const fetchBacklinksMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/backlinks/fetch", { 
+        domain, 
+        projectId, 
+        limit 
+      });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/backlinks", projectId] });
+      toast({ 
+        title: "Backlinks fetched successfully", 
+        description: `Found ${data.fetched} backlinks from ${domain}`
+      });
+      setDialogOpen(false);
+      setDomain("");
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to fetch backlinks", 
+        description: error.message || "Please check your API credentials and try again",
+        variant: "destructive" 
+      });
     },
   });
 
@@ -64,9 +109,66 @@ export default function Backlinks({ projectId }: BacklinksProps) {
           <h1 className="text-3xl font-bold mb-2">Backlinks</h1>
           <p className="text-muted-foreground">Monitor your backlink profile and link building</p>
         </div>
-        <Button data-testid="button-export-backlinks">
-          <Download className="mr-2 h-4 w-4" /> Export
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" data-testid="button-fetch-backlinks">
+                <RefreshCw className="mr-2 h-4 w-4" /> Fetch Backlinks
+              </Button>
+            </DialogTrigger>
+            <DialogContent data-testid="dialog-fetch-backlinks">
+              <DialogHeader>
+                <DialogTitle>Fetch Backlinks from DataForSEO</DialogTitle>
+                <DialogDescription>
+                  Enter the domain you want to analyze for backlinks
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="domain">Domain</Label>
+                  <Input
+                    id="domain"
+                    data-testid="input-domain"
+                    placeholder="example.com"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="limit">Limit (max backlinks to fetch)</Label>
+                  <Input
+                    id="limit"
+                    data-testid="input-limit"
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={limit}
+                    onChange={(e) => setLimit(parseInt(e.target.value) || 100)}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  data-testid="button-cancel-fetch"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => fetchBacklinksMutation.mutate()}
+                  disabled={!domain || fetchBacklinksMutation.isPending}
+                  data-testid="button-confirm-fetch"
+                >
+                  {fetchBacklinksMutation.isPending ? "Fetching..." : "Fetch Backlinks"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button data-testid="button-export-backlinks">
+            <Download className="mr-2 h-4 w-4" /> Export
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
