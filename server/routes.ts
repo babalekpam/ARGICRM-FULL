@@ -310,6 +310,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Link Building - Backlink Opportunities
+  app.get("/api/link-building/opportunities/:projectId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const opportunities = await storage.getOpportunitiesByProject(req.tenantId, req.params.projectId);
+      res.json(opportunities);
+    } catch (error) {
+      console.error("Error fetching opportunities:", error);
+      res.status(500).json({ error: "Failed to fetch opportunities" });
+    }
+  });
+
+  app.post("/api/link-building/opportunities", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertBacklinkOpportunitySchema } = await import("@shared/schema");
+      const validatedData = insertBacklinkOpportunitySchema.parse(req.body);
+      const opportunity = await storage.createOpportunity(req.tenantId, validatedData);
+      res.json(opportunity);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid opportunity data" });
+      }
+      console.error("Error creating opportunity:", error);
+      res.status(500).json({ error: "Failed to create opportunity" });
+    }
+  });
+
+  app.patch("/api/link-building/opportunities/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertBacklinkOpportunitySchema } = await import("@shared/schema");
+      const partialSchema = insertBacklinkOpportunitySchema.partial();
+      const validatedData = partialSchema.parse(req.body);
+      const opportunity = await storage.updateOpportunity(req.tenantId, req.params.id, validatedData);
+      if (!opportunity) {
+        return res.status(404).json({ error: "Opportunity not found" });
+      }
+      res.json(opportunity);
+    } catch (error) {
+      console.error("Error updating opportunity:", error);
+      res.status(500).json({ error: "Failed to update opportunity" });
+    }
+  });
+
+  app.delete("/api/link-building/opportunities/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const success = await storage.deleteOpportunity(req.tenantId, req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Opportunity not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting opportunity:", error);
+      res.status(500).json({ error: "Failed to delete opportunity" });
+    }
+  });
+
+  // Link Building - Outreach Campaigns
+  app.get("/api/link-building/campaigns/:projectId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const campaigns = await storage.getCampaignsByProject(req.tenantId, req.params.projectId);
+      res.json(campaigns);
+    } catch (error) {
+      console.error("Error fetching campaigns:", error);
+      res.status(500).json({ error: "Failed to fetch campaigns" });
+    }
+  });
+
+  app.post("/api/link-building/campaigns", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertOutreachCampaignSchema } = await import("@shared/schema");
+      const validatedData = insertOutreachCampaignSchema.parse(req.body);
+      const campaign = await storage.createCampaign(req.tenantId, validatedData);
+      res.json(campaign);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid campaign data" });
+      }
+      console.error("Error creating campaign:", error);
+      res.status(500).json({ error: "Failed to create campaign" });
+    }
+  });
+
+  app.patch("/api/link-building/campaigns/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertOutreachCampaignSchema } = await import("@shared/schema");
+      const partialSchema = insertOutreachCampaignSchema.partial();
+      const validatedData = partialSchema.parse(req.body);
+      const campaign = await storage.updateCampaign(req.tenantId, req.params.id, validatedData);
+      if (!campaign) {
+        return res.status(404).json({ error: "Campaign not found" });
+      }
+      res.json(campaign);
+    } catch (error) {
+      console.error("Error updating campaign:", error);
+      res.status(500).json({ error: "Failed to update campaign" });
+    }
+  });
+
+  app.delete("/api/link-building/campaigns/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const success = await storage.deleteCampaign(req.tenantId, req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Campaign not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting campaign:", error);
+      res.status(500).json({ error: "Failed to delete campaign" });
+    }
+  });
+
+  // Link Building - Outreach Contacts
+  app.get("/api/link-building/contacts/:campaignId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const contacts = await storage.getContactsByCampaign(req.tenantId, req.params.campaignId);
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+      res.status(500).json({ error: "Failed to fetch contacts" });
+    }
+  });
+
+  app.post("/api/link-building/contacts", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertOutreachContactSchema } = await import("@shared/schema");
+      const validatedData = insertOutreachContactSchema.parse(req.body);
+      const contact = await storage.createContact(req.tenantId, validatedData);
+      res.json(contact);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid contact data" });
+      }
+      console.error("Error creating contact:", error);
+      res.status(500).json({ error: "Failed to create contact" });
+    }
+  });
+
+  app.patch("/api/link-building/contacts/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertOutreachContactSchema } = await import("@shared/schema");
+      const partialSchema = insertOutreachContactSchema.partial();
+      const validatedData = partialSchema.parse(req.body);
+      const contact = await storage.updateContact(req.tenantId, req.params.id, validatedData);
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+      res.json(contact);
+    } catch (error) {
+      console.error("Error updating contact:", error);
+      res.status(500).json({ error: "Failed to update contact" });
+    }
+  });
+
+  // Link Building - Backlink Gaps
+  app.get("/api/link-building/gaps/:projectId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const gaps = await storage.getGapsByProject(req.tenantId, req.params.projectId);
+      res.json(gaps);
+    } catch (error) {
+      console.error("Error fetching gaps:", error);
+      res.status(500).json({ error: "Failed to fetch gaps" });
+    }
+  });
+
+  app.post("/api/link-building/gaps", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertBacklinkGapSchema } = await import("@shared/schema");
+      const validatedData = insertBacklinkGapSchema.parse(req.body);
+      const gap = await storage.createGap(req.tenantId, validatedData);
+      res.json(gap);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid gap data" });
+      }
+      console.error("Error creating gap:", error);
+      res.status(500).json({ error: "Failed to create gap" });
+    }
+  });
+
+  app.patch("/api/link-building/gaps/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertBacklinkGapSchema } = await import("@shared/schema");
+      const partialSchema = insertBacklinkGapSchema.partial();
+      const validatedData = partialSchema.parse(req.body);
+      const gap = await storage.updateGap(req.tenantId, req.params.id, validatedData);
+      if (!gap) {
+        return res.status(404).json({ error: "Gap not found" });
+      }
+      res.json(gap);
+    } catch (error) {
+      console.error("Error updating gap:", error);
+      res.status(500).json({ error: "Failed to update gap" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
