@@ -483,6 +483,185 @@ Make the backlinks industry-appropriate, varied, and realistic. Include a mix of
     }
   }
 
+  async generateGoogleBusinessProfile(businessName: string, industry?: string): Promise<{
+    businessName: string;
+    rating: number;
+    reviewCount: number;
+    views: number;
+    searches: number;
+    calls: number;
+    directions: number;
+    websiteClicks: number;
+  }> {
+    const prompt = `As a local SEO analyst, generate realistic Google Business Profile metrics for: ${businessName}
+${industry ? `Industry: ${industry}` : ''}
+
+Generate realistic metrics based on the business type. Return ONLY a valid JSON object with this structure:
+{
+  "businessName": "${businessName}",
+  "rating": 4.3,
+  "reviewCount": 127,
+  "views": 8500,
+  "searches": 2100,
+  "calls": 45,
+  "directions": 230,
+  "websiteClicks": 320
+}
+
+Make the metrics realistic and industry-appropriate:
+- Rating: 3.8-4.9 (most businesses are 4.0-4.5)
+- Reviews: 20-500 (varies by business age and size)
+- Views: 2000-20000 per month
+- Searches: 20-40% of views
+- Calls: 2-10% of searches
+- Directions: 5-15% of searches
+- Website clicks: 10-25% of searches`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 512,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    try {
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent) throw new Error('No response');
+      
+      let jsonText = textContent.text.trim();
+      if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/^```(?:json)?\n?/, '');
+        jsonText = jsonText.replace(/\n?```$/, '');
+      }
+      
+      const profile = JSON.parse(jsonText.trim());
+      return profile;
+    } catch (error) {
+      console.error('Failed to parse AI Google Business Profile response:', error);
+      return {
+        businessName,
+        rating: 4.2,
+        reviewCount: 85,
+        views: 5000,
+        searches: 1200,
+        calls: 35,
+        directions: 150,
+        websiteClicks: 200
+      };
+    }
+  }
+
+  async generateLocalRankings(keywords: string[], locations: string[]): Promise<Array<{
+    keyword: string;
+    location: string;
+    position: number;
+    localPackRank: number | null;
+    url: string;
+  }>> {
+    const prompt = `As a local SEO analyst, generate realistic local search rankings for these keywords across locations:
+
+Keywords: ${keywords.join(', ')}
+Locations: ${locations.join(', ')}
+
+Generate realistic local rankings. Return ONLY a valid JSON array with this structure:
+[
+  {
+    "keyword": "pizza delivery",
+    "location": "New York, NY",
+    "position": 7,
+    "localPackRank": 2,
+    "url": "https://example.com/locations/new-york"
+  }
+]
+
+Guidelines:
+- Position: 1-50 (most 5-20, some top 3, few outside top 20)
+- LocalPackRank: null or 1-3 (only 30% of rankings appear in local pack)
+- URL: Realistic location-specific URLs
+- Generate one ranking per keyword-location combination`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    try {
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent) throw new Error('No response');
+      
+      let jsonText = textContent.text.trim();
+      if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/^```(?:json)?\n?/, '');
+        jsonText = jsonText.replace(/\n?```$/, '');
+      }
+      
+      const rankings = JSON.parse(jsonText.trim());
+      return Array.isArray(rankings) ? rankings : [];
+    } catch (error) {
+      console.error('Failed to parse AI local rankings response:', error);
+      return [];
+    }
+  }
+
+  async generateLocalCitations(businessName: string, limit: number = 20): Promise<Array<{
+    source: string;
+    url: string;
+    status: string;
+    isConsistent: number;
+  }>> {
+    const prompt = `As a local SEO analyst, generate realistic business citation data for: ${businessName}
+
+Generate ${limit} realistic citations from popular directories. Return ONLY a valid JSON array with this structure:
+[
+  {
+    "source": "Google Business Profile",
+    "url": "https://www.google.com/maps/place/${businessName.replace(/\s/g, '+')}",
+    "status": "active",
+    "isConsistent": 1
+  }
+]
+
+Include these popular directories:
+- Google Business Profile (always first)
+- Yelp
+- Facebook
+- Yellow Pages
+- Bing Places
+- Apple Maps
+- BBB (Better Business Bureau)
+- TripAdvisor (if applicable)
+- Industry-specific directories
+
+Guidelines:
+- Status: "active" (80%), "pending" (15%), "removed" (5%)
+- isConsistent: 1 (consistent NAP - 85%), 0 (inconsistent - 15%)
+- URLs: Realistic directory URLs
+- Generate ${limit} citations total`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    try {
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent) throw new Error('No response');
+      
+      let jsonText = textContent.text.trim();
+      if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/^```(?:json)?\n?/, '');
+        jsonText = jsonText.replace(/\n?```$/, '');
+      }
+      
+      const citations = JSON.parse(jsonText.trim());
+      return Array.isArray(citations) ? citations.slice(0, limit) : [];
+    } catch (error) {
+      console.error('Failed to parse AI local citations response:', error);
+      return [];
+    }
+  }
+
   private buildSystemPrompt(context?: SEOContext): string {
     let prompt = `You are an expert SEO analyst and consultant. You provide data-driven insights and actionable recommendations to improve search engine rankings, organic traffic, and overall SEO performance.
 
