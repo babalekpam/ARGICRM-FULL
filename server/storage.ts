@@ -7,9 +7,14 @@ import {
   type Competitor, type InsertCompetitor,
   type SeoIssue, type InsertSeoIssue,
   type BacklinkGrowth, type InsertBacklinkGrowth,
+  type BacklinkOpportunity, type InsertBacklinkOpportunity,
+  type OutreachCampaign, type InsertOutreachCampaign,
+  type OutreachContact, type InsertOutreachContact,
+  type BacklinkGap, type InsertBacklinkGap,
   type User, type UpsertUser,
   type Tenant, type InsertTenant,
-  projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth, users, tenants
+  projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth, 
+  backlinkOpportunities, outreachCampaigns, outreachContacts, backlinkGaps, users, tenants
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -53,6 +58,28 @@ export interface IStorage {
   
   // SEO Issues - tenant-scoped
   getSeoIssuesByProject(tenantId: string, projectId: string): Promise<SeoIssue[]>;
+  
+  // Backlink Opportunities - tenant-scoped
+  getOpportunitiesByProject(tenantId: string, projectId: string): Promise<BacklinkOpportunity[]>;
+  createOpportunity(tenantId: string, opportunity: InsertBacklinkOpportunity): Promise<BacklinkOpportunity>;
+  updateOpportunity(tenantId: string, id: string, opportunity: Partial<InsertBacklinkOpportunity>): Promise<BacklinkOpportunity | undefined>;
+  deleteOpportunity(tenantId: string, id: string): Promise<boolean>;
+  
+  // Outreach Campaigns - tenant-scoped
+  getCampaignsByProject(tenantId: string, projectId: string): Promise<OutreachCampaign[]>;
+  createCampaign(tenantId: string, campaign: InsertOutreachCampaign): Promise<OutreachCampaign>;
+  updateCampaign(tenantId: string, id: string, campaign: Partial<InsertOutreachCampaign>): Promise<OutreachCampaign | undefined>;
+  deleteCampaign(tenantId: string, id: string): Promise<boolean>;
+  
+  // Outreach Contacts - tenant-scoped
+  getContactsByCampaign(tenantId: string, campaignId: string): Promise<OutreachContact[]>;
+  createContact(tenantId: string, contact: InsertOutreachContact): Promise<OutreachContact>;
+  updateContact(tenantId: string, id: string, contact: Partial<InsertOutreachContact>): Promise<OutreachContact | undefined>;
+  
+  // Backlink Gaps - tenant-scoped
+  getGapsByProject(tenantId: string, projectId: string): Promise<BacklinkGap[]>;
+  createGap(tenantId: string, gap: InsertBacklinkGap): Promise<BacklinkGap>;
+  updateGap(tenantId: string, id: string, gap: Partial<InsertBacklinkGap>): Promise<BacklinkGap | undefined>;
 }
 
 // Database Storage Implementation
@@ -166,6 +193,95 @@ export class DbStorage implements IStorage {
       const severityOrder = { critical: 0, warning: 1, info: 2 };
       return severityOrder[a.severity as keyof typeof severityOrder] - severityOrder[b.severity as keyof typeof severityOrder];
     });
+  }
+
+  // Backlink Opportunities
+  async getOpportunitiesByProject(tenantId: string, projectId: string): Promise<BacklinkOpportunity[]> {
+    return await this.db.select().from(backlinkOpportunities)
+      .where(and(eq(backlinkOpportunities.tenantId, tenantId), eq(backlinkOpportunities.projectId, projectId)))
+      .orderBy(desc(backlinkOpportunities.relevanceScore));
+  }
+
+  async createOpportunity(tenantId: string, insertOpportunity: InsertBacklinkOpportunity): Promise<BacklinkOpportunity> {
+    const result = await this.db.insert(backlinkOpportunities).values({ ...insertOpportunity, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateOpportunity(tenantId: string, id: string, insertOpportunity: Partial<InsertBacklinkOpportunity>): Promise<BacklinkOpportunity | undefined> {
+    const result = await this.db.update(backlinkOpportunities).set(insertOpportunity)
+      .where(and(eq(backlinkOpportunities.tenantId, tenantId), eq(backlinkOpportunities.id, id)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteOpportunity(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(backlinkOpportunities)
+      .where(and(eq(backlinkOpportunities.tenantId, tenantId), eq(backlinkOpportunities.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Outreach Campaigns
+  async getCampaignsByProject(tenantId: string, projectId: string): Promise<OutreachCampaign[]> {
+    return await this.db.select().from(outreachCampaigns)
+      .where(and(eq(outreachCampaigns.tenantId, tenantId), eq(outreachCampaigns.projectId, projectId)))
+      .orderBy(desc(outreachCampaigns.createdAt));
+  }
+
+  async createCampaign(tenantId: string, insertCampaign: InsertOutreachCampaign): Promise<OutreachCampaign> {
+    const result = await this.db.insert(outreachCampaigns).values({ ...insertCampaign, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateCampaign(tenantId: string, id: string, insertCampaign: Partial<InsertOutreachCampaign>): Promise<OutreachCampaign | undefined> {
+    const result = await this.db.update(outreachCampaigns).set(insertCampaign)
+      .where(and(eq(outreachCampaigns.tenantId, tenantId), eq(outreachCampaigns.id, id)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteCampaign(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(outreachCampaigns)
+      .where(and(eq(outreachCampaigns.tenantId, tenantId), eq(outreachCampaigns.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Outreach Contacts
+  async getContactsByCampaign(tenantId: string, campaignId: string): Promise<OutreachContact[]> {
+    return await this.db.select().from(outreachContacts)
+      .where(and(eq(outreachContacts.tenantId, tenantId), eq(outreachContacts.campaignId, campaignId)));
+  }
+
+  async createContact(tenantId: string, insertContact: InsertOutreachContact): Promise<OutreachContact> {
+    const result = await this.db.insert(outreachContacts).values({ ...insertContact, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateContact(tenantId: string, id: string, insertContact: Partial<InsertOutreachContact>): Promise<OutreachContact | undefined> {
+    const result = await this.db.update(outreachContacts).set(insertContact)
+      .where(and(eq(outreachContacts.tenantId, tenantId), eq(outreachContacts.id, id)))
+      .returning();
+    return result[0];
+  }
+
+  // Backlink Gaps
+  async getGapsByProject(tenantId: string, projectId: string): Promise<BacklinkGap[]> {
+    return await this.db.select().from(backlinkGaps)
+      .where(and(eq(backlinkGaps.tenantId, tenantId), eq(backlinkGaps.projectId, projectId)))
+      .orderBy(desc(backlinkGaps.domainAuthority));
+  }
+
+  async createGap(tenantId: string, insertGap: InsertBacklinkGap): Promise<BacklinkGap> {
+    const result = await this.db.insert(backlinkGaps).values({ ...insertGap, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateGap(tenantId: string, id: string, insertGap: Partial<InsertBacklinkGap>): Promise<BacklinkGap | undefined> {
+    const result = await this.db.update(backlinkGaps).set(insertGap)
+      .where(and(eq(backlinkGaps.tenantId, tenantId), eq(backlinkGaps.id, id)))
+      .returning();
+    return result[0];
   }
 }
 
