@@ -231,7 +231,8 @@ Provide analysis in JSON format with:
         system: "You are an expert sales AI that analyzes leads with 95% accuracy. Focus on actionable insights and precise scoring."
       });
 
-      const analysis = JSON.parse(response.content[0].text);
+      const textContent = response.content[0];
+      const analysis = JSON.parse(textContent.type === 'text' ? textContent.text : '{}');
       
       // Store learning data
       this.recordLearning('lead_scoring', { input: leadData, output: analysis });
@@ -284,7 +285,8 @@ Provide optimization in JSON format:
         max_tokens: 2000
       });
 
-      const optimization = JSON.parse(response.choices[0].message.content);
+      const content = response.choices[0].message.content;
+      const optimization = JSON.parse(content || '{}');
       optimization.customerId = customerId;
       
       // Store learning data
@@ -321,7 +323,8 @@ Provide optimization recommendations in JSON format:
         system: "You are a resource optimization expert focused on maximizing team efficiency and ROI."
       });
 
-      const allocation = JSON.parse(response.content[0].text);
+      const textContent = response.content[0];
+      const allocation = JSON.parse(textContent.type === 'text' ? textContent.text : '{}');
       
       // Store learning data
       this.recordLearning('resource_allocation', { input: { teamData, performanceData }, output: allocation });
@@ -417,6 +420,9 @@ Create a compelling, personalized message that drives engagement.`;
       });
 
       const message = response.choices[0].message.content;
+      if (!message) {
+        return `Hello ${data.name}, following up on our recent conversation...`;
+      }
       console.log(`Generated personalized outreach: ${message.substring(0, 100)}...`);
       return message;
     } catch (error) {
@@ -549,7 +555,7 @@ Create a compelling, personalized message that drives engagement.`;
 
   async optimizeWorkflows(): Promise<void> {
     // Analyze performance and optimize workflows
-    for (const [id, workflow] of this.workflows) {
+    for (const [id, workflow] of Array.from(this.workflows.entries())) {
       if (workflow.learningData.successRate < 0.7) {
         console.log(`Optimizing low-performing workflow: ${workflow.name}`);
         // AI-powered workflow optimization would go here

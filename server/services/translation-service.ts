@@ -44,7 +44,7 @@ export interface LanguageDetectionResponse {
 }
 
 export class TranslationService {
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
   private isInitialized = false;
 
   constructor() {
@@ -76,7 +76,9 @@ export class TranslationService {
   private setCachedTranslation(cacheKey: string, translation: string): void {
     if (translationCache.size >= 1000) { // Max 1000 cached translations
       const oldestKey = translationCache.keys().next().value;
-      translationCache.delete(oldestKey);
+      if (oldestKey !== undefined) {
+        translationCache.delete(oldestKey);
+      }
     }
     
     translationCache.set(cacheKey, {
@@ -342,6 +344,14 @@ export class TranslationService {
       };
     }
 
+    if (!this.openai || !this.isInitialized) {
+      return {
+        detectedLanguage: 'en',
+        confidence: 0.3,
+        supportedLanguages: SUPPORTED_LANGUAGES.map(lang => lang.code)
+      };
+    }
+    
     try {
       const response = await this.openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -538,7 +548,7 @@ export class TranslationService {
   getCacheStats(): { size: number; maxSize: number; hitRate: number } {
     return {
       size: translationCache.size,
-      maxSize: TRANSLATION_CACHE.maxSize,
+      maxSize: 1000, // Fixed max size
       hitRate: translationCache.size > 0 ? 0.85 : 0 // Estimated hit rate
     };
   }

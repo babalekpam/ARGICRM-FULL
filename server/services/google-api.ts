@@ -225,6 +225,10 @@ export class GoogleAPIService {
 
   // Google Gemini AI Integration for Enhanced CRM Intelligence
   async generateCustomerInsights(customerData: any): Promise<string> {
+    if (!this.genAI) {
+      return 'Google Gemini AI is not configured. Please set GOOGLE_API_KEY environment variable.';
+    }
+    
     try {
       const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
       
@@ -257,6 +261,10 @@ export class GoogleAPIService {
   }
 
   async generateEmailContent(context: any): Promise<string> {
+    if (!this.genAI) {
+      return 'Google Gemini AI is not configured. Please set GOOGLE_API_KEY environment variable.';
+    }
+    
     try {
       const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
       
@@ -289,6 +297,14 @@ export class GoogleAPIService {
   }
 
   async analyzeSentiment(text: string): Promise<{sentiment: string, confidence: number, keywords: string[]}> {
+    if (!this.genAI) {
+      return {
+        sentiment: 'neutral',
+        confidence: 0,
+        keywords: []
+      };
+    }
+    
     try {
       const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
       
@@ -380,6 +396,9 @@ export class GoogleAPIService {
 
     // Test Google Gemini AI
     try {
+      if (!this.genAI) {
+        throw new Error('Gemini AI not configured');
+      }
       const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
       const result = await model.generateContent('Test connection');
       if (result) {

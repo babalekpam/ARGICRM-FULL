@@ -177,7 +177,10 @@ export class EmotionalIntelligenceEngine {
       }
 
       // Analyze emotional trends
-      const recentNegative = emotionalHistory.filter(h => h.sentimentScore < 0.4).length;
+      const recentNegative = emotionalHistory.filter(h => {
+        const score = typeof h.sentimentScore === 'string' ? parseFloat(h.sentimentScore) : (h.sentimentScore || 0);
+        return score < 0.4;
+      }).length;
       const satisfactionTrend = this.calculateSatisfactionTrend(emotionalHistory);
       const stressLevel = this.calculateOverallStressLevel(emotionalHistory);
 
@@ -388,14 +391,14 @@ export class EmotionalIntelligenceEngine {
         customerId,
         interactionDate: new Date(),
         primaryEmotion: this.getPrimaryEmotion(analysis.emotions),
-        sentimentScore: analysis.confidence,
+        sentimentScore: String(analysis.confidence), // Convert to string for database
         stressIndicators: analysis.stressIndicators,
         preferredCommunicationStyle: this.inferCommunicationStyle(analysis),
         emotionalTriggers: this.identifyTriggers(analysis),
         satisfactionTrend: this.calculateTrend(analysis.satisfactionScore)
       };
 
-      await db.insert(customerEmotionalProfiles).values(profileData);
+      await db.insert(customerEmotionalProfiles).values([profileData]);
     } catch (error) {
       console.error('Error updating customer emotional profile:', error);
     }

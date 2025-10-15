@@ -102,6 +102,14 @@ export class CloeAIAgent {
 
   // 1. Interactive Onboarding with NLP
   async handleOnboardingQuery(request: z.infer<typeof OnboardingRequestSchema>): Promise<CloeResponse> {
+    if (!openai) {
+      return {
+        success: false,
+        response: "AI features are currently unavailable. Please check your OpenAI API configuration.",
+        nextSteps: ["Contact support for API configuration help"]
+      };
+    }
+    
     try {
       const systemPrompt = `You are Cloe, an AI assistant for NODE CRM. You help users understand and navigate the platform through conversational guidance.
 
@@ -145,6 +153,14 @@ Be conversational, supportive, and concise. Focus on practical value.`;
 
   // 2. E-commerce Automation (Shopify/Shopware Integration)
   async automateEcommerce(request: z.infer<typeof EcommerceAutomationSchema>): Promise<CloeResponse> {
+    if (!openai) {
+      return {
+        success: false,
+        response: "AI automation features are currently unavailable. Please check your OpenAI API configuration.",
+        nextSteps: ["Configure OpenAI API key", "Contact support for help"]
+      };
+    }
+    
     try {
       const automationPrompt = `You are Cloe, an AI automation specialist. Analyze this e-commerce automation request and provide detailed implementation guidance.
 
@@ -230,6 +246,14 @@ Focus on practical, implementable solutions.`;
 
   // 3. SEO Optimization with ML Analysis
   async analyzeSEO(request: z.infer<typeof SEOAnalysisSchema>): Promise<CloeResponse> {
+    if (!openai) {
+      return {
+        success: false,
+        response: "AI SEO analysis is currently unavailable. Please check your OpenAI API configuration.",
+        nextSteps: ["Configure OpenAI API key"]
+      };
+    }
+    
     try {
       const seoPrompt = `You are Cloe, an SEO optimization specialist using ML models. Analyze this website for SEO improvements.
 
@@ -309,6 +333,14 @@ Return JSON with prioritized, actionable recommendations.`;
 
   // 4. Cross-Platform Advertising Automation
   async createAdCampaign(request: z.infer<typeof AdCampaignSchema>): Promise<CloeResponse> {
+    if (!openai) {
+      return {
+        success: false,
+        response: "AI ad campaign creation is currently unavailable. Please check your OpenAI API configuration.",
+        nextSteps: ["Configure OpenAI API key"]
+      };
+    }
+    
     try {
       const adPrompt = `You are Cloe, a digital advertising automation specialist. Create an optimized ad campaign strategy.
 
@@ -379,6 +411,14 @@ Return detailed JSON campaign plan.`;
 
   // 5. Email Recovery System with Personalization
   async createEmailRecovery(request: z.infer<typeof EmailRecoverySchema>): Promise<CloeResponse> {
+    if (!openai) {
+      return {
+        success: false,
+        response: "AI email recovery creation is currently unavailable. Please check your OpenAI API configuration.",
+        nextSteps: ["Configure OpenAI API key"]
+      };
+    }
+    
     try {
       const emailPrompt = `You are Cloe, an email marketing automation specialist. Create a personalized email recovery campaign.
 
