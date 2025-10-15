@@ -1977,28 +1977,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
       const verificationUrl = `${req.protocol}://${req.get('host')}/verify-email?token=${verificationToken}`;
 
-      // Create user with verification pending
-      const newUser = {
-        firstName,
-        lastName,
-        email,
-        password, // In production, this should be hashed
-        company,
-        phone,
-        isVerified: false,
-        verificationToken,
-        registrationDate: new Date().toISOString(),
-        status: 'pending_verification',
-        subscriptionPlan: 'trial',
-        tenantId: `tenant-${email.replace('@', '-').replace('.', '-')}`
-      };
-
-      // Store user in database
+      // Store user and tenant in database
       try {
-        console.log('Creating registered user with data:', newUser);
+        console.log('Creating new tenant and user for:', email);
         const { DatabaseStorage } = await import('./database-storage.js');
         const dbStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
-        console.log('Got database storage instance:', !!dbStorage);
+
+        // CRITICAL: Create tenant FIRST to satisfy foreign key constraint
+        const tenant = await dbStorage.createTenant({
+          name: company || `${firstName} ${lastName}'s Organization`
+        });
+        console.log('✅ Tenant created:', tenant.id);
+
+        // Hash the password before storing
+        const bcrypt = await import('bcrypt');
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        // Create user with verification pending
+        const newUser = {
+          tenantId: tenant.id,
+          firstName,
+          lastName,
+          email,
+          passwordHash,
+          role: 'admin', // First user of tenant is admin
+          company,
+          phone,
+          isActive: true,
+          emailVerified: false,
+          emailVerificationToken: verificationToken,
+          emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          registrationDate: new Date().toISOString(),
+          status: 'pending_verification',
+          subscriptionPlan: 'trial'
+        };
+
+        console.log('Creating registered user with data:', { ...newUser, passwordHash: '[REDACTED]' });
         const createdUser = await dbStorage.createRegisteredUser(newUser);
         console.log('✅ New user registered:', email, 'User ID:', createdUser.id);
 
