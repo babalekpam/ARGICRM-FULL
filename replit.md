@@ -73,6 +73,45 @@ Preferred communication style: Simple, everyday language.
 - Full data persistence across server restarts
 - WebSocket-enabled Neon serverless driver
 
+### AI-Powered Analytics
+
+**Anthropic Integration:**
+- **Model**: Claude Sonnet 4 (claude-sonnet-4-20250514) - Latest Anthropic model
+- **SDK**: @anthropic-ai/sdk for TypeScript integration
+- **API Key**: Managed via Replit Secrets (ANTHROPIC_API_KEY)
+
+**AI Service Architecture** (server/ai.ts):
+- **Context-Aware Analysis**: Automatically includes project data (keywords, traffic, competitors, SEO issues) in AI prompts
+- **Specialized Methods**:
+  - `chat()` - General SEO consultation with project context
+  - `generateInsights()` - Automated actionable recommendations
+  - `analyzeKeywords()` - Keyword strategy and opportunity analysis
+  - `analyzeCompetitors()` - Competitive intelligence and positioning
+  - `prioritizeSEOIssues()` - Issue prioritization and fix roadmap
+
+**AI API Endpoints:**
+- `POST /api/ai/chat` - Interactive chat with SEO context
+- `POST /api/ai/insights` - Auto-generated insights for dashboard
+- `POST /api/ai/analyze-keywords` - Keyword strategy analysis
+- `POST /api/ai/analyze-competitors` - Competitor analysis
+- `POST /api/ai/prioritize-issues` - SEO issue prioritization
+- All endpoints are authenticated and tenant-scoped
+
+**Frontend AI Components:**
+- **AIInsightsCard**: Auto-generates insights on dashboard load, displays 3-5 actionable recommendations
+- **AIAssistant**: Interactive chat component with compact and full variants
+- **AI Assistant Page**: Dedicated page with all AI analysis tools and chat interface
+- **Auto-Loading**: Insights generate automatically when dashboard mounts - no user action required
+- **Error Handling**: Graceful degradation with retry options
+
+**User Experience:**
+- ✅ AI insights visible immediately on dashboard homepage
+- ✅ Automatic generation on page load (no manual triggers required)
+- ✅ Manual refresh available for new insights
+- ✅ Dedicated AI Assistant page in sidebar navigation
+- ✅ Real-time chat interface for SEO questions
+- ✅ One-click specialized analysis tools
+
 ### Authentication & Multi-Tenancy
 
 **Replit Auth Integration:**
