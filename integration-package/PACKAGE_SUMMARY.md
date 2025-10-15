@@ -194,7 +194,7 @@ setupARGILETTE(app, { authMiddleware, tenantMiddleware });
 
 ### Routes
 ```javascript
-app.use('/custom-path', seoRouter);  // Change base path
+app.use("/api/seo", createSEORouter());  // Change base path
 ```
 
 ### Features

@@ -1,307 +1,234 @@
 /**
- * ARGILETTE SEO Routes - Example Integration Module
+ * ARGILETTE SEO Routes - CRM Integration Example
  * 
- * This is a simplified example showing how to integrate ARGILETTE routes
- * into your existing Node.js CRM.
+ * This example shows how to integrate the real ARGILETTE SEO router
+ * into your existing Node.js CRM using Express.
  * 
- * For the full routes implementation, copy from your ARGILETTE project:
- * - server/routes.ts (main routes file)
- * - server/storage.ts (database operations)
- * - server/ai.ts (AI service)
- * - server/replitAuth.ts (auth - or use your own)
+ * The actual implementation is in:
+ * - server/seo-routes.ts (1500+ lines of working routes)
+ * - server/seo-storage.ts (database operations)
+ * - server/seo-ai.ts (AI service)
+ * - server/seo-schema.ts (TypeScript types & schema)
  */
 
-import { Router } from 'express';
+import express from 'express';
+import { createSEORouter } from './seo-routes.js';
+
+const app = express();
+app.use(express.json());
+
+// ============================================================================
+// YOUR CRM'S AUTH MIDDLEWARE
+// ============================================================================
 
 /**
- * Main function to register all SEO routes
- * 
- * @param {Express} app - Your Express app instance
- * @param {Object} options - Configuration options
+ * This middleware authenticates the user and sets required properties:
+ * - req.tenantId: The organization/tenant ID for multi-tenant isolation
+ * - req.userId: The current user's ID
+ * - req.isAdmin: Boolean indicating if user has admin privileges
  */
-export function registerSEORoutes(app, options = {}) {
-  const {
-    basePath = '/api/seo',
-    authMiddleware = null, // Use your CRM's auth middleware
-    tenantMiddleware = null // Use your CRM's tenant middleware
-  } = options;
-
-  const router = Router();
-
-  // Use your CRM's authentication
-  const requireAuth = authMiddleware || defaultAuthMiddleware;
-  const attachTenant = tenantMiddleware || defaultTenantMiddleware;
-
-  // ========================================================================
-  // DASHBOARD
-  // ========================================================================
+function yourCRMAuthMiddleware(req, res, next) {
+  // Example: Check session/JWT/token
+  const user = req.session?.user || req.user;
   
-  router.get('/dashboard', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const { projectId = '1' } = req.query;
-      
-      // Fetch dashboard data from your storage/database
-      const dashboardData = await fetchDashboardData(tenantId, projectId);
-      
-      res.json(dashboardData);
-    } catch (error) {
-      console.error('Dashboard error:', error);
-      res.status(500).json({ error: 'Failed to fetch dashboard data' });
-    }
-  });
-
-  // ========================================================================
-  // KEYWORDS
-  // ========================================================================
-  
-  router.get('/keywords', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const { projectId } = req.query;
-      
-      const keywords = await fetchKeywords(tenantId, projectId);
-      res.json(keywords);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch keywords' });
-    }
-  });
-
-  router.post('/keywords', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const keywordData = req.body;
-      
-      const newKeyword = await createKeyword(tenantId, keywordData);
-      res.json(newKeyword);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to create keyword' });
-    }
-  });
-
-  // ========================================================================
-  // BACKLINKS
-  // ========================================================================
-  
-  router.get('/backlinks', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const { projectId } = req.query;
-      
-      const backlinks = await fetchBacklinks(tenantId, projectId);
-      res.json(backlinks);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch backlinks' });
-    }
-  });
-
-  router.post('/backlinks/generate', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const { projectId, domain, mode = 'ai', count = 50 } = req.body;
-      
-      // Generate backlinks using AI or API
-      const backlinks = mode === 'ai' 
-        ? await generateAIBacklinks(tenantId, projectId, domain, count)
-        : await generateAPIBacklinks(tenantId, projectId, domain, count);
-      
-      res.json({ 
-        message: `Generated ${backlinks.length} backlinks`,
-        backlinks 
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to generate backlinks' });
-    }
-  });
-
-  // ========================================================================
-  // AI INSIGHTS
-  // ========================================================================
-  
-  router.post('/ai/insights', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const { projectId, type = 'general' } = req.body;
-      
-      const insights = await generateAIInsights(tenantId, projectId, type);
-      
-      res.json({ insights });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to generate insights' });
-    }
-  });
-
-  // ========================================================================
-  // TRAFFIC ANALYTICS
-  // ========================================================================
-  
-  router.get('/traffic', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const { projectId } = req.query;
-      
-      const trafficData = await fetchTrafficData(tenantId, projectId);
-      res.json(trafficData);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch traffic data' });
-    }
-  });
-
-  // ========================================================================
-  // COMPETITORS
-  // ========================================================================
-  
-  router.get('/competitors', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const { projectId } = req.query;
-      
-      const competitors = await fetchCompetitors(tenantId, projectId);
-      res.json(competitors);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch competitors' });
-    }
-  });
-
-  // ========================================================================
-  // SEO ISSUES
-  // ========================================================================
-  
-  router.get('/seo-issues', requireAuth, attachTenant, async (req, res) => {
-    try {
-      const { tenantId } = req;
-      const { projectId } = req.query;
-      
-      const issues = await fetchSEOIssues(tenantId, projectId);
-      res.json(issues);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch SEO issues' });
-    }
-  });
-
-  // Mount the router
-  app.use(basePath, router);
-  
-  console.log(`✅ SEO routes registered at ${basePath}`);
-}
-
-// ============================================================================
-// DEFAULT MIDDLEWARE (Replace with your CRM's middleware)
-// ============================================================================
-
-function defaultAuthMiddleware(req, res, next) {
-  // Replace this with your CRM's authentication logic
-  if (!req.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-  next();
-}
-
-function defaultTenantMiddleware(req, res, next) {
-  // Replace this with your CRM's tenant/organization logic
-  const tenantId = req.user?.organizationId || req.user?.tenantId || req.user?.companyId;
-  
-  if (!tenantId) {
-    return res.status(400).json({ error: 'No tenant context' });
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   
-  req.tenantId = tenantId;
+  // Map your CRM's user model to required properties
+  req.tenantId = user.organizationId || user.companyId || user.tenantId;
+  req.userId = user.id || user.userId;
+  req.isAdmin = user.role === 'admin' || user.isAdmin;
+  
+  if (!req.tenantId) {
+    return res.status(400).json({ error: 'No tenant context found' });
+  }
+  
   next();
 }
 
 // ============================================================================
-// DATABASE OPERATIONS (Implement using your database)
-// ============================================================================
-
-async function fetchDashboardData(tenantId, projectId) {
-  // TODO: Implement using your database
-  // Example using Drizzle ORM:
-  // const project = await db.query.projects.findFirst({
-  //   where: eq(projects.id, projectId) && eq(projects.tenantId, tenantId)
-  // });
-  
-  return {
-    id: projectId,
-    totalKeywords: 0,
-    totalBacklinks: 0,
-    organicTraffic: 0,
-    seoScore: 0
-  };
-}
-
-async function fetchKeywords(tenantId, projectId) {
-  // TODO: Implement
-  return [];
-}
-
-async function createKeyword(tenantId, keywordData) {
-  // TODO: Implement
-  return { id: 'new-keyword', ...keywordData };
-}
-
-async function fetchBacklinks(tenantId, projectId) {
-  // TODO: Implement
-  return [];
-}
-
-async function generateAIBacklinks(tenantId, projectId, domain, count) {
-  // TODO: Implement using Anthropic AI
-  return [];
-}
-
-async function generateAPIBacklinks(tenantId, projectId, domain, count) {
-  // TODO: Implement using DataForSEO API
-  return [];
-}
-
-async function generateAIInsights(tenantId, projectId, type) {
-  // TODO: Implement using Anthropic AI
-  return 'AI insights will appear here';
-}
-
-async function fetchTrafficData(tenantId, projectId) {
-  // TODO: Implement
-  return [];
-}
-
-async function fetchCompetitors(tenantId, projectId) {
-  // TODO: Implement
-  return [];
-}
-
-async function fetchSEOIssues(tenantId, projectId) {
-  // TODO: Implement
-  return [];
-}
-
-// ============================================================================
-// USAGE EXAMPLE
+// MOUNT SEO ROUTES
 // ============================================================================
 
 /**
- * Example: How to use in your CRM
+ * Step 1: Apply auth middleware to the /api/seo path
+ * Step 2: Mount the SEO router at the same path
  * 
- * // In your CRM's server/index.js
- * import express from 'express';
- * import { registerSEORoutes } from './seo/routes-example.js';
- * import { requireAuth } from './middleware/auth.js'; // Your CRM's auth
+ * All routes in the SEO router will be prefixed with /api/seo
+ * For example:
+ * - GET /api/seo/dashboard
+ * - GET /api/seo/keywords
+ * - POST /api/seo/backlinks/generate
+ * - POST /api/seo/ai/insights
+ */
+app.use('/api/seo', yourCRMAuthMiddleware);
+app.use('/api/seo', createSEORouter());
+
+// ============================================================================
+// YOUR EXISTING CRM ROUTES
+// ============================================================================
+
+app.get('/api/customers', yourCRMAuthMiddleware, (req, res) => {
+  // Your existing CRM logic
+  res.json({ customers: [] });
+});
+
+app.get('/api/deals', yourCRMAuthMiddleware, (req, res) => {
+  // Your existing CRM logic
+  res.json({ deals: [] });
+});
+
+// ============================================================================
+// START SERVER
+// ============================================================================
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ CRM with SEO integration running on port ${PORT}`);
+  console.log(`📊 SEO Dashboard: http://localhost:${PORT}/api/seo/dashboard`);
+  console.log(`🔑 SEO Keywords: http://localhost:${PORT}/api/seo/keywords`);
+  console.log(`🔗 SEO Backlinks: http://localhost:${PORT}/api/seo/backlinks`);
+});
+
+// ============================================================================
+// ALTERNATIVE: Multiple Tenants/Namespaces
+// ============================================================================
+
+/**
+ * If you need to mount SEO routes at different paths for different purposes:
+ */
+function alternativeSetup() {
+  // Main SEO routes
+  app.use('/api/seo', yourCRMAuthMiddleware);
+  app.use('/api/seo', createSEORouter());
+  
+  // Maybe a different auth context for a different tenant/org
+  app.use('/api/agency-seo', agencyAuthMiddleware);
+  app.use('/api/agency-seo', createSEORouter());
+  
+  // Public demo (read-only, limited features)
+  app.use('/api/demo-seo', demoAuthMiddleware);
+  app.use('/api/demo-seo', createSEORouter());
+}
+
+// ============================================================================
+// AVAILABLE ENDPOINTS
+// ============================================================================
+
+/**
+ * Once mounted at /api/seo, these endpoints are available:
  * 
- * const app = express();
+ * DASHBOARD:
+ * GET  /api/seo/dashboard?projectId=1
  * 
- * app.use(express.json());
+ * PROJECTS:
+ * GET  /api/seo/projects
+ * POST /api/seo/projects
+ * GET  /api/seo/projects/:id
+ * PUT  /api/seo/projects/:id
+ * DELETE /api/seo/projects/:id
  * 
- * // Your existing CRM routes
- * app.get('/api/customers', requireAuth, getCustomers);
- * app.get('/api/deals', requireAuth, getDeals);
+ * KEYWORDS:
+ * GET  /api/seo/keywords?projectId=1
+ * POST /api/seo/keywords
  * 
- * // Add SEO routes
- * registerSEORoutes(app, {
- *   basePath: '/api/seo',
- *   authMiddleware: requireAuth,
- *   tenantMiddleware: attachOrganizationId
- * });
+ * BACKLINKS:
+ * GET  /api/seo/backlinks?projectId=1
+ * POST /api/seo/backlinks/generate (AI or DataForSEO)
+ * POST /api/seo/backlinks/fetch
  * 
- * app.listen(3000);
+ * AI INSIGHTS:
+ * POST /api/seo/ai/chat
+ * POST /api/seo/ai/insights
+ * POST /api/seo/ai/analyze-keywords
+ * POST /api/seo/ai/analyze-competitors
+ * POST /api/seo/ai/prioritize-issues
+ * POST /api/seo/ai/recommend-backlinks
+ * 
+ * TRAFFIC:
+ * GET  /api/seo/traffic?projectId=1
+ * 
+ * COMPETITORS:
+ * GET  /api/seo/competitors?projectId=1
+ * 
+ * SEO ISSUES:
+ * GET  /api/seo/seo-issues?projectId=1
+ * 
+ * RANK TRACKING:
+ * GET  /api/seo/rank-tracking/history?projectId=1
+ * POST /api/seo/rank-tracking/history
+ * GET  /api/seo/rank-tracking/competitor-ranks?projectId=1
+ * POST /api/seo/rank-tracking/competitor-snapshot
+ * 
+ * CONTENT INTELLIGENCE:
+ * GET  /api/seo/content/briefs/:projectId
+ * POST /api/seo/content/briefs
+ * DELETE /api/seo/content/briefs/:id
+ * GET  /api/seo/content/scorecards/:projectId
+ * POST /api/seo/content/score
+ * DELETE /api/seo/content/scorecards/:id
+ * POST /api/seo/content/serp-analysis
+ * POST /api/seo/content/gap-analysis
+ * 
+ * TECHNICAL SEO:
+ * GET  /api/seo/technical-audit/scans/:projectId
+ * GET  /api/seo/technical-audit/latest/:projectId
+ * POST /api/seo/technical-audit/start
+ * GET  /api/seo/technical-audit/metrics/:auditScanId
+ * GET  /api/seo/technical-audit/vitals/:pageMetricId
+ * 
+ * LINK BUILDING:
+ * GET  /api/seo/link-building/opportunities/:projectId
+ * POST /api/seo/link-building/opportunities
+ * PATCH /api/seo/link-building/opportunities/:id
+ * DELETE /api/seo/link-building/opportunities/:id
+ * GET  /api/seo/link-building/campaigns/:projectId
+ * POST /api/seo/link-building/campaigns
+ * PATCH /api/seo/link-building/campaigns/:id
+ * DELETE /api/seo/link-building/campaigns/:id
+ * GET  /api/seo/link-building/contacts/:campaignId
+ * POST /api/seo/link-building/contacts
+ * PATCH /api/seo/link-building/contacts/:id
+ * GET  /api/seo/link-building/gaps/:projectId
+ * POST /api/seo/link-building/gaps
+ * PATCH /api/seo/link-building/gaps/:id
+ * 
+ * API KEY MANAGEMENT:
+ * GET  /api/seo/keys
+ * POST /api/seo/keys
+ * PATCH /api/seo/keys/:id
+ * DELETE /api/seo/keys/:id
+ * GET  /api/seo/keys/:id/usage
+ * GET  /api/seo/usage
+ * 
+ * LOCAL SEO:
+ * GET  /api/seo/projects/:projectId/local-rankings
+ * POST /api/seo/projects/:projectId/local-rankings
+ * DELETE /api/seo/local-rankings/:id
+ * GET  /api/seo/projects/:projectId/google-business-profile
+ * POST /api/seo/projects/:projectId/google-business-profile
+ * PATCH /api/seo/google-business-profiles/:id
+ * GET  /api/seo/projects/:projectId/local-citations
+ * POST /api/seo/projects/:projectId/local-citations
+ * PATCH /api/seo/local-citations/:id
+ * DELETE /api/seo/local-citations/:id
+ * POST /api/seo/projects/:projectId/local-seo/generate (AI-powered!)
+ * 
+ * SOCIAL MEDIA:
+ * GET  /api/seo/projects/:projectId/social-accounts
+ * POST /api/seo/projects/:projectId/social-accounts
+ * DELETE /api/seo/social-accounts/:id
+ * GET  /api/seo/social-accounts/:accountId/posts
+ * POST /api/seo/social-accounts/:accountId/posts
+ * DELETE /api/seo/social-posts/:id
+ * GET  /api/seo/social-posts/:postId/metrics
+ * POST /api/seo/social-accounts/:accountId/metrics
+ * 
+ * ADMIN (requires req.isAdmin = true):
+ * GET  /api/seo/admin/stats
+ * GET  /api/seo/admin/users
+ * GET  /api/seo/admin/tenants
  */
 
-export default registerSEORoutes;
+export default createSEORouter;

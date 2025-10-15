@@ -54,12 +54,21 @@ psql $DATABASE_URL -f integration-package/database/schema.sql
 
 ```javascript
 // In your CRM's server/index.js or app.js
-import { registerSEORoutes } from './seo/routes.js';
+import { createSEORouter } from './seo/seo-routes.js';
 
-// After existing middleware and routes
-registerSEORoutes(app);
+// Add auth middleware before SEO routes
+app.use('/api/seo', (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  req.tenantId = req.user.organizationId; // Map to your CRM's org ID
+  req.userId = req.user.id;
+  req.isAdmin = req.user.role === 'admin';
+  next();
+});
 
-console.log('SEO routes registered at /api/seo/*');
+// Mount SEO router
+app.use('/api/seo', createSEORouter());
+
+console.log('✅ SEO routes mounted at /api/seo/*');
 ```
 
 #### Step 5: Configure Environment
@@ -121,8 +130,18 @@ psql $DATABASE_URL -f integration-package/database/schema.sql
 
 ```javascript
 // In your server
-import { registerSEORoutes } from './seo/routes.js';
-registerSEORoutes(app);
+import { createSEORouter } from './seo/seo-routes.js';
+
+// Add auth middleware
+app.use('/api/seo', (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  req.tenantId = req.user.organizationId;
+  req.userId = req.user.id;
+  next();
+});
+
+// Mount router
+app.use('/api/seo', createSEORouter());
 ```
 
 #### Step 4: Use API from Your Frontend
@@ -352,7 +371,8 @@ export const seoConfig = {
 
 ```javascript
 // Customize route paths
-app.use('/custom-seo-path', seoRouter); // Instead of /api/seo
+app.use('/custom-seo-path', yourAuthMiddleware);
+app.use('/custom-seo-path', createSEORouter()); // Instead of /api/seo
 ```
 
 ---
@@ -401,7 +421,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Then register SEO routes
-registerSEORoutes(app);
+app.use("/api/seo", yourAuthMiddleware);
+app.use("/api/seo", createSEORouter());
 ```
 
 ### Issue: Database errors

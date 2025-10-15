@@ -1,14 +1,7 @@
-import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
-import { createServer, type Server } from "http";
+import { Router, type Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { storage } from "./seo-storage";
 import { aiService } from "./seo-ai";
-
-// NOTE: This uses CRM's authentication middleware
-// Make sure your CRM sets req.tenantId and req.userId before calling these routes
-
-// Pass-through middleware (auth is handled by CRM before these routes)
-const requireAuth: RequestHandler[] = [];
 
 // Middleware to require admin access
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -19,30 +12,36 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// Admin middleware combination
-const requireAdminAuth: RequestHandler[] = [requireAdmin];
-
 /**
- * Register all ARGILETTE SEO routes
+ * Create ARGILETTE SEO Router
  * 
- * IMPORTANT: Your CRM must set req.tenantId before calling these routes
+ * Returns an Express Router that can be mounted at any path in your CRM.
+ * 
+ * IMPORTANT: Apply authentication middleware BEFORE mounting this router
+ * Your auth middleware MUST set req.tenantId and req.userId
  * 
  * Example:
+ * ```
+ * import { createSEORouter } from './argilette/server/seo-routes';
+ * 
+ * // Create auth middleware
  * app.use('/api/seo', (req, res, next) => {
  *   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
  *   req.tenantId = req.user.organizationId;
  *   req.userId = req.user.id;
+ *   req.isAdmin = req.user.role === 'admin';
  *   next();
  * });
  * 
- * registerSEORoutes(app);
+ * // Mount SEO router
+ * app.use('/api/seo', createSEORouter());
+ * ```
  */
-export async function registerSEORoutes(app: Express): Promise<Server> {
-  // NOTE: Authentication is handled by your CRM's middleware
-  // Make sure to add auth middleware before calling this function
+export function createSEORouter(): Router {
+  const router = Router();
 
   // Dashboard data endpoint
-  app.get("/api/dashboard", requireAuth, async (req: any, res: Response) => {
+  router.get("/dashboard", async (req: any, res: Response) => {
     try {
       const tenantId = req.tenantId;
       const projectId = req.query.projectId as string || "1";
@@ -133,7 +132,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
 
   // Admin routes - require authentication and admin role
 
-  app.get("/api/admin/stats", requireAdminAuth, async (req: any, res: Response) => {
+  router.get("/admin/stats", requireAdmin, async (req: any, res: Response) => {
     try {
       const stats = await storage.getPlatformStats();
       res.json(stats);
@@ -143,7 +142,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/users", requireAdminAuth, async (req: any, res: Response) => {
+  router.get("/admin/users", requireAdmin, async (req: any, res: Response) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -153,7 +152,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/tenants", requireAdminAuth, async (req: any, res: Response) => {
+  router.get("/admin/tenants", requireAdmin, async (req: any, res: Response) => {
     try {
       const tenants = await storage.getAllTenants();
       res.json(tenants);
@@ -164,7 +163,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Projects endpoints
-  app.get("/api/projects", requireAuth, async (req: any, res: Response) => {
+  router.get("/projects", async (req: any, res: Response) => {
     try {
       const projects = await storage.getAllProjects(req.tenantId);
       res.json(projects);
@@ -173,7 +172,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/projects/:id", requireAuth, async (req: any, res: Response) => {
+  router.get("/projects/:id", async (req: any, res: Response) => {
     try {
       const project = await storage.getProject(req.tenantId, req.params.id);
       if (!project) {
@@ -185,7 +184,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects", requireAuth, async (req: any, res: Response) => {
+  router.post("/projects", async (req: any, res: Response) => {
     try {
       const { insertProjectSchema } = await import("./seo-schema");
       const validatedData = insertProjectSchema.parse(req.body);
@@ -199,7 +198,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/projects/:id", requireAuth, async (req: any, res: Response) => {
+  router.put("/projects/:id", async (req: any, res: Response) => {
     try {
       const { insertProjectSchema } = await import("./seo-schema");
       // Create a partial schema that only validates fields that are provided
@@ -218,7 +217,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/projects/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/projects/:id", async (req: any, res: Response) => {
     try {
       const deleted = await storage.deleteProject(req.tenantId, req.params.id);
       if (!deleted) {
@@ -231,7 +230,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Keywords endpoints
-  app.get("/api/keywords", requireAuth, async (req: any, res: Response) => {
+  router.get("/keywords", async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
       const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
@@ -241,7 +240,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/keywords", requireAuth, async (req: any, res: Response) => {
+  router.post("/keywords", async (req: any, res: Response) => {
     try {
       const { insertKeywordSchema } = await import("./seo-schema");
       const validatedData = insertKeywordSchema.parse(req.body);
@@ -257,7 +256,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Traffic endpoints
-  app.get("/api/traffic", requireAuth, async (req: any, res: Response) => {
+  router.get("/traffic", async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
       const trafficData = await storage.getTrafficDataByProject(req.tenantId, projectId);
@@ -268,7 +267,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // SEO Issues endpoints
-  app.get("/api/seo-issues", requireAuth, async (req: any, res: Response) => {
+  router.get("/seo-issues", async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
       const seoIssues = await storage.getSeoIssuesByProject(req.tenantId, projectId);
@@ -279,7 +278,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Backlinks endpoints
-  app.get("/api/backlinks", requireAuth, async (req: any, res: Response) => {
+  router.get("/backlinks", async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
       const backlinks = await storage.getBacklinksByProject(req.tenantId, projectId);
@@ -289,7 +288,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/backlinks/generate", requireAuth, async (req: any, res: Response) => {
+  router.post("/backlinks/generate", async (req: any, res: Response) => {
     try {
       const generateBacklinksSchema = z.object({
         domain: z.string().min(1, "Domain is required"),
@@ -341,7 +340,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/backlinks/fetch", requireAuth, async (req: any, res: Response) => {
+  router.post("/backlinks/fetch", async (req: any, res: Response) => {
     try {
       const fetchBacklinksSchema = z.object({
         domain: z.string().min(1, "Domain is required"),
@@ -389,7 +388,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Competitors endpoints
-  app.get("/api/competitors", requireAuth, async (req: any, res: Response) => {
+  router.get("/competitors", async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
       const competitors = await storage.getCompetitorsByProject(req.tenantId, projectId);
@@ -400,7 +399,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Rank Tracking endpoints
-  app.get("/api/rank-tracking/history", requireAuth, async (req: any, res: Response) => {
+  router.get("/rank-tracking/history", async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string;
       const keywordId = req.query.keywordId as string | undefined;
@@ -425,7 +424,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/rank-tracking/history", requireAuth, async (req: any, res: Response) => {
+  router.post("/rank-tracking/history", async (req: any, res: Response) => {
     try {
       const { insertKeywordRankHistorySchema } = await import("./seo-schema");
       const validatedData = insertKeywordRankHistorySchema.parse(req.body);
@@ -440,7 +439,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/rank-tracking/competitor-ranks", requireAuth, async (req: any, res: Response) => {
+  router.get("/rank-tracking/competitor-ranks", async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string | undefined;
       const keywordId = req.query.keywordId as string | undefined;
@@ -465,7 +464,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/rank-tracking/competitor-snapshot", requireAuth, async (req: any, res: Response) => {
+  router.post("/rank-tracking/competitor-snapshot", async (req: any, res: Response) => {
     try {
       const { insertCompetitorRankSnapshotSchema } = await import("./seo-schema");
       const validatedData = insertCompetitorRankSnapshotSchema.parse(req.body);
@@ -481,7 +480,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // AI Chat endpoints
-  app.post("/api/ai/chat", requireAuth, async (req: any, res: Response) => {
+  router.post("/ai/chat", async (req: any, res: Response) => {
     try {
       const { message, projectId } = req.body;
       
@@ -515,7 +514,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ai/insights", requireAuth, async (req: any, res: Response) => {
+  router.post("/ai/insights", async (req: any, res: Response) => {
     try {
       const { projectId } = req.body;
       
@@ -545,7 +544,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ai/analyze-keywords", requireAuth, async (req: any, res: Response) => {
+  router.post("/ai/analyze-keywords", async (req: any, res: Response) => {
     try {
       const { projectId } = req.body;
       
@@ -562,7 +561,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ai/analyze-competitors", requireAuth, async (req: any, res: Response) => {
+  router.post("/ai/analyze-competitors", async (req: any, res: Response) => {
     try {
       const { projectId } = req.body;
       
@@ -579,7 +578,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ai/prioritize-issues", requireAuth, async (req: any, res: Response) => {
+  router.post("/ai/prioritize-issues", async (req: any, res: Response) => {
     try {
       const { projectId } = req.body;
       
@@ -596,7 +595,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ai/recommend-backlinks", requireAuth, async (req: any, res: Response) => {
+  router.post("/ai/recommend-backlinks", async (req: any, res: Response) => {
     try {
       const { projectId } = req.body;
       
@@ -628,7 +627,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Content Intelligence - Content Briefs
-  app.get("/api/content/briefs/:projectId", requireAuth, async (req: any, res: Response) => {
+  router.get("/content/briefs/:projectId", async (req: any, res: Response) => {
     try {
       const briefs = await storage.getBriefsByProject(req.tenantId, req.params.projectId);
       res.json(briefs);
@@ -638,7 +637,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/content/briefs", requireAuth, async (req: any, res: Response) => {
+  router.post("/content/briefs", async (req: any, res: Response) => {
     try {
       const { targetKeyword, contentType = 'blog_post', wordCountTarget = 1500, projectId } = req.body;
       
@@ -669,7 +668,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/content/briefs/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/content/briefs/:id", async (req: any, res: Response) => {
     try {
       const deleted = await storage.deleteBrief(req.tenantId, req.params.id);
       if (!deleted) {
@@ -683,7 +682,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Content Intelligence - Content Scoring
-  app.get("/api/content/scorecards/:projectId", requireAuth, async (req: any, res: Response) => {
+  router.get("/content/scorecards/:projectId", async (req: any, res: Response) => {
     try {
       const scorecards = await storage.getScorecardsByProject(req.tenantId, req.params.projectId);
       res.json(scorecards);
@@ -693,7 +692,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/content/score", requireAuth, async (req: any, res: Response) => {
+  router.post("/content/score", async (req: any, res: Response) => {
     try {
       const { url, content, targetKeyword, projectId } = req.body;
       
@@ -721,7 +720,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/content/scorecards/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/content/scorecards/:id", async (req: any, res: Response) => {
     try {
       const deleted = await storage.deleteScorecard(req.tenantId, req.params.id);
       if (!deleted) {
@@ -735,7 +734,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Content Intelligence - SERP Analysis
-  app.post("/api/content/serp-analysis", requireAuth, async (req: any, res: Response) => {
+  router.post("/content/serp-analysis", async (req: any, res: Response) => {
     try {
       const { keyword, serpResults } = req.body;
       
@@ -752,7 +751,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Content Intelligence - Content Gap Analysis
-  app.post("/api/content/gap-analysis", requireAuth, async (req: any, res: Response) => {
+  router.post("/content/gap-analysis", async (req: any, res: Response) => {
     try {
       const { projectId } = req.body;
       
@@ -777,7 +776,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Technical SEO Audit - Get Audit Scans
-  app.get("/api/technical-audit/scans/:projectId", requireAuth, async (req: any, res: Response) => {
+  router.get("/technical-audit/scans/:projectId", async (req: any, res: Response) => {
     try {
       const scans = await storage.getAuditScansByProject(req.tenantId, req.params.projectId);
       res.json(scans);
@@ -788,7 +787,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Technical SEO Audit - Get Latest Audit Scan
-  app.get("/api/technical-audit/latest/:projectId", requireAuth, async (req: any, res: Response) => {
+  router.get("/technical-audit/latest/:projectId", async (req: any, res: Response) => {
     try {
       const scan = await storage.getLatestAuditScan(req.tenantId, req.params.projectId);
       res.json(scan || null);
@@ -799,7 +798,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Technical SEO Audit - Start New Audit
-  app.post("/api/technical-audit/start", requireAuth, async (req: any, res: Response) => {
+  router.post("/technical-audit/start", async (req: any, res: Response) => {
     try {
       const requestSchema = z.object({
         projectId: z.string(),
@@ -891,7 +890,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Technical SEO Audit - Get Page Metrics
-  app.get("/api/technical-audit/metrics/:auditScanId", requireAuth, async (req: any, res: Response) => {
+  router.get("/technical-audit/metrics/:auditScanId", async (req: any, res: Response) => {
     try {
       const metrics = await storage.getPageMetricsByAuditScan(req.tenantId, req.params.auditScanId);
       res.json(metrics);
@@ -902,7 +901,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Technical SEO Audit - Get Core Web Vitals
-  app.get("/api/technical-audit/vitals/:pageMetricId", requireAuth, async (req: any, res: Response) => {
+  router.get("/technical-audit/vitals/:pageMetricId", async (req: any, res: Response) => {
     try {
       const vitals = await storage.getCoreWebVitalsByPageMetric(req.tenantId, req.params.pageMetricId);
       res.json(vitals || null);
@@ -913,7 +912,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Link Building - Backlink Opportunities
-  app.get("/api/link-building/opportunities/:projectId", requireAuth, async (req: any, res: Response) => {
+  router.get("/link-building/opportunities/:projectId", async (req: any, res: Response) => {
     try {
       const opportunities = await storage.getOpportunitiesByProject(req.tenantId, req.params.projectId);
       res.json(opportunities);
@@ -923,7 +922,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/link-building/opportunities", requireAuth, async (req: any, res: Response) => {
+  router.post("/link-building/opportunities", async (req: any, res: Response) => {
     try {
       const { insertBacklinkOpportunitySchema } = await import("./seo-schema");
       const validatedData = insertBacklinkOpportunitySchema.parse(req.body);
@@ -938,7 +937,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/link-building/opportunities/:id", requireAuth, async (req: any, res: Response) => {
+  router.patch("/link-building/opportunities/:id", async (req: any, res: Response) => {
     try {
       const { insertBacklinkOpportunitySchema } = await import("./seo-schema");
       const partialSchema = insertBacklinkOpportunitySchema.partial();
@@ -954,7 +953,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/link-building/opportunities/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/link-building/opportunities/:id", async (req: any, res: Response) => {
     try {
       const success = await storage.deleteOpportunity(req.tenantId, req.params.id);
       if (!success) {
@@ -968,7 +967,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Link Building - Outreach Campaigns
-  app.get("/api/link-building/campaigns/:projectId", requireAuth, async (req: any, res: Response) => {
+  router.get("/link-building/campaigns/:projectId", async (req: any, res: Response) => {
     try {
       const campaigns = await storage.getCampaignsByProject(req.tenantId, req.params.projectId);
       res.json(campaigns);
@@ -978,7 +977,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/link-building/campaigns", requireAuth, async (req: any, res: Response) => {
+  router.post("/link-building/campaigns", async (req: any, res: Response) => {
     try {
       const { insertOutreachCampaignSchema } = await import("./seo-schema");
       const validatedData = insertOutreachCampaignSchema.parse(req.body);
@@ -993,7 +992,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/link-building/campaigns/:id", requireAuth, async (req: any, res: Response) => {
+  router.patch("/link-building/campaigns/:id", async (req: any, res: Response) => {
     try {
       const { insertOutreachCampaignSchema } = await import("./seo-schema");
       const partialSchema = insertOutreachCampaignSchema.partial();
@@ -1009,7 +1008,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/link-building/campaigns/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/link-building/campaigns/:id", async (req: any, res: Response) => {
     try {
       const success = await storage.deleteCampaign(req.tenantId, req.params.id);
       if (!success) {
@@ -1023,7 +1022,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Link Building - Outreach Contacts
-  app.get("/api/link-building/contacts/:campaignId", requireAuth, async (req: any, res: Response) => {
+  router.get("/link-building/contacts/:campaignId", async (req: any, res: Response) => {
     try {
       const contacts = await storage.getContactsByCampaign(req.tenantId, req.params.campaignId);
       res.json(contacts);
@@ -1033,7 +1032,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/link-building/contacts", requireAuth, async (req: any, res: Response) => {
+  router.post("/link-building/contacts", async (req: any, res: Response) => {
     try {
       const { insertOutreachContactSchema } = await import("./seo-schema");
       const validatedData = insertOutreachContactSchema.parse(req.body);
@@ -1048,7 +1047,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/link-building/contacts/:id", requireAuth, async (req: any, res: Response) => {
+  router.patch("/link-building/contacts/:id", async (req: any, res: Response) => {
     try {
       const { insertOutreachContactSchema } = await import("./seo-schema");
       const partialSchema = insertOutreachContactSchema.partial();
@@ -1065,7 +1064,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Link Building - Backlink Gaps
-  app.get("/api/link-building/gaps/:projectId", requireAuth, async (req: any, res: Response) => {
+  router.get("/link-building/gaps/:projectId", async (req: any, res: Response) => {
     try {
       const gaps = await storage.getGapsByProject(req.tenantId, req.params.projectId);
       res.json(gaps);
@@ -1075,7 +1074,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/link-building/gaps", requireAuth, async (req: any, res: Response) => {
+  router.post("/link-building/gaps", async (req: any, res: Response) => {
     try {
       const { insertBacklinkGapSchema } = await import("./seo-schema");
       const validatedData = insertBacklinkGapSchema.parse(req.body);
@@ -1090,7 +1089,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/link-building/gaps/:id", requireAuth, async (req: any, res: Response) => {
+  router.patch("/link-building/gaps/:id", async (req: any, res: Response) => {
     try {
       const { insertBacklinkGapSchema } = await import("./seo-schema");
       const partialSchema = insertBacklinkGapSchema.partial();
@@ -1107,7 +1106,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // API Keys Management
-  app.get("/api/keys", requireAuth, async (req: any, res: Response) => {
+  router.get("/keys", async (req: any, res: Response) => {
     try {
       const keys = await storage.getApiKeysByTenant(req.tenantId);
       // Don't return the actual key value for security
@@ -1122,7 +1121,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/keys", requireAuth, async (req: any, res: Response) => {
+  router.post("/keys", async (req: any, res: Response) => {
     try {
       const { insertApiKeySchema } = await import("./seo-schema");
       const crypto = await import("crypto");
@@ -1155,7 +1154,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/keys/:id", requireAuth, async (req: any, res: Response) => {
+  router.patch("/keys/:id", async (req: any, res: Response) => {
     try {
       const { insertApiKeySchema } = await import("./seo-schema");
       const updateSchema = insertApiKeySchema.partial().omit({ key: true });
@@ -1175,7 +1174,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/keys/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/keys/:id", async (req: any, res: Response) => {
     try {
       const deleted = await storage.deleteApiKey(req.tenantId, req.params.id);
       if (!deleted) {
@@ -1189,7 +1188,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // API Usage Statistics
-  app.get("/api/keys/:id/usage", requireAuth, async (req: any, res: Response) => {
+  router.get("/keys/:id/usage", async (req: any, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const usage = await storage.getApiUsageByKey(req.tenantId, req.params.id, limit);
@@ -1200,7 +1199,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/usage", requireAuth, async (req: any, res: Response) => {
+  router.get("/usage", async (req: any, res: Response) => {
     try {
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
@@ -1215,7 +1214,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   // ====== Local SEO Routes ======
 
   // Local Rankings
-  app.get("/api/projects/:projectId/local-rankings", requireAuth, async (req: any, res: Response) => {
+  router.get("/projects/:projectId/local-rankings", async (req: any, res: Response) => {
     try {
       const rankings = await storage.getLocalRankingsByProject(req.tenantId, req.params.projectId);
       res.json(rankings);
@@ -1225,7 +1224,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects/:projectId/local-rankings", requireAuth, async (req: any, res: Response) => {
+  router.post("/projects/:projectId/local-rankings", async (req: any, res: Response) => {
     try {
       const { insertLocalRankingSchema } = await import("./seo-schema");
       const validatedData = insertLocalRankingSchema.parse({ ...req.body, projectId: req.params.projectId });
@@ -1240,7 +1239,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/local-rankings/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/local-rankings/:id", async (req: any, res: Response) => {
     try {
       const deleted = await storage.deleteLocalRanking(req.tenantId, req.params.id);
       if (!deleted) {
@@ -1254,7 +1253,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Google Business Profile
-  app.get("/api/projects/:projectId/google-business-profile", requireAuth, async (req: any, res: Response) => {
+  router.get("/projects/:projectId/google-business-profile", async (req: any, res: Response) => {
     try {
       const profile = await storage.getGoogleBusinessProfileByProject(req.tenantId, req.params.projectId);
       res.json(profile);
@@ -1264,7 +1263,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects/:projectId/google-business-profile", requireAuth, async (req: any, res: Response) => {
+  router.post("/projects/:projectId/google-business-profile", async (req: any, res: Response) => {
     try {
       const { insertGoogleBusinessProfileSchema } = await import("./seo-schema");
       const validatedData = insertGoogleBusinessProfileSchema.parse({ ...req.body, projectId: req.params.projectId });
@@ -1279,7 +1278,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/google-business-profiles/:id", requireAuth, async (req: any, res: Response) => {
+  router.patch("/google-business-profiles/:id", async (req: any, res: Response) => {
     try {
       const { insertGoogleBusinessProfileSchema } = await import("./seo-schema");
       const updateSchema = insertGoogleBusinessProfileSchema.partial();
@@ -1299,7 +1298,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Local Citations
-  app.get("/api/projects/:projectId/local-citations", requireAuth, async (req: any, res: Response) => {
+  router.get("/projects/:projectId/local-citations", async (req: any, res: Response) => {
     try {
       const citations = await storage.getLocalCitationsByProject(req.tenantId, req.params.projectId);
       res.json(citations);
@@ -1309,7 +1308,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects/:projectId/local-citations", requireAuth, async (req: any, res: Response) => {
+  router.post("/projects/:projectId/local-citations", async (req: any, res: Response) => {
     try {
       const { insertLocalCitationSchema } = await import("./seo-schema");
       const validatedData = insertLocalCitationSchema.parse({ ...req.body, projectId: req.params.projectId });
@@ -1324,7 +1323,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/local-citations/:id", requireAuth, async (req: any, res: Response) => {
+  router.patch("/local-citations/:id", async (req: any, res: Response) => {
     try {
       const { insertLocalCitationSchema } = await import("./seo-schema");
       const updateSchema = insertLocalCitationSchema.partial();
@@ -1343,7 +1342,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/local-citations/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/local-citations/:id", async (req: any, res: Response) => {
     try {
       const deleted = await storage.deleteLocalCitation(req.tenantId, req.params.id);
       if (!deleted) {
@@ -1357,7 +1356,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // AI-Powered Local SEO Generation
-  app.post("/api/projects/:projectId/local-seo/generate", requireAuth, async (req: any, res: Response) => {
+  router.post("/projects/:projectId/local-seo/generate", async (req: any, res: Response) => {
     try {
       const projectId = req.params.projectId;
       const { businessName, locations, numCitations } = req.body;
@@ -1427,7 +1426,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   // ====== Social Media Monitoring Routes ======
 
   // Social Accounts
-  app.get("/api/projects/:projectId/social-accounts", requireAuth, async (req: any, res: Response) => {
+  router.get("/projects/:projectId/social-accounts", async (req: any, res: Response) => {
     try {
       const accounts = await storage.getSocialAccountsByProject(req.tenantId, req.params.projectId);
       res.json(accounts);
@@ -1437,7 +1436,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects/:projectId/social-accounts", requireAuth, async (req: any, res: Response) => {
+  router.post("/projects/:projectId/social-accounts", async (req: any, res: Response) => {
     try {
       const { insertSocialAccountSchema } = await import("./seo-schema");
       const validatedData = insertSocialAccountSchema.parse({ ...req.body, projectId: req.params.projectId });
@@ -1452,7 +1451,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/social-accounts/:id", requireAuth, async (req: any, res: Response) => {
+  router.delete("/social-accounts/:id", async (req: any, res: Response) => {
     try {
       const deleted = await storage.deleteSocialAccount(req.tenantId, req.params.id);
       if (!deleted) {
@@ -1466,7 +1465,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Social Posts
-  app.get("/api/social-accounts/:accountId/posts", requireAuth, async (req: any, res: Response) => {
+  router.get("/social-accounts/:accountId/posts", async (req: any, res: Response) => {
     try {
       const posts = await storage.getSocialPostsByAccount(req.tenantId, req.params.accountId);
       res.json(posts);
@@ -1476,7 +1475,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/social-accounts/:accountId/posts", requireAuth, async (req: any, res: Response) => {
+  router.post("/social-accounts/:accountId/posts", async (req: any, res: Response) => {
     try {
       const { insertSocialPostSchema } = await import("./seo-schema");
       const validatedData = insertSocialPostSchema.parse({ ...req.body, accountId: req.params.accountId });
@@ -1492,7 +1491,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
   });
 
   // Social Metrics
-  app.get("/api/social-accounts/:accountId/metrics", requireAuth, async (req: any, res: Response) => {
+  router.get("/social-accounts/:accountId/metrics", async (req: any, res: Response) => {
     try {
       const startDate = req.query.startDate as string | undefined;
       const endDate = req.query.endDate as string | undefined;
@@ -1504,7 +1503,7 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/social-accounts/:accountId/metrics", requireAuth, async (req: any, res: Response) => {
+  router.post("/social-accounts/:accountId/metrics", async (req: any, res: Response) => {
     try {
       const { insertSocialMetricSchema } = await import("./seo-schema");
       const validatedData = insertSocialMetricSchema.parse({ ...req.body, accountId: req.params.accountId });
@@ -1519,7 +1518,5 @@ export async function registerSEORoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-
-  return httpServer;
+  return router;
 }

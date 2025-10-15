@@ -49,18 +49,19 @@ psql $DATABASE_URL -f integration-package/database/schema.sql
 ### Step 4: Add Routes
 ```javascript
 // In your CRM's server/index.js
-import { registerSEORoutes } from './seo/seo-routes';
+import { createSEORouter } from './seo/seo-routes';
 
-// Replace Replit Auth with your CRM's auth
-function yourAuthMiddleware(req, res, next) {
+// Create auth middleware that sets tenantId
+app.use('/api/seo', (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   req.tenantId = req.user.organizationId; // Map to your org ID
+  req.userId = req.user.id;
+  req.isAdmin = req.user.role === 'admin'; // For admin routes
   next();
-}
+});
 
-// Register SEO routes
-app.use('/api/seo', yourAuthMiddleware);
-registerSEORoutes(app);
+// Mount SEO router
+app.use('/api/seo', createSEORouter());
 ```
 
 ### Step 5: Environment Variables
@@ -120,7 +121,7 @@ Copy files and use your CRM's auth:
 
 ```typescript
 // server/index.ts
-import { registerSEORoutes } from './seo/seo-routes';
+import { createSEORouter } from './seo/seo-routes';
 import { DbStorage } from './seo/seo-storage';
 
 // Initialize storage
@@ -131,29 +132,29 @@ app.use('/api/seo', (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   req.tenantId = req.user.organizationId; // Your org ID field
   req.userId = req.user.id;
+  req.isAdmin = req.user.role === 'admin';
   next();
 });
 
-// Register routes
-registerSEORoutes(app);
+// Mount SEO router
+app.use('/api/seo', createSEORouter());
 ```
 
-### Method 2: Modify for Your Auth
+### Method 2: Custom Integration Path
 
-The routes file uses Replit Auth by default. Replace with your auth:
+You can customize where SEO routes are mounted:
 
 ```typescript
-// In seo-routes.ts, replace:
-import { setupAuth, isAuthenticated } from './replitAuth';
+// server/index.ts
+import { createSEORouter } from './seo/seo-routes';
 
-// With your auth:
-import { requireAuth } from '../middleware/auth';
+// Custom path with auth
+app.use('/custom/seo', yourAuthMiddleware);
+app.use('/custom/seo', createSEORouter());
 
-// Then use your middleware:
-app.get('/api/seo/dashboard', requireAuth, async (req, res) => {
-  const tenantId = req.user.organizationId;
-  // ... rest of code
-});
+// Or use different auth for different mounts
+app.use('/admin/seo', adminAuthMiddleware);
+app.use('/admin/seo', createSEORouter());
 ```
 
 ## 🗄️ Database Setup
@@ -215,7 +216,10 @@ app.use('/api/seo', (req, res, next) => {
 
 ### Change API Path
 ```javascript
-app.use('/custom-seo', seoRouter); // Instead of /api/seo
+// Use a custom path instead of /api/seo
+app.use('/custom-seo', yourAuthMiddleware);
+app.use('/custom-seo', createSEORouter());
+// Routes now at /custom-seo/dashboard, /custom-seo/keywords, etc.
 ```
 
 ### Disable Features

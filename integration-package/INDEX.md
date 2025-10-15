@@ -192,7 +192,7 @@ app.use('/api/seo', verifyJWT);
 
 ### Change Routes
 ```javascript
-app.use('/custom-seo', seoRouter);
+app.use("/api/seo", createSEORouter());
 ```
 
 ### Disable Features

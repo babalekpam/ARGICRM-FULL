@@ -26,17 +26,19 @@ psql $DATABASE_URL -f integration-package/database/schema.sql
 ### 4. Add Routes (1 min)
 ```javascript
 // In server/index.js
-import { registerSEORoutes } from './seo/seo-routes';
+import { createSEORouter } from './seo/seo-routes';
 
 // Add middleware for your auth (replace with your CRM's auth)
 app.use('/api/seo', (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   req.tenantId = req.user.organizationId; // Map to your org ID field
+  req.userId = req.user.id;
+  req.isAdmin = req.user.role === 'admin';
   next();
 });
 
-// Register SEO routes - actual working implementation!
-registerSEORoutes(app);
+// Mount SEO routes - actual working implementation!
+app.use('/api/seo', createSEORouter());
 ```
 
 ### 5. Environment Variables (1 min)
@@ -88,7 +90,8 @@ ALTER TABLE crm_customers ADD COLUMN seo_project_id VARCHAR REFERENCES projects(
 
 ### Change Route Path
 ```javascript
-app.use('/custom-path', seoRouter); // Instead of /api/seo
+app.use('/custom-path', yourAuthMiddleware);
+app.use('/custom-path', createSEORouter()); // Instead of /api/seo
 ```
 
 ### Disable Features
@@ -115,7 +118,8 @@ export const features = {
 ```javascript
 // Ensure routes are after body parser
 app.use(express.json());
-registerSEORoutes(app);
+app.use('/api/seo', yourAuthMiddleware);
+app.use('/api/seo', createSEORouter());
 ```
 
 ### Auth errors?
