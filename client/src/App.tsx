@@ -7,13 +7,24 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, LogOut, User as UserIcon } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ProjectSelector } from "@/components/project-selector";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { EditProjectDialog } from "@/components/edit-project-dialog";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Project } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
+import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Keywords from "@/pages/keywords";
 import Traffic from "@/pages/traffic";
@@ -24,6 +35,7 @@ import AIAssistantPage from "@/pages/ai-assistant-page";
 import NotFound from "@/pages/not-found";
 
 function AppContent() {
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -33,6 +45,7 @@ function AppContent() {
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
+    enabled: isAuthenticated,
   });
 
   // Initialize selected project to first project when projects load
@@ -83,6 +96,26 @@ function AppContent() {
     setProjectToDelete(null);
   };
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show landing page if not authenticated
+  if (!isAuthenticated) {
+    return <Landing />;
+  }
+
+  const userInitials = user ? 
+    `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || '??' :
+    '??';
+
   return (
     <div className="flex h-screen w-full">
       <AppSidebar />
@@ -101,6 +134,33 @@ function AppContent() {
               />
             )}
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full" data-testid="button-user-menu">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.email || "User"} />
+                  <AvatarFallback>{userInitials}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none" data-testid="text-user-name">
+                    {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'User'}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground" data-testid="text-user-email">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout} data-testid="button-logout">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
         <main className="flex-1 overflow-auto bg-background">
           {projectsLoading ? (
