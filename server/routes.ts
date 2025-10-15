@@ -81,7 +81,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const uniqueDomains = new Set(
         backlinks.map(b => {
           try {
-            return new URL(b.url).hostname;
+            // Normalize URL: add https:// if no scheme present
+            const url = b.url.includes('://') ? b.url : `https://${b.url}`;
+            return new URL(url).hostname;
           } catch {
             return b.url;
           }
@@ -89,9 +91,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       const referringDomains = uniqueDomains.size;
       
-      // Get latest organic traffic (most recent traffic data point)
-      const latestTraffic = trafficData.length > 0 
-        ? trafficData[trafficData.length - 1].visits 
+      // Get latest organic traffic (sort by date first to ensure chronological order)
+      const sortedTraffic = trafficData.sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      const latestTraffic = sortedTraffic.length > 0 
+        ? sortedTraffic[sortedTraffic.length - 1].visits 
         : 0;
       
       // Calculate SEO score based on issues (100 - weighted penalties)
