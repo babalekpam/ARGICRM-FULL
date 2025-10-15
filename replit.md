@@ -35,14 +35,23 @@ The platform uses a modern full-stack architecture:
 - Includes a tabbed interface for finding opportunities, managing campaigns, and performing competitor gap analysis.
 - Leverages AI for recommending link building strategies.
 
+### API Access System
+- Comprehensive API key management with secure SHA-256 hashing and one-time secret display.
+- Features permission-based access control (read, write, full access) and configurable rate limits.
+- Provides per-key usage analytics including endpoint tracking, status codes, and response times.
+- Interactive API documentation with example requests for all available endpoints.
+- Supports programmatic access to keyword data, traffic analytics, backlinks, and SEO audit results.
+
 ### Authentication & Multi-Tenancy
 - Utilizes Replit Auth for OpenID Connect authentication (Google, GitHub, X, Apple, email/password).
 - Implements a strict multi-tenant architecture where all data tables include a `tenantId` for isolation and security, ensuring users only access their own data.
 
 ### Database Schema
 - PostgreSQL database with UUID primary keys.
-- Core tables include `projects`, `keywords`, `keywordRankings`, `trafficData`, `backlinks`, `backlinkGrowth`, `competitors`, and `seoIssues`, all linked to `tenantId`.
+- Core tables include `projects`, `keywords`, `keywordRankings`, `trafficData`, `backlinks`, `backlinkGrowth`, `competitors`, `seoIssues`, `apiKeys`, and `apiUsage`, all linked to `tenantId`.
 - Features `CASCADE DELETE` on foreign key relationships for data integrity.
+- API keys table stores hashed keys (SHA-256) with metadata including permissions, rate limits, and expiration dates.
+- API usage table tracks all API calls with endpoint, method, status code, response time, and timestamp for analytics.
 
 ### Build & Deployment
 - **Development**: Uses Vite for hot reload and TypeScript checking.

@@ -58,7 +58,7 @@ export default function ApiAccess() {
 
   const createKeyMutation = useMutation({
     mutationFn: (data: { name: string; permissions: string[]; rateLimit: number }) => 
-      apiRequest("/api/keys", "POST", data) as Promise<ApiKey>,
+      apiRequest("POST", "/api/keys", data) as Promise<ApiKey>,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/keys"] });
       setNewlyCreatedKey(data);
@@ -83,7 +83,7 @@ export default function ApiAccess() {
 
   const deleteKeyMutation = useMutation({
     mutationFn: (id: string) => 
-      apiRequest(`/api/keys/${id}`, "DELETE"),
+      apiRequest("DELETE", `/api/keys/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/keys"] });
       toast({
@@ -102,7 +102,7 @@ export default function ApiAccess() {
 
   const toggleKeyStatusMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: number }) => 
-      apiRequest(`/api/keys/${id}`, "PATCH", { isActive }),
+      apiRequest("PATCH", `/api/keys/${id}`, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/keys"] });
       toast({
@@ -424,16 +424,16 @@ export default function ApiAccess() {
             <div className="space-y-2">
               <Label htmlFor="permissions">Permissions</Label>
               <Select
-                value={newKeyPermissions[0]}
-                onValueChange={(value) => setNewKeyPermissions([value])}
+                value={newKeyPermissions.join(",")}
+                onValueChange={(value) => setNewKeyPermissions(value.split(","))}
               >
                 <SelectTrigger data-testid="select-permissions">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="read">Read Only</SelectItem>
-                  <SelectItem value="write">Read & Write</SelectItem>
-                  <SelectItem value="delete">Full Access</SelectItem>
+                  <SelectItem value="read,write">Read & Write</SelectItem>
+                  <SelectItem value="read,write,delete">Full Access</SelectItem>
                 </SelectContent>
               </Select>
             </div>
