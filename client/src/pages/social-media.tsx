@@ -80,7 +80,7 @@ export default function SocialMedia({ projectId }: SocialMediaProps) {
 
   const connectAccountMutation = useMutation({
     mutationFn: async (data: z.infer<typeof connectAccountFormSchema>) => {
-      return await apiRequest("POST", "/api/social-accounts", data);
+      return await apiRequest("POST", `/api/projects/${projectId}/social-accounts`, data);
     },
     onSuccess: async () => {
       // Remove the old cached data and refetch to force a fresh request
