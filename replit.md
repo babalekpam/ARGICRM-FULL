@@ -2,7 +2,7 @@
 
 ## Overview
 
-ARGILETTE is a comprehensive SEO analytics platform inspired by Neil Patel's Ubersuggest. The application provides keyword research, site audits, traffic analysis, competitor tracking, and backlink monitoring capabilities through a professional, data-rich dashboard interface.
+ARGILETTE is a comprehensive SEO analytics platform inspired by Neil Patel's Ubersuggest. The application provides keyword research, site audits, traffic analysis, competitor tracking, backlink monitoring, and **link building** capabilities through a professional, data-rich dashboard interface.
 
 The platform follows a modern full-stack architecture with React/TypeScript frontend, Express backend, and PostgreSQL database using Drizzle ORM. The design system emphasizes clarity over complexity with card-based layouts and Material Design principles for data visualization.
 
@@ -111,6 +111,38 @@ Preferred communication style: Simple, everyday language.
 - ✅ Dedicated AI Assistant page in sidebar navigation
 - ✅ Real-time chat interface for SEO questions
 - ✅ One-click specialized analysis tools
+
+### Link Building System
+
+**Database Schema (4 new tables):**
+- **backlinkOpportunities**: Target URL tracking with domain authority (0-100), relevance score (0-100), contact email, notes, status (identified/contacted/negotiating/secured/rejected)
+- **outreachCampaigns**: Campaign management with objectives, target counts, progress tracking (totalSent, totalReplies, successfulLinks), status (planning/active/paused/completed)
+- **outreachContacts**: Contact relationship tracking with email, domain, last contact date, response status (no_response/responded/interested/rejected)
+- **backlinkGaps**: Competitor gap analysis with shared/unique backlink counts, gap scores
+
+**API Endpoints:**
+- `GET/POST/PATCH/DELETE /api/link-building/opportunities` - Opportunity CRUD with project filtering
+- `GET/POST/PATCH/DELETE /api/link-building/campaigns` - Campaign CRUD with progress metrics
+- `GET/POST/PATCH /api/link-building/contacts` - Contact tracking and status updates
+- `GET/POST/PATCH /api/link-building/gaps` - Competitor gap analysis
+- `POST /api/ai/recommend-backlinks` - AI-powered opportunity recommendations using Claude
+
+**Link Building Page UI (client/src/pages/link-building.tsx):**
+- **Metrics Dashboard**: Total opportunities, active campaigns, secured links, success rate
+- **Tabbed Interface**: 
+  - Opportunities Finder: Search, filter, create opportunities with DA and relevance scores
+  - Campaign Manager: Track outreach campaigns with progress metrics
+  - Gap Analysis: Identify competitor backlink opportunities
+- **AI Integration**: One-click AI-powered recommendations for link building strategies
+- **Status Tracking**: Visual badges for opportunity and campaign states
+- **Error Handling**: User-friendly toast notifications for API errors (including Anthropic key issues)
+
+**Implementation Highlights:**
+- Full CRUD operations with optimistic UI updates
+- Real-time cache invalidation via TanStack Query
+- Comprehensive form validation with Zod schemas
+- Toast notifications for success/error feedback
+- Responsive design with data-testid attributes for e2e testing
 
 ### Authentication & Multi-Tenancy
 

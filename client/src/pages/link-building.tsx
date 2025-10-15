@@ -127,28 +127,33 @@ export default function LinkBuildingPage({ selectedProjectId }: LinkBuildingPage
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { label: string; className: string }> = {
-      pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' },
+      identified: { label: 'Identified', className: 'bg-gray-100 text-gray-800' },
       contacted: { label: 'Contacted', className: 'bg-blue-100 text-blue-800' },
-      responded: { label: 'Responded', className: 'bg-purple-100 text-purple-800' },
-      negotiating: { label: 'Negotiating', className: 'bg-orange-100 text-orange-800' },
+      negotiating: { label: 'Negotiating', className: 'bg-yellow-100 text-yellow-800' },
       secured: { label: 'Secured', className: 'bg-green-100 text-green-800' },
       rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800' },
     };
-    const variant = variants[status] || variants.pending;
+    const variant = variants[status] || variants.identified;
     return <Badge className={variant.className} data-testid={`badge-status-${status}`}>{variant.label}</Badge>;
   };
 
   const fetchAIRecommendations = async () => {
     setLoadingAI(true);
+    setShowAIRecommendations(false);
     try {
       const response = await apiRequest("POST", "/api/ai/recommend-backlinks", { projectId: selectedProjectId });
       const data = await response.json();
       setAIRecommendations(data.recommendations);
       setShowAIRecommendations(true);
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.message || "";
+      const is500Error = errorMessage.startsWith("500:");
+      
       toast({ 
         title: "Failed to generate AI recommendations", 
-        description: "Please try again later",
+        description: is500Error
+          ? "Anthropic API key is not configured. Please contact your administrator to set up the ANTHROPIC_API_KEY." 
+          : "An unexpected error occurred. Please try again later.",
         variant: "destructive"
       });
     } finally {
