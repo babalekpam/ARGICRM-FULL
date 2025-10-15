@@ -1,23 +1,62 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
+
+// Middleware to attach tenantId to request
+async function attachTenantId(req: Request, res: Response, next: NextFunction) {
+  const user = req.user as any;
+  if (!user || !user.claims || !user.claims.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  const userId = user.claims.sub;
+  const dbUser = await storage.getUser(userId);
+  
+  if (!dbUser) {
+    return res.status(401).json({ message: "User not found" });
+  }
+  
+  (req as any).tenantId = dbUser.tenantId;
+  (req as any).userId = userId;
+  next();
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Dashboard data endpoint
-  app.get("/api/dashboard", async (req, res) => {
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Protected routes - require authentication and tenant context
+  const requireAuth = [isAuthenticated, attachTenantId];
+
+  // Dashboard data endpoint
+  app.get("/api/dashboard", requireAuth, async (req: any, res: Response) => {
+    try {
+      const tenantId = req.tenantId;
       const projectId = req.query.projectId as string || "1";
       
-      const project = await storage.getProject(projectId);
+      const project = await storage.getProject(tenantId, projectId);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
 
-      const keywordRanking = await storage.getKeywordRanking(projectId);
-      const trafficData = await storage.getTrafficDataByProject(projectId);
-      const competitors = await storage.getCompetitorsByProject(projectId);
-      const seoIssues = await storage.getSeoIssuesByProject(projectId);
-      const backlinkGrowth = await storage.getBacklinkGrowth(projectId);
+      const keywordRanking = await storage.getKeywordRanking(tenantId, projectId);
+      const trafficData = await storage.getTrafficDataByProject(tenantId, projectId);
+      const competitors = await storage.getCompetitorsByProject(tenantId, projectId);
+      const seoIssues = await storage.getSeoIssuesByProject(tenantId, projectId);
+      const backlinkGrowth = await storage.getBacklinkGrowth(tenantId, projectId);
 
       res.json({
         project,
@@ -33,18 +72,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Projects endpoints
-  app.get("/api/projects", async (req, res) => {
+  app.get("/api/projects", requireAuth, async (req: any, res: Response) => {
     try {
-      const projects = await storage.getAllProjects();
+      const projects = await storage.getAllProjects(req.tenantId);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.get("/api/projects/:id", async (req, res) => {
+  app.get("/api/projects/:id", requireAuth, async (req: any, res: Response) => {
     try {
-      const project = await storage.getProject(req.params.id);
+      const project = await storage.getProject(req.tenantId, req.params.id);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
@@ -54,11 +93,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects", async (req, res) => {
+  app.post("/api/projects", requireAuth, async (req: any, res: Response) => {
     try {
       const { insertProjectSchema } = await import("@shared/schema");
       const validatedData = insertProjectSchema.parse(req.body);
-      const project = await storage.createProject(validatedData);
+      const project = await storage.createProject(req.tenantId, validatedData);
       res.json(project);
     } catch (error) {
       if (error instanceof Error && error.name === 'ZodError') {
@@ -68,13 +107,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/projects/:id", async (req, res) => {
+  app.put("/api/projects/:id", requireAuth, async (req: any, res: Response) => {
     try {
       const { insertProjectSchema } = await import("@shared/schema");
       // Create a partial schema that only validates fields that are provided
       const partialSchema = insertProjectSchema.partial();
       const validatedData = partialSchema.parse(req.body);
-      const project = await storage.updateProject(req.params.id, validatedData);
+      const project = await storage.updateProject(req.tenantId, req.params.id, validatedData);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
@@ -87,9 +126,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/projects/:id", async (req, res) => {
+  app.delete("/api/projects/:id", requireAuth, async (req: any, res: Response) => {
     try {
-      const deleted = await storage.deleteProject(req.params.id);
+      const deleted = await storage.deleteProject(req.tenantId, req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Project not found" });
       }
@@ -100,10 +139,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Keywords endpoints
-  app.get("/api/keywords", async (req, res) => {
+  app.get("/api/keywords", requireAuth, async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
-      const keywords = await storage.getKeywordsByProject(projectId);
+      const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
       res.json(keywords);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
@@ -111,10 +150,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Traffic endpoints
-  app.get("/api/traffic", async (req, res) => {
+  app.get("/api/traffic", requireAuth, async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
-      const trafficData = await storage.getTrafficDataByProject(projectId);
+      const trafficData = await storage.getTrafficDataByProject(req.tenantId, projectId);
       res.json(trafficData);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
@@ -122,10 +161,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // SEO Issues endpoints
-  app.get("/api/seo-issues", async (req, res) => {
+  app.get("/api/seo-issues", requireAuth, async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
-      const seoIssues = await storage.getSeoIssuesByProject(projectId);
+      const seoIssues = await storage.getSeoIssuesByProject(req.tenantId, projectId);
       res.json(seoIssues);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
@@ -133,10 +172,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Backlinks endpoints
-  app.get("/api/backlinks", async (req, res) => {
+  app.get("/api/backlinks", requireAuth, async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
-      const backlinks = await storage.getBacklinksByProject(projectId);
+      const backlinks = await storage.getBacklinksByProject(req.tenantId, projectId);
       res.json(backlinks);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
@@ -144,10 +183,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Competitors endpoints
-  app.get("/api/competitors", async (req, res) => {
+  app.get("/api/competitors", requireAuth, async (req: any, res: Response) => {
     try {
       const projectId = req.query.projectId as string || "1";
-      const competitors = await storage.getCompetitorsByProject(projectId);
+      const competitors = await storage.getCompetitorsByProject(req.tenantId, projectId);
       res.json(competitors);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });

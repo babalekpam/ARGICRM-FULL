@@ -13,7 +13,7 @@ import {
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import ws from "ws";
 
 neonConfig.webSocketConstructor = ws;
@@ -27,32 +27,32 @@ export interface IStorage {
   getTenant(id: string): Promise<Tenant | undefined>;
   createTenant(tenant: InsertTenant): Promise<Tenant>;
   
-  // Projects
-  getProject(id: string): Promise<Project | undefined>;
-  getAllProjects(): Promise<Project[]>;
+  // Projects - all methods require tenantId for isolation
+  getProject(tenantId: string, id: string): Promise<Project | undefined>;
+  getAllProjects(tenantId: string): Promise<Project[]>;
   createProject(tenantId: string, project: InsertProject): Promise<Project>;
-  updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
-  deleteProject(id: string): Promise<boolean>;
+  updateProject(tenantId: string, id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(tenantId: string, id: string): Promise<boolean>;
   
-  // Keywords
-  getKeywordsByProject(projectId: string): Promise<Keyword[]>;
+  // Keywords - tenant-scoped
+  getKeywordsByProject(tenantId: string, projectId: string): Promise<Keyword[]>;
   createKeyword(tenantId: string, keyword: InsertKeyword): Promise<Keyword>;
   
-  // Keyword Rankings
-  getKeywordRanking(projectId: string): Promise<KeywordRanking | undefined>;
+  // Keyword Rankings - tenant-scoped
+  getKeywordRanking(tenantId: string, projectId: string): Promise<KeywordRanking | undefined>;
   
-  // Traffic Data
-  getTrafficDataByProject(projectId: string): Promise<TrafficData[]>;
+  // Traffic Data - tenant-scoped
+  getTrafficDataByProject(tenantId: string, projectId: string): Promise<TrafficData[]>;
   
-  // Backlinks
-  getBacklinksByProject(projectId: string): Promise<Backlink[]>;
-  getBacklinkGrowth(projectId: string): Promise<Array<{ date: string; backlinks: number }>>;
+  // Backlinks - tenant-scoped
+  getBacklinksByProject(tenantId: string, projectId: string): Promise<Backlink[]>;
+  getBacklinkGrowth(tenantId: string, projectId: string): Promise<Array<{ date: string; backlinks: number }>>;
   
-  // Competitors
-  getCompetitorsByProject(projectId: string): Promise<Competitor[]>;
+  // Competitors - tenant-scoped
+  getCompetitorsByProject(tenantId: string, projectId: string): Promise<Competitor[]>;
   
-  // SEO Issues
-  getSeoIssuesByProject(projectId: string): Promise<SeoIssue[]>;
+  // SEO Issues - tenant-scoped
+  getSeoIssuesByProject(tenantId: string, projectId: string): Promise<SeoIssue[]>;
 }
 
 // Database Storage Implementation
@@ -96,13 +96,13 @@ export class DbStorage implements IStorage {
     return tenant;
   }
 
-  async getProject(id: string): Promise<Project | undefined> {
-    const result = await this.db.select().from(projects).where(eq(projects.id, id));
+  async getProject(tenantId: string, id: string): Promise<Project | undefined> {
+    const result = await this.db.select().from(projects).where(and(eq(projects.tenantId, tenantId), eq(projects.id, id)));
     return result[0];
   }
 
-  async getAllProjects(): Promise<Project[]> {
-    return await this.db.select().from(projects);
+  async getAllProjects(tenantId: string): Promise<Project[]> {
+    return await this.db.select().from(projects).where(eq(projects.tenantId, tenantId));
   }
 
   async createProject(tenantId: string, insertProject: InsertProject): Promise<Project> {
@@ -110,18 +110,18 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async updateProject(id: string, insertProject: Partial<InsertProject>): Promise<Project | undefined> {
-    const result = await this.db.update(projects).set(insertProject).where(eq(projects.id, id)).returning();
+  async updateProject(tenantId: string, id: string, insertProject: Partial<InsertProject>): Promise<Project | undefined> {
+    const result = await this.db.update(projects).set(insertProject).where(and(eq(projects.tenantId, tenantId), eq(projects.id, id))).returning();
     return result[0];
   }
 
-  async deleteProject(id: string): Promise<boolean> {
-    const result = await this.db.delete(projects).where(eq(projects.id, id)).returning();
+  async deleteProject(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(projects).where(and(eq(projects.tenantId, tenantId), eq(projects.id, id))).returning();
     return result.length > 0;
   }
 
-  async getKeywordsByProject(projectId: string): Promise<Keyword[]> {
-    return await this.db.select().from(keywords).where(eq(keywords.projectId, projectId));
+  async getKeywordsByProject(tenantId: string, projectId: string): Promise<Keyword[]> {
+    return await this.db.select().from(keywords).where(and(eq(keywords.tenantId, tenantId), eq(keywords.projectId, projectId)));
   }
 
   async createKeyword(tenantId: string, insertKeyword: InsertKeyword): Promise<Keyword> {
@@ -129,26 +129,26 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async getKeywordRanking(projectId: string): Promise<KeywordRanking | undefined> {
-    const result = await this.db.select().from(keywordRankings).where(eq(keywordRankings.projectId, projectId));
+  async getKeywordRanking(tenantId: string, projectId: string): Promise<KeywordRanking | undefined> {
+    const result = await this.db.select().from(keywordRankings).where(and(eq(keywordRankings.tenantId, tenantId), eq(keywordRankings.projectId, projectId)));
     return result[0];
   }
 
-  async getTrafficDataByProject(projectId: string): Promise<TrafficData[]> {
+  async getTrafficDataByProject(tenantId: string, projectId: string): Promise<TrafficData[]> {
     return await this.db.select().from(trafficData)
-      .where(eq(trafficData.projectId, projectId))
+      .where(and(eq(trafficData.tenantId, tenantId), eq(trafficData.projectId, projectId)))
       .orderBy(trafficData.date);
   }
 
-  async getBacklinksByProject(projectId: string): Promise<Backlink[]> {
+  async getBacklinksByProject(tenantId: string, projectId: string): Promise<Backlink[]> {
     return await this.db.select().from(backlinks)
-      .where(eq(backlinks.projectId, projectId))
+      .where(and(eq(backlinks.tenantId, tenantId), eq(backlinks.projectId, projectId)))
       .orderBy(desc(backlinks.date));
   }
 
-  async getBacklinkGrowth(projectId: string): Promise<Array<{ date: string; backlinks: number }>> {
+  async getBacklinkGrowth(tenantId: string, projectId: string): Promise<Array<{ date: string; backlinks: number }>> {
     const growthData = await this.db.select().from(backlinkGrowth)
-      .where(eq(backlinkGrowth.projectId, projectId))
+      .where(and(eq(backlinkGrowth.tenantId, tenantId), eq(backlinkGrowth.projectId, projectId)))
       .orderBy(backlinkGrowth.date);
     return growthData.map(g => ({
       date: g.date.substring(5), // Format: MM-DD
@@ -156,12 +156,12 @@ export class DbStorage implements IStorage {
     }));
   }
 
-  async getCompetitorsByProject(projectId: string): Promise<Competitor[]> {
-    return await this.db.select().from(competitors).where(eq(competitors.projectId, projectId));
+  async getCompetitorsByProject(tenantId: string, projectId: string): Promise<Competitor[]> {
+    return await this.db.select().from(competitors).where(and(eq(competitors.tenantId, tenantId), eq(competitors.projectId, projectId)));
   }
 
-  async getSeoIssuesByProject(projectId: string): Promise<SeoIssue[]> {
-    const issues = await this.db.select().from(seoIssues).where(eq(seoIssues.projectId, projectId));
+  async getSeoIssuesByProject(tenantId: string, projectId: string): Promise<SeoIssue[]> {
+    const issues = await this.db.select().from(seoIssues).where(and(eq(seoIssues.tenantId, tenantId), eq(seoIssues.projectId, projectId)));
     return issues.sort((a, b) => {
       const severityOrder = { critical: 0, warning: 1, info: 2 };
       return severityOrder[a.severity as keyof typeof severityOrder] - severityOrder[b.severity as keyof typeof severityOrder];
