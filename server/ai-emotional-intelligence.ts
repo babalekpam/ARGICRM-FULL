@@ -3,15 +3,15 @@ import { db } from './db';
 import { customers, customerEmotionalProfiles, insertCustomerEmotionalProfileSchema } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 // OpenRouter client for reliable AI fallback
-const openrouter = new OpenAI({
+const openrouter = process.env.OPENROUTER_API_KEY ? new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
   apiKey: process.env.OPENROUTER_API_KEY,
-});
+}) : null;
 
 export interface EmotionalAnalysis {
   sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
@@ -50,6 +50,10 @@ export class EmotionalIntelligenceEngine {
       const cacheKey = this.generateCacheKey(text);
       if (this.sentimentCache.has(cacheKey)) {
         return this.sentimentCache.get(cacheKey)!;
+      }
+
+      if (!openai) {
+        throw new Error('OPENAI_API_KEY not configured - Emotional Intelligence features unavailable');
       }
 
       // Use OpenAI for advanced sentiment and emotion analysis
@@ -106,6 +110,10 @@ export class EmotionalIntelligenceEngine {
   async analyzeVoiceEmotion(audioTranscript: string, customerId?: string): Promise<EmotionalAnalysis> {
     // Enhanced analysis for voice communications
     const baseAnalysis = await this.analyzeCustomerCommunication(audioTranscript, customerId);
+    
+    if (!openai) {
+      return baseAnalysis; // Return base analysis if OpenAI not configured
+    }
     
     // Voice-specific analysis enhancements
     const voiceEnhancement = await openai.chat.completions.create({
@@ -191,6 +199,17 @@ export class EmotionalIntelligenceEngine {
         riskScore += 0.2;
       }
 
+      if (!openai) {
+        // Return basic risk assessment if OpenAI not configured
+        const finalRiskScore = riskScore;
+        return {
+          riskLevel: finalRiskScore > 0.7 ? 'HIGH' : finalRiskScore > 0.4 ? 'MEDIUM' : 'LOW',
+          confidence: finalRiskScore * 0.7, // Lower confidence without AI
+          factors: churnFactors,
+          recommendedInterventions: ['Manual review recommended']
+        };
+      }
+
       // Use AI for advanced pattern recognition
       const aiPrediction = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -247,6 +266,10 @@ export class EmotionalIntelligenceEngine {
     followUpActions: string[];
   }> {
     try {
+      if (!openai) {
+        throw new Error('OPENAI_API_KEY not configured');
+      }
+      
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -310,6 +333,16 @@ export class EmotionalIntelligenceEngine {
         (1 - emotionalFactors.urgencySignals / 10) * 0.2 +
         emotionalFactors.satisfactionWithDemos * 0.2
       );
+
+      if (!openai) {
+        // Return basic recommendation if OpenAI not configured
+        return {
+          opportunityScore: score,
+          bestApproach: 'Standard sales approach',
+          optimalContactTime: 'Business hours',
+          emotionalFactors
+        };
+      }
 
       // AI-powered approach recommendation
       const aiRecommendation = await openai.chat.completions.create({
@@ -456,6 +489,10 @@ export class EmotionalIntelligenceEngine {
     const cacheKey = this.generateCacheKey(text);
     if (this.sentimentCache.has(cacheKey)) {
       return this.sentimentCache.get(cacheKey)!;
+    }
+
+    if (!openrouter) {
+      throw new Error('OPENROUTER_API_KEY not configured');
     }
 
     // Use OpenRouter with cost-effective model
