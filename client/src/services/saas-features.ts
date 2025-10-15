@@ -505,7 +505,16 @@ export class SaaSFeatureService {
       '/white-label': 'white_label',
       '/white-label-settings': 'white_label',
       '/settings': null, // Settings should be accessible to all users
-      '/feature-toggles': null // Feature toggles should be accessible to all users
+      '/feature-toggles': null, // Feature toggles should be accessible to all users
+      // ARGILETTE SEO Platform - accessible to all users
+      '/seo-audit': null,
+      '/seo-management': null,
+      '/keywords': null,
+      '/backlinks': null,
+      '/rank-tracking': null,
+      '/competitors': null,
+      '/technical-audit': null,
+      '/local-seo': null
     };
 
     return featureMap[navigationPath] || null;
