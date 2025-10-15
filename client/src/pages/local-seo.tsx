@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { LocalRanking, GoogleBusinessProfile, LocalCitation } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, MapPin, Store, ExternalLink, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, MapPin, Store, ExternalLink, TrendingUp, TrendingDown, Sparkles, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -16,6 +16,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface LocalSEOProps {
   projectId: string;
@@ -23,6 +33,10 @@ interface LocalSEOProps {
 
 export default function LocalSEO({ projectId }: LocalSEOProps) {
   const { toast } = useToast();
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
+  const [businessName, setBusinessName] = useState("");
+  const [locations, setLocations] = useState("");
+  const [numCitations, setNumCitations] = useState("20");
 
   const { data: localRankings, isLoading: rankingsLoading } = useQuery<LocalRanking[]>({
     queryKey: ["/api/projects", projectId, "local-rankings"],
@@ -34,6 +48,30 @@ export default function LocalSEO({ projectId }: LocalSEOProps) {
 
   const { data: citations, isLoading: citationsLoading } = useQuery<LocalCitation[]>({
     queryKey: ["/api/projects", projectId, "local-citations"],
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const locationArray = locations.split(',').map(l => l.trim()).filter(Boolean);
+      return await apiRequest("POST", `/api/projects/${projectId}/local-seo/generate`, {
+        businessName,
+        locations: locationArray,
+        numCitations: parseInt(numCitations) || 20
+      });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "local-rankings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "google-business-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "local-citations"] });
+      toast({ 
+        title: "Local SEO data generated with AI!", 
+        description: `Created ${data.rankings} rankings and ${data.citations} citations`
+      });
+      setIsGenerateDialogOpen(false);
+      setBusinessName("");
+      setLocations("");
+      setNumCitations("20");
+    },
   });
 
   const deleteRankingMutation = useMutation({
@@ -80,8 +118,8 @@ export default function LocalSEO({ projectId }: LocalSEOProps) {
           <h1 className="text-3xl font-bold mb-2">Local SEO</h1>
           <p className="text-muted-foreground">Track local rankings and manage citations</p>
         </div>
-        <Button data-testid="button-add-location">
-          <Plus className="mr-2 h-4 w-4" /> Add Location
+        <Button onClick={() => setIsGenerateDialogOpen(true)} data-testid="button-generate-local-seo">
+          <Sparkles className="mr-2 h-4 w-4" /> Generate with AI
         </Button>
       </div>
 
@@ -278,6 +316,101 @@ export default function LocalSEO({ projectId }: LocalSEOProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* AI Generation Dialog */}
+      <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Generate Local SEO Data with AI
+            </DialogTitle>
+            <DialogDescription>
+              Use AI to generate realistic Google Business Profile metrics, local rankings, and citations
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="business-name">Business Name</Label>
+              <Input
+                id="business-name"
+                placeholder="e.g., Joe's Pizza"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                data-testid="input-business-name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="locations">Target Locations (comma-separated)</Label>
+              <Input
+                id="locations"
+                placeholder="e.g., New York NY, Brooklyn NY, Queens NY"
+                value={locations}
+                onChange={(e) => setLocations(e.target.value)}
+                data-testid="input-locations"
+              />
+              <p className="text-xs text-muted-foreground">
+                Separate multiple locations with commas
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="num-citations">Number of Citations</Label>
+              <Input
+                id="num-citations"
+                type="number"
+                min="5"
+                max="50"
+                placeholder="20"
+                value={numCitations}
+                onChange={(e) => setNumCitations(e.target.value)}
+                data-testid="input-num-citations"
+              />
+              <p className="text-xs text-muted-foreground">
+                Generate 5-50 business directory citations
+              </p>
+            </div>
+
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Sparkles className="h-4 w-4 text-primary mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-primary">AI-Powered Generation (Free)</p>
+                  <p className="text-muted-foreground mt-1">
+                    Creates realistic local SEO data based on your business and target locations
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setIsGenerateDialogOpen(false)}
+              data-testid="button-cancel-generate"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => generateMutation.mutate()}
+              disabled={!businessName || !locations || generateMutation.isPending}
+              data-testid="button-confirm-generate"
+            >
+              {generateMutation.isPending ? (
+                <>Processing...</>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate with AI
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
