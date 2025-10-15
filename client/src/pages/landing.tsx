@@ -402,7 +402,7 @@ export default function Landing() {
               All plans include 30-day money-back guarantee. No questions asked.
             </p>
             <Button 
-              variant="link" 
+              variant="ghost" 
               onClick={() => window.location.href = '/pricing'}
               data-testid="button-see-all-plans"
             >
