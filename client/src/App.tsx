@@ -41,6 +41,7 @@ import ApiAccess from "@/pages/api-access";
 import AIAssistantPage from "@/pages/ai-assistant-page";
 import LocalSEO from "@/pages/local-seo";
 import SocialMedia from "@/pages/social-media";
+import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
 function AppContent() {
@@ -133,7 +134,7 @@ function AppContent() {
 
   return (
     <div className="flex h-screen w-full">
-      <AppSidebar />
+      <AppSidebar user={user} />
       <div className="flex flex-col flex-1 overflow-hidden">
         <header className="flex items-center justify-between p-4 border-b border-border bg-background">
           <div className="flex items-center gap-4">
@@ -429,6 +430,21 @@ function AppContent() {
                   );
                 }
                 return <SocialMedia projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/admin">
+              {() => {
+                if (!user?.isAdmin) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+                        <p className="text-muted-foreground">You need admin permissions to access this page</p>
+                      </div>
+                    </div>
+                  );
+                }
+                return <AdminDashboard />;
               }}
             </Route>
             <Route component={NotFound} />

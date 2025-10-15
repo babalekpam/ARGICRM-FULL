@@ -16,6 +16,7 @@ import {
   Key,
   MapPin,
   Share2,
+  Shield,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -30,6 +31,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import type { User } from "@shared/schema";
 
 const navigation = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -53,7 +55,11 @@ const accountNav = [
   { title: "Pricing & Plans", url: "/pricing", icon: CreditCard },
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  user?: User | null;
+}
+
+export function AppSidebar({ user }: AppSidebarProps) {
   const [location] = useLocation();
 
   return (
@@ -107,6 +113,23 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {user?.isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location === '/admin'} data-testid="nav-admin-dashboard">
+                    <Link href="/admin">
+                      <Shield className="h-4 w-4" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="text-xs text-muted-foreground">
