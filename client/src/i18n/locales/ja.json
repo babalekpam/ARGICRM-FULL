@@ -1,0 +1,209 @@
+{
+  "common": {
+    "loading": "読み込み中...",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "create": "作成",
+    "search": "検索",
+    "filter": "フィルター",
+    "export": "エクスポート",
+    "import": "インポート",
+    "close": "閉じる",
+    "back": "戻る",
+    "next": "次へ",
+    "previous": "前へ",
+    "submit": "送信",
+    "reset": "リセット",
+    "confirm": "確認",
+    "logout": "ログアウト",
+    "login": "ログイン",
+    "signup": "サインアップ"
+  },
+  "landing": {
+    "hero": {
+      "title": "プロフェッショナルSEO分析プラットフォーム",
+      "subtitle": "AI駆動の包括的なキーワード調査、サイト監査、トラフィック分析、競合追跡",
+      "cta": "今すぐ始める",
+      "learnMore": "詳細を見る"
+    },
+    "features": {
+      "title": "SEO成功に必要なすべて",
+      "subtitle": "検索ランキング向上のための12以上の強力なツール",
+      "keywordResearch": {
+        "title": "キーワード調査",
+        "description": "AI駆動の提案と検索ボリュームデータで高価値キーワードを発見"
+      },
+      "rankTracking": {
+        "title": "ランク追跡",
+        "description": "複数の場所とデバイスで検索ランキングを監視"
+      },
+      "siteAudit": {
+        "title": "サイト監査",
+        "description": "技術的なSEO問題を自動的に特定して修正"
+      },
+      "trafficAnalyzer": {
+        "title": "トラフィック分析",
+        "description": "オーガニックトラフィックのパターンと機会を理解"
+      },
+      "backlinks": {
+        "title": "バックリンク分析",
+        "description": "バックリンクプロファイルを監視し、新しいリンク機会を発見"
+      },
+      "competitors": {
+        "title": "競合分析",
+        "description": "競合をスパイし、最良の戦略を盗む"
+      },
+      "contentTools": {
+        "title": "コンテンツツール",
+        "description": "AIアシストでSEO最適化されたコンテンツを作成"
+      },
+      "localSEO": {
+        "title": "ローカルSEO",
+        "description": "ローカルランキングを追跡し、ビジネスリスティングを管理"
+      },
+      "technicalAudit": {
+        "title": "技術監査",
+        "description": "包括的な技術的SEO分析と推奨事項"
+      },
+      "automatedReports": {
+        "title": "自動レポート",
+        "description": "プロフェッショナルなSEOレポートを自動的にスケジュールして配信"
+      },
+      "apiAccess": {
+        "title": "APIアクセス",
+        "description": "独自のツールとワークフローにSEOデータを統合"
+      },
+      "aiAssistant": {
+        "title": "AIアシスタント",
+        "description": "高度なAIによる専門家のSEOアドバイスを取得"
+      }
+    },
+    "pricing": {
+      "title": "一度きりの生涯支払い",
+      "subtitle": "一度支払えば永久に所有。継続課金なし。",
+      "starter": {
+        "name": "スターター",
+        "price": "$299",
+        "features": [
+          "5プロジェクト",
+          "500キーワード",
+          "基本レポート",
+          "メールサポート"
+        ]
+      },
+      "professional": {
+        "name": "プロフェッショナル",
+        "price": "$599",
+        "popular": "最も人気",
+        "features": [
+          "20プロジェクト",
+          "5,000キーワード",
+          "高度なレポート",
+          "優先サポート",
+          "APIアクセス"
+        ]
+      },
+      "enterprise": {
+        "name": "エンタープライズ",
+        "price": "$999",
+        "features": [
+          "無制限プロジェクト",
+          "無制限キーワード",
+          "ホワイトラベルレポート",
+          "専用サポート",
+          "フルAPIアクセス"
+        ]
+      }
+    },
+    "comparison": {
+      "title": "毎年$2,000-$5,000の節約",
+      "subtitle": "ARGILETTEの一度きりの支払いと競合他社の継続コストを比較",
+      "argilette": "ARGILETTE",
+      "competitors": "競合他社",
+      "year1": "1年目",
+      "year2": "2年目",
+      "year3": "3年目",
+      "total": "3年間合計"
+    },
+    "ai": {
+      "title": "AIファーストアーキテクチャ",
+      "subtitle": "高価な外部APIの代わりに高度なAIを活用",
+      "free": "無料AIモード",
+      "freeDesc": "Claude Sonnet 4 AIによるリアルなSEOデータを取得",
+      "optional": "オプションAPIモード",
+      "optionalDesc": "必要に応じてプレミアムAPIの検証済みデータにアップグレード",
+      "savings": "継続的なAPIコストなし",
+      "savingsDesc": "当社のインテリジェントなAIファーストアプローチで毎月数百ドル節約"
+    }
+  },
+  "sidebar": {
+    "analytics": "分析",
+    "account": "アカウント",
+    "admin": "管理者",
+    "dashboard": "ダッシュボード",
+    "keywordResearch": "キーワード調査",
+    "rankTracking": "ランク追跡",
+    "contentTools": "コンテンツツール",
+    "trafficAnalyzer": "トラフィック分析",
+    "seoAudit": "SEO監査",
+    "technicalAudit": "技術監査",
+    "automatedReports": "自動レポート",
+    "backlinks": "バックリンク",
+    "linkBuilding": "リンク構築",
+    "competitors": "競合他社",
+    "localSEO": "ローカルSEO",
+    "socialMedia": "ソーシャルメディア",
+    "aiAssistant": "AIアシスタント",
+    "apiAccess": "APIアクセス",
+    "pricingPlans": "料金プラン",
+    "adminDashboard": "管理者ダッシュボード"
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "overview": "概要",
+    "keywordsTracked": "追跡キーワード",
+    "totalBacklinks": "総バックリンク",
+    "referringDomains": "参照ドメイン",
+    "organicTraffic": "オーガニックトラフィック",
+    "seoScore": "SEOスコア",
+    "topKeywords": "トップキーワード",
+    "backlinksGrowth": "バックリンク成長",
+    "trafficTrends": "トラフィックトレンド",
+    "topCompetitors": "主要競合他社",
+    "criticalIssues": "重大なSEO問題",
+    "aiInsights": "AIインサイト"
+  },
+  "admin": {
+    "title": "スーパー管理者ダッシュボード",
+    "subtitle": "プラットフォーム全体の分析と管理",
+    "totalUsers": "総ユーザー数",
+    "totalTenants": "総テナント数",
+    "activeTenants": "アクティブテナント",
+    "totalProjects": "総プロジェクト数",
+    "totalKeywords": "総キーワード数",
+    "totalBacklinks": "総バックリンク数",
+    "tenantsByPlan": "プラン別テナント",
+    "planDistribution": "サブスクリプションプランの分布",
+    "recentUsers": "最近のユーザー",
+    "recentUsersDesc": "最近登録された10人のユーザー",
+    "recentTenants": "最近のテナント",
+    "recentTenantsDesc": "最近作成された10のテナント",
+    "joined": "参加日",
+    "created": "作成日",
+    "admin": "管理者",
+    "lifetime": "ライフタイム",
+    "accessDenied": "アクセス拒否",
+    "accessDeniedMessage": "このページにアクセスするには管理者権限が必要です"
+  },
+  "projects": {
+    "noProjects": "プロジェクトなし",
+    "noProjectsMessage": "最初のプロジェクトを作成して始めましょう",
+    "createProject": "プロジェクト作成",
+    "editProject": "プロジェクト編集",
+    "deleteProject": "プロジェクト削除",
+    "projectName": "プロジェクト名",
+    "domain": "ドメイン"
+  }
+}

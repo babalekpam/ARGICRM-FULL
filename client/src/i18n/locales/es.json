@@ -1,0 +1,209 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "submit": "Enviar",
+    "reset": "Restablecer",
+    "confirm": "Confirmar",
+    "logout": "Cerrar sesión",
+    "login": "Iniciar sesión",
+    "signup": "Registrarse"
+  },
+  "landing": {
+    "hero": {
+      "title": "Plataforma Profesional de Análisis SEO",
+      "subtitle": "Investigación completa de palabras clave, auditorías de sitios, análisis de tráfico y seguimiento de competidores impulsado por IA",
+      "cta": "Comenzar",
+      "learnMore": "Más Información"
+    },
+    "features": {
+      "title": "Todo lo que Necesitas para el Éxito SEO",
+      "subtitle": "Más de 12 herramientas poderosas para impulsar tus rankings de búsqueda",
+      "keywordResearch": {
+        "title": "Investigación de Palabras Clave",
+        "description": "Descubre palabras clave de alto valor con sugerencias impulsadas por IA y datos de volumen de búsqueda"
+      },
+      "rankTracking": {
+        "title": "Seguimiento de Rankings",
+        "description": "Monitorea tus rankings de búsqueda en múltiples ubicaciones y dispositivos"
+      },
+      "siteAudit": {
+        "title": "Auditoría del Sitio",
+        "description": "Identifica y corrige problemas técnicos de SEO automáticamente"
+      },
+      "trafficAnalyzer": {
+        "title": "Analizador de Tráfico",
+        "description": "Comprende tus patrones de tráfico orgánico y oportunidades"
+      },
+      "backlinks": {
+        "title": "Análisis de Backlinks",
+        "description": "Monitorea tu perfil de backlinks y encuentra nuevas oportunidades de enlaces"
+      },
+      "competitors": {
+        "title": "Análisis de Competidores",
+        "description": "Espía a tus competidores y adopta sus mejores estrategias"
+      },
+      "contentTools": {
+        "title": "Herramientas de Contenido",
+        "description": "Crea contenido optimizado para SEO con asistencia de IA"
+      },
+      "localSEO": {
+        "title": "SEO Local",
+        "description": "Rastrea rankings locales y administra tus listados de negocios"
+      },
+      "technicalAudit": {
+        "title": "Auditoría Técnica",
+        "description": "Análisis técnico SEO completo y recomendaciones"
+      },
+      "automatedReports": {
+        "title": "Informes Automatizados",
+        "description": "Programa y entrega informes SEO profesionales automáticamente"
+      },
+      "apiAccess": {
+        "title": "Acceso API",
+        "description": "Integra datos SEO en tus propias herramientas y flujos de trabajo"
+      },
+      "aiAssistant": {
+        "title": "Asistente IA",
+        "description": "Obtén asesoramiento SEO experto impulsado por IA avanzada"
+      }
+    },
+    "pricing": {
+      "title": "Pago Único de por Vida",
+      "subtitle": "Paga una vez, es tuyo para siempre. Sin tarifas recurrentes.",
+      "starter": {
+        "name": "Inicial",
+        "price": "$299",
+        "features": [
+          "5 Proyectos",
+          "500 Palabras Clave",
+          "Informes Básicos",
+          "Soporte por Email"
+        ]
+      },
+      "professional": {
+        "name": "Profesional",
+        "price": "$599",
+        "popular": "Más Popular",
+        "features": [
+          "20 Proyectos",
+          "5,000 Palabras Clave",
+          "Informes Avanzados",
+          "Soporte Prioritario",
+          "Acceso API"
+        ]
+      },
+      "enterprise": {
+        "name": "Empresa",
+        "price": "$999",
+        "features": [
+          "Proyectos Ilimitados",
+          "Palabras Clave Ilimitadas",
+          "Informes Marca Blanca",
+          "Soporte Dedicado",
+          "Acceso API Completo"
+        ]
+      }
+    },
+    "comparison": {
+      "title": "Ahorra $2,000-$5,000 Cada Año",
+      "subtitle": "Compara el pago único de ARGILETTE con los costos recurrentes de la competencia",
+      "argilette": "ARGILETTE",
+      "competitors": "Competidores",
+      "year1": "Año 1",
+      "year2": "Año 2",
+      "year3": "Año 3",
+      "total": "Total 3 Años"
+    },
+    "ai": {
+      "title": "Arquitectura AI-First",
+      "subtitle": "Aprovecha la IA avanzada en lugar de costosas APIs externas",
+      "free": "Modo IA Gratuito",
+      "freeDesc": "Obtén datos SEO realistas impulsados por Claude Sonnet 4 IA",
+      "optional": "Modo API Opcional",
+      "optionalDesc": "Actualiza a datos verificados de APIs premium cuando sea necesario",
+      "savings": "Sin Costos API Recurrentes",
+      "savingsDesc": "Ahorra cientos mensuales con nuestro enfoque inteligente AI-first"
+    }
+  },
+  "sidebar": {
+    "analytics": "Análisis",
+    "account": "Cuenta",
+    "admin": "Admin",
+    "dashboard": "Panel",
+    "keywordResearch": "Investigación de Palabras Clave",
+    "rankTracking": "Seguimiento de Rankings",
+    "contentTools": "Herramientas de Contenido",
+    "trafficAnalyzer": "Analizador de Tráfico",
+    "seoAudit": "Auditoría SEO",
+    "technicalAudit": "Auditoría Técnica",
+    "automatedReports": "Informes Automatizados",
+    "backlinks": "Backlinks",
+    "linkBuilding": "Construcción de Enlaces",
+    "competitors": "Competidores",
+    "localSEO": "SEO Local",
+    "socialMedia": "Redes Sociales",
+    "aiAssistant": "Asistente IA",
+    "apiAccess": "Acceso API",
+    "pricingPlans": "Precios y Planes",
+    "adminDashboard": "Panel de Admin"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "overview": "Vista General",
+    "keywordsTracked": "Palabras Clave Rastreadas",
+    "totalBacklinks": "Backlinks Totales",
+    "referringDomains": "Dominios Referentes",
+    "organicTraffic": "Tráfico Orgánico",
+    "seoScore": "Puntuación SEO",
+    "topKeywords": "Principales Palabras Clave",
+    "backlinksGrowth": "Crecimiento de Backlinks",
+    "trafficTrends": "Tendencias de Tráfico",
+    "topCompetitors": "Principales Competidores",
+    "criticalIssues": "Problemas SEO Críticos",
+    "aiInsights": "Insights IA"
+  },
+  "admin": {
+    "title": "Panel de Super Admin",
+    "subtitle": "Análisis y gestión de toda la plataforma",
+    "totalUsers": "Usuarios Totales",
+    "totalTenants": "Tenants Totales",
+    "activeTenants": "Tenants Activos",
+    "totalProjects": "Proyectos Totales",
+    "totalKeywords": "Palabras Clave Totales",
+    "totalBacklinks": "Backlinks Totales",
+    "tenantsByPlan": "Tenants por Plan",
+    "planDistribution": "Distribución de planes de suscripción",
+    "recentUsers": "Usuarios Recientes",
+    "recentUsersDesc": "Últimos 10 usuarios registrados",
+    "recentTenants": "Tenants Recientes",
+    "recentTenantsDesc": "Últimos 10 tenants creados",
+    "joined": "Unido",
+    "created": "Creado",
+    "admin": "Admin",
+    "lifetime": "Vitalicio",
+    "accessDenied": "Acceso Denegado",
+    "accessDeniedMessage": "Necesitas permisos de administrador para acceder a esta página"
+  },
+  "projects": {
+    "noProjects": "Sin Proyectos",
+    "noProjectsMessage": "Crea tu primer proyecto para comenzar",
+    "createProject": "Crear Proyecto",
+    "editProject": "Editar Proyecto",
+    "deleteProject": "Eliminar Proyecto",
+    "projectName": "Nombre del Proyecto",
+    "domain": "Dominio"
+  }
+}

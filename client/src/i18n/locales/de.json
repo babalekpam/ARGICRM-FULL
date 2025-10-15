@@ -1,0 +1,209 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "export": "Exportieren",
+    "import": "Importieren",
+    "close": "Schließen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "submit": "Absenden",
+    "reset": "Zurücksetzen",
+    "confirm": "Bestätigen",
+    "logout": "Abmelden",
+    "login": "Anmelden",
+    "signup": "Registrieren"
+  },
+  "landing": {
+    "hero": {
+      "title": "Professionelle SEO-Analyse-Plattform",
+      "subtitle": "Umfassende Keyword-Recherche, Site-Audits, Traffic-Analyse und Wettbewerberverfolgung mit KI",
+      "cta": "Jetzt Starten",
+      "learnMore": "Mehr Erfahren"
+    },
+    "features": {
+      "title": "Alles für Ihren SEO-Erfolg",
+      "subtitle": "Über 12 leistungsstarke Tools zur Verbesserung Ihrer Suchmaschinen-Rankings",
+      "keywordResearch": {
+        "title": "Keyword-Recherche",
+        "description": "Entdecken Sie wertvolle Keywords mit KI-gestützten Vorschlägen und Suchvolumen-Daten"
+      },
+      "rankTracking": {
+        "title": "Ranking-Verfolgung",
+        "description": "Überwachen Sie Ihre Suchrankings an mehreren Standorten und Geräten"
+      },
+      "siteAudit": {
+        "title": "Site-Audit",
+        "description": "Identifizieren und beheben Sie technische SEO-Probleme automatisch"
+      },
+      "trafficAnalyzer": {
+        "title": "Traffic-Analyzer",
+        "description": "Verstehen Sie Ihre organischen Traffic-Muster und Chancen"
+      },
+      "backlinks": {
+        "title": "Backlink-Analyse",
+        "description": "Überwachen Sie Ihr Backlink-Profil und finden Sie neue Link-Möglichkeiten"
+      },
+      "competitors": {
+        "title": "Wettbewerberanalyse",
+        "description": "Spionieren Sie Konkurrenten aus und übernehmen Sie deren beste Strategien"
+      },
+      "contentTools": {
+        "title": "Content-Tools",
+        "description": "Erstellen Sie SEO-optimierten Content mit KI-Unterstützung"
+      },
+      "localSEO": {
+        "title": "Lokales SEO",
+        "description": "Verfolgen Sie lokale Rankings und verwalten Sie Ihre Unternehmenseinträge"
+      },
+      "technicalAudit": {
+        "title": "Technisches Audit",
+        "description": "Umfassende technische SEO-Analyse und Empfehlungen"
+      },
+      "automatedReports": {
+        "title": "Automatisierte Berichte",
+        "description": "Planen und liefern Sie professionelle SEO-Berichte automatisch"
+      },
+      "apiAccess": {
+        "title": "API-Zugriff",
+        "description": "Integrieren Sie SEO-Daten in Ihre eigenen Tools und Workflows"
+      },
+      "aiAssistant": {
+        "title": "KI-Assistent",
+        "description": "Erhalten Sie Experten-SEO-Beratung durch fortschrittliche KI"
+      }
+    },
+    "pricing": {
+      "title": "Einmalige Lebenslange Zahlung",
+      "subtitle": "Einmal zahlen, für immer besitzen. Keine wiederkehrenden Gebühren.",
+      "starter": {
+        "name": "Starter",
+        "price": "$299",
+        "features": [
+          "5 Projekte",
+          "500 Keywords",
+          "Basis-Berichte",
+          "E-Mail-Support"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "price": "$599",
+        "popular": "Am Beliebtesten",
+        "features": [
+          "20 Projekte",
+          "5.000 Keywords",
+          "Erweiterte Berichte",
+          "Prioritäts-Support",
+          "API-Zugriff"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "$999",
+        "features": [
+          "Unbegrenzte Projekte",
+          "Unbegrenzte Keywords",
+          "White-Label-Berichte",
+          "Dedizierter Support",
+          "Voller API-Zugriff"
+        ]
+      }
+    },
+    "comparison": {
+      "title": "Sparen Sie jährlich $2.000-$5.000",
+      "subtitle": "Vergleichen Sie ARGILETTEs einmalige Zahlung mit den wiederkehrenden Kosten der Konkurrenz",
+      "argilette": "ARGILETTE",
+      "competitors": "Konkurrenten",
+      "year1": "Jahr 1",
+      "year2": "Jahr 2",
+      "year3": "Jahr 3",
+      "total": "3-Jahres-Gesamtsumme"
+    },
+    "ai": {
+      "title": "KI-First-Architektur",
+      "subtitle": "Nutzen Sie fortschrittliche KI anstelle teurer externer APIs",
+      "free": "Kostenloser KI-Modus",
+      "freeDesc": "Erhalten Sie realistische SEO-Daten durch Claude Sonnet 4 KI",
+      "optional": "Optionaler API-Modus",
+      "optionalDesc": "Upgrade zu verifizierten Daten von Premium-APIs bei Bedarf",
+      "savings": "Keine wiederkehrenden API-Kosten",
+      "savingsDesc": "Sparen Sie monatlich Hunderte mit unserem intelligenten KI-First-Ansatz"
+    }
+  },
+  "sidebar": {
+    "analytics": "Analytik",
+    "account": "Konto",
+    "admin": "Admin",
+    "dashboard": "Dashboard",
+    "keywordResearch": "Keyword-Recherche",
+    "rankTracking": "Ranking-Verfolgung",
+    "contentTools": "Content-Tools",
+    "trafficAnalyzer": "Traffic-Analyzer",
+    "seoAudit": "SEO-Audit",
+    "technicalAudit": "Technisches Audit",
+    "automatedReports": "Automatisierte Berichte",
+    "backlinks": "Backlinks",
+    "linkBuilding": "Link-Aufbau",
+    "competitors": "Wettbewerber",
+    "localSEO": "Lokales SEO",
+    "socialMedia": "Soziale Medien",
+    "aiAssistant": "KI-Assistent",
+    "apiAccess": "API-Zugriff",
+    "pricingPlans": "Preise & Pläne",
+    "adminDashboard": "Admin-Dashboard"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": "Übersicht",
+    "keywordsTracked": "Verfolgte Keywords",
+    "totalBacklinks": "Gesamt-Backlinks",
+    "referringDomains": "Verweisende Domains",
+    "organicTraffic": "Organischer Traffic",
+    "seoScore": "SEO-Score",
+    "topKeywords": "Top-Keywords",
+    "backlinksGrowth": "Backlinks-Wachstum",
+    "trafficTrends": "Traffic-Trends",
+    "topCompetitors": "Top-Wettbewerber",
+    "criticalIssues": "Kritische SEO-Probleme",
+    "aiInsights": "KI-Insights"
+  },
+  "admin": {
+    "title": "Super-Admin-Dashboard",
+    "subtitle": "Plattformweite Analysen und Verwaltung",
+    "totalUsers": "Gesamt-Benutzer",
+    "totalTenants": "Gesamt-Tenants",
+    "activeTenants": "Aktive Tenants",
+    "totalProjects": "Gesamt-Projekte",
+    "totalKeywords": "Gesamt-Keywords",
+    "totalBacklinks": "Gesamt-Backlinks",
+    "tenantsByPlan": "Tenants nach Plan",
+    "planDistribution": "Verteilung der Abonnement-Pläne",
+    "recentUsers": "Neueste Benutzer",
+    "recentUsersDesc": "Letzte 10 registrierte Benutzer",
+    "recentTenants": "Neueste Tenants",
+    "recentTenantsDesc": "Letzte 10 erstellte Tenants",
+    "joined": "Beigetreten",
+    "created": "Erstellt",
+    "admin": "Admin",
+    "lifetime": "Lebenslang",
+    "accessDenied": "Zugriff Verweigert",
+    "accessDeniedMessage": "Sie benötigen Admin-Berechtigungen, um auf diese Seite zuzugreifen"
+  },
+  "projects": {
+    "noProjects": "Keine Projekte",
+    "noProjectsMessage": "Erstellen Sie Ihr erstes Projekt, um loszulegen",
+    "createProject": "Projekt Erstellen",
+    "editProject": "Projekt Bearbeiten",
+    "deleteProject": "Projekt Löschen",
+    "projectName": "Projektname",
+    "domain": "Domain"
+  }
+}
