@@ -20,6 +20,17 @@ The platform uses a modern full-stack architecture:
 - Custom theme with light/dark mode, professional analytics color palette, and Inter/JetBrains Mono fonts.
 - Features card-based modular layouts for metric grouping and follows a single-page overview philosophy.
 
+### Dashboard & Real-Time Metrics
+- **Real-Time Calculations**: All dashboard metrics are calculated from actual account data, not static values
+- **Dynamic Metrics**:
+  - Keywords Tracked: Count from keywords table
+  - Total Backlinks: Count from backlinks table
+  - Referring Domains: Unique domain count from backlink URLs (normalized)
+  - Organic Traffic: Latest visits from traffic data (date-sorted)
+  - SEO Score: 100 - weighted penalties (critical: -10, high: -5, medium: -2, low: -1)
+- **Connected Platform**: Dashboard updates instantly when users add keywords, generate backlinks, or modify data
+- **Multi-tenant Secure**: All calculations filtered by tenantId for data isolation
+
 ### AI-Powered Analytics
 - Integrates Anthropic's Claude Sonnet 4 model for AI-driven insights.
 - Provides context-aware analysis based on project data (keywords, traffic, competitors, SEO issues).
