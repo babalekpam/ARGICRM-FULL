@@ -2,25 +2,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 
 interface KeywordRankingChartProps {
-  data: {
+  data?: {
     top3: number;
     top10: number;
     top20: number;
     top50: number;
     over50: number;
-  };
+  } | null;
 }
 
 export function KeywordRankingChart({ data }: KeywordRankingChartProps) {
   const chartData = [
-    { name: "Top 3", value: data.top3, color: "hsl(var(--chart-2))" },
-    { name: "4-10", value: data.top10, color: "hsl(var(--chart-1))" },
-    { name: "11-20", value: data.top20, color: "hsl(var(--chart-3))" },
-    { name: "21-50", value: data.top50, color: "hsl(var(--chart-4))" },
-    { name: "50+", value: data.over50, color: "hsl(var(--chart-5))" },
+    { name: "Top 3", value: data?.top3 || 0, color: "hsl(var(--chart-2))" },
+    { name: "4-10", value: data?.top10 || 0, color: "hsl(var(--chart-1))" },
+    { name: "11-20", value: data?.top20 || 0, color: "hsl(var(--chart-3))" },
+    { name: "21-50", value: data?.top50 || 0, color: "hsl(var(--chart-4))" },
+    { name: "50+", value: data?.over50 || 0, color: "hsl(var(--chart-5))" },
   ];
 
-  const total = data.top3 + data.top10 + data.top20 + data.top50 + data.over50;
+  const total = (data?.top3 || 0) + (data?.top10 || 0) + (data?.top20 || 0) + (data?.top50 || 0) + (data?.over50 || 0);
 
   return (
     <Card className="hover-elevate">

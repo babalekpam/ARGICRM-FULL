@@ -6,8 +6,13 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ProjectSelector } from "@/components/project-selector";
+import { CreateProjectDialog } from "@/components/create-project-dialog";
+import { EditProjectDialog } from "@/components/edit-project-dialog";
+import { DeleteProjectDialog } from "@/components/delete-project-dialog";
 import { Project } from "@shared/schema";
 import Dashboard from "@/pages/dashboard";
 import Keywords from "@/pages/keywords";
@@ -19,6 +24,11 @@ import NotFound from "@/pages/not-found";
 
 function AppContent() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<{ id: string; name: string; domain: string } | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -44,6 +54,34 @@ function AppContent() {
     queryClient.invalidateQueries({ queryKey: ["/api/competitors"] });
   };
 
+  const handleProjectCreated = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    handleProjectChange(projectId);
+  };
+
+  const handleEditProject = (project: { id: string; name: string; domain: string }) => {
+    setProjectToEdit(project);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteProject = (projectId: string, projectName: string) => {
+    setProjectToDelete({ id: projectId, name: projectName });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleProjectDeleted = () => {
+    // If we deleted the selected project, switch to another project
+    if (projectToDelete?.id === selectedProjectId) {
+      const remainingProjects = projects.filter(p => p.id !== projectToDelete.id);
+      if (remainingProjects.length > 0) {
+        setSelectedProjectId(remainingProjects[0].id);
+      } else {
+        setSelectedProjectId(null);
+      }
+    }
+    setProjectToDelete(null);
+  };
+
   return (
     <div className="flex h-screen w-full">
       <AppSidebar />
@@ -56,16 +94,28 @@ function AppContent() {
                 projects={projects}
                 selectedProjectId={effectiveProjectId}
                 onProjectChange={handleProjectChange}
-                onAddProject={() => console.log("Add project")}
+                onAddProject={() => setCreateDialogOpen(true)}
+                onEditProject={handleEditProject}
+                onDeleteProject={handleDeleteProject}
               />
             )}
           </div>
         </header>
         <main className="flex-1 overflow-auto bg-background">
-          {projectsLoading || !effectiveProjectId ? (
+          {projectsLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-muted-foreground">Loading...</p>
+              </div>
+            </div>
+          ) : !effectiveProjectId ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                  <Plus className="mr-2 h-4 w-4" /> Create Project
+                </Button>
               </div>
             </div>
           ) : (
@@ -93,6 +143,27 @@ function AppContent() {
           )}
         </main>
       </div>
+      <CreateProjectDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onProjectCreated={handleProjectCreated}
+      />
+      {projectToEdit && (
+        <EditProjectDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          project={projectToEdit}
+        />
+      )}
+      {projectToDelete && (
+        <DeleteProjectDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          projectId={projectToDelete.id}
+          projectName={projectToDelete.name}
+          onProjectDeleted={handleProjectDeleted}
+        />
+      )}
     </div>
   );
 }

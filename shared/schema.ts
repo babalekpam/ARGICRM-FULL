@@ -19,7 +19,7 @@ export const projects = pgTable("projects", {
 // Keywords table
 export const keywords = pgTable("keywords", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   keyword: text("keyword").notNull(),
   searchVolume: integer("search_volume").notNull().default(0),
   difficulty: integer("difficulty").notNull().default(0),
@@ -31,7 +31,7 @@ export const keywords = pgTable("keywords", {
 // Keyword ranking distribution
 export const keywordRankings = pgTable("keyword_rankings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   top3: integer("top_3").notNull().default(0),
   top10: integer("top_10").notNull().default(0),
   top20: integer("top_20").notNull().default(0),
@@ -42,7 +42,7 @@ export const keywordRankings = pgTable("keyword_rankings", {
 // Traffic analytics
 export const trafficData = pgTable("traffic_data", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   date: text("date").notNull(),
   visits: integer("visits").notNull().default(0),
 });
@@ -50,7 +50,7 @@ export const trafficData = pgTable("traffic_data", {
 // Backlinks
 export const backlinks = pgTable("backlinks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   url: text("url").notNull(),
   domainScore: integer("domain_score").notNull().default(0),
   anchorText: text("anchor_text"),
@@ -60,7 +60,7 @@ export const backlinks = pgTable("backlinks", {
 // Competitors
 export const competitors = pgTable("competitors", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   domain: text("domain").notNull(),
   domainScore: integer("domain_score").notNull().default(0),
   topKeyword: text("top_keyword"),
@@ -71,7 +71,7 @@ export const competitors = pgTable("competitors", {
 // SEO Issues
 export const seoIssues = pgTable("seo_issues", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   severity: text("severity").notNull(), // critical, warning, info
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -81,7 +81,7 @@ export const seoIssues = pgTable("seo_issues", {
 // Backlink Growth History
 export const backlinkGrowth = pgTable("backlink_growth", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   date: text("date").notNull(),
   backlinkCount: integer("backlink_count").notNull().default(0),
 });

@@ -21,6 +21,8 @@ export interface IStorage {
   getProject(id: string): Promise<Project | undefined>;
   getAllProjects(): Promise<Project[]>;
   createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: string): Promise<boolean>;
   
   // Keywords
   getKeywordsByProject(projectId: string): Promise<Keyword[]>;
@@ -64,6 +66,16 @@ export class DbStorage implements IStorage {
   async createProject(insertProject: InsertProject): Promise<Project> {
     const result = await this.db.insert(projects).values(insertProject).returning();
     return result[0];
+  }
+
+  async updateProject(id: string, insertProject: Partial<InsertProject>): Promise<Project | undefined> {
+    const result = await this.db.update(projects).set(insertProject).where(eq(projects.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteProject(id: string): Promise<boolean> {
+    const result = await this.db.delete(projects).where(eq(projects.id, id)).returning();
+    return result.length > 0;
   }
 
   async getKeywordsByProject(projectId: string): Promise<Keyword[]> {
