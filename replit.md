@@ -67,9 +67,11 @@ Preferred communication style: Simple, everyday language.
 - Error handling middleware
 
 **Data Storage:**
-- In-memory storage implementation (MemStorage) for development/demo
-- Interface-based storage abstraction (IStorage) for future database integration
+- PostgreSQL database with Drizzle ORM (DbStorage implementation)
+- Interface-based storage abstraction (IStorage) for flexible implementation
 - UUID-based primary keys for all entities
+- Full data persistence across server restarts
+- WebSocket-enabled Neon serverless driver
 
 ### Database Schema
 
@@ -79,6 +81,7 @@ Preferred communication style: Simple, everyday language.
 - **keywordRankings**: Ranking distribution (top3, top10, top20, top50, over50)
 - **trafficData**: Daily traffic analytics
 - **backlinks**: Link building data with domain scores
+- **backlinkGrowth**: Historical backlink count data for growth charts (NEW)
 - **competitors**: Competitor domains with traffic estimates
 - **seoIssues**: Site audit findings with severity levels
 

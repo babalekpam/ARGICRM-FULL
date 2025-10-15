@@ -78,6 +78,14 @@ export const seoIssues = pgTable("seo_issues", {
   affectedPages: integer("affected_pages").notNull().default(1),
 });
 
+// Backlink Growth History
+export const backlinkGrowth = pgTable("backlink_growth", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  date: text("date").notNull(),
+  backlinkCount: integer("backlink_count").notNull().default(0),
+});
+
 // Insert schemas
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertKeywordSchema = createInsertSchema(keywords).omit({ id: true });
@@ -86,6 +94,7 @@ export const insertTrafficDataSchema = createInsertSchema(trafficData).omit({ id
 export const insertBacklinkSchema = createInsertSchema(backlinks).omit({ id: true });
 export const insertCompetitorSchema = createInsertSchema(competitors).omit({ id: true });
 export const insertSeoIssueSchema = createInsertSchema(seoIssues).omit({ id: true });
+export const insertBacklinkGrowthSchema = createInsertSchema(backlinkGrowth).omit({ id: true });
 
 // Types
 export type InsertProject = z.infer<typeof insertProjectSchema>;
@@ -108,3 +117,6 @@ export type Competitor = typeof competitors.$inferSelect;
 
 export type InsertSeoIssue = z.infer<typeof insertSeoIssueSchema>;
 export type SeoIssue = typeof seoIssues.$inferSelect;
+
+export type InsertBacklinkGrowth = z.infer<typeof insertBacklinkGrowthSchema>;
+export type BacklinkGrowth = typeof backlinkGrowth.$inferSelect;
