@@ -1266,6 +1266,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI-Powered Local SEO Generation
+  app.post("/api/projects/:projectId/local-seo/generate", requireAuth, async (req: any, res: Response) => {
+    try {
+      const projectId = req.params.projectId;
+      const { businessName, locations, numCitations } = req.body;
+
+      if (!businessName || !Array.isArray(locations) || locations.length === 0) {
+        return res.status(400).json({ error: "Business name and locations are required" });
+      }
+
+      // Get project keywords for context
+      const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
+      const keywordStrings = keywords.slice(0, 5).map(k => k.keyword);
+
+      // Generate Google Business Profile
+      const profileData = await aiService.generateGoogleBusinessProfile(businessName);
+      
+      // Create or update Google Business Profile
+      const existingProfile = await storage.getGoogleBusinessProfileByProject(req.tenantId, projectId);
+      let profile;
+      if (existingProfile) {
+        profile = await storage.updateGoogleBusinessProfile(req.tenantId, existingProfile.id, profileData);
+      } else {
+        profile = await storage.createGoogleBusinessProfile(req.tenantId, {
+          ...profileData,
+          projectId
+        });
+      }
+
+      // Generate local rankings
+      const rankingsData = await aiService.generateLocalRankings(
+        keywordStrings.length > 0 ? keywordStrings : [businessName],
+        locations
+      );
+      
+      const rankings = await Promise.all(
+        rankingsData.map(ranking => 
+          storage.createLocalRanking(req.tenantId, {
+            ...ranking,
+            projectId
+          })
+        )
+      );
+
+      // Generate citations
+      const citationsData = await aiService.generateLocalCitations(businessName, numCitations || 20);
+      const citations = await Promise.all(
+        citationsData.map(citation =>
+          storage.createLocalCitation(req.tenantId, {
+            ...citation,
+            projectId
+          })
+        )
+      );
+
+      res.json({
+        success: true,
+        profile,
+        rankings: rankings.length,
+        citations: citations.length,
+        source: 'ai'
+      });
+    } catch (error) {
+      console.error("Error generating local SEO data:", error);
+      res.status(500).json({ error: "Failed to generate local SEO data" });
+    }
+  });
+
   // ====== Social Media Monitoring Routes ======
 
   // Social Accounts
