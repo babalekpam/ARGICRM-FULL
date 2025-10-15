@@ -4322,3 +4322,11 @@ export const insertAIUsageSchema = createInsertSchema(aiUsage).omit({
   createdAt: true,
 });
 
+// Re-export SEO schemas from server/argilette/seo-schema.ts for client use
+export { 
+  keywords,
+  insertKeywordSchema,
+  type Keyword,
+  type InsertKeyword
+} from "../server/argilette/seo-schema";
+
