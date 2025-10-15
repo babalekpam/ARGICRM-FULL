@@ -46,11 +46,15 @@ The platform uses a modern full-stack architecture:
 - Utilizes Replit Auth for OpenID Connect authentication (Google, GitHub, X, Apple, email/password).
 - Implements a strict multi-tenant architecture where all data tables include a `tenantId` for isolation and security, ensuring users only access their own data.
 
-### Local SEO Tracking
-- Monitors location-based search rankings across multiple cities and regions.
-- Google Business Profile metrics tracking (views, searches, actions, calls, directions).
-- Local citations management showing business listings across directories.
-- Location selector for targeted local SEO analysis.
+### Local SEO Tracking (AI-Powered)
+- **AI-Generated Local SEO Data**: Uses Anthropic Claude Sonnet 4 to generate complete local SEO profiles
+- **Google Business Profile Metrics**: AI generates realistic views, searches, calls, directions, rating, and review counts
+- **Location-Based Rankings**: Generates keyword rankings across multiple cities with local pack positions
+- **Business Citations**: Creates citations from 20+ popular directories (Google, Yelp, Facebook, Yellow Pages, etc.)
+- **One-Click Generation**: Enter business name and target locations, AI creates everything instantly
+- **Realistic Data Distribution**: Status (80% active, 15% pending, 5% removed), NAP consistency (85% consistent)
+- **Smart Context-Aware**: Uses project keywords for ranking generation, falls back to business name if needed
+- **Free & Instant**: No external APIs required, uses existing Anthropic AI infrastructure
 
 ### Social Media Monitoring
 - Multi-platform social media tracking (Twitter, Facebook, Instagram, LinkedIn, TikTok).
