@@ -28,6 +28,7 @@ import Landing from "@/pages/landing";
 import Pricing from "@/pages/pricing";
 import Dashboard from "@/pages/dashboard";
 import Keywords from "@/pages/keywords";
+import RankTracking from "@/pages/rank-tracking";
 import Traffic from "@/pages/traffic";
 import SeoAudit from "@/pages/seo-audit";
 import Backlinks from "@/pages/backlinks";
@@ -64,6 +65,8 @@ function AppContent() {
     // Invalidate project-specific queries to refetch data for new project
     queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
     queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/rank-tracking/history"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/rank-tracking/competitor-ranks"] });
     queryClient.invalidateQueries({ queryKey: ["/api/traffic"] });
     queryClient.invalidateQueries({ queryKey: ["/api/seo-issues"] });
     queryClient.invalidateQueries({ queryKey: ["/api/backlinks"] });
@@ -284,6 +287,24 @@ function AppContent() {
                   );
                 }
                 return <Competitors projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/rank-tracking">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <RankTracking projectId={effectiveProjectId} />;
               }}
             </Route>
             <Route path="/link-building">

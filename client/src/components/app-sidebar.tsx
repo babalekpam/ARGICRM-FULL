@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Search,
+  Activity,
   TrendingUp,
   AlertCircle,
   Link as LinkIcon,
@@ -27,6 +28,7 @@ import {
 const navigation = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Keyword Research", url: "/keywords", icon: Search },
+  { title: "Rank Tracking", url: "/rank-tracking", icon: Activity },
   { title: "Traffic Analyzer", url: "/traffic", icon: TrendingUp },
   { title: "SEO Audit", url: "/seo-audit", icon: AlertCircle },
   { title: "Backlinks", url: "/backlinks", icon: LinkIcon },
