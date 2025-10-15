@@ -36,7 +36,7 @@ import {
   competitorRankSnapshots, contentBriefs, contentScorecards, serpSnapshots, auditScans, pageMetrics, 
   coreWebVitals, reportConfigs, generatedReports, apiKeys, apiUsage, users, tenants,
   localRankings, googleBusinessProfiles, localCitations, socialAccounts, socialPosts, socialMetrics
-} from "@shared/schema";
+} from "./seo-schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { eq, desc, and, gte, lte } from "drizzle-orm";

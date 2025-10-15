@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { registerSeoRoutes } from "./routes/seo";
+import { createSEORouter } from "./argilette/seo-routes";
 import { z } from "zod";
 import { emotionalIntelligenceEngine } from "./ai-emotional-intelligence";
 import { intelligentTicketRouting } from "./intelligent-ticket-routing";
@@ -12042,6 +12043,16 @@ ${req.body.companyName} Team`;
 
   // Register SEO routes for better search engine optimization
   registerSeoRoutes(app);
+
+  // ARGILETTE SEO Analytics - Full SEO Platform Integration
+  app.use('/api/argilette', authenticate, (req: any, res, next) => {
+    // Set tenantId from authenticated user
+    req.tenantId = req.user.tenantId;
+    req.userId = req.user.id;
+    req.isAdmin = req.user.email === 'abel@argilette.com' || req.user.isPlatformOwner;
+    next();
+  });
+  app.use('/api/argilette', createSEORouter());
 
   // Qwen AI Reply Classification API
   app.post('/api/ai/classify-reply', async (req, res) => {
