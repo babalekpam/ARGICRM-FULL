@@ -466,7 +466,16 @@ Make the backlinks industry-appropriate, varied, and realistic. Include a mix of
       const textContent = message.content.find(block => block.type === 'text');
       if (!textContent) throw new Error('No response');
       
-      const backlinks = JSON.parse(textContent.text);
+      // Strip markdown code fences if present
+      let jsonText = textContent.text.trim();
+      if (jsonText.startsWith('```')) {
+        // Remove opening code fence (```json or ```)
+        jsonText = jsonText.replace(/^```(?:json)?\n?/, '');
+        // Remove closing code fence
+        jsonText = jsonText.replace(/\n?```$/, '');
+      }
+      
+      const backlinks = JSON.parse(jsonText.trim());
       return Array.isArray(backlinks) ? backlinks.slice(0, limit) : [];
     } catch (error) {
       console.error('Failed to parse AI backlink response:', error);
