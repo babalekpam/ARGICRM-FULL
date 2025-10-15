@@ -194,6 +194,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rank Tracking endpoints
+  app.get("/api/rank-tracking/history", requireAuth, async (req: any, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string;
+      const keywordId = req.query.keywordId as string | undefined;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+
+      if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+      }
+
+      let rankHistory;
+      if (keywordId) {
+        rankHistory = await storage.getRankHistoryByKeyword(req.tenantId, keywordId, startDate, endDate);
+      } else {
+        rankHistory = await storage.getRankHistoryByProject(req.tenantId, projectId, startDate, endDate);
+      }
+
+      res.json(rankHistory);
+    } catch (error) {
+      console.error("Rank tracking history error:", error);
+      res.status(500).json({ error: "Failed to fetch rank history" });
+    }
+  });
+
+  app.post("/api/rank-tracking/history", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertKeywordRankHistorySchema } = await import("@shared/schema");
+      const validatedData = insertKeywordRankHistorySchema.parse(req.body);
+      const rankHistory = await storage.createRankHistory(req.tenantId, validatedData);
+      res.json(rankHistory);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid rank history data" });
+      }
+      console.error("Create rank history error:", error);
+      res.status(500).json({ error: "Failed to create rank history" });
+    }
+  });
+
+  app.get("/api/rank-tracking/competitor-ranks", requireAuth, async (req: any, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string | undefined;
+      const keywordId = req.query.keywordId as string | undefined;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+
+      if (!projectId && !keywordId) {
+        return res.status(400).json({ error: "Either projectId or keywordId is required" });
+      }
+
+      let competitorRanks;
+      if (keywordId) {
+        competitorRanks = await storage.getCompetitorRanksByKeyword(req.tenantId, keywordId);
+      } else if (projectId) {
+        competitorRanks = await storage.getCompetitorRanksByProject(req.tenantId, projectId, startDate, endDate);
+      }
+
+      res.json(competitorRanks);
+    } catch (error) {
+      console.error("Competitor ranks error:", error);
+      res.status(500).json({ error: "Failed to fetch competitor ranks" });
+    }
+  });
+
+  app.post("/api/rank-tracking/competitor-snapshot", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { insertCompetitorRankSnapshotSchema } = await import("@shared/schema");
+      const validatedData = insertCompetitorRankSnapshotSchema.parse(req.body);
+      const snapshot = await storage.createCompetitorRankSnapshot(req.tenantId, validatedData);
+      res.json(snapshot);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid competitor snapshot data" });
+      }
+      console.error("Create competitor snapshot error:", error);
+      res.status(500).json({ error: "Failed to create competitor snapshot" });
+    }
+  });
+
   // AI Chat endpoints
   app.post("/api/ai/chat", requireAuth, async (req: any, res: Response) => {
     try {
