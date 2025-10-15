@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Sparkles,
   CreditCard,
+  FileText,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -29,6 +30,7 @@ const navigation = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Keyword Research", url: "/keywords", icon: Search },
   { title: "Rank Tracking", url: "/rank-tracking", icon: Activity },
+  { title: "Content Tools", url: "/content-tools", icon: FileText },
   { title: "Traffic Analyzer", url: "/traffic", icon: TrendingUp },
   { title: "SEO Audit", url: "/seo-audit", icon: AlertCircle },
   { title: "Backlinks", url: "/backlinks", icon: LinkIcon },

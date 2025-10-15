@@ -34,6 +34,7 @@ import SeoAudit from "@/pages/seo-audit";
 import Backlinks from "@/pages/backlinks";
 import Competitors from "@/pages/competitors";
 import LinkBuildingPage from "@/pages/link-building";
+import ContentTools from "@/pages/content-tools";
 import AIAssistantPage from "@/pages/ai-assistant-page";
 import NotFound from "@/pages/not-found";
 
@@ -71,6 +72,8 @@ function AppContent() {
     queryClient.invalidateQueries({ queryKey: ["/api/seo-issues"] });
     queryClient.invalidateQueries({ queryKey: ["/api/backlinks"] });
     queryClient.invalidateQueries({ queryKey: ["/api/competitors"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/content/briefs"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/content/scorecards"] });
   };
 
   const handleProjectCreated = (projectId: string) => {
@@ -323,6 +326,24 @@ function AppContent() {
                   );
                 }
                 return <LinkBuildingPage selectedProjectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/content-tools">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <ContentTools projectId={effectiveProjectId} />;
               }}
             </Route>
             <Route path="/ai-assistant">
