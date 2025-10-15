@@ -53,6 +53,19 @@ export interface IStorage {
   getTenant(id: string): Promise<Tenant | undefined>;
   createTenant(tenant: InsertTenant): Promise<Tenant>;
   
+  // Admin - Platform-wide access (no tenant filtering)
+  getAllUsers(): Promise<User[]>;
+  getAllTenants(): Promise<Tenant[]>;
+  getPlatformStats(): Promise<{
+    totalUsers: number;
+    totalTenants: number;
+    totalProjects: number;
+    totalKeywords: number;
+    totalBacklinks: number;
+    activeTenants: number;
+    tenantsByPlan: { plan: string; count: number }[];
+  }>;
+  
   // Projects - all methods require tenantId for isolation
   getProject(tenantId: string, id: string): Promise<Project | undefined>;
   getAllProjects(tenantId: string): Promise<Project[]>;
@@ -235,6 +248,63 @@ export class DbStorage implements IStorage {
   async createTenant(insertTenant: InsertTenant): Promise<Tenant> {
     const [tenant] = await this.db.insert(tenants).values(insertTenant).returning();
     return tenant;
+  }
+
+  // Admin operations - Platform-wide access
+  async getAllUsers(): Promise<User[]> {
+    return await this.db.select().from(users);
+  }
+
+  async getAllTenants(): Promise<Tenant[]> {
+    return await this.db.select().from(tenants);
+  }
+
+  async getPlatformStats(): Promise<{
+    totalUsers: number;
+    totalTenants: number;
+    totalProjects: number;
+    totalKeywords: number;
+    totalBacklinks: number;
+    activeTenants: number;
+    tenantsByPlan: { plan: string; count: number }[];
+  }> {
+    const [
+      allUsers,
+      allTenants,
+      allProjects,
+      allKeywords,
+      allBacklinks
+    ] = await Promise.all([
+      this.db.select().from(users),
+      this.db.select().from(tenants),
+      this.db.select().from(projects),
+      this.db.select().from(keywords),
+      this.db.select().from(backlinks)
+    ]);
+
+    const activeTenants = allTenants.filter(t => t.subscriptionStatus === 'active').length;
+    
+    // Count tenants by plan
+    const planCounts = allTenants.reduce((acc, tenant) => {
+      const plan = tenant.plan || 'free';
+      acc[plan] = (acc[plan] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const tenantsByPlan = Object.entries(planCounts).map(([plan, count]) => ({
+      plan,
+      count
+    }));
+
+    return {
+      totalUsers: allUsers.length,
+      totalTenants: allTenants.length,
+      totalProjects: allProjects.length,
+      totalKeywords: allKeywords.length,
+      totalBacklinks: allBacklinks.length,
+      activeTenants,
+      tenantsByPlan
+    };
   }
 
   async getProject(tenantId: string, id: string): Promise<Project | undefined> {

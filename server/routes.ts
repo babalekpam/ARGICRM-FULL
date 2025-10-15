@@ -21,6 +21,16 @@ async function attachTenantId(req: Request, res: Response, next: NextFunction) {
   
   (req as any).tenantId = dbUser.tenantId;
   (req as any).userId = userId;
+  (req as any).isAdmin = dbUser.isAdmin || false;
+  next();
+}
+
+// Middleware to require admin access
+async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const isAdmin = (req as any).isAdmin;
+  if (!isAdmin) {
+    return res.status(403).json({ message: "Forbidden: Admin access required" });
+  }
   next();
 }
 
@@ -129,6 +139,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Dashboard error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Admin routes - require authentication and admin role
+  const requireAdminAuth = [isAuthenticated, attachTenantId, requireAdmin];
+
+  app.get("/api/admin/stats", requireAdminAuth, async (req: any, res: Response) => {
+    try {
+      const stats = await storage.getPlatformStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Admin stats error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/admin/users", requireAdminAuth, async (req: any, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Admin users error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/admin/tenants", requireAdminAuth, async (req: any, res: Response) => {
+    try {
+      const tenants = await storage.getAllTenants();
+      res.json(tenants);
+    } catch (error) {
+      console.error("Admin tenants error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
