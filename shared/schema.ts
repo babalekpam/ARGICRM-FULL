@@ -96,6 +96,7 @@ export const backlinks = pgTable("backlinks", {
   domainScore: integer("domain_score").notNull().default(0),
   anchorText: text("anchor_text"),
   date: text("date").notNull(),
+  source: text("source").notNull().default('ai'), // 'ai' or 'api' - tracks data provenance
 });
 
 // Competitors
