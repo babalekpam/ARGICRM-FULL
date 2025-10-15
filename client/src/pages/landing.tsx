@@ -4,7 +4,7 @@ import { BarChart3, TrendingUp, Search, Sparkles, Shield, Zap } from "lucide-rea
 
 export default function Landing() {
   const handleLogin = () => {
-    window.location.href = "/login";
+    window.location.href = "/api/login";
   };
 
   return (

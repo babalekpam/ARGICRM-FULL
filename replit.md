@@ -115,11 +115,41 @@ Preferred communication style: Simple, everyday language.
 ### Authentication & Multi-Tenancy
 
 **Replit Auth Integration:**
-- OpenID Connect authentication via Replit
+- OpenID Connect authentication via Replit (server/replitAuth.ts)
 - Supports Google, GitHub, X, Apple, and email/password login
 - Session storage in PostgreSQL (sessions table)
 - Automatic tenant creation on first user login
 - Each user gets their own organization/tenant by default
+
+**Authentication Endpoints:**
+- `GET /api/login` - Initiates OIDC login flow
+- `GET /api/callback` - OIDC callback handler (passport)
+- `GET /api/logout` - Logs out and redirects to OIDC logout
+- `GET /api/auth/user` - Returns current user session (401 if not authenticated)
+
+**Frontend Authentication (client/src/hooks/use-auth.ts):**
+- Custom useAuth hook for authentication state management
+- Fetches user session with 5-minute cache window
+- Handles 401 responses (returns null for unauthenticated)
+- Provides login/logout helper functions
+
+**Landing Page (client/src/pages/landing.tsx):**
+- Public landing page with professional hero section
+- Feature showcase and benefits presentation
+- Multiple login CTAs throughout the page
+- Redirects to /api/login for Replit Auth
+
+**Protected Routes (client/src/App.tsx):**
+- Shows loading state while checking authentication
+- Displays landing page for unauthenticated users
+- Only loads projects query when authenticated (enabled: isAuthenticated)
+- All dashboard routes protected behind authentication
+
+**User Profile Display:**
+- Avatar in header with user profile image
+- Fallback to initials if no profile image
+- Dropdown menu with user name (firstName + lastName) and email
+- Logout button with proper session cleanup
 
 **Multi-Tenant Architecture:**
 - **Strict tenant isolation**: ALL data tables include tenantId foreign key
