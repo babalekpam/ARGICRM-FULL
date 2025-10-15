@@ -83,7 +83,12 @@ export default function SocialMedia({ projectId }: SocialMediaProps) {
       return await apiRequest("POST", "/api/social-accounts", data);
     },
     onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ["/api/projects", projectId, "social-accounts"] });
+      // Remove the old cached data and refetch to force a fresh request
+      queryClient.removeQueries({ queryKey: ["/api/projects", projectId, "social-accounts"] });
+      await queryClient.refetchQueries({ 
+        queryKey: ["/api/projects", projectId, "social-accounts"],
+        type: 'active'
+      });
       toast({ title: "Social account connected successfully" });
       setDialogOpen(false);
       form.reset({
