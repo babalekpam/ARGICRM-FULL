@@ -73,24 +73,47 @@ Preferred communication style: Simple, everyday language.
 - Full data persistence across server restarts
 - WebSocket-enabled Neon serverless driver
 
+### Authentication & Multi-Tenancy
+
+**Replit Auth Integration:**
+- OpenID Connect authentication via Replit
+- Supports Google, GitHub, X, Apple, and email/password login
+- Session storage in PostgreSQL (sessions table)
+- Automatic tenant creation on first user login
+- Each user gets their own organization/tenant by default
+
+**Multi-Tenant Architecture:**
+- **Strict tenant isolation**: ALL data tables include tenantId foreign key
+- **CASCADE DELETE**: Deleting a tenant removes all associated data
+- **Automatic tenant assignment**: Users automatically assigned to their organization
+- **Security model**: Users can only access data from their own tenant
+- **Storage layer enforcement**: All queries filtered by tenantId
+
 ### Database Schema
 
-**Core Tables:**
-- **projects**: Website projects with SEO metrics (seoScore, organicTraffic, totalBacklinks, etc.)
-- **keywords**: Keyword tracking with search volume, difficulty, position, CPC
-- **keywordRankings**: Ranking distribution (top3, top10, top20, top50, over50)
-- **trafficData**: Daily traffic analytics
-- **backlinks**: Link building data with domain scores
-- **backlinkGrowth**: Historical backlink count data for growth charts (NEW)
-- **competitors**: Competitor domains with traffic estimates
-- **seoIssues**: Site audit findings with severity levels
+**Auth & Tenant Tables:**
+- **sessions**: Session storage for Replit Auth (sid, sess, expire)
+- **users**: User profiles with Replit OIDC claims (id, email, firstName, lastName, profileImageUrl, tenantId)
+- **tenants**: Organizations/workspaces (id, name)
+
+**Core Tables (all with tenantId for isolation):**
+- **projects**: Website projects with SEO metrics (tenantId, seoScore, organicTraffic, totalBacklinks, etc.)
+- **keywords**: Keyword tracking (tenantId, projectId, search volume, difficulty, position, CPC)
+- **keywordRankings**: Ranking distribution (tenantId, projectId, top3, top10, top20, top50, over50)
+- **trafficData**: Daily traffic analytics (tenantId, projectId, date, visits)
+- **backlinks**: Link building data (tenantId, projectId, domain scores)
+- **backlinkGrowth**: Historical backlink count data (tenantId, projectId, date, backlinkCount)
+- **competitors**: Competitor domains (tenantId, projectId, traffic estimates)
+- **seoIssues**: Site audit findings (tenantId, projectId, severity levels)
 
 **Design Decisions:**
-- PostgreSQL dialect with UUID primary keys
-- Foreign key relationships to projects table
+- PostgreSQL dialect with UUID primary keys (varchar + gen_random_uuid())
+- Foreign key relationships: tenants → users, tenants → all data tables
+- CASCADE DELETE on all FK relationships for data cleanup
 - Text-based date storage for flexible querying
 - Real numbers for financial data (CPC)
 - Integer metrics for counts and scores
+- Insert schemas omit tenantId (added by server from authenticated user)
 
 ### Build & Deployment
 

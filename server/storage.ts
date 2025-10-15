@@ -7,7 +7,9 @@ import {
   type Competitor, type InsertCompetitor,
   type SeoIssue, type InsertSeoIssue,
   type BacklinkGrowth, type InsertBacklinkGrowth,
-  projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth
+  type User, type UpsertUser,
+  type Tenant, type InsertTenant,
+  projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth, users, tenants
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -17,16 +19,24 @@ import ws from "ws";
 neonConfig.webSocketConstructor = ws;
 
 export interface IStorage {
+  // Users - Required for Replit Auth
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // Tenants
+  getTenant(id: string): Promise<Tenant | undefined>;
+  createTenant(tenant: InsertTenant): Promise<Tenant>;
+  
   // Projects
   getProject(id: string): Promise<Project | undefined>;
   getAllProjects(): Promise<Project[]>;
-  createProject(project: InsertProject): Promise<Project>;
+  createProject(tenantId: string, project: InsertProject): Promise<Project>;
   updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string): Promise<boolean>;
   
   // Keywords
   getKeywordsByProject(projectId: string): Promise<Keyword[]>;
-  createKeyword(keyword: InsertKeyword): Promise<Keyword>;
+  createKeyword(tenantId: string, keyword: InsertKeyword): Promise<Keyword>;
   
   // Keyword Rankings
   getKeywordRanking(projectId: string): Promise<KeywordRanking | undefined>;
@@ -54,6 +64,38 @@ export class DbStorage implements IStorage {
     this.db = drizzle(pool);
   }
 
+  // User operations - Required for Replit Auth
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await this.db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await this.db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  // Tenant operations
+  async getTenant(id: string): Promise<Tenant | undefined> {
+    const [tenant] = await this.db.select().from(tenants).where(eq(tenants.id, id));
+    return tenant;
+  }
+
+  async createTenant(insertTenant: InsertTenant): Promise<Tenant> {
+    const [tenant] = await this.db.insert(tenants).values(insertTenant).returning();
+    return tenant;
+  }
+
   async getProject(id: string): Promise<Project | undefined> {
     const result = await this.db.select().from(projects).where(eq(projects.id, id));
     return result[0];
@@ -63,8 +105,8 @@ export class DbStorage implements IStorage {
     return await this.db.select().from(projects);
   }
 
-  async createProject(insertProject: InsertProject): Promise<Project> {
-    const result = await this.db.insert(projects).values(insertProject).returning();
+  async createProject(tenantId: string, insertProject: InsertProject): Promise<Project> {
+    const result = await this.db.insert(projects).values({ ...insertProject, tenantId }).returning();
     return result[0];
   }
 
@@ -82,8 +124,8 @@ export class DbStorage implements IStorage {
     return await this.db.select().from(keywords).where(eq(keywords.projectId, projectId));
   }
 
-  async createKeyword(insertKeyword: InsertKeyword): Promise<Keyword> {
-    const result = await this.db.insert(keywords).values(insertKeyword).returning();
+  async createKeyword(tenantId: string, insertKeyword: InsertKeyword): Promise<Keyword> {
+    const result = await this.db.insert(keywords).values({ ...insertKeyword, tenantId }).returning();
     return result[0];
   }
 
