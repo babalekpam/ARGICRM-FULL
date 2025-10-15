@@ -20,6 +20,7 @@ import Traffic from "@/pages/traffic";
 import SeoAudit from "@/pages/seo-audit";
 import Backlinks from "@/pages/backlinks";
 import Competitors from "@/pages/competitors";
+import AIAssistantPage from "@/pages/ai-assistant-page";
 import NotFound from "@/pages/not-found";
 
 function AppContent() {
@@ -137,6 +138,9 @@ function AppContent() {
               </Route>
               <Route path="/competitors">
                 {() => <Competitors projectId={effectiveProjectId} />}
+              </Route>
+              <Route path="/ai-assistant">
+                {() => <AIAssistantPage />}
               </Route>
               <Route component={NotFound} />
             </Switch>

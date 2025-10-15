@@ -6,6 +6,7 @@ import {
   Link as LinkIcon,
   Users,
   LayoutDashboard,
+  Sparkles,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -28,6 +29,7 @@ const navigation = [
   { title: "SEO Audit", url: "/seo-audit", icon: AlertCircle },
   { title: "Backlinks", url: "/backlinks", icon: LinkIcon },
   { title: "Competitors", url: "/competitors", icon: Users },
+  { title: "AI Assistant", url: "/ai-assistant", icon: Sparkles },
 ];
 
 export function AppSidebar() {

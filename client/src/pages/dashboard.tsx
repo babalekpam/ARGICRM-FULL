@@ -7,6 +7,7 @@ import { TrafficChart } from "@/components/traffic-chart";
 import { BacklinksOverview } from "@/components/backlinks-overview";
 import { CompetitorCard } from "@/components/competitor-card";
 import { SeoIssuesList } from "@/components/seo-issues-list";
+import { AIInsightsCard } from "@/components/ai-insights-card";
 import { BarChart3, TrendingUp, Link as LinkIcon, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -100,8 +101,11 @@ export default function Dashboard({ projectId }: DashboardProps) {
         />
       </div>
 
-      {/* SEO Health Score */}
-      <SeoScoreCard score={project.seoScore} />
+      {/* SEO Health Score & AI Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SeoScoreCard score={project.seoScore} />
+        <AIInsightsCard projectId={projectId} />
+      </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

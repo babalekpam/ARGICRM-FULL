@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { aiService } from "./ai";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
 // Middleware to attach tenantId to request
@@ -190,6 +191,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(competitors);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // AI Chat endpoints
+  app.post("/api/ai/chat", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { message, projectId } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Optionally load context if projectId provided
+      let context = undefined;
+      if (projectId) {
+        const project = await storage.getProject(req.tenantId, projectId);
+        const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
+        const trafficData = await storage.getTrafficDataByProject(req.tenantId, projectId);
+        const competitors = await storage.getCompetitorsByProject(req.tenantId, projectId);
+        const seoIssues = await storage.getSeoIssuesByProject(req.tenantId, projectId);
+
+        context = {
+          project: project || undefined,
+          keywords,
+          trafficData,
+          competitors,
+          seoIssues
+        };
+      }
+
+      const response = await aiService.chat(message, context);
+      res.json({ response });
+    } catch (error) {
+      console.error("AI chat error:", error);
+      res.status(500).json({ error: "Failed to generate AI response" });
+    }
+  });
+
+  app.post("/api/ai/insights", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { projectId } = req.body;
+      
+      if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+      }
+
+      const project = await storage.getProject(req.tenantId, projectId);
+      const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
+      const trafficData = await storage.getTrafficDataByProject(req.tenantId, projectId);
+      const competitors = await storage.getCompetitorsByProject(req.tenantId, projectId);
+      const seoIssues = await storage.getSeoIssuesByProject(req.tenantId, projectId);
+
+      const context = {
+        project: project || undefined,
+        keywords,
+        trafficData,
+        competitors,
+        seoIssues
+      };
+
+      const insights = await aiService.generateInsights(context);
+      res.json({ insights });
+    } catch (error) {
+      console.error("AI insights error:", error);
+      res.status(500).json({ error: "Failed to generate insights" });
+    }
+  });
+
+  app.post("/api/ai/analyze-keywords", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { projectId } = req.body;
+      
+      if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+      }
+
+      const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
+      const analysis = await aiService.analyzeKeywords(keywords);
+      res.json({ analysis });
+    } catch (error) {
+      console.error("AI keyword analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze keywords" });
+    }
+  });
+
+  app.post("/api/ai/analyze-competitors", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { projectId } = req.body;
+      
+      if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+      }
+
+      const competitors = await storage.getCompetitorsByProject(req.tenantId, projectId);
+      const analysis = await aiService.analyzeCompetitors(competitors);
+      res.json({ analysis });
+    } catch (error) {
+      console.error("AI competitor analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze competitors" });
+    }
+  });
+
+  app.post("/api/ai/prioritize-issues", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { projectId } = req.body;
+      
+      if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+      }
+
+      const seoIssues = await storage.getSeoIssuesByProject(req.tenantId, projectId);
+      const analysis = await aiService.prioritizeSEOIssues(seoIssues);
+      res.json({ analysis });
+    } catch (error) {
+      console.error("AI issue prioritization error:", error);
+      res.status(500).json({ error: "Failed to prioritize issues" });
     }
   });
 
