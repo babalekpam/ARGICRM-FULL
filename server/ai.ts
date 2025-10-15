@@ -13,8 +13,19 @@ When copying code from this code snippet, ensure you also include this informati
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 // </important_do_not_delete>
 
+const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+
+if (!apiKey) {
+  console.error('❌ ANTHROPIC_API_KEY is not set in environment variables');
+} else if (!apiKey.startsWith('sk-ant-')) {
+  console.error('❌ ANTHROPIC_API_KEY has invalid format. Should start with sk-ant-');
+  console.error(`   Received key starts with: ${apiKey.substring(0, 10)}...`);
+} else {
+  console.log('✅ Anthropic API key is configured correctly');
+}
+
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: apiKey,
 });
 
 interface SEOContext {
