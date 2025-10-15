@@ -14,6 +14,8 @@ import {
   Gauge,
   ClipboardList,
   Key,
+  MapPin,
+  Share2,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -41,6 +43,8 @@ const navigation = [
   { title: "Backlinks", url: "/backlinks", icon: LinkIcon },
   { title: "Link Building", url: "/link-building", icon: Link2 },
   { title: "Competitors", url: "/competitors", icon: Users },
+  { title: "Local SEO", url: "/local-seo", icon: MapPin },
+  { title: "Social Media", url: "/social-media", icon: Share2 },
   { title: "AI Assistant", url: "/ai-assistant", icon: Sparkles },
 ];
 

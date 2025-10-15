@@ -39,6 +39,8 @@ import TechnicalAudit from "@/pages/technical-audit";
 import AutomatedReports from "@/pages/automated-reports";
 import ApiAccess from "@/pages/api-access";
 import AIAssistantPage from "@/pages/ai-assistant-page";
+import LocalSEO from "@/pages/local-seo";
+import SocialMedia from "@/pages/social-media";
 import NotFound from "@/pages/not-found";
 
 function AppContent() {
@@ -392,6 +394,42 @@ function AppContent() {
             </Route>
             <Route path="/ai-assistant">
               {() => <AIAssistantPage />}
+            </Route>
+            <Route path="/local-seo">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <LocalSEO projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/social-media">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <SocialMedia projectId={effectiveProjectId} />;
+              }}
             </Route>
             <Route component={NotFound} />
           </Switch>
