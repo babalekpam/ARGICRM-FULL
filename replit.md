@@ -57,6 +57,21 @@ The platform uses a modern full-stack architecture:
 - Utilizes Replit Auth for OpenID Connect authentication (Google, GitHub, X, Apple, email/password).
 - Implements a strict multi-tenant architecture where all data tables include a `tenantId` for isolation and security, ensuring users only access their own data.
 
+### Multi-Lingual Support (Internationalization)
+- **Complete i18n Implementation**: Built with react-i18next for comprehensive multi-language support
+- **6 Languages Supported**: English (en), Spanish (es), French (fr), German (de), Chinese (zh), Japanese (ja)
+- **Browser Language Detection**: Automatically detects and sets user's preferred language on first visit
+- **Persistent Language Selection**: User language choice saved to localStorage and persists across sessions
+- **UI Language Switcher**: Globe icon dropdown in header allows instant language switching
+- **Fully Translated Components**: 
+  - Sidebar navigation (Analytics, Account, Admin sections)
+  - App shell (user menu, logout, loading states, empty project messages)
+  - Common UI elements and labels
+  - All core navigation and interaction elements
+- **Translation Files**: Structured JSON files in client/src/i18n/locales/ for easy maintenance and expansion
+- **No Emoji Usage**: Language switcher uses text-only labels (following design guidelines)
+- **Accessibility**: Screen reader text properly translated for inclusive user experience
+
 ### Super Admin Dashboard
 - **Platform Overview**: Dedicated admin dashboard for platform-wide monitoring and management
 - **Access Control**: Role-based access via `isAdmin` boolean field on users table
