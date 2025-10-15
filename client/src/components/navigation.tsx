@@ -278,7 +278,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
               
               // Core CRM features and platform admin features should always be accessible
               const coreFeatures = ['/dashboard', '/contacts', '/accounts', '/leads', '/deals', '/tasks', '/calendar', '/analytics', '/simple-messaging', '/funnel-builder', '/sales-channels', '/e-commerce-dashboard'];
-              const platformFeatures = ['/admin-dashboard', '/super-admin-dashboard', '/integrity-dashboard', '/performance-dashboard', '/security-dashboard'];
+              const platformFeatures = ['/admin-dashboard', '/super-admin-dashboard', '/integrity-dashboard', '/performance-dashboard'];
               const isCore = coreFeatures.includes(item.path) || platformFeatures.includes(item.path);
               
               if (!canAccess && !isCore) {

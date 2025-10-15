@@ -117,12 +117,10 @@ const availablePermissions = [
   { id: "automation.read", label: "View Automation", category: "Automation" },
   { id: "automation.write", label: "Configure Automation", category: "Automation" },
 
-  // Security & Compliance
-  { id: "security.read", label: "View Security Dashboard", category: "Security" },
-  { id: "security.write", label: "Manage Security Settings", category: "Security" },
-  { id: "compliance.read", label: "View Compliance", category: "Security" },
-  { id: "compliance.write", label: "Manage Compliance", category: "Security" },
-  { id: "audit.read", label: "View Audit Logs", category: "Security" },
+  // Data Security & Compliance
+  { id: "compliance.read", label: "View Compliance", category: "Data Security" },
+  { id: "compliance.write", label: "Manage Compliance", category: "Data Security" },
+  { id: "audit.read", label: "View Audit Logs", category: "Data Security" },
 
   // Administration
   { id: "admin.read", label: "View Admin Panel", category: "Administration" },
@@ -236,10 +234,9 @@ const roleTemplates = [
     ]
   },
   {
-    name: "Security Analyst",
-    description: "Security monitoring and compliance access",
+    name: "Compliance Analyst",
+    description: "Compliance monitoring and audit access",
     permissions: [
-      "security.read", "security.write",
       "compliance.read", "compliance.write",
       "audit.read",
       "admin.read",
@@ -266,7 +263,7 @@ const roleTemplates = [
       "settings.read", "settings.write",
       "roles.read", "roles.write",
       "users.read", "users.write",
-      "security.read", "compliance.read",
+      "compliance.read",
       "analytics.read", "reports.read"
     ]
   }

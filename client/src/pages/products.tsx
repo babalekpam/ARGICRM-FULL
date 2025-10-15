@@ -61,23 +61,6 @@ const products: Product[] = [
     ]
   },
   {
-    id: 'argilette-security-platform',
-    name: "ARGILETTE Security Platform",
-    description: "Enterprise-grade cybersecurity with emotional threat detection",
-    icon: Shield,
-    category: "Security Platform",
-    badge: "Enterprise",
-    pricing: "Contact for Quote",
-    features: [
-      "Emotional Threat Detection",
-      "Advanced Security Monitoring",
-      "Compliance Management",
-      "Risk Assessment",
-      "Incident Response",
-      "Security Analytics"
-    ]
-  },
-  {
     id: 'bit-automation-engine',
     name: "NODE Automation Engine",
     description: "Intelligent workflow automation with emotional triggers",
@@ -117,7 +100,6 @@ const categories = [
   'All Products',
   'CRM Solutions',
   'Analytics & AI',
-  'Security Platform',
   'Automation Tools',
   'Healthcare Solutions'
 ];

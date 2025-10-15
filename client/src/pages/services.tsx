@@ -516,7 +516,7 @@ export default function ServicesPage() {
                           className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                           onClick={() => {
                             const serviceRoutes = {
-                              cybersecurity: service.title === 'ARGILETTE Security Platform Access' ? '/unified-security-platform' : '/request-demo?service=cybersecurity',
+                              cybersecurity: '/request-demo?service=cybersecurity',
                               rf: '/request-demo?service=rf-engineering',
                               crm: '/adaptive-signup?plan=professional',
                               marketing: '/adaptive-signup?plan=professional',
@@ -530,7 +530,7 @@ export default function ServicesPage() {
                             window.location.href = route;
                           }}
                         >
-                          {service.title === 'ARGILETTE Security Platform Access' ? 'Access Platform' : 'Get Started'}
+                          Get Started
                         </Button>
                         <Button 
                           variant="outline" 
@@ -668,18 +668,10 @@ export default function ServicesPage() {
             <Button 
               size="lg" 
               className="bg-white text-purple-600 hover:bg-gray-100"
-              onClick={() => window.location.href = '/unified-security-platform'}
+              onClick={() => window.location.href = '/adaptive-signup?plan=professional'}
             >
-              Access Security Platform
+              Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-white text-white hover:bg-white hover:text-purple-600"
-              onClick={() => window.location.href = '/request-demo?service=cybersecurity&priority=urgent'}
-            >
-              Security Assessment
             </Button>
             <Button 
               size="lg" 

@@ -54,7 +54,6 @@ import { bankFeedService } from "./bank-feed-service.js";
 import { aiRecommendationService } from "./ai-recommendation-service.js";
 import { integrityValidator } from "./integrity-validator.js";
 import { integrationService } from "./services/integration-service.js";
-import { securityIntegration } from "./security-integration.js";
 import { customerJourneyService } from "./customer-journey-service.js";
 import { aiIntegrationService } from "./services/ai-integration-service.js";
 import { advancedAIAutomation } from "./services/advanced-ai-automation.js";
@@ -75,8 +74,6 @@ import unsubscribeRoutes from "./routes/unsubscribe.js";
 import { trialLockMiddleware, requireActiveSubscription } from "./middleware/trial-lock-middleware.js";
 import { registerEcommerceRoutes } from "./routes/ecommerce.js";
 import { registerInventoryRoutes } from "./routes/inventory.js";
-import { registerSecuritySubdomainRoutes } from "./routes/security-subdomains.js";
-import { registerArgiletteSecurityOrgRoutes } from "./routes/argilette-security-org.js";
 import { translationService } from "./services/translation-service.js";
 import { aiFailoverService } from "./services/ai-failover-service.js";
 import { leadGenerationService } from "./services/lead-generation-service.js";
@@ -551,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'admin.read', 'admin.write', 'workflows.read', 'workflows.write',
           'sentiment.read', 'sentiment.write', 'communications.read', 'communications.write',
           'forms.read', 'forms.write', 'reputation.read', 'reputation.write',
-          'security.read', 'security.write', 'settings.read', 'settings.write',
+          'settings.read', 'settings.write',
           'tax.read', 'tax.write', 'tax.admin', 'team.read', 'team.write',
           'platform.admin', 'billing.admin', 'subscribers.admin'
         ] : [
@@ -711,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'bookkeeping.read', 'bookkeeping.write', 'hr.read', 'hr.write',
           'sentiment.read', 'sentiment.write', 'communications.read', 'communications.write',
           'forms.read', 'forms.write', 'reputation.read', 'reputation.write',
-          'security.read', 'security.write', 'settings.read', 'settings.write'
+          'settings.read', 'settings.write'
           // NOTE: NO platform.* permissions - those are exclusive to admin@default.com
         ]
       };
@@ -6009,8 +6006,6 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,Referr
     }
   });
   registerInventoryRoutes(app);
-  registerSecuritySubdomainRoutes(app);
-  registerArgiletteSecurityOrgRoutes(app);
   
   // Import and register tenant payment routes
   const { registerTenantPaymentRoutes } = await import('./routes/tenant-payments.js');
@@ -6746,288 +6741,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
     });
   });
 
-  // Section 5: Security Module Implementation API Endpoints
-  
-  // 5.1 Redis-Enhanced Feature Toggle Management
-  app.get('/api/security/feature-toggles',  async (req: Request, res: Response) => {
-    try {
-      // Use Redis-based feature toggle service
-      const { redisFeatureToggleService } = await import('./services/redis-feature-toggle.js');
-      await redisFeatureToggleService.isFeatureEnabled('test'); // Initialize cache
-      
-      const toggles = await redisFeatureToggleService.getAllFeatureToggles();
-      
-      res.json({
-        success: true,
-        toggles,
-        count: toggles.length,
-        cacheStatus: 'redis-backed'
-      });
-    } catch (error: any) {
-      console.error('Error fetching feature toggles:', error);
-      // Fallback to database
-      try {
-        const { securityDb } = await import('./services/security-database.js');
-        await securityDb.initializeDefaults();
-        const toggles = await securityDb.getToggles();
-        
-        res.json({
-          success: true,
-          toggles,
-          count: toggles.length,
-          cacheStatus: 'database-fallback'
-        });
-      } catch (fallbackError) {
-        res.status(500).json({
-          success: false,
-          error: 'Failed to fetch feature toggles from both Redis and database'
-        });
-      }
-    }
-  });
-
-  app.post('/api/security/feature-toggles',  async (req: Request, res: Response) => {
-    try {
-      const { securityDb } = await import('./services/security-database.js');
-      const toggleData = req.body;
-      const user = (req as any).user;
-      
-      const toggle = await securityDb.createToggle({
-        ...toggleData,
-        lastModifiedBy: user?.email || 'unknown@domain.com'
-      });
-      
-      res.status(201).json({
-        success: true,
-        toggle
-      });
-    } catch (error: any) {
-      console.error('Error creating feature toggle:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to create feature toggle'
-      });
-    }
-  });
-
-  app.patch('/api/security/feature-toggles/:toggleId',  async (req: Request, res: Response) => {
-    try {
-      const { securityDb } = await import('./services/security-database.js');
-      const { toggleId } = req.params;
-      const updates = req.body;
-      const user = (req as any).user;
-      
-      const toggle = await securityDb.updateToggle(
-        parseInt(toggleId),
-        {
-          ...updates,
-          lastModifiedBy: user?.email || 'unknown@domain.com'
-        }
-      );
-      
-      res.json({
-        success: true,
-        toggle
-      });
-    } catch (error: any) {
-      console.error('Error updating feature toggle:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to update feature toggle'
-      });
-    }
-  });
-
-  app.post('/api/security/feature-toggles/:toggleId/toggle',  async (req: Request, res: Response) => {
-    try {
-      const { featureToggleService } = await import('./services/feature-toggle.js');
-      const { toggleId } = req.params;
-      const { enabled, reason } = req.body;
-      const user = (req as any).user;
-      
-      const toggle = await featureToggleService.toggleFeature(
-        toggleId,
-        enabled,
-        user?.id || 'unknown',
-        user?.email || 'unknown@domain.com',
-        reason
-      );
-      
-      res.json({
-        success: true,
-        toggle
-      });
-    } catch (error: any) {
-      console.error('Error toggling feature:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to toggle feature'
-      });
-    }
-  });
-
-  app.delete('/api/security/feature-toggles/:toggleId',  async (req: Request, res: Response) => {
-    try {
-      const { featureToggleService } = await import('./services/feature-toggle.js');
-      const { toggleId } = req.params;
-      const { reason } = req.body;
-      const user = (req as any).user;
-      
-      await featureToggleService.deleteToggle(
-        toggleId,
-        user?.id || 'unknown',
-        user?.email || 'unknown@domain.com',
-        reason
-      );
-      
-      res.json({
-        success: true,
-        message: 'Feature toggle deleted successfully'
-      });
-    } catch (error: any) {
-      console.error('Error deleting feature toggle:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to delete feature toggle'
-      });
-    }
-  });
-
-  // 5.2 Feature Toggle Audit Logs
-  app.get('/api/security/feature-toggles/audit',  async (req: Request, res: Response) => {
-    try {
-      const { featureToggleService } = await import('./services/feature-toggle.js');
-      const { toggleId, limit } = req.query;
-      
-      const logs = featureToggleService.getAuditLogs(
-        toggleId as string,
-        limit ? parseInt(limit as string) : 100
-      );
-      
-      res.json({
-        success: true,
-        logs,
-        count: logs.length
-      });
-    } catch (error: any) {
-      console.error('Error fetching audit logs:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to fetch audit logs'
-      });
-    }
-  });
-
-  // 5.3 Access Control Matrix Management
-  app.get('/api/security/access-control/matrix',  async (req: Request, res: Response) => {
-    try {
-      const { accessControlMatrix } = await import('./services/access-control-matrix.js');
-      const matrix = accessControlMatrix.generateAccessMatrix();
-      
-      res.json({
-        success: true,
-        matrix
-      });
-    } catch (error: any) {
-      console.error('Error generating access matrix:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to generate access matrix'
-      });
-    }
-  });
-
-  app.get('/api/security/access-control/rules',  async (req: Request, res: Response) => {
-    try {
-      const { securityDb } = await import('./services/security-database.js');
-      await securityDb.initializeDefaults();
-      const rules = await securityDb.getRules();
-      
-      res.json({
-        success: true,
-        rules,
-        count: rules.length
-      });
-    } catch (error: any) {
-      console.error('Error fetching access control rules:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to fetch access control rules'
-      });
-    }
-  });
-
-  app.post('/api/security/access-control/check',  async (req: Request, res: Response) => {
-    try {
-      const { accessControlMatrix } = await import('./services/access-control-matrix.js');
-      const accessRequest = req.body;
-      
-      const decision = await accessControlMatrix.checkAccess(accessRequest);
-      
-      res.json({
-        success: true,
-        decision
-      });
-    } catch (error: any) {
-      console.error('Error checking access:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to check access'
-      });
-    }
-  });
-
-  app.post('/api/security/access-control/rules',  async (req: Request, res: Response) => {
-    try {
-      const { accessControlMatrix } = await import('./services/access-control-matrix.js');
-      const ruleData = req.body;
-      const user = (req as any).user;
-      
-      const rule = await accessControlMatrix.createRule(
-        ruleData,
-        user?.id || 'unknown'
-      );
-      
-      res.status(201).json({
-        success: true,
-        rule
-      });
-    } catch (error: any) {
-      console.error('Error creating access control rule:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to create access control rule'
-      });
-    }
-  });
-
-  // 5.4 Security Health and Status
-  app.get('/api/security/health',  async (req: Request, res: Response) => {
-    try {
-      const { featureToggleService } = await import('./services/feature-toggle.js');
-      const { accessControlMatrix } = await import('./services/access-control-matrix.js');
-      
-      const toggleHealth = featureToggleService.getHealthStatus();
-      const accessControlHealth = accessControlMatrix.getHealthStatus();
-      
-      res.json({
-        success: true,
-        health: {
-          featureToggles: toggleHealth,
-          accessControl: accessControlHealth,
-          overall: 'healthy',
-          timestamp: new Date().toISOString()
-        }
-      });
-    } catch (error: any) {
-      console.error('Error checking security health:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to check security health'
-      });
-    }
-  });
-
   // Section 2: Subscription Feature Entitlements API Endpoints - Complete Implementation
   
   // 2.1 Get current subscription with feature entitlements
@@ -7410,215 +7123,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   });
 
   // ============================================
-  // ARGILETTE Security Platform Integration Routes
-  // ============================================
-
-  // Track user behavior for security analysis
-  app.post('/api/security/behavior/track',  async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.id || 'anonymous';
-      const { interactionType, sentimentScore, sessionDuration } = req.body;
-
-      await securityIntegration.trackCRMInteraction(
-        userId,
-        interactionType || 'general_interaction',
-        sentimentScore || 0,
-        sessionDuration
-      );
-
-      res.json({
-        success: true,
-        message: 'User behavior tracked successfully'
-      });
-    } catch (error) {
-      console.error('Security behavior tracking error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to track user behavior'
-      });
-    }
-  });
-
-  // Get user risk score
-  app.get('/api/security/risk-score/:userId',  async (req: AuthRequest, res) => {
-    try {
-      const { userId } = req.params;
-      const riskData = await securityIntegration.getUserRiskScore(userId);
-
-      if (!riskData) {
-        return res.status(404).json({
-          success: false,
-          error: 'Risk data not found or security API unavailable'
-        });
-      }
-
-      res.json({
-        success: true,
-        data: riskData
-      });
-    } catch (error) {
-      console.error('Security risk score fetch error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch risk score'
-      });
-    }
-  });
-
-  // Get security alerts
-  app.get('/api/security/alerts',  async (req: AuthRequest, res) => {
-    try {
-      const { user_id, resolved } = req.query;
-      const alertsData = await securityIntegration.getSecurityAlerts(
-        user_id as string,
-        resolved === 'true' ? true : resolved === 'false' ? false : undefined
-      );
-
-      if (!alertsData) {
-        return res.json({
-          success: true,
-          data: {
-            alerts: [],
-            total_count: 0,
-            unresolved_count: 0
-          }
-        });
-      }
-
-      res.json({
-        success: true,
-        data: alertsData
-      });
-    } catch (error) {
-      console.error('Security alerts fetch error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch security alerts'
-      });
-    }
-  });
-
-  // Get comprehensive risk assessment
-  app.get('/api/security/risk-assessment/:userId',  async (req: AuthRequest, res) => {
-    try {
-      const { userId } = req.params;
-      const assessment = await securityIntegration.getRiskAssessment(userId);
-
-      if (!assessment) {
-        return res.status(404).json({
-          success: false,
-          error: 'Risk assessment not available'
-        });
-      }
-
-      res.json({
-        success: true,
-        data: assessment
-      });
-    } catch (error) {
-      console.error('Security risk assessment error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch risk assessment'
-      });
-    }
-  });
-
-  // Get behavioral analytics
-  app.get('/api/security/behavioral-analytics/:userId',  async (req: AuthRequest, res) => {
-    try {
-      const { userId } = req.params;
-      const analytics = await securityIntegration.getBehavioralAnalytics(userId);
-
-      if (!analytics) {
-        return res.status(404).json({
-          success: false,
-          error: 'Behavioral analytics not available'
-        });
-      }
-
-      res.json({
-        success: true,
-        data: analytics
-      });
-    } catch (error) {
-      console.error('Security behavioral analytics error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch behavioral analytics'
-      });
-    }
-  });
-
-  // Resolve security alert
-  app.post('/api/security/alerts/:alertId/resolve',  async (req: AuthRequest, res) => {
-    try {
-      const { alertId } = req.params;
-      const resolved = await securityIntegration.resolveSecurityAlert(parseInt(alertId));
-
-      if (!resolved) {
-        return res.status(404).json({
-          success: false,
-          error: 'Failed to resolve alert or alert not found'
-        });
-      }
-
-      res.json({
-        success: true,
-        message: 'Security alert resolved successfully'
-      });
-    } catch (error) {
-      console.error('Security alert resolution error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to resolve security alert'
-      });
-    }
-  });
-
-  // Get security platform status
-  app.get('/api/security/platform/status',  async (req: AuthRequest, res) => {
-    try {
-      const isAvailable = securityIntegration.isApiAvailable();
-      const canReconnect = await securityIntegration.reconnect();
-
-      res.json({
-        success: true,
-        data: {
-          security_api_available: isAvailable,
-          reconnection_successful: canReconnect,
-          integration_status: isAvailable ? 'operational' : 'fallback_mode',
-          last_check: new Date().toISOString()
-        }
-      });
-    } catch (error) {
-      console.error('Security platform status error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to check security platform status'
-      });
-    }
-  });
-
-  // Log user behavior manually
-  app.post('/api/security/behavior/log',  async (req: AuthRequest, res) => {
-    try {
-      const behaviorData = req.body;
-      const result = await securityIntegration.logUserBehavior(behaviorData);
-
-      res.json({
-        success: true,
-        data: result
-      });
-    } catch (error) {
-      console.error('Security behavior log error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to log user behavior'
-      });
-    }
-  });
-
   // Onboarding API endpoints
   app.get('/api/onboarding/progress',  async (req: AuthRequest, res) => {
     try {
@@ -9016,46 +8520,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
     }
   });
 
-  // Enterprise Security Routes
-  app.get('/api/security/monitoring',  async (req: AuthRequest, res) => {
-    try {
-      res.json({
-        success: true,
-        security: {
-          score: 96,
-          failedLogins: 12,
-          activeSessions: 247,
-          encryption: 100,
-          vulnerabilities: 0,
-          compliance: 94,
-          events: [
-            {
-              id: '1',
-              type: 'threat',
-              severity: 'high',
-              title: 'Suspicious Login Pattern Detected',
-              description: 'Multiple failed login attempts from unusual location',
-              timestamp: '5 minutes ago',
-              resolved: false
-            },
-            {
-              id: '2',
-              type: 'access',
-              severity: 'medium',
-              title: 'Privilege Escalation Request',
-              description: 'User requested admin access to customer data',
-              timestamp: '2 hours ago',
-              resolved: true
-            }
-          ]
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching security data:', error);
-      res.status(500).json({ error: 'Failed to fetch security data' });
-    }
-  });
-
   // Advanced Analytics Routes
   app.get('/api/analytics/real-time',  async (req: AuthRequest, res) => {
     try {
@@ -9742,43 +9206,6 @@ Global Enterprise Team`,
       res.status(201).json(log);
     } catch (error: any) {
       console.error('Error creating activity log:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Device Security Policies
-  app.get('/api/device-management/security-policies', async (req: AuthRequest, res) => {
-    try {
-      const userStorage = getUserStorage(req);
-      const policies = await userStorage.getDeviceSecurityPolicies();
-      res.json(policies);
-    } catch (error: any) {
-      console.error('Error fetching security policies:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/device-management/security-policies', async (req: AuthRequest, res) => {
-    try {
-      const userStorage = getUserStorage(req);
-      const policy = await userStorage.createDeviceSecurityPolicy(req.body);
-      res.status(201).json(policy);
-    } catch (error: any) {
-      console.error('Error creating security policy:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.patch('/api/device-management/security-policies/:id', async (req: AuthRequest, res) => {
-    try {
-      const userStorage = getUserStorage(req);
-      const policy = await userStorage.updateDeviceSecurityPolicy(req.params.id, req.body);
-      if (!policy) {
-        return res.status(404).json({ error: 'Security policy not found' });
-      }
-      res.json(policy);
-    } catch (error: any) {
-      console.error('Error updating security policy:', error);
       res.status(500).json({ error: error.message });
     }
   });

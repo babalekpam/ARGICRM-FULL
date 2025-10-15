@@ -11,15 +11,9 @@ import {
   connectionPoolMiddleware,
   optimizedErrorHandler 
 } from "./middleware/performance.js";
-import { 
-  securityHeaders, 
-  validateRequest, 
-  rateLimiters,
-  sessionSecurity 
-} from "./security.js";
-import { applySecurityHardening } from "./security-config.js";
 import session from "express-session";
 import cors from "cors";
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 
@@ -74,13 +68,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// CRITICAL FIX: Apply security hardening only in production
-if (process.env.NODE_ENV === 'production') {
-  applySecurityHardening(app);
-  console.log('🔒 Security hardening applied (production mode)');
-} else {
-  console.log('🚫 Security hardening disabled in development for Vite compatibility');
-}
+// Security hardening is applied through security.js middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://argilette.org', 'https://www.argilette.org'] // Production domains
@@ -92,16 +80,28 @@ app.use(cors({
 
 // Session middleware
 app.use(session({
-  ...sessionSecurity,
-  name: 'argilette-session' // Don't use default session name
+  secret: process.env.SESSION_SECRET || 'fallback-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  name: 'argilette-session'
 }));
 
 // Rate limiting - only in production, NONE in development for Vite compatibility
 if (process.env.NODE_ENV === 'production') {
-  app.use('/api/auth', rateLimiters.auth);
-  app.use('/api/upload', rateLimiters.upload);
-  app.use('/api', rateLimiters.api);
-  app.use(rateLimiters.general);
+  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
+  const uploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
+  const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+  const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 });
+  
+  app.use('/api/auth', authLimiter);
+  app.use('/api/upload', uploadLimiter);
+  app.use('/api', apiLimiter);
+  app.use(generalLimiter);
 }
 
 // CRITICAL FIX: Enhanced Vite dev server bypass for HMR and asset requests
@@ -122,9 +122,6 @@ if (process.env.NODE_ENV === 'development') {
     next();
   });
 }
-
-// Request validation and sanitization
-app.use(validateRequest);
 
 // Add performance monitoring middleware
 app.use(performanceMiddleware);

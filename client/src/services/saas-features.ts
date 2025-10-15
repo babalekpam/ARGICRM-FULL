@@ -501,7 +501,6 @@ export class SaaSFeatureService {
       '/ai-predictions': 'ai_basic',
       '/voice-emotion-analytics': 'ai_basic',
       '/integration-platform': 'api_access_advanced',
-      '/security-dashboard': 'security_compliance',
       '/custom-apps': 'custom_apps',
       '/white-label': 'white_label',
       '/white-label-settings': 'white_label',

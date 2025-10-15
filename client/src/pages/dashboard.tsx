@@ -27,7 +27,6 @@ import Logo from "@/components/logo";
 import SEOHead, { generatePageSEO, generateStructuredData } from "@/components/seo-head";
 import EmotionalIntelligenceWidget from "@/components/emotional-intelligence-widget";
 import PlatformWideEmotionalIntelligence from "@/components/platform-wide-emotional-intelligence";
-import SecurityBadge from "@/components/security-badge";
 import TrialBanner from "@/components/trial-banner";
 import TrialWarningBanner from "@/components/trial-warning-banner";
 import { 
@@ -440,9 +439,6 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="argilette-hover-lift">
                 <EmotionalIntelligenceWidget />
-              </div>
-              <div className="argilette-hover-lift">
-                <SecurityBadge />
               </div>
               <div className="argilette-hover-lift">
                 <SubscriptionBadge />

@@ -126,14 +126,10 @@ export default function MobileNavigation() {
         { name: "Forms & Surveys", href: "/forms-surveys", icon: FileText, permission: "forms.read" },
       ]
     },
-    // Security & Administration - Only for Platform Owners
+    // Platform Administration - Only for Platform Owners
     ...(isPlatformOwner ? [{
-      category: "Security & Administration",
+      category: "Platform Administration",
       items: [
-        { name: "ARGILETTE Security (Global)", href: "/argilette-security", icon: Shield, permission: "admin.read" },
-        { name: "Security.ARGILETTE.org", href: "/argilette-security-org", icon: MapPin, permission: "admin.read" },
-        { name: "Security Subdomains", href: "/security-subdomains", icon: Terminal, permission: "admin.read" },
-        { name: "Organization Security", href: "/tenant-security", icon: Building2, permission: "admin.read" },
         { name: "Admin Dashboard", href: "/admin-dashboard", icon: Crown, permission: "admin.read" },
         { name: "Platform Settings", href: "/settings", icon: Settings, permission: "platform.read" },
       ]
