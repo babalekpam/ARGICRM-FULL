@@ -4,6 +4,7 @@ import {
   TrendingUp,
   AlertCircle,
   Link as LinkIcon,
+  Link2,
   Users,
   LayoutDashboard,
   Sparkles,
@@ -29,6 +30,7 @@ const navigation = [
   { title: "Traffic Analyzer", url: "/traffic", icon: TrendingUp },
   { title: "SEO Audit", url: "/seo-audit", icon: AlertCircle },
   { title: "Backlinks", url: "/backlinks", icon: LinkIcon },
+  { title: "Link Building", url: "/link-building", icon: Link2 },
   { title: "Competitors", url: "/competitors", icon: Users },
   { title: "AI Assistant", url: "/ai-assistant", icon: Sparkles },
 ];
