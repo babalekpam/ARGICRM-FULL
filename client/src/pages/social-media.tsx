@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { SocialAccount, SocialPost, SocialMetric } from "@shared/schema";
+import { SocialAccount, SocialPost, SocialMetric, insertSocialAccountSchema } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Heart, MessageCircle, Share2, Eye, TrendingUp, UserPlus } from "lucide-react";
@@ -33,14 +33,66 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 interface SocialMediaProps {
   projectId: string;
 }
 
+const connectAccountFormSchema = insertSocialAccountSchema.omit({ id: true, tenantId: true, createdAt: true }).extend({
+  projectId: z.string(),
+  followers: z.number().min(0).default(0),
+});
+
 export default function SocialMedia({ projectId }: SocialMediaProps) {
   const { toast } = useToast();
   const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const form = useForm<z.infer<typeof connectAccountFormSchema>>({
+    resolver: zodResolver(connectAccountFormSchema),
+    defaultValues: {
+      projectId,
+      platform: "twitter",
+      username: "",
+      profileUrl: "",
+      followers: 0,
+    },
+  });
+
+  const connectAccountMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof connectAccountFormSchema>) => {
+      return await apiRequest("POST", "/api/social-accounts", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "social-accounts"] });
+      toast({ title: "Social account connected successfully" });
+      setDialogOpen(false);
+      form.reset();
+    },
+    onError: () => {
+      toast({ title: "Failed to connect account", variant: "destructive" });
+    },
+  });
 
   const { data: accounts, isLoading: accountsLoading } = useQuery<SocialAccount[]>({
     queryKey: ["/api/projects", projectId, "social-accounts"],
@@ -115,7 +167,7 @@ export default function SocialMedia({ projectId }: SocialMediaProps) {
           <h1 className="text-3xl font-bold mb-2">Social Media Monitoring</h1>
           <p className="text-muted-foreground">Track social performance and engagement</p>
         </div>
-        <Button data-testid="button-connect-account">
+        <Button onClick={() => setDialogOpen(true)} data-testid="button-connect-account">
           <Plus className="mr-2 h-4 w-4" /> Connect Account
         </Button>
       </div>
@@ -371,6 +423,98 @@ export default function SocialMedia({ projectId }: SocialMediaProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent data-testid="dialog-connect-account">
+          <DialogHeader>
+            <DialogTitle>Connect Social Account</DialogTitle>
+            <DialogDescription>
+              Add a social media account to track its performance
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit((data) => connectAccountMutation.mutate(data))} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="platform"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Platform</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-platform">
+                          <SelectValue placeholder="Select platform" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="twitter">Twitter</SelectItem>
+                        <SelectItem value="facebook">Facebook</SelectItem>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                        <SelectItem value="linkedin">LinkedIn</SelectItem>
+                        <SelectItem value="tiktok">TikTok</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Account Name/Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="@username" data-testid="input-username" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="profileUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile URL</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="https://..." data-testid="input-profile-url" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="followers"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Followers (optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        {...field}
+                        value={field.value ?? 0}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        data-testid="input-followers" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} data-testid="button-cancel-connect">
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={connectAccountMutation.isPending} data-testid="button-submit-connect">
+                  {connectAccountMutation.isPending ? "Connecting..." : "Connect Account"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
