@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MetricCard } from "@/components/metric-card";
-import { Link as LinkIcon, Globe, TrendingUp } from "lucide-react";
+import { Link as LinkIcon, Globe, TrendingUp, Sparkles, Database } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -37,7 +37,8 @@ export default function Backlinks({ projectId }: BacklinksProps) {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [domain, setDomain] = useState("");
-  const [limit, setLimit] = useState(100);
+  const [limit, setLimit] = useState(50);
+  const [useAI, setUseAI] = useState(true); // Default to AI mode
 
   const { data: backlinks, isLoading } = useQuery<Backlink[]>({
     queryKey: ["/api/backlinks", projectId],
@@ -48,9 +49,10 @@ export default function Backlinks({ projectId }: BacklinksProps) {
     },
   });
 
-  const fetchBacklinksMutation = useMutation({
+  const generateBacklinksMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/backlinks/fetch", { 
+      const endpoint = useAI ? "/api/backlinks/generate" : "/api/backlinks/fetch";
+      return await apiRequest("POST", endpoint, { 
         domain, 
         projectId, 
         limit 
@@ -58,17 +60,19 @@ export default function Backlinks({ projectId }: BacklinksProps) {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/backlinks", projectId] });
+      const count = data.generated || data.fetched || 0;
+      const source = useAI ? "AI-powered analysis" : "DataForSEO API";
       toast({ 
-        title: "Backlinks fetched successfully", 
-        description: `Found ${data.fetched} backlinks from ${domain}`
+        title: "Backlinks generated successfully", 
+        description: `Generated ${count} backlinks from ${domain} using ${source}`
       });
       setDialogOpen(false);
       setDomain("");
     },
     onError: (error: any) => {
       toast({ 
-        title: "Failed to fetch backlinks", 
-        description: error.message || "Please check your API credentials and try again",
+        title: "Failed to generate backlinks", 
+        description: error.message || "An error occurred while generating backlinks",
         variant: "destructive" 
       });
       setDialogOpen(false);
@@ -120,12 +124,32 @@ export default function Backlinks({ projectId }: BacklinksProps) {
             </DialogTrigger>
             <DialogContent data-testid="dialog-fetch-backlinks">
               <DialogHeader>
-                <DialogTitle>Fetch Backlinks from DataForSEO</DialogTitle>
+                <DialogTitle>
+                  {useAI ? "Generate AI Backlinks Analysis" : "Fetch Real Backlinks Data"}
+                </DialogTitle>
                 <DialogDescription>
-                  Enter the domain you want to analyze for backlinks
+                  {useAI 
+                    ? "Use AI to generate realistic backlink analysis (free, powered by Claude)"
+                    : "Fetch real backlink data from DataForSEO API (requires paid account)"}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium">Data Source</p>
+                    <p className="text-sm text-muted-foreground">
+                      {useAI ? "AI-Powered (Free)" : "DataForSEO API (Paid)"}
+                    </p>
+                  </div>
+                  <Button
+                    variant={useAI ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setUseAI(!useAI)}
+                    data-testid="button-toggle-mode"
+                  >
+                    {useAI ? "Switch to API" : "Switch to AI"}
+                  </Button>
+                </div>
                 <div className="grid gap-2">
                   <Label htmlFor="domain">Domain</Label>
                   <Input
@@ -137,15 +161,15 @@ export default function Backlinks({ projectId }: BacklinksProps) {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="limit">Limit (max backlinks to fetch)</Label>
+                  <Label htmlFor="limit">Limit (max backlinks to {useAI ? "generate" : "fetch"})</Label>
                   <Input
                     id="limit"
                     data-testid="input-limit"
                     type="number"
                     min="1"
-                    max="1000"
+                    max={useAI ? 100 : 1000}
                     value={limit}
-                    onChange={(e) => setLimit(parseInt(e.target.value) || 100)}
+                    onChange={(e) => setLimit(parseInt(e.target.value) || 50)}
                   />
                 </div>
               </div>
@@ -158,11 +182,11 @@ export default function Backlinks({ projectId }: BacklinksProps) {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => fetchBacklinksMutation.mutate()}
-                  disabled={!domain || fetchBacklinksMutation.isPending}
+                  onClick={() => generateBacklinksMutation.mutate()}
+                  disabled={!domain || generateBacklinksMutation.isPending}
                   data-testid="button-confirm-fetch"
                 >
-                  {fetchBacklinksMutation.isPending ? "Fetching..." : "Fetch Backlinks"}
+                  {generateBacklinksMutation.isPending ? "Processing..." : (useAI ? "Generate with AI" : "Fetch from API")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -203,6 +227,7 @@ export default function Backlinks({ projectId }: BacklinksProps) {
                 <TableHead>Source URL</TableHead>
                 <TableHead>Anchor Text</TableHead>
                 <TableHead>Domain Score</TableHead>
+                <TableHead>Data Source</TableHead>
                 <TableHead>Date Found</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -210,8 +235,8 @@ export default function Backlinks({ projectId }: BacklinksProps) {
             <TableBody>
               {backlinks?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No backlinks found
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No backlinks found. Click "Fetch Backlinks" to get started.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -234,6 +259,17 @@ export default function Backlinks({ projectId }: BacklinksProps) {
                       <Badge className={getDomainScoreColor(backlink.domainScore)}>
                         {backlink.domainScore}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {backlink.source === 'ai' ? (
+                        <Badge variant="secondary" className="gap-1">
+                          <Sparkles className="h-3 w-3" /> AI
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1">
+                          <Database className="h-3 w-3" /> API
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {backlink.date}
