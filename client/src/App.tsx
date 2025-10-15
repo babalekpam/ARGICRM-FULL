@@ -62,7 +62,6 @@ const RolesPage = lazy(() => import("@/pages/roles"));
 // AI & Intelligence  
 const AICampaignStudioPage = lazy(() => import("@/pages/ai-campaign-studio"));
 const CloeAIAgentPage = lazy(() => import("@/pages/cloe-ai-agent"));
-const EmotionalIntelligenceHubPage = lazy(() => import("@/pages/emotional-intelligence-hub"));
 const AIAutonomousPage = lazy(() => import("@/pages/ai-autonomous-dashboard"));
 const SentimentPage = lazy(() => import("@/pages/sentiment"));
 const UnifiedInboxPage = lazy(() => import("@/pages/unified-inbox"));
@@ -298,11 +297,6 @@ function App() {
                           <Route path="/cloe-ai-agent" element={
                             <ProtectedRoute requiredPermission="ai.read">
                               <PageTranslator><CloeAIAgentPage /></PageTranslator>
-                            </ProtectedRoute>
-                          } />
-                          <Route path="/emotional-intelligence-hub" element={
-                            <ProtectedRoute requiredPermission="sentiment.read">
-                              <PageTranslator><EmotionalIntelligenceHubPage /></PageTranslator>
                             </ProtectedRoute>
                           } />
                           <Route path="/ai-autonomous" element={
