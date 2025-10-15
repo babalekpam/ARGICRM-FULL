@@ -2,11 +2,15 @@
 
 ## ✅ Checklist
 
-### 1. Copy Files (1 min)
+### 1. Copy Real Implementation Files (1 min)
 ```bash
 cd YOUR_CRM_PROJECT
-cp -r /path/to/integration-package/server/* server/seo/
-cp -r /path/to/integration-package/client/* client/src/seo/
+
+# Copy actual server implementation (3000+ lines of working code!)
+cp integration-package/server/seo-*.ts server/seo/
+
+# Copy schema
+cp integration-package/server/seo-schema.ts shared/
 ```
 
 ### 2. Install Packages (1 min)
@@ -22,7 +26,16 @@ psql $DATABASE_URL -f integration-package/database/schema.sql
 ### 4. Add Routes (1 min)
 ```javascript
 // In server/index.js
-import { registerSEORoutes } from './seo/routes.js';
+import { registerSEORoutes } from './seo/seo-routes';
+
+// Add middleware for your auth (replace with your CRM's auth)
+app.use('/api/seo', (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  req.tenantId = req.user.organizationId; // Map to your org ID field
+  next();
+});
+
+// Register SEO routes - actual working implementation!
 registerSEORoutes(app);
 ```
 
