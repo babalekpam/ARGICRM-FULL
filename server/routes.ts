@@ -77,13 +77,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalKeywords = keywords.length;
       const totalBacklinks = backlinks.length;
       
-      // Calculate unique referring domains
-      const uniqueDomains = new Set(backlinks.map(b => b.sourceDomain));
+      // Calculate unique referring domains (extract domain from URL)
+      const uniqueDomains = new Set(
+        backlinks.map(b => {
+          try {
+            return new URL(b.url).hostname;
+          } catch {
+            return b.url;
+          }
+        })
+      );
       const referringDomains = uniqueDomains.size;
       
       // Get latest organic traffic (most recent traffic data point)
       const latestTraffic = trafficData.length > 0 
-        ? trafficData[trafficData.length - 1].organicTraffic 
+        ? trafficData[trafficData.length - 1].visits 
         : 0;
       
       // Calculate SEO score based on issues (100 - weighted penalties)
