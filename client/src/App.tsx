@@ -69,6 +69,16 @@ const UnifiedInboxPage = lazy(() => import("@/pages/unified-inbox"));
 const FormsSurveysPage = lazy(() => import("@/pages/forms-surveys"));
 const SalesChannelsPage = lazy(() => import("@/components/sales-channels-manager"));
 
+// ARGILETTE SEO Platform - Full Ubersuggest Clone
+const SeoAuditPage = lazy(() => import("@/pages/seo-audit"));
+const SeoManagementPage = lazy(() => import("@/pages/seo-management"));
+const BacklinksPage = lazy(() => import("@/pages/backlinks"));
+const KeywordsPage = lazy(() => import("@/pages/keywords"));
+const RankTrackingPage = lazy(() => import("@/pages/rank-tracking"));
+const TechnicalAuditPage = lazy(() => import("@/pages/technical-audit"));
+const CompetitorsPage = lazy(() => import("@/pages/competitors"));
+const LocalSeoPage = lazy(() => import("@/pages/local-seo"));
+
 // Platform Administration
 const IntegrityDashboardPage = lazy(() => import("@/pages/integrity-dashboard"));
 const PerformanceDashboardPage = lazy(() => import("@/pages/performance-dashboard"));
@@ -313,6 +323,48 @@ function App() {
                           <Route path="/forms-surveys" element={
                             <ProtectedRoute requiredPermission="forms.read">
                               <PageTranslator><FormsSurveysPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* ARGILETTE SEO Platform Routes - Full Ubersuggest Clone */}
+                          <Route path="/seo-audit" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><SeoAuditPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/seo-management" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><SeoManagementPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/backlinks" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><BacklinksPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/keywords" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><KeywordsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/rank-tracking" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><RankTrackingPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/technical-audit" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><TechnicalAuditPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/competitors" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><CompetitorsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/local-seo" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><LocalSeoPage /></PageTranslator>
                             </ProtectedRoute>
                           } />
                           
