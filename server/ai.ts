@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { Project, Keyword, TrafficData, Competitor, SeoIssue } from '@shared/schema';
+import type { Project, Keyword, TrafficData, Competitor, SeoIssue, BacklinkOpportunity } from '@shared/schema';
 
 /*
 <important_code_snippet_instructions>
@@ -150,6 +150,54 @@ Provide:
 
     const textContent = message.content.find(block => block.type === 'text');
     return textContent ? textContent.text : 'Unable to prioritize SEO issues.';
+  }
+
+  async recommendBacklinkOpportunities(
+    project: Project, 
+    existingOpportunities: BacklinkOpportunity[], 
+    keywords?: Keyword[], 
+    competitors?: Competitor[]
+  ): Promise<string> {
+    const existingSummary = existingOpportunities.slice(0, 10).map(opp => 
+      `${opp.domain} (DA: ${opp.domainAuthority}, Status: ${opp.status})`
+    ).join('\n');
+
+    const keywordsSummary = keywords?.slice(0, 10).map(k => 
+      `${k.keyword} (Vol: ${k.searchVolume})`
+    ).join(', ') || 'None';
+
+    const competitorsSummary = competitors?.map(c => c.domain).join(', ') || 'None';
+
+    const prompt = `As an expert link building strategist, analyze this website and suggest new backlink opportunity strategies:
+
+Website: ${project.domain || project.name}
+Current SEO Score: ${project.seoScore}/100
+Organic Traffic: ${project.organicTraffic.toLocaleString()}/month
+Total Backlinks: ${project.totalBacklinks.toLocaleString()}
+
+Top Keywords: ${keywordsSummary}
+Competitors: ${competitorsSummary}
+
+Existing Link Building Efforts:
+${existingSummary || 'No opportunities tracked yet'}
+
+Provide:
+1. 3-5 specific backlink opportunity strategies tailored to this website
+2. Target website types and niches to pursue
+3. Content types that would attract quality backlinks
+4. Outreach tactics and messaging approaches
+5. Expected DA range for target sites
+
+Be specific, actionable, and data-driven. Focus on realistic, high-quality opportunities.`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 1536,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const textContent = message.content.find(block => block.type === 'text');
+    return textContent ? textContent.text : 'Unable to generate backlink recommendations.';
   }
 
   private buildSystemPrompt(context?: SEOContext): string {

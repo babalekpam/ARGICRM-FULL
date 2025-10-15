@@ -310,6 +310,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/ai/recommend-backlinks", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { projectId } = req.body;
+      
+      if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+      }
+
+      const project = await storage.getProject(req.tenantId, projectId);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const opportunities = await storage.getOpportunitiesByProject(req.tenantId, projectId);
+      const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
+      const competitors = await storage.getCompetitorsByProject(req.tenantId, projectId);
+      
+      const recommendations = await aiService.recommendBacklinkOpportunities(
+        project, 
+        opportunities, 
+        keywords, 
+        competitors
+      );
+      
+      res.json({ recommendations });
+    } catch (error) {
+      console.error("AI backlink recommendations error:", error);
+      res.status(500).json({ error: "Failed to generate recommendations" });
+    }
+  });
+
   // Link Building - Backlink Opportunities
   app.get("/api/link-building/opportunities/:projectId", requireAuth, async (req: any, res: Response) => {
     try {

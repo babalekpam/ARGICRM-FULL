@@ -43,7 +43,8 @@ import {
   Check,
   X,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from "lucide-react";
 import type { 
   BacklinkOpportunity, 
@@ -61,6 +62,9 @@ export default function LinkBuildingPage({ selectedProjectId }: LinkBuildingPage
   const [activeTab, setActiveTab] = useState("opportunities");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [showAIRecommendations, setShowAIRecommendations] = useState(false);
+  const [aiRecommendations, setAIRecommendations] = useState<string | null>(null);
+  const [loadingAI, setLoadingAI] = useState(false);
 
   // Fetch data
   const { data: opportunities = [], isLoading: loadingOpportunities } = useQuery<BacklinkOpportunity[]>({
@@ -134,6 +138,24 @@ export default function LinkBuildingPage({ selectedProjectId }: LinkBuildingPage
     return <Badge className={variant.className} data-testid={`badge-status-${status}`}>{variant.label}</Badge>;
   };
 
+  const fetchAIRecommendations = async () => {
+    setLoadingAI(true);
+    try {
+      const response = await apiRequest("POST", "/api/ai/recommend-backlinks", { projectId: selectedProjectId });
+      const data = await response.json();
+      setAIRecommendations(data.recommendations);
+      setShowAIRecommendations(true);
+    } catch (error) {
+      toast({ 
+        title: "Failed to generate AI recommendations", 
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -196,6 +218,53 @@ export default function LinkBuildingPage({ selectedProjectId }: LinkBuildingPage
           </CardContent>
         </Card>
       </div>
+
+      {showAIRecommendations && aiRecommendations && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                <CardTitle>AI-Powered Link Building Recommendations</CardTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAIRecommendations(false)}
+                data-testid="button-close-ai-recommendations"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="prose max-w-none text-sm whitespace-pre-wrap" data-testid="text-ai-recommendations">
+              {aiRecommendations}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!showAIRecommendations && (
+        <Button
+          onClick={fetchAIRecommendations}
+          disabled={loadingAI}
+          className="w-full"
+          data-testid="button-get-ai-recommendations"
+        >
+          {loadingAI ? (
+            <>
+              <Clock className="h-4 w-4 mr-2 animate-spin" />
+              Generating AI Recommendations...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Get AI-Powered Link Building Recommendations
+            </>
+          )}
+        </Button>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
