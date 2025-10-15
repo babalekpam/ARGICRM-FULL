@@ -50,8 +50,10 @@ export default function TrackingScripts() {
   }, []);
 
   const initializeTracking = () => {
-    // Initialize Google Analytics & Ads
-    if (!document.querySelector('#gtag-script')) {
+    // Initialize Google Analytics & Ads (only if valid IDs are provided)
+    if (!document.querySelector('#gtag-script') && 
+        TRACKING_CONFIG.googleAdsId && 
+        !TRACKING_CONFIG.googleAdsId.includes('XXX')) {
       const script = document.createElement('script');
       script.id = 'gtag-script';
       script.async = true;
@@ -87,8 +89,10 @@ export default function TrackingScripts() {
       };
     }
 
-    // Initialize Meta Pixel
-    if (!document.querySelector('#meta-pixel-script')) {
+    // Initialize Meta Pixel (only if valid ID is provided)
+    if (!document.querySelector('#meta-pixel-script') && 
+        TRACKING_CONFIG.metaPixelId && 
+        !TRACKING_CONFIG.metaPixelId.includes('XXX')) {
       const script = document.createElement('script');
       script.id = 'meta-pixel-script';
       script.innerHTML = `
@@ -107,8 +111,10 @@ export default function TrackingScripts() {
       document.head.appendChild(script);
     }
 
-    // Initialize LinkedIn Insight Tag
-    if (!document.querySelector('#linkedin-script')) {
+    // Initialize LinkedIn Insight Tag (only if valid ID is provided)
+    if (!document.querySelector('#linkedin-script') && 
+        TRACKING_CONFIG.linkedinPartnerId && 
+        !TRACKING_CONFIG.linkedinPartnerId.includes('XXX')) {
       (window as any)._linkedin_partner_id = TRACKING_CONFIG.linkedinPartnerId;
       window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
       window._linkedin_data_partner_ids.push((window as any)._linkedin_partner_id);
