@@ -54,14 +54,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Project not found" });
       }
 
-      const keywordRanking = await storage.getKeywordRanking(tenantId, projectId);
-      const trafficData = await storage.getTrafficDataByProject(tenantId, projectId);
-      const competitors = await storage.getCompetitorsByProject(tenantId, projectId);
-      const seoIssues = await storage.getSeoIssuesByProject(tenantId, projectId);
-      const backlinkGrowth = await storage.getBacklinkGrowth(tenantId, projectId);
+      // Fetch all related data for the project
+      const [
+        keywords,
+        backlinks,
+        keywordRanking,
+        trafficData,
+        competitors,
+        seoIssues,
+        backlinkGrowth
+      ] = await Promise.all([
+        storage.getKeywordsByProject(tenantId, projectId),
+        storage.getBacklinksByProject(tenantId, projectId),
+        storage.getKeywordRanking(tenantId, projectId),
+        storage.getTrafficDataByProject(tenantId, projectId),
+        storage.getCompetitorsByProject(tenantId, projectId),
+        storage.getSeoIssuesByProject(tenantId, projectId),
+        storage.getBacklinkGrowth(tenantId, projectId)
+      ]);
+
+      // Calculate real-time metrics from actual data
+      const totalKeywords = keywords.length;
+      const totalBacklinks = backlinks.length;
+      
+      // Calculate unique referring domains
+      const uniqueDomains = new Set(backlinks.map(b => b.sourceDomain));
+      const referringDomains = uniqueDomains.size;
+      
+      // Get latest organic traffic (most recent traffic data point)
+      const latestTraffic = trafficData.length > 0 
+        ? trafficData[trafficData.length - 1].organicTraffic 
+        : 0;
+      
+      // Calculate SEO score based on issues (100 - weighted penalties)
+      let seoScore = 100;
+      seoIssues.forEach(issue => {
+        if (issue.severity === 'critical') seoScore -= 10;
+        else if (issue.severity === 'high') seoScore -= 5;
+        else if (issue.severity === 'medium') seoScore -= 2;
+        else if (issue.severity === 'low') seoScore -= 1;
+      });
+      seoScore = Math.max(0, Math.min(100, seoScore)); // Clamp between 0-100
+
+      // Return enriched project data with calculated metrics
+      const enrichedProject = {
+        ...project,
+        totalKeywords,
+        totalBacklinks,
+        referringDomains,
+        organicTraffic: latestTraffic,
+        seoScore
+      };
 
       res.json({
-        project,
+        project: enrichedProject,
         keywordRanking,
         trafficData,
         competitors,
@@ -69,6 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         backlinkGrowth,
       });
     } catch (error) {
+      console.error("Dashboard error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
