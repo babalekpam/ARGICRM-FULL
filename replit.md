@@ -57,6 +57,21 @@ The platform uses a modern full-stack architecture:
 - Utilizes Replit Auth for OpenID Connect authentication (Google, GitHub, X, Apple, email/password).
 - Implements a strict multi-tenant architecture where all data tables include a `tenantId` for isolation and security, ensuring users only access their own data.
 
+### Super Admin Dashboard
+- **Platform Overview**: Dedicated admin dashboard for platform-wide monitoring and management
+- **Access Control**: Role-based access via `isAdmin` boolean field on users table
+- **Security**: Multi-layer protection with backend middleware (requireAdmin) and frontend route guards
+- **Real-Time Metrics**: 
+  - Total users, tenants, projects, keywords, and backlinks
+  - Active tenant count and subscription plan distribution
+  - Recent users and tenants lists (last 10 entries)
+- **Admin API Endpoints**:
+  - GET /api/admin/stats - Platform-wide statistics
+  - GET /api/admin/users - All users list
+  - GET /api/admin/tenants - All tenants list
+- **UI Integration**: Admin link conditionally shown in sidebar only for admin users
+- **Route Protection**: Non-admin users receive "Access Denied" when attempting to access /admin
+
 ### Local SEO Tracking (AI-Powered)
 - **AI-Generated Local SEO Data**: Uses Anthropic Claude Sonnet 4 to generate complete local SEO profiles
 - **Google Business Profile Metrics**: AI generates realistic views, searches, calls, directions, rating, and review counts
