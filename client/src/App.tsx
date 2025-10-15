@@ -164,51 +164,132 @@ function AppContent() {
           </DropdownMenu>
         </header>
         <main className="flex-1 overflow-auto bg-background">
-          {projectsLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <p className="text-muted-foreground">Loading...</p>
-              </div>
-            </div>
-          ) : !effectiveProjectId ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                <p className="text-muted-foreground mb-4">Create your first project to get started</p>
-                <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                  <Plus className="mr-2 h-4 w-4" /> Create Project
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Switch>
-              <Route path="/">
-                {() => <Dashboard projectId={effectiveProjectId} />}
-              </Route>
-              <Route path="/pricing">
-                <Pricing />
-              </Route>
-              <Route path="/keywords">
-                {() => <Keywords projectId={effectiveProjectId} />}
-              </Route>
-              <Route path="/traffic">
-                {() => <Traffic projectId={effectiveProjectId} />}
-              </Route>
-              <Route path="/seo-audit">
-                {() => <SeoAudit projectId={effectiveProjectId} />}
-              </Route>
-              <Route path="/backlinks">
-                {() => <Backlinks projectId={effectiveProjectId} />}
-              </Route>
-              <Route path="/competitors">
-                {() => <Competitors projectId={effectiveProjectId} />}
-              </Route>
-              <Route path="/ai-assistant">
-                {() => <AIAssistantPage />}
-              </Route>
-              <Route component={NotFound} />
-            </Switch>
-          )}
+          <Switch>
+            <Route path="/pricing">
+              <Pricing />
+            </Route>
+            <Route path="/">
+              {() => {
+                if (projectsLoading) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <p className="text-muted-foreground">Loading...</p>
+                      </div>
+                    </div>
+                  );
+                }
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <Dashboard projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/keywords">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <Keywords projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/traffic">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <Traffic projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/seo-audit">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <SeoAudit projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/backlinks">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <Backlinks projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/competitors">
+              {() => {
+                if (!effectiveProjectId) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
+                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
+                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return <Competitors projectId={effectiveProjectId} />;
+              }}
+            </Route>
+            <Route path="/ai-assistant">
+              {() => <AIAssistantPage />}
+            </Route>
+            <Route component={NotFound} />
+          </Switch>
         </main>
       </div>
       <CreateProjectDialog
