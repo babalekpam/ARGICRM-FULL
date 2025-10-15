@@ -23,12 +23,19 @@ import {
   type GeneratedReport, type InsertGeneratedReport,
   type ApiKey, type InsertApiKey,
   type ApiUsage, type InsertApiUsage,
+  type LocalRanking, type InsertLocalRanking,
+  type GoogleBusinessProfile, type InsertGoogleBusinessProfile,
+  type LocalCitation, type InsertLocalCitation,
+  type SocialAccount, type InsertSocialAccount,
+  type SocialPost, type InsertSocialPost,
+  type SocialMetric, type InsertSocialMetric,
   type User, type UpsertUser,
   type Tenant, type InsertTenant,
   projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth, 
   backlinkOpportunities, outreachCampaigns, outreachContacts, backlinkGaps, keywordRankHistory, 
   competitorRankSnapshots, contentBriefs, contentScorecards, serpSnapshots, auditScans, pageMetrics, 
-  coreWebVitals, reportConfigs, generatedReports, apiKeys, apiUsage, users, tenants
+  coreWebVitals, reportConfigs, generatedReports, apiKeys, apiUsage, users, tenants,
+  localRankings, googleBusinessProfiles, localCitations, socialAccounts, socialPosts, socialMetrics
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -157,6 +164,35 @@ export interface IStorage {
   getApiUsageByKey(tenantId: string, apiKeyId: string, limit?: number): Promise<ApiUsage[]>;
   getApiUsageByTenant(tenantId: string, startDate?: Date, endDate?: Date): Promise<ApiUsage[]>;
   createApiUsage(tenantId: string, usage: InsertApiUsage): Promise<ApiUsage>;
+  
+  // Local Rankings - tenant-scoped
+  getLocalRankingsByProject(tenantId: string, projectId: string): Promise<LocalRanking[]>;
+  createLocalRanking(tenantId: string, ranking: InsertLocalRanking): Promise<LocalRanking>;
+  deleteLocalRanking(tenantId: string, id: string): Promise<boolean>;
+  
+  // Google Business Profiles - tenant-scoped
+  getGoogleBusinessProfileByProject(tenantId: string, projectId: string): Promise<GoogleBusinessProfile | undefined>;
+  createGoogleBusinessProfile(tenantId: string, profile: InsertGoogleBusinessProfile): Promise<GoogleBusinessProfile>;
+  updateGoogleBusinessProfile(tenantId: string, id: string, profile: Partial<InsertGoogleBusinessProfile>): Promise<GoogleBusinessProfile | undefined>;
+  
+  // Local Citations - tenant-scoped
+  getLocalCitationsByProject(tenantId: string, projectId: string): Promise<LocalCitation[]>;
+  createLocalCitation(tenantId: string, citation: InsertLocalCitation): Promise<LocalCitation>;
+  updateLocalCitation(tenantId: string, id: string, citation: Partial<InsertLocalCitation>): Promise<LocalCitation | undefined>;
+  deleteLocalCitation(tenantId: string, id: string): Promise<boolean>;
+  
+  // Social Accounts - tenant-scoped
+  getSocialAccountsByProject(tenantId: string, projectId: string): Promise<SocialAccount[]>;
+  createSocialAccount(tenantId: string, account: InsertSocialAccount): Promise<SocialAccount>;
+  deleteSocialAccount(tenantId: string, id: string): Promise<boolean>;
+  
+  // Social Posts - tenant-scoped
+  getSocialPostsByAccount(tenantId: string, accountId: string): Promise<SocialPost[]>;
+  createSocialPost(tenantId: string, post: InsertSocialPost): Promise<SocialPost>;
+  
+  // Social Metrics - tenant-scoped
+  getSocialMetricsByAccount(tenantId: string, accountId: string, startDate?: string, endDate?: string): Promise<SocialMetric[]>;
+  createSocialMetric(tenantId: string, metric: InsertSocialMetric): Promise<SocialMetric>;
 }
 
 // Database Storage Implementation
@@ -620,6 +656,130 @@ export class DbStorage implements IStorage {
 
   async createApiUsage(tenantId: string, insertUsage: InsertApiUsage): Promise<ApiUsage> {
     const result = await this.db.insert(apiUsage).values({ ...insertUsage, tenantId }).returning();
+    return result[0];
+  }
+
+  // Local Rankings
+  async getLocalRankingsByProject(tenantId: string, projectId: string): Promise<LocalRanking[]> {
+    return await this.db.select().from(localRankings)
+      .where(and(eq(localRankings.tenantId, tenantId), eq(localRankings.projectId, projectId)))
+      .orderBy(desc(localRankings.checkedAt));
+  }
+
+  async createLocalRanking(tenantId: string, insertRanking: InsertLocalRanking): Promise<LocalRanking> {
+    const result = await this.db.insert(localRankings).values({ ...insertRanking, tenantId }).returning();
+    return result[0];
+  }
+
+  async deleteLocalRanking(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(localRankings)
+      .where(and(eq(localRankings.tenantId, tenantId), eq(localRankings.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Google Business Profiles
+  async getGoogleBusinessProfileByProject(tenantId: string, projectId: string): Promise<GoogleBusinessProfile | undefined> {
+    const result = await this.db.select().from(googleBusinessProfiles)
+      .where(and(eq(googleBusinessProfiles.tenantId, tenantId), eq(googleBusinessProfiles.projectId, projectId)))
+      .orderBy(desc(googleBusinessProfiles.updatedAt))
+      .limit(1);
+    return result[0];
+  }
+
+  async createGoogleBusinessProfile(tenantId: string, insertProfile: InsertGoogleBusinessProfile): Promise<GoogleBusinessProfile> {
+    const result = await this.db.insert(googleBusinessProfiles).values({ ...insertProfile, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateGoogleBusinessProfile(tenantId: string, id: string, updateProfile: Partial<InsertGoogleBusinessProfile>): Promise<GoogleBusinessProfile | undefined> {
+    const result = await this.db.update(googleBusinessProfiles)
+      .set({ ...updateProfile, updatedAt: new Date() })
+      .where(and(eq(googleBusinessProfiles.tenantId, tenantId), eq(googleBusinessProfiles.id, id)))
+      .returning();
+    return result[0];
+  }
+
+  // Local Citations
+  async getLocalCitationsByProject(tenantId: string, projectId: string): Promise<LocalCitation[]> {
+    return await this.db.select().from(localCitations)
+      .where(and(eq(localCitations.tenantId, tenantId), eq(localCitations.projectId, projectId)))
+      .orderBy(desc(localCitations.lastChecked));
+  }
+
+  async createLocalCitation(tenantId: string, insertCitation: InsertLocalCitation): Promise<LocalCitation> {
+    const result = await this.db.insert(localCitations).values({ ...insertCitation, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateLocalCitation(tenantId: string, id: string, updateCitation: Partial<InsertLocalCitation>): Promise<LocalCitation | undefined> {
+    const result = await this.db.update(localCitations)
+      .set({ ...updateCitation, lastChecked: new Date() })
+      .where(and(eq(localCitations.tenantId, tenantId), eq(localCitations.id, id)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteLocalCitation(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(localCitations)
+      .where(and(eq(localCitations.tenantId, tenantId), eq(localCitations.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Social Accounts
+  async getSocialAccountsByProject(tenantId: string, projectId: string): Promise<SocialAccount[]> {
+    return await this.db.select().from(socialAccounts)
+      .where(and(eq(socialAccounts.tenantId, tenantId), eq(socialAccounts.projectId, projectId)))
+      .orderBy(desc(socialAccounts.connectedAt));
+  }
+
+  async createSocialAccount(tenantId: string, insertAccount: InsertSocialAccount): Promise<SocialAccount> {
+    const result = await this.db.insert(socialAccounts).values({ ...insertAccount, tenantId }).returning();
+    return result[0];
+  }
+
+  async deleteSocialAccount(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(socialAccounts)
+      .where(and(eq(socialAccounts.tenantId, tenantId), eq(socialAccounts.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Social Posts
+  async getSocialPostsByAccount(tenantId: string, accountId: string): Promise<SocialPost[]> {
+    return await this.db.select().from(socialPosts)
+      .where(and(eq(socialPosts.tenantId, tenantId), eq(socialPosts.accountId, accountId)))
+      .orderBy(desc(socialPosts.postedAt))
+      .limit(50);
+  }
+
+  async createSocialPost(tenantId: string, insertPost: InsertSocialPost): Promise<SocialPost> {
+    const result = await this.db.insert(socialPosts).values({ ...insertPost, tenantId }).returning();
+    return result[0];
+  }
+
+  // Social Metrics
+  async getSocialMetricsByAccount(tenantId: string, accountId: string, startDate?: string, endDate?: string): Promise<SocialMetric[]> {
+    const conditions = [
+      eq(socialMetrics.tenantId, tenantId),
+      eq(socialMetrics.accountId, accountId)
+    ];
+    
+    if (startDate) {
+      conditions.push(gte(socialMetrics.date, new Date(startDate)));
+    }
+    if (endDate) {
+      conditions.push(lte(socialMetrics.date, new Date(endDate)));
+    }
+
+    return await this.db.select().from(socialMetrics)
+      .where(and(...conditions))
+      .orderBy(desc(socialMetrics.date));
+  }
+
+  async createSocialMetric(tenantId: string, insertMetric: InsertSocialMetric): Promise<SocialMetric> {
+    const result = await this.db.insert(socialMetrics).values({ ...insertMetric, tenantId }).returning();
     return result[0];
   }
 }
