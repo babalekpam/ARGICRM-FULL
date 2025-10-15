@@ -1,502 +1,389 @@
-import { useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { useTranslation } from "react-i18next";
-import { Plus, LogOut, User as UserIcon } from "lucide-react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { ProjectSelector } from "@/components/project-selector";
-import { CreateProjectDialog } from "@/components/create-project-dialog";
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { EditProjectDialog } from "@/components/edit-project-dialog";
-import { DeleteProjectDialog } from "@/components/delete-project-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Project } from "@shared/schema";
-import { useAuth } from "@/hooks/use-auth";
-import Landing from "@/pages/landing";
-import Pricing from "@/pages/pricing";
+import { WhiteLabelProvider } from "@/components/white-label-provider";
+import { ThemeProvider } from "@/components/theme-provider";
+import ErrorBoundary from "@/components/error-boundary";
+import { initializeAuth } from "@/lib/auth-init";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import { PageTranslator } from "@/components/PageTranslator";
+import { AuthProvider } from "@/hooks/useAuth";
+import TrackingScripts from "@/components/tracking-scripts";
+import { PerformanceProvider } from "@/components/PerformanceProvider";
+import React, { lazy, Suspense, useEffect } from 'react';
+
+// OPTIMIZED: Core pages loaded immediately - no lazy loading for nav items
+import SimpleLanding from "@/pages/simple-landing-new";
+import SignupPage from "@/pages/signup";
 import Dashboard from "@/pages/dashboard";
-import Keywords from "@/pages/keywords";
-import RankTracking from "@/pages/rank-tracking";
-import Traffic from "@/pages/traffic";
-import SeoAudit from "@/pages/seo-audit";
-import Backlinks from "@/pages/backlinks";
-import Competitors from "@/pages/competitors";
-import LinkBuildingPage from "@/pages/link-building";
-import ContentTools from "@/pages/content-tools";
-import TechnicalAudit from "@/pages/technical-audit";
-import AutomatedReports from "@/pages/automated-reports";
-import ApiAccess from "@/pages/api-access";
-import AIAssistantPage from "@/pages/ai-assistant-page";
-import LocalSEO from "@/pages/local-seo";
-import SocialMedia from "@/pages/social-media";
-import AdminDashboard from "@/pages/admin-dashboard";
-import NotFound from "@/pages/not-found";
+import DashboardRedirect from "@/components/dashboard-redirect";
+import UserDashboard from "@/pages/user-dashboard";
+import ContactsPage from "@/pages/contacts";
+import AccountsPage from "@/pages/accounts";
+import LeadsPage from "@/pages/leads";
+import DealsPage from "@/pages/deals";
+import TasksPage from "@/pages/tasks";
+import CampaignsPage from "@/pages/campaigns";
+import SchedulingPage from "@/pages/scheduling";
+import SimpleMessagingPage from "@/pages/simple-messaging";
+import FunnelBuilderPage from "@/pages/funnel-builder";
+import EcommerceDashboardPage from "@/pages/e-commerce-dashboard";
+import FeaturesPage from "@/pages/features";
+import PricingPage from "@/pages/pricing";
+import AboutPage from "@/pages/about";
+import PrivacyPage from "@/pages/privacy";
+import BlogPage from "@/pages/blog";
+import TermsPage from "@/pages/terms";
+import CrmForSmallBusinessPage from "@/pages/crm-for-small-business";
+import EnterpriseCrmPage from "@/pages/enterprise-crm";
+import AiPoweredCrmPage from "@/pages/ai-powered-crm";
+import OverviewPage from "@/pages/overview";
+import UnsubscribePage from "@/pages/unsubscribe";
 
-function AppContent() {
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
-  const { t } = useTranslation();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [projectToEdit, setProjectToEdit] = useState<{ id: string; name: string; domain: string } | null>(null);
-  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
+// OPTIMIZED: Only truly optional pages are lazy loaded
+const SettingsPage = lazy(() => import("@/pages/settings"));
+const AnalyticsPage = lazy(() => import("@/pages/analytics"));
+const AdvancedAnalyticsPage = lazy(() => import("@/pages/advanced-analytics"));
+const ReportsPage = lazy(() => import("@/pages/reports"));
+const InvoicesPage = lazy(() => import("@/pages/invoices"));
+const ProjectsPage = lazy(() => import("@/pages/projects"));
+const TicketsPage = lazy(() => import("@/pages/tickets"));
+const TeamCollaborationPage = lazy(() => import("@/pages/team-collaboration"));
+const InventoryManagementPage = lazy(() => import("@/pages/inventory-management"));
+const DocumentManagementPage = lazy(() => import("@/pages/document-management"));
+const BookkeepingPage = lazy(() => import("@/pages/bookkeeping"));
+const TaxSettingsPage = lazy(() => import("@/pages/tax-settings"));
 
-  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects"],
-    enabled: isAuthenticated,
-  });
+// Team & Administration
+const EmployeesPage = lazy(() => import("@/pages/employees"));
+const RolesPage = lazy(() => import("@/pages/roles"));
 
-  // Initialize selected project to first project when projects load
-  useEffect(() => {
-    if (projects.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(projects[0].id);
-    }
-  }, [projects, selectedProjectId]);
+// AI & Intelligence  
+const AICampaignStudioPage = lazy(() => import("@/pages/ai-campaign-studio"));
+const CloeAIAgentPage = lazy(() => import("@/pages/cloe-ai-agent"));
+const EmotionalIntelligenceHubPage = lazy(() => import("@/pages/emotional-intelligence-hub"));
+const AIAutonomousPage = lazy(() => import("@/pages/ai-autonomous-dashboard"));
+const SentimentPage = lazy(() => import("@/pages/sentiment"));
+const UnifiedInboxPage = lazy(() => import("@/pages/unified-inbox"));
+const FormsSurveysPage = lazy(() => import("@/pages/forms-surveys"));
+const SalesChannelsPage = lazy(() => import("@/components/sales-channels-manager"));
 
-  const effectiveProjectId = selectedProjectId || projects[0]?.id;
+// Platform Administration
+const IntegrityDashboardPage = lazy(() => import("@/pages/integrity-dashboard"));
+const PerformanceDashboardPage = lazy(() => import("@/pages/performance-dashboard"));
+const TestingDeploymentPage = lazy(() => import("@/pages/testing-deployment-dashboard"));
+const BugResolutionPage = lazy(() => import("@/pages/bug-resolution-dashboard"));
+const FeatureTogglesPage = lazy(() => import("@/pages/feature-toggles"));
+const WhiteLabelSettingsPage = lazy(() => import("@/pages/white-label-settings"));
+const TermsOfServicePage = lazy(() => import("@/pages/terms-of-service"));
+const AccountSettingsPage = lazy(() => import("@/pages/account-settings"));
 
-  const handleProjectChange = (projectId: string) => {
-    setSelectedProjectId(projectId);
-    // Invalidate project-specific queries to refetch data for new project
-    queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/rank-tracking/history"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/rank-tracking/competitor-ranks"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/traffic"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/seo-issues"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/backlinks"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/competitors"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/content/briefs"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/content/scorecards"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/technical-audit/scans"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/technical-audit/latest"] });
-  };
+// Admin dashboard pages for platform owners
+const AdminDashboard = lazy(() => import("@/pages/admin-dashboard"));
+const SuperAdminDashboard = lazy(() => import("@/pages/super-admin-dashboard"));
 
-  const handleProjectCreated = (projectId: string) => {
-    setSelectedProjectId(projectId);
-    handleProjectChange(projectId);
-  };
+// Non-lazy imports for essential components
+import ProtectedRoute from "@/components/protected-route";
+import "./App.css";
 
-  const handleEditProject = (project: { id: string; name: string; domain: string }) => {
-    setProjectToEdit(project);
-    setEditDialogOpen(true);
-  };
-
-  const handleDeleteProject = (projectId: string, projectName: string) => {
-    setProjectToDelete({ id: projectId, name: projectName });
-    setDeleteDialogOpen(true);
-  };
-
-  const handleProjectDeleted = () => {
-    // If we deleted the selected project, switch to another project
-    if (projectToDelete?.id === selectedProjectId) {
-      const remainingProjects = projects.filter(p => p.id !== projectToDelete.id);
-      if (remainingProjects.length > 0) {
-        setSelectedProjectId(remainingProjects[0].id);
-      } else {
-        setSelectedProjectId(null);
-      }
-    }
-    setProjectToDelete(null);
-  };
-
-  // Show loading state while checking authentication
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show landing page if not authenticated
-  if (!isAuthenticated) {
-    return <Landing />;
-  }
-
-  const userInitials = user ? 
-    `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || '??' :
-    '??';
-
-  return (
-    <div className="flex h-screen w-full">
-      <AppSidebar user={user} />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="flex items-center justify-between p-4 border-b border-border bg-background">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
-            {projects.length > 0 && effectiveProjectId && (
-              <ProjectSelector
-                projects={projects}
-                selectedProjectId={effectiveProjectId}
-                onProjectChange={handleProjectChange}
-                onAddProject={() => setCreateDialogOpen(true)}
-                onEditProject={handleEditProject}
-                onDeleteProject={handleDeleteProject}
-              />
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full" data-testid="button-user-menu">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.email || "User"} />
-                    <AvatarFallback>{userInitials}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none" data-testid="text-user-name">
-                      {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : t('common.user')}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground" data-testid="text-user-email">
-                      {user?.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} data-testid="button-logout">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>{t('common.logout')}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto bg-background">
-          <Switch>
-            <Route path="/pricing">
-              <Pricing />
-            </Route>
-            <Route path="/">
-              {() => {
-                if (projectsLoading) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <p className="text-muted-foreground">{t('common.loading')}</p>
-                      </div>
-                    </div>
-                  );
-                }
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <Dashboard projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/keywords">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <Keywords projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/traffic">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <Traffic projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/seo-audit">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <SeoAudit projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/backlinks">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <Backlinks projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/competitors">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <Competitors projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/rank-tracking">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <RankTracking projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/link-building">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <LinkBuildingPage selectedProjectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/content-tools">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <ContentTools projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/technical-audit">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <TechnicalAudit projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/automated-reports">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <AutomatedReports projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/api-access">
-              {() => <ApiAccess />}
-            </Route>
-            <Route path="/ai-assistant">
-              {() => <AIAssistantPage />}
-            </Route>
-            <Route path="/local-seo">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <LocalSEO projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/social-media">
-              {() => {
-                if (!effectiveProjectId) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
-                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
-                        <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-                return <SocialMedia projectId={effectiveProjectId} />;
-              }}
-            </Route>
-            <Route path="/admin">
-              {() => {
-                if (!user?.isAdmin) {
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">{t('admin.accessDenied')}</h2>
-                        <p className="text-muted-foreground">{t('admin.accessDeniedMessage')}</p>
-                      </div>
-                    </div>
-                  );
-                }
-                return <AdminDashboard />;
-              }}
-            </Route>
-            <Route component={NotFound} />
-          </Switch>
-        </main>
-      </div>
-      <CreateProjectDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onProjectCreated={handleProjectCreated}
-      />
-      {projectToEdit && (
-        <EditProjectDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          project={projectToEdit}
-        />
-      )}
-      {projectToDelete && (
-        <DeleteProjectDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          projectId={projectToDelete.id}
-          projectName={projectToDelete.name}
-          onProjectDeleted={handleProjectDeleted}
-        />
-      )}
-    </div>
-  );
-}
+// OPTIMIZED: Clean loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="animate-spin h-8 w-8 border-b-2 border-blue-600 rounded-full"></div>
+  </div>
+);
 
 function App() {
-  const sidebarStyle = {
-    "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
-  };
-
+  useEffect(() => {
+    // OPTIMIZED: Simple initialization
+    initializeAuth();
+    
+    // OPTIMIZED: Simplified service worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .catch(err => console.log('SW registration failed:', err));
+    }
+  }, []);
+  
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-          <AppContent />
-        </SidebarProvider>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <PerformanceProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider defaultTheme="system" storageKey="argilette-theme">
+            <LanguageProvider>
+              <WhiteLabelProvider>
+                <AuthProvider>
+                  <BrowserRouter>
+                    <TrackingScripts />
+                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Routes>
+                          {/* Public Routes */}
+                          <Route path="/landing" element={<PageTranslator><SimpleLanding /></PageTranslator>} />
+                          <Route path="/" element={<PageTranslator><SimpleLanding /></PageTranslator>} />
+                          <Route path="/login" element={<Navigate to="/" replace />} />
+                          <Route path="/signup" element={<PageTranslator><SignupPage /></PageTranslator>} />
+                          <Route path="/unsubscribe" element={<UnsubscribePage />} />
+                          <Route path="/features" element={<PageTranslator><FeaturesPage /></PageTranslator>} />
+                          <Route path="/pricing" element={<PageTranslator><PricingPage /></PageTranslator>} />
+                          <Route path="/about" element={<PageTranslator><AboutPage /></PageTranslator>} />
+                          <Route path="/privacy" element={<PageTranslator><PrivacyPage /></PageTranslator>} />
+                          <Route path="/blog" element={<PageTranslator><BlogPage /></PageTranslator>} />
+                          <Route path="/terms" element={<PageTranslator><TermsPage /></PageTranslator>} />
+                          <Route path="/crm-for-small-business" element={<PageTranslator><CrmForSmallBusinessPage /></PageTranslator>} />
+                          <Route path="/enterprise-crm" element={<PageTranslator><EnterpriseCrmPage /></PageTranslator>} />
+                          <Route path="/ai-powered-crm" element={<PageTranslator><AiPoweredCrmPage /></PageTranslator>} />
+                          <Route path="/overview" element={<PageTranslator><OverviewPage /></PageTranslator>} />
+                          
+                          {/* Protected Core Routes */}
+                          <Route path="/dashboard" element={
+                            <ProtectedRoute requiredPermission="dashboard.read">
+                              <PageTranslator><DashboardRedirect /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/user-dashboard" element={
+                            <ProtectedRoute requiredPermission="dashboard.read">
+                              <PageTranslator><UserDashboard /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/contacts" element={
+                            <ProtectedRoute requiredPermission="contacts.read">
+                              <PageTranslator><ContactsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/accounts" element={
+                            <ProtectedRoute requiredPermission="accounts.read">
+                              <PageTranslator><AccountsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/leads" element={
+                            <ProtectedRoute requiredPermission="leads.read">
+                              <PageTranslator><LeadsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/deals" element={
+                            <ProtectedRoute requiredPermission="deals.read">
+                              <PageTranslator><DealsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/tasks" element={
+                            <ProtectedRoute requiredPermission="tasks.read">
+                              <PageTranslator><TasksPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/campaigns" element={
+                            <ProtectedRoute requiredPermission="campaigns.read">
+                              <PageTranslator><CampaignsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/scheduling" element={
+                            <ProtectedRoute requiredPermission="scheduling.read">
+                              <PageTranslator><SchedulingPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/simple-messaging" element={
+                            <ProtectedRoute requiredPermission="campaigns.read">
+                              <PageTranslator><SimpleMessagingPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/funnel-builder" element={
+                            <ProtectedRoute requiredPermission="marketing.read">
+                              <PageTranslator><FunnelBuilderPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/sales-channels" element={
+                            <ProtectedRoute requiredPermission="marketing.read">
+                              <Suspense fallback={<div>Loading...</div>}>
+                                <PageTranslator><SalesChannelsPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/e-commerce-dashboard" element={
+                            <ProtectedRoute requiredPermission="inventory.read">
+                              <PageTranslator><EcommerceDashboardPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* Optional Lazy-Loaded Routes */}
+                          <Route path="/settings" element={
+                            <ProtectedRoute requiredPermission="settings.read">
+                              <PageTranslator><SettingsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/analytics" element={
+                            <ProtectedRoute requiredPermission="analytics.read">
+                              <PageTranslator><AnalyticsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/advanced-analytics" element={
+                            <ProtectedRoute requiredPermission="analytics.read">
+                              <PageTranslator><AdvancedAnalyticsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/reports" element={
+                            <ProtectedRoute requiredPermission="reports.read">
+                              <PageTranslator><ReportsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/projects" element={
+                            <ProtectedRoute requiredPermission="projects.read">
+                              <PageTranslator><ProjectsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/tickets" element={
+                            <ProtectedRoute requiredPermission="support.read">
+                              <PageTranslator><TicketsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/team-collaboration" element={
+                            <ProtectedRoute requiredPermission="collaboration.read">
+                              <PageTranslator><TeamCollaborationPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/inventory-management" element={
+                            <ProtectedRoute requiredPermission="inventory.read">
+                              <PageTranslator><InventoryManagementPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/document-management" element={
+                            <ProtectedRoute requiredPermission="documents.read">
+                              <PageTranslator><DocumentManagementPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/invoices" element={
+                            <ProtectedRoute requiredPermission="invoices.read">
+                              <PageTranslator><InvoicesPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/bookkeeping" element={
+                            <ProtectedRoute requiredPermission="bookkeeping.read">
+                              <PageTranslator><BookkeepingPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/tax-settings" element={
+                            <ProtectedRoute requiredPermission="tax.read">
+                              <PageTranslator><TaxSettingsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* Team & Administration Routes */}
+                          <Route path="/employees" element={
+                            <ProtectedRoute requiredPermission="hr.read">
+                              <PageTranslator><EmployeesPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/roles" element={
+                            <ProtectedRoute requiredPermission="admin.read">
+                              <PageTranslator><RolesPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* AI & Intelligence Routes */}
+                          <Route path="/ai-campaign-studio" element={
+                            <ProtectedRoute requiredPermission="ai.read">
+                              <PageTranslator><AICampaignStudioPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/cloe-ai-agent" element={
+                            <ProtectedRoute requiredPermission="ai.read">
+                              <PageTranslator><CloeAIAgentPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/emotional-intelligence-hub" element={
+                            <ProtectedRoute requiredPermission="sentiment.read">
+                              <PageTranslator><EmotionalIntelligenceHubPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/ai-autonomous" element={
+                            <ProtectedRoute requiredPermission="sentiment.read">
+                              <PageTranslator><AIAutonomousPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/sentiment" element={
+                            <ProtectedRoute requiredPermission="sentiment.read">
+                              <PageTranslator><SentimentPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/unified-inbox" element={
+                            <ProtectedRoute requiredPermission="communications.read">
+                              <PageTranslator><UnifiedInboxPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/forms-surveys" element={
+                            <ProtectedRoute requiredPermission="forms.read">
+                              <PageTranslator><FormsSurveysPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* Platform Administration Routes */}
+                          <Route path="/integrity-dashboard" element={
+                            <ProtectedRoute requiredPermission="platform.read">
+                              <PageTranslator><IntegrityDashboardPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/performance-dashboard" element={
+                            <ProtectedRoute requiredPermission="platform.read">
+                              <PageTranslator><PerformanceDashboardPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/testing-deployment-dashboard" element={
+                            <ProtectedRoute requiredPermission="platform.read">
+                              <PageTranslator><TestingDeploymentPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/bug-resolution-dashboard" element={
+                            <ProtectedRoute requiredPermission="platform.read">
+                              <PageTranslator><BugResolutionPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/feature-toggles" element={
+                            <ProtectedRoute requiredPermission="platform.read">
+                              <PageTranslator><FeatureTogglesPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/white-label-settings" element={
+                            <ProtectedRoute requiredPermission="platform.read">
+                              <PageTranslator><WhiteLabelSettingsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/terms-of-service" element={
+                            <ProtectedRoute requiredPermission="legal.read">
+                              <PageTranslator><TermsOfServicePage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/account-settings" element={
+                            <ProtectedRoute requiredPermission="settings.read">
+                              <PageTranslator><AccountSettingsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* Admin Dashboard Routes - Platform Owner Only */}
+                          <Route path="/admin-dashboard" element={
+                            <ProtectedRoute requiredPermission="admin.read">
+                              <PageTranslator><AdminDashboard /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/super-admin-dashboard" element={
+                            <ProtectedRoute requiredPermission="platform.read">
+                              <PageTranslator><SuperAdminDashboard /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* Fallback */}
+                          <Route path="*" element={<Navigate to="/landing" replace />} />
+                        </Routes>
+                      </Suspense>
+                      <Toaster />
+                    </div>
+                  </BrowserRouter>
+                </AuthProvider>
+              </WhiteLabelProvider>
+            </LanguageProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </PerformanceProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,0 +1,26 @@
+# ULTIMATE LANDER REDIRECT FIX
+RewriteEngine On
+
+# CLEAN REDIRECT: Any lander request goes to root (301 permanent)
+RewriteRule ^lander/?(.*)$ /?%{QUERY_STRING} [R=301,L,E=noescape:1]
+
+# LANDING PROTECTION: Serve React app for landing requests
+RewriteCond %{REQUEST_URI} ^/landing/?$
+RewriteRule ^landing/?$ /index.html [L,QSA]
+
+# STANDARD SPA ROUTING: All other requests serve React app
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule ^(.*)$ /index.html [L,QSA]
+
+# SECURITY + ANTI-CACHE HEADERS
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block" 
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+# CRITICAL: Prevent caching of redirects
+Header always set Cache-Control "no-cache, no-store, must-revalidate, max-age=0" "expr=%{REQUEST_URI} =~ m#^/(lander|landing|)$#"
+Header always set Pragma "no-cache" "expr=%{REQUEST_URI} =~ m#^/(lander|landing|)$#"
+Header always set Expires "0" "expr=%{REQUEST_URI} =~ m#^/(lander|landing|)$#"

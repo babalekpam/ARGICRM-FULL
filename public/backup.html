@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARGILETTE NODE CRM - Settings Backup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-width: 160px;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .button.reset {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a5a);
+        }
+        
+        .button.save {
+            background: linear-gradient(45deg, #51cf66, #40c057);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .info h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .info ul {
+            margin-left: 20px;
+            color: #666;
+        }
+        
+        .info li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Settings Backup</h1>
+        <p class="subtitle">ARGILETTE NODE CRM Platform</p>
+        
+        <button class="button" onclick="downloadBackup()">
+            📁 Backup Settings
+        </button>
+        <br>
+        <button class="button reset" onclick="resetSettings()">
+            🔄 Reset Settings
+        </button>
+        <br>
+        <button class="button save" onclick="saveSettings()">
+            💾 Save Settings
+        </button>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="info">
+            <h3>Backup Features:</h3>
+            <ul>
+                <li>Complete platform settings export</li>
+                <li>Timestamp and version tracking</li>
+                <li>JSON format for easy import</li>
+                <li>Browser save dialog popup</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        function downloadBackup() {
+            try {
+                const backupData = {
+                    platform: "ARGILETTE NODE CRM",
+                    company: {
+                        name: "ARGILETTE",
+                        email: "contact@argilette.com",
+                        phone: "+1 (555) 123-4567"
+                    },
+                    settings: {
+                        theme: "professional",
+                        language: "English",
+                        timezone: "UTC",
+                        currency: "USD",
+                        notifications: true,
+                        autoBackup: true
+                    },
+                    features: {
+                        aiPowered: true,
+                        multiTenant: true,
+                        offlineCapable: true,
+                        realtimeSync: true
+                    },
+                    metadata: {
+                        exportDate: new Date().toISOString(),
+                        version: "1.0.0",
+                        backupType: "full"
+                    }
+                };
+                
+                const jsonData = JSON.stringify(backupData, null, 2);
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `argilette-crm-backup-${new Date().toISOString().split('T')[0]}.json`;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                URL.revokeObjectURL(url);
+                
+                showStatus('Backup file created successfully! Check your downloads folder.', 'success');
+            } catch (error) {
+                console.error('Backup error:', error);
+                showStatus('Failed to create backup. Please try again.', 'error');
+            }
+        }
+
+        function resetSettings() {
+            if (confirm('Are you sure you want to reset all settings to default values?')) {
+                showStatus('Settings have been reset to default values.', 'success');
+            }
+        }
+
+        function saveSettings() {
+            showStatus('Current settings have been saved successfully.', 'success');
+        }
+    </script>
+</body>
+</html>

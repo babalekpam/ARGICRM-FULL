@@ -1,0 +1,34 @@
+{
+  "name": "NODE CRM - AI-Powered Emotional Intelligence CRM Platform",
+  "short_name": "NODE CRM",
+  "description": "World's first Emotional Intelligence CRM with AI-powered customer management, sentiment analysis, multi-language support, and advanced automation for global businesses.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/assets/colored-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/colored-logo.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "features": [
+    "offline_support",
+    "background_sync", 
+    "push_notifications"
+  ],
+  "offline_enabled": true,
+  "prefer_related_applications": false
+}

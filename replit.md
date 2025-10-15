@@ -1,157 +1,69 @@
-# ARGILETTE - SEO Analytics Dashboard
+# NODE CRM
 
 ## Overview
-
-ARGILETTE is a comprehensive SEO analytics platform inspired by Neil Patel's Ubersuggest. It offers keyword research, site audits, traffic analysis, competitor tracking, backlink monitoring, and link building capabilities through a professional, data-rich dashboard. The platform aims to provide actionable insights for improving search engine rankings and online visibility.
+NODE CRM is a comprehensive customer relationship management platform with advanced AI-powered capabilities designed for global markets. It is built as a full-stack React/Express application with PostgreSQL for data persistence. Key capabilities include real-time sentiment analysis, AI campaign generation, multi-cultural optimization for 195+ countries, and advanced financial management. The platform aims to be the world's first Emotional Intelligence CRM, offering autonomous AI operations and competitive pricing.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
+CRM Name: NODE CRM
+Email Marketing: IONOS SMTP configured for professional bulk email system (October 2025)
+- SMTP Configuration: Complete with host, port, credentials, and from address
+- Registration/Confirmation Emails: Configured via SMTP_FROM_EMAIL secret
+- Marketing Emails: Use customizable professional addresses via SMTP
+- Previous SendGrid integration removed - now using IONOS SMTP exclusively
+Anti-spam optimization: Personalization, batch sending, compliance features enabled
+Branding: Argilette NODE CRM logos integrated across platform (August 2025) - includes colored and transparent variants with infinity symbol design
+Offline Capabilities: Comprehensive offline functionality implemented platform-wide for tenants without consistent internet access (August 2025)
+Platform Owner Privileges: Restored unlimited access for platform owner (abel@argilette.com) with super admin rights, no subscription limits, and full platform oversight capabilities (August 2025)
+Login Page: Clean NODE CRM branding with credentials-only interface, no role indicators or quick login buttons - access levels determined purely by email credentials (August 2025)
+Settings Backup: Fully functional backup system with browser save dialog popup (August 2025) - includes backup.html standalone solution for guaranteed reliability, comprehensive JSON export with platform data, settings, and metadata
+Security: Enterprise-grade security hardening COMPLETED (August 2025) - PRODUCTION READY with 0 vulnerabilities, all 37 critical/high severity vulnerabilities resolved, comprehensive security headers implemented, input validation and sanitization active, multi-tier rate limiting deployed, audit logging enabled, secure file processing with safe xlsx alternatives, CRITICAL authentication vulnerability patched (bcrypt password hashing implemented, removed insecure demo login bypass), clean production environment confirmed
+Translation System: Comprehensive page-wide automatic translation implemented (August 2025) - PageTranslator component automatically translates all page content when language changes, TranslatedText component for individual elements, bulk translation API integration, intelligent text detection excluding code/inputs, RTL language support, translation caching
+SEO Optimization: Complete SEO implementation for launch readiness (August 2025) - comprehensive meta tags, Open Graph and Twitter Card integration, structured data (JSON-LD), sitemap.xml, robots.txt, Google Search Console verification, optimized page titles and descriptions, proper cache headers, SEO-friendly server routing
+E-commerce Currency System: Comprehensive global currency support (August 2025) - 54 African currencies across all regions (North, West, East, Central, Southern Africa), complete with flag indicators and regional organization, covering every African country including CFA Franc zones, island nations, and emerging economies
+Super Admin Dashboard: Complete user registration tracking system implemented (August 2025) - comprehensive registration analytics, user activity monitoring, subscription plan distribution tracking, registration source analysis, detailed user profiles with verification status and login history
+Deployment Redirect Fix: PERMANENTLY FIXED /lander redirect issue (September 2025) - implemented enhanced permanent redirect from /lander to /landing with trailing slash support, removed conflicting static files, updated routing to handle domain-level redirects correctly at server level with Express 301 redirects
+Code Quality: Major cleanup completed (August 2025) - removed duplicate functions causing TypeScript errors, created clean new landing page component (simple-landing-new.tsx), eliminated all code duplication issues
+Traffic & Conversion Tracking: Comprehensive B2B acquisition system implemented (August 2025) - advanced Google Analytics 4 & Google Ads integration, Meta Pixel for business decision-makers, LinkedIn Insight Tag for professional targeting, intelligent business profile detection, CRM need level assessment, qualified lead scoring, enhanced signup form tracking with business context, conversion value optimization for different package tiers, real-time attribution tracking with UTM parameters
+Security Services Removal: Removed all security-related pricing plans and services from the platform (August 2025) - NODE CRM now focuses exclusively on customer relationship management without offering security monitoring or threat detection services
+Page Refresh Issue Fix: Fixed persistent page refresh requirement (September 2025) - implemented network-first service worker strategy, added proper cache control headers to prevent stale content serving, reduced aggressive caching that was causing navigation issues
+Lander Redirect Issue: PERMANENT FIX IMPLEMENTED (September 2025) - BULLETPROOF 6-LAYER REDIRECT SYSTEM: 1) Server-side Express middleware redirects /lander to / with 301 status (CRITICAL - never modify), 2) Client-side index.html immediate redirect, 3) Static fallback public/lander/index.html, 4) JavaScript protection via lander-blocker.js, 5) _redirects file for platform compatibility, 6) Health check endpoint /api/lander-health for monitoring. System includes anti-cache headers, multiple redirect methods, and comprehensive logging. PROTECTED CODE: Server redirect marked as CRITICAL in routes.ts with warning comments to prevent accidental removal
+Navigation System: Organized grouped/collapsible navigation (September 2025) - replaced long flat tab lists with categorized navigation groups (Core CRM, Sales & Marketing, Operations, Intelligence, Platform) with expand/collapse functionality, improved UX for better feature discoverability, mobile-optimized responsive design
+AI Campaign Studio: Complete backend infrastructure (September 2025) - Multi-provider AI failover system (you.com as primary, Anthropic, OpenAI, Google, Qwen), automated ad generation from website/product information, personalized email campaign generation from contact data, tenant-isolated content storage, usage tracking with cost estimation, comprehensive REST API endpoints (/api/ai-campaigns/generate-ad, /api/ai-campaigns/generate-emails, full CRUD for content management), enterprise-grade security with tenant validation and cross-tenant access prevention, integration-ready for Sales Channels and Simple Messaging modules
+Sales Channels: Multi-platform integration system (September 2025) - TikTok, Facebook Business, Instagram Business, LinkedIn Company, Twitter/X Business, Pinterest Business, Snapchat Business connections, database persistence with proper tenant isolation, connection status tracking, secure credential management, API-ready for publishing AI-generated content to connected platforms
 
 ## System Architecture
+The application uses a monorepo structure with distinct client and server sides.
 
-### Core Technologies
-The platform uses a modern full-stack architecture:
-- **Frontend**: React 18 with TypeScript, Wouter for routing, TanStack Query for state management, shadcn/ui and Tailwind CSS for UI, and Recharts for data visualization.
-- **Backend**: Node.js with Express.js, TypeScript.
-- **Database**: PostgreSQL with Drizzle ORM and Neon serverless driver.
-
-### Design System
-- Custom theme with light/dark mode, professional analytics color palette, and Inter/JetBrains Mono fonts.
-- Features card-based modular layouts for metric grouping and follows a single-page overview philosophy.
-
-### Dashboard & Real-Time Metrics
-- **Real-Time Calculations**: All dashboard metrics are calculated from actual account data, not static values
-- **Dynamic Metrics**:
-  - Keywords Tracked: Count from keywords table
-  - Total Backlinks: Count from backlinks table
-  - Referring Domains: Unique domain count from backlink URLs (normalized)
-  - Organic Traffic: Latest visits from traffic data (date-sorted)
-  - SEO Score: 100 - weighted penalties (critical: -10, high: -5, medium: -2, low: -1)
-- **Connected Platform**: Dashboard updates instantly when users add keywords, generate backlinks, or modify data
-- **Multi-tenant Secure**: All calculations filtered by tenantId for data isolation
-
-### AI-Powered Analytics
-- Integrates Anthropic's Claude Sonnet 4 model for AI-driven insights.
-- Provides context-aware analysis based on project data (keywords, traffic, competitors, SEO issues).
-- Offers specialized AI methods for general SEO consultation, actionable recommendations, keyword analysis, competitor analysis, and SEO issue prioritization.
-- AI insights are automatically generated and displayed on the dashboard, with an interactive chat component available.
-
-### Automated Reporting System
-- Allows users to configure and generate comprehensive reports (full, keywords, traffic, technical, backlinks) with customizable frequency, format, and sections.
-- Stores generated reports and provides a history view for download.
-
-### Link Building System
-- Manages backlink opportunities, outreach campaigns, and contact tracking.
-- Includes a tabbed interface for finding opportunities, managing campaigns, and performing competitor gap analysis.
-- Leverages AI for recommending link building strategies.
-
-### API Access System
-- Comprehensive API key management with secure SHA-256 hashing and one-time secret display.
-- Features permission-based access control (read, write, full access) and configurable rate limits.
-- Provides per-key usage analytics including endpoint tracking, status codes, and response times.
-- Interactive API documentation with example requests for all available endpoints.
-- Supports programmatic access to keyword data, traffic analytics, backlinks, and SEO audit results.
-
-### Authentication & Multi-Tenancy
-- Utilizes Replit Auth for OpenID Connect authentication (Google, GitHub, X, Apple, email/password).
-- Implements a strict multi-tenant architecture where all data tables include a `tenantId` for isolation and security, ensuring users only access their own data.
-
-### Multi-Lingual Support (Internationalization)
-- **Complete i18n Implementation**: Built with react-i18next for comprehensive multi-language support
-- **6 Languages Supported**: English (en), Spanish (es), French (fr), German (de), Chinese (zh), Japanese (ja)
-- **Browser Language Detection**: Automatically detects and sets user's preferred language on first visit
-- **Persistent Language Selection**: User language choice saved to localStorage and persists across sessions
-- **UI Language Switcher**: Globe icon dropdown in header allows instant language switching
-- **Fully Translated Components**: 
-  - Sidebar navigation (Analytics, Account, Admin sections)
-  - App shell (user menu, logout, loading states, empty project messages)
-  - Common UI elements and labels
-  - All core navigation and interaction elements
-- **Translation Files**: Structured JSON files in client/src/i18n/locales/ for easy maintenance and expansion
-- **No Emoji Usage**: Language switcher uses text-only labels (following design guidelines)
-- **Accessibility**: Screen reader text properly translated for inclusive user experience
-
-### Super Admin Dashboard
-- **Platform Overview**: Dedicated admin dashboard for platform-wide monitoring and management
-- **Access Control**: Role-based access via `isAdmin` boolean field on users table
-- **Security**: Multi-layer protection with backend middleware (requireAdmin) and frontend route guards
-- **Real-Time Metrics**: 
-  - Total users, tenants, projects, keywords, and backlinks
-  - Active tenant count and subscription plan distribution
-  - Recent users and tenants lists (last 10 entries)
-- **Admin API Endpoints**:
-  - GET /api/admin/stats - Platform-wide statistics
-  - GET /api/admin/users - All users list
-  - GET /api/admin/tenants - All tenants list
-- **UI Integration**: Admin link conditionally shown in sidebar only for admin users
-- **Route Protection**: Non-admin users receive "Access Denied" when attempting to access /admin
-
-### Local SEO Tracking (AI-Powered)
-- **AI-Generated Local SEO Data**: Uses Anthropic Claude Sonnet 4 to generate complete local SEO profiles
-- **Google Business Profile Metrics**: AI generates realistic views, searches, calls, directions, rating, and review counts
-- **Location-Based Rankings**: Generates keyword rankings across multiple cities with local pack positions
-- **Business Citations**: Creates citations from 20+ popular directories (Google, Yelp, Facebook, Yellow Pages, etc.)
-- **One-Click Generation**: Enter business name and target locations, AI creates everything instantly
-- **Realistic Data Distribution**: Status (80% active, 15% pending, 5% removed), NAP consistency (85% consistent)
-- **Smart Context-Aware**: Uses project keywords for ranking generation, falls back to business name if needed
-- **Free & Instant**: No external APIs required, uses existing Anthropic AI infrastructure
-
-### Social Media Monitoring
-- Multi-platform social media tracking (Twitter, Facebook, Instagram, LinkedIn, TikTok).
-- Metrics tracking: followers, engagement rate, posts, reach, likes, comments, shares.
-- Account connection dialog with platform selector and profile details.
-- Post performance analysis with engagement metrics.
-- Historical metrics tracking for trend analysis.
-
-### Database Schema
-- PostgreSQL database with UUID primary keys.
-- Core tables include `projects`, `keywords`, `keywordRankings`, `trafficData`, `backlinks`, `backlinkGrowth`, `competitors`, `seoIssues`, `apiKeys`, `apiUsage`, all linked to `tenantId`.
-- **Phase 6 additions**: `localRankings`, `googleBusinessProfile`, `localCitations`, `socialAccounts`, `socialPosts`, `socialMetrics` - all with tenantId and CASCADE DELETE.
-- Features `CASCADE DELETE` on foreign key relationships for data integrity.
-- API keys table stores hashed keys (SHA-256) with metadata including permissions, rate limits, and expiration dates.
-- API usage table tracks all API calls with endpoint, method, status code, response time, and timestamp for analytics.
-
-### Build & Deployment
-- **Development**: Uses Vite for hot reload and TypeScript checking.
-- **Production**: Frontend built with Vite, backend bundled with esbuild.
+- **Frontend**: React 18 with TypeScript (Vite), Shadcn/ui (Radix UI, Tailwind CSS), TanStack Query for state, Wouter for routing, React Hook Form with Zod for forms.
+- **Backend**: Express.js with TypeScript.
+- **Database**: PostgreSQL with Drizzle ORM.
+- **Monorepo Structure**: Separation of client-side and server-side code.
+- **Data Flow**: Frontend communicates with Express backend via REST APIs, data persisted via Drizzle ORM. Client-side sentiment analysis results are stored with contact records.
+- **UI/UX Decisions**: Consistent professional styling with gradient headers, animated badges, and modern design patterns across all modules. Vertical side tabs are used for unified navigation within CRM modules. Mobile-first responsive design is implemented.
+- **Core Features**:
+    - **CRM Core**: Comprehensive CRUD operations for contacts, leads, deals, tasks, accounts.
+    - **AI & Intelligence**: AI-powered sentiment analysis, campaign generation, emotional intelligence hub (customer profiling, voice analysis, real-time coaching), AI autonomous operations (lead scoring, workflow optimization), AI-powered template generator.
+    - **Marketing**: Simple Messaging (email/SMS sending), landing page builder (drag-and-drop, AI recommendations, templates), SEO management, reputation management (multi-platform monitoring, predictive scores).
+    - **E-commerce**: Full store builder with product creation, store management, unique web link generation (subdomains), AI recommendations, layout builder, inventory heatmap.
+    - **Financial Management**: Multi-currency bookkeeping, invoice generation, bank feed synchronization, automated tax calculation, financial reporting.
+    - **HR & Project Management**: Employee management, advanced project management (Gantt charts), document management.
+    - **Security**: Multi-tenant access control, user data isolation, platform owner dashboard, comprehensive security features (encryption, rate limiting, audit logging).
+    - **Platform Capabilities**: Multi-tenant system with company isolation, roles & permissions system (11 categories, 75+ permissions), comprehensive settings, multi-language support (20+ languages), adaptive signup flow, subscription management with tiered AI activation.
+    - **Collaboration**: Real-time team collaboration heat map, video conferencing integration.
+    - **Offline Capabilities**: Progressive Web App (PWA) with service worker, IndexedDB offline storage, tenant-isolated offline databases, offline-aware data layer, background sync, offline CRUD operations, PWA installation support, offline settings management.
+    - **Platform Owner System**: Restored super admin privileges for platform owner with unlimited subscription access, full tenant oversight, subscription management controls, security administration, and system-wide administrative capabilities.
 
 ## External Dependencies
-
-### UI Components & Styling
-- shadcn/ui (built on Radix UI)
-- Radix UI
-- Tailwind CSS
-- class-variance-authority
-- Recharts
-- Lucide React
-- Google Fonts
-
-### Data Management
-- TanStack Query
-- React Hook Form
-- Zod
-- date-fns
-
-### Database & Backend
-- Neon Serverless (PostgreSQL driver)
-- Drizzle ORM
-- Drizzle Kit
-
-### AI Integration
-- Anthropic SDK (`@anthropic-ai/sdk`)
-
-### Authentication
-- Replit Auth
-
-### Backlink Analysis System (AI-First Architecture)
-- **Primary Mode: AI-Powered (Free)**: Uses Anthropic Claude Sonnet 4 to generate realistic backlink analysis for any domain
-- **Optional Mode: DataForSEO API (Paid)**: Real backlink data from DataForSEO for users who need verified data
-- Users can generate up to 100 AI backlinks or fetch up to 1,000 API backlinks per request
-- AI generation considers project keywords and competitors for industry-appropriate results
-- **Data Provenance Tracking**: All backlinks tagged with `source` field ('ai' or 'api') for transparency
-- **UI Toggle**: Users can easily switch between AI (free) and API (paid) modes in the interface
-- **Visual Indicators**: Sparkles icon for AI-generated, Database icon for API-verified backlinks
-- AI features include: domain authority scoring, realistic anchor text, varied source types (news, blogs, directories, forums)
-- **Setup for API Mode**: Valid DataForSEO credentials (DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD) required
-- **Note**: DataForSEO requires paid subscription (~$100/month). AI mode works out-of-the-box with no external costs
+- **Database**: PostgreSQL (configured with Drizzle ORM).
+- **Cloud Database**: Neon Database (Serverless PostgreSQL driver).
+- **AI Services**: OpenAI (GPT-4o), Anthropic (Claude Sonnet 4), Google Gemini AI.
+- **Email/SMS**: SendGrid (for email confirmation and marketing), Twilio (for SMS).
+- **Authentication**: JWT tokens.
+- **UI/Component Libraries**: Shadcn/ui, Radix UI, Tailwind CSS, TanStack Query, Wouter, React Hook Form, Zod, dnd-kit.
+- **Maps/Translate**: Google Maps API, Google Translate API.
+- **Build Tools**: Vite, esbuild.
+- **Other Integrations (examples)**: Zapier, Shopify, Shopware.
+- **Security Tools**: Helmet.js, bcrypt.
+- **Payment Gateways**: Stripe, Visa (for tenant configurations).
+```

@@ -1,0 +1,40 @@
+User-agent: *
+Allow: /
+
+# Important pages for indexing
+Allow: /
+Allow: /signup
+Allow: /login
+Allow: /features
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /blog
+Allow: /help
+
+# Prevent indexing of admin and private areas
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /api/
+Disallow: /auth/
+Disallow: /*?token=
+Disallow: /*?verification=
+Disallow: /verify-email
+
+# Allow crawling of assets
+Allow: /assets/
+Allow: /*.css
+Allow: /*.js
+Allow: /*.png
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.gif
+Allow: /*.svg
+Allow: /*.webp
+
+# Sitemap location
+Sitemap: https://argilette.org/sitemap.xml
+
+# Crawl delay (optional - prevents overwhelming the server)
+Crawl-delay: 1

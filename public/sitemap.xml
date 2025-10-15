@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+    <!-- Homepage - Highest Priority -->
+    <url>
+        <loc>https://argilette.org/</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+
+    <!-- Landing Page -->
+    <url>
+        <loc>https://argilette.org/landing</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- Core User Journey Pages -->
+    <url>
+        <loc>https://argilette.org/signup</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <url>
+        <loc>https://argilette.org/login</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Features and Product Pages -->
+    <url>
+        <loc>https://argilette.org/features</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>https://argilette.org/pricing</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Content and Support Pages -->
+    <url>
+        <loc>https://argilette.org/about</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <url>
+        <loc>https://argilette.org/contact</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <url>
+        <loc>https://argilette.org/help</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <url>
+        <loc>https://argilette.org/blog</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <!-- Legal and Policy Pages -->
+    <url>
+        <loc>https://argilette.org/privacy</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.4</priority>
+    </url>
+
+    <url>
+        <loc>https://argilette.org/terms</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.4</priority>
+    </url>
+
+    <!-- Industry-specific landing pages for better SEO targeting -->
+    <url>
+        <loc>https://argilette.org/crm-for-small-business</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <url>
+        <loc>https://argilette.org/enterprise-crm</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <url>
+        <loc>https://argilette.org/ai-powered-crm</loc>
+        <lastmod>2025-09-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+</urlset>

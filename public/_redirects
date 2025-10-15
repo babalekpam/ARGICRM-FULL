@@ -1,0 +1,17 @@
+# ULTIMATE NUCLEAR LANDER PROTECTION - Maximum override
+/lander/* / 301!
+/lander / 301!
+/lander?* / 301!
+
+# Catch ALL possible lander variations
+/lander.html / 301!
+/lander.php / 301!
+/lander.aspx / 301!
+/lander/index.html / 301!
+/lander/index.php / 301!
+/lander/* / 301!
+
+# Nuclear-level protection
+*.lander.* / 301!
+/*/lander / 301!
+/*/lander/* / 301!

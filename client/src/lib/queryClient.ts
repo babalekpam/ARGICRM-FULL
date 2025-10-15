@@ -12,10 +12,26 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // SECURITY FIX: Only get token from localStorage, remove dangerous headers
+  const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+  
+  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  
+  // SECURITY: Only send Authorization header, never trust client-side data for identity
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // SECURITY FIX: Removed dangerous headers that allowed privilege escalation:
+  // - x-user-email (allowed user impersonation)
+  // - x-auth-email (allowed user impersonation) 
+  // - x-is-platform-owner (allowed privilege escalation)
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
+    // SECURITY FIX: Enable credentials to send httpOnly cookies for authentication
     credentials: "include",
   });
 
@@ -29,7 +45,23 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    // SECURITY FIX: Only get token, remove dangerous header data
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+    
+    const headers: Record<string, string> = {};
+    
+    // SECURITY: Only send Authorization header with JWT token
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // SECURITY FIX: Completely removed dangerous headers that enabled:
+    // - User impersonation via x-auth-email/x-user-email
+    // - Privilege escalation via x-is-platform-owner
+
+    const res = await fetch(queryKey[0] as string, {
+      headers,
+      // SECURITY FIX: Enable credentials to send httpOnly cookies for authentication
       credentials: "include",
     });
 
@@ -38,20 +70,33 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const data = await res.json();
+    return data;
   };
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: getQueryFn({ on401: "returnNull" }),
+      // Performance optimizations
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnReconnect: true,
+      refetchOnMount: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      retry: (failureCount, error: any) => {
+        // Don't retry on 404s or auth errors
+        if (error?.message?.includes('401') || error?.message?.includes('404')) {
+          return false;
+        }
+        return failureCount < 2; // Reduced retry attempts
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     },
     mutations: {
-      retry: false,
+      retry: 1,
+      retryDelay: 1000,
     },
   },
 });
