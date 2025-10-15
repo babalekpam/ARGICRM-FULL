@@ -571,6 +571,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Technical SEO Audit - Get Audit Scans
+  app.get("/api/technical-audit/scans/:projectId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const scans = await storage.getAuditScansByProject(req.tenantId, req.params.projectId);
+      res.json(scans);
+    } catch (error) {
+      console.error("Error fetching audit scans:", error);
+      res.status(500).json({ error: "Failed to fetch audit scans" });
+    }
+  });
+
+  // Technical SEO Audit - Get Latest Audit Scan
+  app.get("/api/technical-audit/latest/:projectId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const scan = await storage.getLatestAuditScan(req.tenantId, req.params.projectId);
+      res.json(scan || null);
+    } catch (error) {
+      console.error("Error fetching latest audit scan:", error);
+      res.status(500).json({ error: "Failed to fetch latest audit scan" });
+    }
+  });
+
+  // Technical SEO Audit - Start New Audit
+  app.post("/api/technical-audit/start", requireAuth, async (req: any, res: Response) => {
+    try {
+      const requestSchema = z.object({
+        projectId: z.string(),
+        urls: z.array(z.string().url()).min(1).max(10),
+      });
+      
+      const validation = requestSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Invalid request", details: validation.error });
+      }
+      
+      const { projectId, urls } = validation.data;
+
+      // Create audit scan record
+      const scan = await storage.createAuditScan(req.tenantId, {
+        projectId,
+        status: 'running',
+        pagesScanned: 0,
+        issuesFound: 0
+      });
+
+      // Simulate audit process (in production, this would use real PageSpeed API)
+      // For MVP, generate mock data
+      const pageMetrics = [];
+      for (const url of urls.slice(0, 10)) { // Limit to 10 URLs for demo
+        const performanceScore = Math.floor(Math.random() * 40) + 60; // 60-100
+        const metric = await storage.createPageMetric(req.tenantId, {
+          auditScanId: scan.id,
+          url,
+          performanceScore,
+          loadTime: Math.random() * 3 + 1, // 1-4 seconds
+          pageSize: Math.floor(Math.random() * 2000000) + 500000, // 500KB - 2.5MB
+          requestCount: Math.floor(Math.random() * 50) + 20, // 20-70 requests
+          mobileUsable: Math.random() > 0.2 ? 'yes' : 'warning',
+          hasHttps: 'yes',
+          metaTitleLength: Math.floor(Math.random() * 40) + 30, // 30-70
+          metaDescriptionLength: Math.floor(Math.random() * 80) + 100, // 100-180
+          h1Count: Math.floor(Math.random() * 2) + 1, // 1-3
+          imageCount: Math.floor(Math.random() * 20) + 5, // 5-25
+          imagesWithoutAlt: Math.floor(Math.random() * 5), // 0-5
+          brokenLinks: Math.floor(Math.random() * 3), // 0-3
+        });
+
+        // Create Core Web Vitals
+        const lcp = Math.random() * 2 + 1.5; // 1.5-3.5s
+        const fid = Math.random() * 200 + 50; // 50-250ms
+        const cls = Math.random() * 0.2; // 0-0.2
+        
+        await storage.createCoreWebVital(req.tenantId, {
+          pageMetricId: metric.id,
+          lcp,
+          fid,
+          cls,
+          fcp: Math.random() * 2 + 1, // 1-3s
+          ttfb: Math.random() * 500 + 200, // 200-700ms
+          tbt: Math.random() * 300 + 100, // 100-400ms
+          speedIndex: Math.random() * 3 + 2, // 2-5s
+          lcpRating: lcp <= 2.5 ? 'good' : lcp <= 4 ? 'needs-improvement' : 'poor',
+          fidRating: fid <= 100 ? 'good' : fid <= 300 ? 'needs-improvement' : 'poor',
+          clsRating: cls <= 0.1 ? 'good' : cls <= 0.25 ? 'needs-improvement' : 'poor',
+        });
+
+        pageMetrics.push(metric);
+      }
+
+      // Calculate overall scores
+      const avgPerformance = Math.floor(pageMetrics.reduce((sum, m) => sum + (m.performanceScore || 0), 0) / pageMetrics.length);
+      const avgSeo = Math.floor(Math.random() * 20) + 70; // 70-90
+      const avgAccessibility = Math.floor(Math.random() * 20) + 75; // 75-95
+      const avgBestPractices = Math.floor(Math.random() * 20) + 70; // 70-90
+
+      // Update scan with results
+      const completedScan = await storage.updateAuditScan(req.tenantId, scan.id, {
+        status: 'completed',
+        performanceScore: avgPerformance,
+        seoScore: avgSeo,
+        accessibilityScore: avgAccessibility,
+        bestPracticesScore: avgBestPractices,
+        pagesScanned: pageMetrics.length,
+        issuesFound: pageMetrics.reduce((sum, m) => sum + (m.brokenLinks || 0) + (m.imagesWithoutAlt || 0), 0),
+        completedAt: new Date(),
+      });
+
+      res.json(completedScan);
+    } catch (error) {
+      console.error("Start audit error:", error);
+      res.status(500).json({ error: "Failed to start audit" });
+    }
+  });
+
+  // Technical SEO Audit - Get Page Metrics
+  app.get("/api/technical-audit/metrics/:auditScanId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const metrics = await storage.getPageMetricsByAuditScan(req.tenantId, req.params.auditScanId);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching page metrics:", error);
+      res.status(500).json({ error: "Failed to fetch page metrics" });
+    }
+  });
+
+  // Technical SEO Audit - Get Core Web Vitals
+  app.get("/api/technical-audit/vitals/:pageMetricId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const vitals = await storage.getCoreWebVitalsByPageMetric(req.tenantId, req.params.pageMetricId);
+      res.json(vitals || null);
+    } catch (error) {
+      console.error("Error fetching core web vitals:", error);
+      res.status(500).json({ error: "Failed to fetch core web vitals" });
+    }
+  });
+
   // Link Building - Backlink Opportunities
   app.get("/api/link-building/opportunities/:projectId", requireAuth, async (req: any, res: Response) => {
     try {

@@ -259,6 +259,91 @@ export const serpSnapshots = pgTable("serp_snapshots", {
   capturedAt: timestamp("captured_at").defaultNow(),
 });
 
+// Technical SEO Audit Scans - Track audit runs
+export const auditScans = pgTable("audit_scans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default('pending'), // pending, running, completed, failed
+  performanceScore: integer("performance_score"), // 0-100
+  seoScore: integer("seo_score"), // 0-100
+  accessibilityScore: integer("accessibility_score"), // 0-100
+  bestPracticesScore: integer("best_practices_score"), // 0-100
+  pagesScanned: integer("pages_scanned").default(0),
+  issuesFound: integer("issues_found").default(0),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Page Metrics - Detailed metrics per page
+export const pageMetrics = pgTable("page_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  auditScanId: varchar("audit_scan_id").notNull().references(() => auditScans.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  performanceScore: integer("performance_score"), // 0-100
+  loadTime: real("load_time"), // Seconds
+  pageSize: integer("page_size"), // Bytes
+  requestCount: integer("request_count"),
+  mobileUsable: text("mobile_usable").default('yes'), // yes, no, warning
+  hasHttps: text("has_https").default('yes'), // yes, no
+  metaTitleLength: integer("meta_title_length"),
+  metaDescriptionLength: integer("meta_description_length"),
+  h1Count: integer("h1_count"),
+  imageCount: integer("image_count"),
+  imagesWithoutAlt: integer("images_without_alt"),
+  brokenLinks: integer("broken_links"),
+  analyzedAt: timestamp("analyzed_at").defaultNow(),
+});
+
+// Core Web Vitals - Performance metrics
+export const coreWebVitals = pgTable("core_web_vitals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  pageMetricId: varchar("page_metric_id").notNull().references(() => pageMetrics.id, { onDelete: "cascade" }),
+  lcp: real("lcp"), // Largest Contentful Paint (seconds)
+  fid: real("fid"), // First Input Delay (milliseconds)
+  cls: real("cls"), // Cumulative Layout Shift (score)
+  fcp: real("fcp"), // First Contentful Paint (seconds)
+  ttfb: real("ttfb"), // Time to First Byte (milliseconds)
+  tbt: real("tbt"), // Total Blocking Time (milliseconds)
+  speedIndex: real("speed_index"), // Speed Index (seconds)
+  lcpRating: text("lcp_rating").default('needs-improvement'), // good, needs-improvement, poor
+  fidRating: text("fid_rating").default('needs-improvement'),
+  clsRating: text("cls_rating").default('needs-improvement'),
+  measuredAt: timestamp("measured_at").defaultNow(),
+});
+
+// Automated Reporting - Report Configurations
+export const reportConfigs = pgTable("report_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  reportType: text("report_type").notNull().default('full'), // full, keywords, traffic, technical, backlinks
+  frequency: text("frequency").notNull().default('weekly'), // daily, weekly, monthly, manual
+  format: text("format").notNull().default('json'), // json, csv, pdf
+  recipients: text("recipients").array(), // Email addresses for delivery
+  includeKeywords: integer("include_keywords").notNull().default(1), // Boolean as int
+  includeTraffic: integer("include_traffic").notNull().default(1),
+  includeBacklinks: integer("include_backlinks").notNull().default(1),
+  includeTechnicalAudit: integer("include_technical_audit").notNull().default(1),
+  includeCompetitors: integer("include_competitors").notNull().default(1),
+  isActive: integer("is_active").notNull().default(1), // Boolean as int
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Generated Reports - Stored report outputs
+export const generatedReports = pgTable("generated_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  configId: varchar("config_id").notNull().references(() => reportConfigs.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  reportData: jsonb("report_data").notNull(), // Complete report content
+  format: text("format").notNull(), // json, csv, pdf
+  generatedAt: timestamp("generated_at").defaultNow(),
+});
+
 // Insert schemas - omit id, createdAt/updatedAt, and tenantId (provided by server)
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, tenantId: true });
@@ -278,6 +363,11 @@ export const insertCompetitorRankSnapshotSchema = createInsertSchema(competitorR
 export const insertContentBriefSchema = createInsertSchema(contentBriefs).omit({ id: true, createdAt: true, tenantId: true });
 export const insertContentScorecardSchema = createInsertSchema(contentScorecards).omit({ id: true, analyzedAt: true, tenantId: true });
 export const insertSerpSnapshotSchema = createInsertSchema(serpSnapshots).omit({ id: true, capturedAt: true, tenantId: true });
+export const insertAuditScanSchema = createInsertSchema(auditScans).omit({ id: true, startedAt: true, tenantId: true });
+export const insertPageMetricSchema = createInsertSchema(pageMetrics).omit({ id: true, analyzedAt: true, tenantId: true });
+export const insertCoreWebVitalSchema = createInsertSchema(coreWebVitals).omit({ id: true, measuredAt: true, tenantId: true });
+export const insertReportConfigSchema = createInsertSchema(reportConfigs).omit({ id: true, createdAt: true, tenantId: true });
+export const insertGeneratedReportSchema = createInsertSchema(generatedReports).omit({ id: true, generatedAt: true, tenantId: true });
 
 // User types - Required for Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
@@ -338,3 +428,18 @@ export type ContentScorecard = typeof contentScorecards.$inferSelect;
 
 export type InsertSerpSnapshot = z.infer<typeof insertSerpSnapshotSchema>;
 export type SerpSnapshot = typeof serpSnapshots.$inferSelect;
+
+export type InsertAuditScan = z.infer<typeof insertAuditScanSchema>;
+export type AuditScan = typeof auditScans.$inferSelect;
+
+export type InsertPageMetric = z.infer<typeof insertPageMetricSchema>;
+export type PageMetric = typeof pageMetrics.$inferSelect;
+
+export type InsertCoreWebVital = z.infer<typeof insertCoreWebVitalSchema>;
+export type CoreWebVital = typeof coreWebVitals.$inferSelect;
+
+export type InsertReportConfig = z.infer<typeof insertReportConfigSchema>;
+export type ReportConfig = typeof reportConfigs.$inferSelect;
+
+export type InsertGeneratedReport = z.infer<typeof insertGeneratedReportSchema>;
+export type GeneratedReport = typeof generatedReports.$inferSelect;

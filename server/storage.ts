@@ -16,11 +16,17 @@ import {
   type ContentBrief, type InsertContentBrief,
   type ContentScorecard, type InsertContentScorecard,
   type SerpSnapshot, type InsertSerpSnapshot,
+  type AuditScan, type InsertAuditScan,
+  type PageMetric, type InsertPageMetric,
+  type CoreWebVital, type InsertCoreWebVital,
+  type ReportConfig, type InsertReportConfig,
+  type GeneratedReport, type InsertGeneratedReport,
   type User, type UpsertUser,
   type Tenant, type InsertTenant,
   projects, keywords, keywordRankings, trafficData, backlinks, competitors, seoIssues, backlinkGrowth, 
   backlinkOpportunities, outreachCampaigns, outreachContacts, backlinkGaps, keywordRankHistory, 
-  competitorRankSnapshots, contentBriefs, contentScorecards, serpSnapshots, users, tenants
+  competitorRankSnapshots, contentBriefs, contentScorecards, serpSnapshots, auditScans, pageMetrics, 
+  coreWebVitals, reportConfigs, generatedReports, users, tenants
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -111,6 +117,32 @@ export interface IStorage {
   getSerpSnapshotsByTenant(tenantId: string): Promise<SerpSnapshot[]>;
   createSerpSnapshot(tenantId: string, snapshot: InsertSerpSnapshot): Promise<SerpSnapshot>;
   deleteSerpSnapshot(tenantId: string, id: string): Promise<boolean>;
+  
+  // Audit Scans - tenant-scoped
+  getAuditScansByProject(tenantId: string, projectId: string): Promise<AuditScan[]>;
+  getLatestAuditScan(tenantId: string, projectId: string): Promise<AuditScan | undefined>;
+  createAuditScan(tenantId: string, scan: InsertAuditScan): Promise<AuditScan>;
+  updateAuditScan(tenantId: string, id: string, scan: Partial<InsertAuditScan>): Promise<AuditScan | undefined>;
+  
+  // Page Metrics - tenant-scoped
+  getPageMetricsByAuditScan(tenantId: string, auditScanId: string): Promise<PageMetric[]>;
+  createPageMetric(tenantId: string, metric: InsertPageMetric): Promise<PageMetric>;
+  
+  // Core Web Vitals - tenant-scoped
+  getCoreWebVitalsByPageMetric(tenantId: string, pageMetricId: string): Promise<CoreWebVital | undefined>;
+  createCoreWebVital(tenantId: string, vital: InsertCoreWebVital): Promise<CoreWebVital>;
+  
+  // Report Configs - tenant-scoped
+  getReportConfigsByProject(tenantId: string, projectId: string): Promise<ReportConfig[]>;
+  createReportConfig(tenantId: string, config: InsertReportConfig): Promise<ReportConfig>;
+  updateReportConfig(tenantId: string, id: string, config: Partial<InsertReportConfig>): Promise<ReportConfig | undefined>;
+  deleteReportConfig(tenantId: string, id: string): Promise<boolean>;
+  
+  // Generated Reports - tenant-scoped
+  getReportsByConfig(tenantId: string, configId: string): Promise<GeneratedReport[]>;
+  getReportsByProject(tenantId: string, projectId: string): Promise<GeneratedReport[]>;
+  createGeneratedReport(tenantId: string, report: InsertGeneratedReport): Promise<GeneratedReport>;
+  deleteGeneratedReport(tenantId: string, id: string): Promise<boolean>;
 }
 
 // Database Storage Implementation
@@ -406,6 +438,111 @@ export class DbStorage implements IStorage {
   async deleteSerpSnapshot(tenantId: string, id: string): Promise<boolean> {
     const result = await this.db.delete(serpSnapshots)
       .where(and(eq(serpSnapshots.tenantId, tenantId), eq(serpSnapshots.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Audit Scans
+  async getAuditScansByProject(tenantId: string, projectId: string): Promise<AuditScan[]> {
+    return await this.db.select().from(auditScans)
+      .where(and(eq(auditScans.tenantId, tenantId), eq(auditScans.projectId, projectId)))
+      .orderBy(desc(auditScans.startedAt));
+  }
+
+  async getLatestAuditScan(tenantId: string, projectId: string): Promise<AuditScan | undefined> {
+    const result = await this.db.select().from(auditScans)
+      .where(and(eq(auditScans.tenantId, tenantId), eq(auditScans.projectId, projectId)))
+      .orderBy(desc(auditScans.startedAt))
+      .limit(1);
+    return result[0];
+  }
+
+  async createAuditScan(tenantId: string, insertScan: InsertAuditScan): Promise<AuditScan> {
+    const result = await this.db.insert(auditScans).values({ ...insertScan, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateAuditScan(tenantId: string, id: string, updateScan: Partial<InsertAuditScan>): Promise<AuditScan | undefined> {
+    const result = await this.db.update(auditScans)
+      .set(updateScan)
+      .where(and(eq(auditScans.tenantId, tenantId), eq(auditScans.id, id)))
+      .returning();
+    return result[0];
+  }
+
+  // Page Metrics
+  async getPageMetricsByAuditScan(tenantId: string, auditScanId: string): Promise<PageMetric[]> {
+    return await this.db.select().from(pageMetrics)
+      .where(and(eq(pageMetrics.tenantId, tenantId), eq(pageMetrics.auditScanId, auditScanId)))
+      .orderBy(pageMetrics.url);
+  }
+
+  async createPageMetric(tenantId: string, insertMetric: InsertPageMetric): Promise<PageMetric> {
+    const result = await this.db.insert(pageMetrics).values({ ...insertMetric, tenantId }).returning();
+    return result[0];
+  }
+
+  // Core Web Vitals
+  async getCoreWebVitalsByPageMetric(tenantId: string, pageMetricId: string): Promise<CoreWebVital | undefined> {
+    const result = await this.db.select().from(coreWebVitals)
+      .where(and(eq(coreWebVitals.tenantId, tenantId), eq(coreWebVitals.pageMetricId, pageMetricId)))
+      .limit(1);
+    return result[0];
+  }
+
+  async createCoreWebVital(tenantId: string, insertVital: InsertCoreWebVital): Promise<CoreWebVital> {
+    const result = await this.db.insert(coreWebVitals).values({ ...insertVital, tenantId }).returning();
+    return result[0];
+  }
+
+  // Report Configs
+  async getReportConfigsByProject(tenantId: string, projectId: string): Promise<ReportConfig[]> {
+    return await this.db.select().from(reportConfigs)
+      .where(and(eq(reportConfigs.tenantId, tenantId), eq(reportConfigs.projectId, projectId)))
+      .orderBy(desc(reportConfigs.createdAt));
+  }
+
+  async createReportConfig(tenantId: string, insertConfig: InsertReportConfig): Promise<ReportConfig> {
+    const result = await this.db.insert(reportConfigs).values({ ...insertConfig, tenantId }).returning();
+    return result[0];
+  }
+
+  async updateReportConfig(tenantId: string, id: string, updateConfig: Partial<InsertReportConfig>): Promise<ReportConfig | undefined> {
+    const result = await this.db.update(reportConfigs)
+      .set(updateConfig)
+      .where(and(eq(reportConfigs.tenantId, tenantId), eq(reportConfigs.id, id)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteReportConfig(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(reportConfigs)
+      .where(and(eq(reportConfigs.tenantId, tenantId), eq(reportConfigs.id, id)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Generated Reports
+  async getReportsByConfig(tenantId: string, configId: string): Promise<GeneratedReport[]> {
+    return await this.db.select().from(generatedReports)
+      .where(and(eq(generatedReports.tenantId, tenantId), eq(generatedReports.configId, configId)))
+      .orderBy(desc(generatedReports.generatedAt));
+  }
+
+  async getReportsByProject(tenantId: string, projectId: string): Promise<GeneratedReport[]> {
+    return await this.db.select().from(generatedReports)
+      .where(and(eq(generatedReports.tenantId, tenantId), eq(generatedReports.projectId, projectId)))
+      .orderBy(desc(generatedReports.generatedAt));
+  }
+
+  async createGeneratedReport(tenantId: string, insertReport: InsertGeneratedReport): Promise<GeneratedReport> {
+    const result = await this.db.insert(generatedReports).values({ ...insertReport, tenantId }).returning();
+    return result[0];
+  }
+
+  async deleteGeneratedReport(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(generatedReports)
+      .where(and(eq(generatedReports.tenantId, tenantId), eq(generatedReports.id, id)))
       .returning();
     return result.length > 0;
   }

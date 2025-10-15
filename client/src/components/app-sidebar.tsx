@@ -11,6 +11,8 @@ import {
   Sparkles,
   CreditCard,
   FileText,
+  Gauge,
+  ClipboardList,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -33,6 +35,8 @@ const navigation = [
   { title: "Content Tools", url: "/content-tools", icon: FileText },
   { title: "Traffic Analyzer", url: "/traffic", icon: TrendingUp },
   { title: "SEO Audit", url: "/seo-audit", icon: AlertCircle },
+  { title: "Technical Audit", url: "/technical-audit", icon: Gauge },
+  { title: "Automated Reports", url: "/automated-reports", icon: ClipboardList },
   { title: "Backlinks", url: "/backlinks", icon: LinkIcon },
   { title: "Link Building", url: "/link-building", icon: Link2 },
   { title: "Competitors", url: "/competitors", icon: Users },
