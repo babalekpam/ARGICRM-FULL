@@ -19,7 +19,9 @@
     "confirm": "Bestätigen",
     "logout": "Abmelden",
     "login": "Anmelden",
-    "signup": "Registrieren"
+    "signup": "Registrieren",
+    "user": "Benutzer",
+    "switchLanguage": "Sprache wechseln"
   },
   "landing": {
     "hero": {

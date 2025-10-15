@@ -19,7 +19,9 @@
     "confirm": "確認",
     "logout": "ログアウト",
     "login": "ログイン",
-    "signup": "サインアップ"
+    "signup": "サインアップ",
+    "user": "ユーザー",
+    "switchLanguage": "言語を切り替える"
   },
   "landing": {
     "hero": {

@@ -19,6 +19,7 @@ import {
   Shield,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   Sidebar,
   SidebarContent,
@@ -34,25 +35,25 @@ import {
 import type { User } from "@shared/schema";
 
 const navigation = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Keyword Research", url: "/keywords", icon: Search },
-  { title: "Rank Tracking", url: "/rank-tracking", icon: Activity },
-  { title: "Content Tools", url: "/content-tools", icon: FileText },
-  { title: "Traffic Analyzer", url: "/traffic", icon: TrendingUp },
-  { title: "SEO Audit", url: "/seo-audit", icon: AlertCircle },
-  { title: "Technical Audit", url: "/technical-audit", icon: Gauge },
-  { title: "Automated Reports", url: "/automated-reports", icon: ClipboardList },
-  { title: "Backlinks", url: "/backlinks", icon: LinkIcon },
-  { title: "Link Building", url: "/link-building", icon: Link2 },
-  { title: "Competitors", url: "/competitors", icon: Users },
-  { title: "Local SEO", url: "/local-seo", icon: MapPin },
-  { title: "Social Media", url: "/social-media", icon: Share2 },
-  { title: "AI Assistant", url: "/ai-assistant", icon: Sparkles },
+  { titleKey: "sidebar.dashboard", url: "/", icon: LayoutDashboard },
+  { titleKey: "sidebar.keywordResearch", url: "/keywords", icon: Search },
+  { titleKey: "sidebar.rankTracking", url: "/rank-tracking", icon: Activity },
+  { titleKey: "sidebar.contentTools", url: "/content-tools", icon: FileText },
+  { titleKey: "sidebar.trafficAnalyzer", url: "/traffic", icon: TrendingUp },
+  { titleKey: "sidebar.seoAudit", url: "/seo-audit", icon: AlertCircle },
+  { titleKey: "sidebar.technicalAudit", url: "/technical-audit", icon: Gauge },
+  { titleKey: "sidebar.automatedReports", url: "/automated-reports", icon: ClipboardList },
+  { titleKey: "sidebar.backlinks", url: "/backlinks", icon: LinkIcon },
+  { titleKey: "sidebar.linkBuilding", url: "/link-building", icon: Link2 },
+  { titleKey: "sidebar.competitors", url: "/competitors", icon: Users },
+  { titleKey: "sidebar.localSEO", url: "/local-seo", icon: MapPin },
+  { titleKey: "sidebar.socialMedia", url: "/social-media", icon: Share2 },
+  { titleKey: "sidebar.aiAssistant", url: "/ai-assistant", icon: Sparkles },
 ];
 
 const accountNav = [
-  { title: "API Access", url: "/api-access", icon: Key },
-  { title: "Pricing & Plans", url: "/pricing", icon: CreditCard },
+  { titleKey: "sidebar.apiAccess", url: "/api-access", icon: Key },
+  { titleKey: "sidebar.pricingPlans", url: "/pricing", icon: CreditCard },
 ];
 
 interface AppSidebarProps {
@@ -61,6 +62,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const [location] = useLocation();
+  const { t } = useTranslation();
 
   return (
     <Sidebar>
@@ -74,17 +76,18 @@ export function AppSidebar({ user }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Analytics</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.analytics')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => {
                 const isActive = location === item.url;
+                const title = t(item.titleKey);
                 return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <SidebarMenuItem key={item.titleKey}>
+                    <SidebarMenuButton asChild isActive={isActive} data-testid={`nav-${item.titleKey.split('.')[1]}`}>
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <span>{title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -94,17 +97,18 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.account')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {accountNav.map((item) => {
                 const isActive = location === item.url;
+                const title = t(item.titleKey);
                 return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <SidebarMenuItem key={item.titleKey}>
+                    <SidebarMenuButton asChild isActive={isActive} data-testid={`nav-${item.titleKey.split('.')[1]}`}>
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <span>{title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -115,14 +119,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
         </SidebarGroup>
         {user?.isAdmin && (
           <SidebarGroup>
-            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupLabel>{t('sidebar.admin')}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={location === '/admin'} data-testid="nav-admin-dashboard">
                     <Link href="/admin">
                       <Shield className="h-4 w-4" />
-                      <span>Admin Dashboard</span>
+                      <span>{t('sidebar.adminDashboard')}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

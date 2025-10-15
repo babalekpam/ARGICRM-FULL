@@ -19,7 +19,9 @@
     "confirm": "Confirmer",
     "logout": "Se déconnecter",
     "login": "Se connecter",
-    "signup": "S'inscrire"
+    "signup": "S'inscrire",
+    "user": "Utilisateur",
+    "switchLanguage": "Changer de langue"
   },
   "landing": {
     "hero": {

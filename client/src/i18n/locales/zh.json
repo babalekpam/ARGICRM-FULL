@@ -19,7 +19,9 @@
     "confirm": "确认",
     "logout": "退出登录",
     "login": "登录",
-    "signup": "注册"
+    "signup": "注册",
+    "user": "用户",
+    "switchLanguage": "切换语言"
   },
   "landing": {
     "hero": {

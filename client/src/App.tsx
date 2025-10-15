@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import { Plus, LogOut, User as UserIcon } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ProjectSelector } from "@/components/project-selector";
@@ -47,6 +48,7 @@ import NotFound from "@/pages/not-found";
 
 function AppContent() {
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
+  const { t } = useTranslation();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -166,7 +168,7 @@ function AppContent() {
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none" data-testid="text-user-name">
-                      {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'User'}
+                      {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : t('common.user')}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground" data-testid="text-user-email">
                       {user?.email}
@@ -176,7 +178,7 @@ function AppContent() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} data-testid="button-logout">
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t('common.logout')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -193,7 +195,7 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <p className="text-muted-foreground">Loading...</p>
+                        <p className="text-muted-foreground">{t('common.loading')}</p>
                       </div>
                     </div>
                   );
@@ -202,10 +204,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -220,10 +222,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -238,10 +240,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -256,10 +258,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -274,10 +276,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -292,10 +294,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -310,10 +312,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -328,10 +330,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -346,10 +348,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -364,10 +366,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -382,10 +384,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -406,10 +408,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -424,10 +426,10 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">No Projects</h2>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('projects.noProjects')}</h2>
+                        <p className="text-muted-foreground mb-4">{t('projects.noProjectsMessage')}</p>
                         <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-project">
-                          <Plus className="mr-2 h-4 w-4" /> Create Project
+                          <Plus className="mr-2 h-4 w-4" /> {t('projects.createProject')}
                         </Button>
                       </div>
                     </div>
@@ -442,8 +444,8 @@ function AppContent() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-                        <p className="text-muted-foreground">You need admin permissions to access this page</p>
+                        <h2 className="text-2xl font-bold mb-2">{t('admin.accessDenied')}</h2>
+                        <p className="text-muted-foreground">{t('admin.accessDeniedMessage')}</p>
                       </div>
                     </div>
                   );
