@@ -12,7 +12,9 @@ import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import Logo from "@/components/logo";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_example');
+// Conditional Stripe initialization - only load if key is configured
+const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
 
 interface TrialStatus {
   isActive: boolean;

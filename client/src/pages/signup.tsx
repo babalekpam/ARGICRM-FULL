@@ -37,8 +37,9 @@ import {
 } from "lucide-react";
 import { trackCrmSignupAction, trackBusinessAction } from "@/components/tracking-scripts";
 
-// Direct Stripe initialization
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+// Conditional Stripe initialization - only load if key is configured
+const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
 
 interface SignupFormData {
   firstName: string;
