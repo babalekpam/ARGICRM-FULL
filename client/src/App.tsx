@@ -11,6 +11,7 @@ import { Plus, LogOut, User as UserIcon } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ProjectSelector } from "@/components/project-selector";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { EditProjectDialog } from "@/components/edit-project-dialog";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -150,33 +151,36 @@ function AppContent() {
               />
             )}
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full" data-testid="button-user-menu">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.email || "User"} />
-                  <AvatarFallback>{userInitials}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none" data-testid="text-user-name">
-                    {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'User'}
-                  </p>
-                  <p className="text-xs leading-none text-muted-foreground" data-testid="text-user-email">
-                    {user?.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} data-testid="button-logout">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full" data-testid="button-user-menu">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.email || "User"} />
+                    <AvatarFallback>{userInitials}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none" data-testid="text-user-name">
+                      {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'User'}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground" data-testid="text-user-email">
+                      {user?.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} data-testid="button-logout">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
         <main className="flex-1 overflow-auto bg-background">
           <Switch>
