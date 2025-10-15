@@ -199,6 +199,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/backlinks/generate", requireAuth, async (req: any, res: Response) => {
+    try {
+      const generateBacklinksSchema = z.object({
+        domain: z.string().min(1, "Domain is required"),
+        projectId: z.string().min(1, "Project ID is required"),
+        limit: z.number().int().min(1).max(100).default(50),
+      });
+
+      const { domain, projectId, limit } = generateBacklinksSchema.parse(req.body);
+      
+      // Verify project belongs to tenant
+      const project = await storage.getProject(req.tenantId, projectId);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found or access denied" });
+      }
+
+      // Get context for better AI generation
+      const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
+      const competitors = await storage.getCompetitorsByProject(req.tenantId, projectId);
+      
+      // Generate AI-powered backlinks
+      const aiBacklinks = await aiService.generateBacklinks(domain, limit, { keywords, competitors });
+      
+      // Store backlinks with 'ai' source
+      const storedBacklinks = [];
+      for (const item of aiBacklinks) {
+        const backlinkData = {
+          projectId,
+          url: item.url,
+          domainScore: item.domainScore,
+          anchorText: item.anchorText || domain,
+          date: item.date,
+          source: 'ai' as const,
+        };
+        const stored = await storage.createBacklink(req.tenantId, backlinkData);
+        storedBacklinks.push(stored);
+      }
+
+      res.json({
+        backlinks: storedBacklinks,
+        generated: storedBacklinks.length,
+        source: 'ai'
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      console.error("Generate AI backlinks error:", error);
+      res.status(500).json({ error: "Failed to generate AI backlinks" });
+    }
+  });
+
   app.post("/api/backlinks/fetch", requireAuth, async (req: any, res: Response) => {
     try {
       const fetchBacklinksSchema = z.object({
@@ -220,10 +272,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { backlinks: apiBacklinks, totalCount } = await dataforSEO.fetchBacklinks(domain, limit);
       
-      // Transform and store backlinks
+      // Transform and store backlinks with 'api' source
       const storedBacklinks = [];
       for (const item of apiBacklinks) {
-        const backlinkData = dataforSEO.transformToBacklink(item, projectId);
+        const backlinkData = {
+          ...dataforSEO.transformToBacklink(item, projectId),
+          source: 'api' as const,
+        };
         const stored = await storage.createBacklink(req.tenantId, backlinkData);
         storedBacklinks.push(stored);
       }
@@ -231,7 +286,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         backlinks: storedBacklinks,
         totalCount,
-        fetched: storedBacklinks.length
+        fetched: storedBacklinks.length,
+        source: 'api'
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
