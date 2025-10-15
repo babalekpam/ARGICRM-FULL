@@ -479,7 +479,7 @@ export class SaaSFeatureService {
 
   // Feature mapping for navigation items
   public getFeatureRequirement(navigationPath: string): string | null {
-    const featureMap: Record<string, string> = {
+    const featureMap: Record<string, string | null> = {
       '/contacts': 'contacts_basic',
       '/accounts': 'contacts_basic',
       '/leads': 'leads_basic',
