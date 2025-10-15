@@ -37,6 +37,7 @@ import LinkBuildingPage from "@/pages/link-building";
 import ContentTools from "@/pages/content-tools";
 import TechnicalAudit from "@/pages/technical-audit";
 import AutomatedReports from "@/pages/automated-reports";
+import ApiAccess from "@/pages/api-access";
 import AIAssistantPage from "@/pages/ai-assistant-page";
 import NotFound from "@/pages/not-found";
 
@@ -385,6 +386,9 @@ function AppContent() {
                 }
                 return <AutomatedReports projectId={effectiveProjectId} />;
               }}
+            </Route>
+            <Route path="/api-access">
+              {() => <ApiAccess />}
             </Route>
             <Route path="/ai-assistant">
               {() => <AIAssistantPage />}

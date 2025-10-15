@@ -13,6 +13,7 @@ import {
   FileText,
   Gauge,
   ClipboardList,
+  Key,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -44,6 +45,7 @@ const navigation = [
 ];
 
 const accountNav = [
+  { title: "API Access", url: "/api-access", icon: Key },
   { title: "Pricing & Plans", url: "/pricing", icon: CreditCard },
 ];
 

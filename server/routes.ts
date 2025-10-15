@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { z } from "zod";
 import { storage } from "./storage";
 import { aiService } from "./ai";
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -953,14 +954,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/keys/:id", requireAuth, async (req: any, res: Response) => {
     try {
       const { insertApiKeySchema } = await import("@shared/schema");
-      const partialSchema = insertApiKeySchema.partial().omit({ key: true });
-      const validatedData = partialSchema.parse(req.body);
+      const updateSchema = insertApiKeySchema.partial().omit({ key: true });
+      
+      const validatedData = updateSchema.parse(req.body);
       const apiKey = await storage.updateApiKey(req.tenantId, req.params.id, validatedData);
       if (!apiKey) {
         return res.status(404).json({ error: "API key not found" });
       }
       res.json(apiKey);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid update data" });
+      }
       console.error("Error updating API key:", error);
       res.status(500).json({ error: "Failed to update API key" });
     }
