@@ -25,7 +25,7 @@ import {
 } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -70,9 +70,11 @@ export default function SocialMedia({ projectId }: SocialMediaProps) {
   const isLoading = accountsLoading;
 
   // Set first account as selected if none selected
-  if (accounts && accounts.length > 0 && !selectedAccount) {
-    setSelectedAccount(accounts[0].id);
-  }
+  useEffect(() => {
+    if (accounts && accounts.length > 0 && !selectedAccount) {
+      setSelectedAccount(accounts[0].id);
+    }
+  }, [accounts, selectedAccount]);
 
   if (isLoading) {
     return (
