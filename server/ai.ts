@@ -417,6 +417,63 @@ Be specific and actionable. Focus on realistic opportunities.`;
     return textContent ? textContent.text : 'Unable to analyze content gaps.';
   }
 
+  async generateBacklinks(domain: string, limit: number = 50, context?: { keywords?: Keyword[], competitors?: Competitor[] }): Promise<Array<{
+    url: string;
+    domainScore: number;
+    anchorText: string;
+    date: string;
+  }>> {
+    const keywordContext = context?.keywords?.slice(0, 10).map(k => k.keyword).join(', ') || 'general topics';
+    const competitorContext = context?.competitors?.map(c => c.domain).join(', ') || 'similar websites';
+
+    const prompt = `As an SEO data analyst, generate a realistic backlink profile for: ${domain}
+
+Context:
+- Target keywords: ${keywordContext}
+- Industry competitors: ${competitorContext}
+- Number of backlinks to generate: ${limit}
+
+Generate ${limit} realistic backlinks in JSON format. Each backlink should include:
+- url: A realistic referring URL from authoritative websites (blogs, news sites, directories, industry resources)
+- domainScore: Domain authority score (0-100, realistic distribution: mostly 20-60, some 60-80, few 80+)
+- anchorText: Realistic anchor text (mix of branded, exact match, partial match, generic)
+- date: Date in YYYY-MM-DD format (spread across last 6-12 months)
+
+Return ONLY a valid JSON array with this structure:
+[
+  {
+    "url": "https://techcrunch.com/article-about-topic",
+    "domainScore": 85,
+    "anchorText": "${domain}",
+    "date": "2024-10-15"
+  }
+]
+
+Make the backlinks industry-appropriate, varied, and realistic. Include a mix of:
+- High-authority news/media sites (15%)
+- Industry blogs and resources (40%)
+- Directories and listings (20%)
+- Forums and communities (15%)
+- Other relevant sources (10%)`;
+
+    const message = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    try {
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent) throw new Error('No response');
+      
+      const backlinks = JSON.parse(textContent.text);
+      return Array.isArray(backlinks) ? backlinks.slice(0, limit) : [];
+    } catch (error) {
+      console.error('Failed to parse AI backlink response:', error);
+      return [];
+    }
+  }
+
   private buildSystemPrompt(context?: SEOContext): string {
     let prompt = `You are an expert SEO analyst and consultant. You provide data-driven insights and actionable recommendations to improve search engine rankings, organic traffic, and overall SEO performance.
 
