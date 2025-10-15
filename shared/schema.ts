@@ -372,6 +372,99 @@ export const apiUsage = pgTable("api_usage", {
   requestedAt: timestamp("requested_at").defaultNow(),
 });
 
+// Local SEO - Location-based ranking data
+export const localRankings = pgTable("local_rankings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  keyword: text("keyword").notNull(),
+  location: text("location").notNull(), // City, State or coordinates
+  position: integer("position"),
+  localPackRank: integer("local_pack_rank"), // Position in local 3-pack (1-3) or null
+  mapRank: integer("map_rank"), // Position in Google Maps results
+  searchVolume: integer("search_volume"),
+  url: text("url"),
+  checkedAt: timestamp("checked_at").defaultNow(),
+});
+
+// Google Business Profile - GBP metrics and data
+export const googleBusinessProfiles = pgTable("google_business_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  businessName: text("business_name").notNull(),
+  rating: real("rating"), // Average rating (e.g., 4.5)
+  reviewCount: integer("review_count"),
+  photoCount: integer("photo_count"),
+  postCount: integer("post_count"),
+  views: integer("views"), // Profile views
+  searches: integer("searches"), // Discovery searches
+  calls: integer("calls"), // Call clicks
+  directions: integer("directions"), // Direction requests
+  websiteClicks: integer("website_clicks"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Local Citations - Business directory listings
+export const localCitations = pgTable("local_citations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  source: text("source").notNull(), // Directory name (Yelp, Yellow Pages, etc.)
+  url: text("url").notNull(),
+  status: text("status").notNull().default('active'), // active, pending, removed
+  nap: text("nap"), // Name, Address, Phone consistency check
+  isConsistent: integer("is_consistent").notNull().default(1), // NAP consistency boolean
+  lastChecked: timestamp("last_checked").defaultNow(),
+});
+
+// Social Media Accounts - Connected social profiles
+export const socialAccounts = pgTable("social_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(), // twitter, facebook, instagram, linkedin, tiktok
+  username: text("username").notNull(),
+  profileUrl: text("profile_url").notNull(),
+  followers: integer("followers"),
+  following: integer("following"),
+  isVerified: integer("is_verified").notNull().default(0),
+  connectedAt: timestamp("connected_at").defaultNow(),
+});
+
+// Social Posts - Track social media posts
+export const socialPosts = pgTable("social_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  accountId: varchar("account_id").notNull().references(() => socialAccounts.id, { onDelete: "cascade" }),
+  postId: text("post_id").notNull(), // Platform's post ID
+  content: text("content"),
+  url: text("url").notNull(),
+  likes: integer("likes").notNull().default(0),
+  comments: integer("comments").notNull().default(0),
+  shares: integer("shares").notNull().default(0),
+  reach: integer("reach"), // Impressions/reach
+  engagement: real("engagement"), // Engagement rate
+  postedAt: timestamp("posted_at").notNull(),
+  lastSyncedAt: timestamp("last_synced_at").defaultNow(),
+});
+
+// Social Metrics - Aggregated social metrics over time
+export const socialMetrics = pgTable("social_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  accountId: varchar("account_id").notNull().references(() => socialAccounts.id, { onDelete: "cascade" }),
+  date: timestamp("date").notNull(),
+  followers: integer("followers"),
+  totalPosts: integer("total_posts"),
+  totalLikes: integer("total_likes"),
+  totalComments: integer("total_comments"),
+  totalShares: integer("total_shares"),
+  avgEngagement: real("avg_engagement"),
+  brandMentions: integer("brand_mentions"), // Mentions of brand
+  recordedAt: timestamp("recorded_at").defaultNow(),
+});
+
 // Insert schemas - omit id, createdAt/updatedAt, and tenantId (provided by server)
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, tenantId: true });
@@ -398,6 +491,12 @@ export const insertReportConfigSchema = createInsertSchema(reportConfigs).omit({
 export const insertGeneratedReportSchema = createInsertSchema(generatedReports).omit({ id: true, generatedAt: true, tenantId: true });
 export const insertApiKeySchema = createInsertSchema(apiKeys).omit({ id: true, createdAt: true, tenantId: true });
 export const insertApiUsageSchema = createInsertSchema(apiUsage).omit({ id: true, requestedAt: true, tenantId: true });
+export const insertLocalRankingSchema = createInsertSchema(localRankings).omit({ id: true, checkedAt: true, tenantId: true });
+export const insertGoogleBusinessProfileSchema = createInsertSchema(googleBusinessProfiles).omit({ id: true, updatedAt: true, tenantId: true });
+export const insertLocalCitationSchema = createInsertSchema(localCitations).omit({ id: true, lastChecked: true, tenantId: true });
+export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({ id: true, connectedAt: true, tenantId: true });
+export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, lastSyncedAt: true, tenantId: true });
+export const insertSocialMetricSchema = createInsertSchema(socialMetrics).omit({ id: true, recordedAt: true, tenantId: true });
 
 // User types - Required for Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
@@ -479,3 +578,21 @@ export type ApiKey = typeof apiKeys.$inferSelect;
 
 export type InsertApiUsage = z.infer<typeof insertApiUsageSchema>;
 export type ApiUsage = typeof apiUsage.$inferSelect;
+
+export type InsertLocalRanking = z.infer<typeof insertLocalRankingSchema>;
+export type LocalRanking = typeof localRankings.$inferSelect;
+
+export type InsertGoogleBusinessProfile = z.infer<typeof insertGoogleBusinessProfileSchema>;
+export type GoogleBusinessProfile = typeof googleBusinessProfiles.$inferSelect;
+
+export type InsertLocalCitation = z.infer<typeof insertLocalCitationSchema>;
+export type LocalCitation = typeof localCitations.$inferSelect;
+
+export type InsertSocialAccount = z.infer<typeof insertSocialAccountSchema>;
+export type SocialAccount = typeof socialAccounts.$inferSelect;
+
+export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
+export type SocialPost = typeof socialPosts.$inferSelect;
+
+export type InsertSocialMetric = z.infer<typeof insertSocialMetricSchema>;
+export type SocialMetric = typeof socialMetrics.$inferSelect;
