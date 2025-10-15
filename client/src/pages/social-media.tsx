@@ -69,12 +69,22 @@ export default function SocialMedia({ projectId }: SocialMediaProps) {
 
   const isLoading = accountsLoading;
 
-  // Set first account as selected if none selected
+  // Set first account as selected when accounts change or if selected account is not in current list
   useEffect(() => {
-    if (accounts && accounts.length > 0 && !selectedAccount) {
-      setSelectedAccount(accounts[0].id);
+    if (accounts && accounts.length > 0) {
+      const accountExists = accounts.some(acc => acc.id === selectedAccount);
+      if (!accountExists) {
+        setSelectedAccount(accounts[0].id);
+      }
+    } else if (accounts && accounts.length === 0) {
+      setSelectedAccount("");
     }
   }, [accounts, selectedAccount]);
+
+  // Reset selected account when project changes
+  useEffect(() => {
+    setSelectedAccount("");
+  }, [projectId]);
 
   if (isLoading) {
     return (
