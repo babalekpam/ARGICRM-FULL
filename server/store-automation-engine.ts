@@ -4,7 +4,7 @@ import { DatabaseStorage } from './database-storage';
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const DEFAULT_OPENAI_MODEL = "gpt-4o";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 export interface AutomationRule {
   id: string;

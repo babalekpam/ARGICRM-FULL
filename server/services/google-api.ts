@@ -34,18 +34,27 @@ export interface TranslationResult {
 
 export class GoogleAPIService {
   private apiKey: string;
-  private genAI: GoogleGenerativeAI;
+  private genAI: GoogleGenerativeAI | null;
 
   constructor() {
     this.apiKey = process.env.GOOGLE_API_KEY || '';
-    if (!this.apiKey) {
-      throw new Error('GOOGLE_API_KEY environment variable is required');
+    if (this.apiKey) {
+      this.genAI = new GoogleGenerativeAI(this.apiKey);
+    } else {
+      this.genAI = null;
+      console.warn('⚠️ GOOGLE_API_KEY not configured - Google API features will be unavailable');
     }
-    this.genAI = new GoogleGenerativeAI(this.apiKey);
+  }
+  
+  private checkApiKey(): void {
+    if (!this.apiKey) {
+      throw new Error('GOOGLE_API_KEY not configured - Google API features unavailable');
+    }
   }
 
   // Google Maps Integration
   async geocodeAddress(address: string): Promise<GoogleMapsLocation | null> {
+    this.checkApiKey();
     try {
       const encodedAddress = encodeURIComponent(address);
       const response = await fetch(

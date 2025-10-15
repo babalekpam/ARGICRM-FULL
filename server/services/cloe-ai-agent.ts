@@ -1,9 +1,9 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 // Schemas for different AI agent capabilities
 export const OnboardingRequestSchema = z.object({

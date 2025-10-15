@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { aiIntegrationService } from "./ai-integration-service";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 // Conversation Intelligence interfaces
 export interface MeetingTranscription {

@@ -12,7 +12,7 @@ When copying code from this code snippet, ensure you also include this informati
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 // </important_do_not_delete>
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
