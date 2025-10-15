@@ -71,6 +71,8 @@ export default function Backlinks({ projectId }: BacklinksProps) {
         description: error.message || "Please check your API credentials and try again",
         variant: "destructive" 
       });
+      setDialogOpen(false);
+      setDomain("");
     },
   });
 

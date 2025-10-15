@@ -98,3 +98,12 @@ The platform uses a modern full-stack architecture:
 
 ### Authentication
 - Replit Auth
+
+### Real Backlink Data Integration (DataForSEO)
+- Integrates with DataForSEO API to fetch real backlink data for any domain
+- Users can fetch up to 1,000 backlinks per request through the UI
+- Features include: domain authority scoring, anchor text analysis, and date tracking
+- Backlinks are stored in the database and associated with projects
+- **Setup Required**: Valid DataForSEO API credentials (DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD)
+- **Note**: The DataForSEO Backlinks API requires a paid subscription. Test credentials may return 401 Unauthorized errors
+- Error handling provides user-friendly feedback when API calls fail
