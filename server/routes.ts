@@ -422,6 +422,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Content Intelligence - Content Briefs
+  app.get("/api/content/briefs/:projectId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const briefs = await storage.getBriefsByProject(req.tenantId, req.params.projectId);
+      res.json(briefs);
+    } catch (error) {
+      console.error("Error fetching briefs:", error);
+      res.status(500).json({ error: "Failed to fetch content briefs" });
+    }
+  });
+
+  app.post("/api/content/briefs", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { targetKeyword, contentType = 'blog_post', wordCountTarget = 1500, projectId } = req.body;
+      
+      if (!targetKeyword || !projectId) {
+        return res.status(400).json({ error: "targetKeyword and projectId are required" });
+      }
+
+      // Generate AI content brief
+      const briefData = await aiService.generateContentBrief(targetKeyword, contentType, wordCountTarget);
+      
+      // Save to database
+      const { insertContentBriefSchema } = await import("@shared/schema");
+      const validatedData = insertContentBriefSchema.parse({
+        projectId,
+        targetKeyword,
+        title: briefData.title,
+        outline: briefData.outline,
+        wordCountTarget,
+        contentType,
+        seoTips: briefData.seoTips
+      });
+      
+      const brief = await storage.createBrief(req.tenantId, validatedData);
+      res.json(brief);
+    } catch (error) {
+      console.error("Generate content brief error:", error);
+      res.status(500).json({ error: "Failed to generate content brief" });
+    }
+  });
+
+  app.delete("/api/content/briefs/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const deleted = await storage.deleteBrief(req.tenantId, req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Content brief not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete brief error:", error);
+      res.status(500).json({ error: "Failed to delete content brief" });
+    }
+  });
+
+  // Content Intelligence - Content Scoring
+  app.get("/api/content/scorecards/:projectId", requireAuth, async (req: any, res: Response) => {
+    try {
+      const scorecards = await storage.getScorecardsByProject(req.tenantId, req.params.projectId);
+      res.json(scorecards);
+    } catch (error) {
+      console.error("Error fetching scorecards:", error);
+      res.status(500).json({ error: "Failed to fetch content scorecards" });
+    }
+  });
+
+  app.post("/api/content/score", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { url, content, targetKeyword, projectId } = req.body;
+      
+      if (!url || !content || !targetKeyword || !projectId) {
+        return res.status(400).json({ error: "url, content, targetKeyword, and projectId are required" });
+      }
+
+      // Score content using AI
+      const scoreData = await aiService.scoreContent(url, content, targetKeyword);
+      
+      // Save to database
+      const { insertContentScorecardSchema } = await import("@shared/schema");
+      const validatedData = insertContentScorecardSchema.parse({
+        projectId,
+        url,
+        targetKeyword,
+        ...scoreData
+      });
+      
+      const scorecard = await storage.createScorecard(req.tenantId, validatedData);
+      res.json(scorecard);
+    } catch (error) {
+      console.error("Score content error:", error);
+      res.status(500).json({ error: "Failed to score content" });
+    }
+  });
+
+  app.delete("/api/content/scorecards/:id", requireAuth, async (req: any, res: Response) => {
+    try {
+      const deleted = await storage.deleteScorecard(req.tenantId, req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Content scorecard not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete scorecard error:", error);
+      res.status(500).json({ error: "Failed to delete content scorecard" });
+    }
+  });
+
+  // Content Intelligence - SERP Analysis
+  app.post("/api/content/serp-analysis", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { keyword, serpResults } = req.body;
+      
+      if (!keyword || !serpResults || !Array.isArray(serpResults)) {
+        return res.status(400).json({ error: "keyword and serpResults array are required" });
+      }
+
+      const analysis = await aiService.analyzeSERP(keyword, serpResults);
+      res.json(analysis);
+    } catch (error) {
+      console.error("SERP analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze SERP" });
+    }
+  });
+
+  // Content Intelligence - Content Gap Analysis
+  app.post("/api/content/gap-analysis", requireAuth, async (req: any, res: Response) => {
+    try {
+      const { projectId } = req.body;
+      
+      if (!projectId) {
+        return res.status(400).json({ error: "projectId is required" });
+      }
+
+      const project = await storage.getProject(req.tenantId, projectId);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const keywords = await storage.getKeywordsByProject(req.tenantId, projectId);
+      const competitors = await storage.getCompetitorsByProject(req.tenantId, projectId);
+      
+      const analysis = await aiService.analyzeContentGaps(project, keywords, competitors);
+      res.json({ analysis });
+    } catch (error) {
+      console.error("Content gap analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze content gaps" });
+    }
+  });
+
   // Link Building - Backlink Opportunities
   app.get("/api/link-building/opportunities/:projectId", requireAuth, async (req: any, res: Response) => {
     try {
