@@ -1,7 +1,7 @@
 # NODE CRM
 
 ## Overview
-NODE CRM is a comprehensive customer relationship management platform with advanced AI-powered capabilities designed for global markets. It is built as a full-stack React/Express application with PostgreSQL for data persistence. Key capabilities include real-time sentiment analysis, AI campaign generation, multi-cultural optimization for 195+ countries, and advanced financial management. The platform aims to be the world's first Emotional Intelligence CRM, offering autonomous AI operations and competitive pricing.
+NODE CRM is a comprehensive customer relationship management platform with advanced AI-powered capabilities designed for global markets. It is built as a full-stack React/Express application with PostgreSQL for data persistence. Key capabilities include real-time sentiment analysis, AI campaign generation, multi-cultural optimization for 195+ countries, and advanced financial management. The platform offers autonomous AI operations and competitive pricing.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -47,7 +47,7 @@ The application uses a monorepo structure with distinct client and server sides.
 - **UI/UX Decisions**: Consistent professional styling with gradient headers, animated badges, and modern design patterns across all modules. Vertical side tabs are used for unified navigation within CRM modules. Mobile-first responsive design is implemented.
 - **Core Features**:
     - **CRM Core**: Comprehensive CRUD operations for contacts, leads, deals, tasks, accounts.
-    - **AI & Intelligence**: AI-powered sentiment analysis, campaign generation, emotional intelligence hub (customer profiling, voice analysis, real-time coaching), AI autonomous operations (lead scoring, workflow optimization), AI-powered template generator.
+    - **AI & Intelligence**: AI-powered sentiment analysis, campaign generation, AI autonomous operations (lead scoring, workflow optimization), AI-powered template generator.
     - **Marketing**: Simple Messaging (email/SMS sending), landing page builder (drag-and-drop, AI recommendations, templates), SEO management, reputation management (multi-platform monitoring, predictive scores).
     - **E-commerce**: Full store builder with product creation, store management, unique web link generation (subdomains), AI recommendations, layout builder, inventory heatmap.
     - **Financial Management**: Multi-currency bookkeeping, invoice generation, bank feed synchronization, automated tax calculation, financial reporting.
