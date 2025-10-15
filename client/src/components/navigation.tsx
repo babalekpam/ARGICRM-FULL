@@ -181,6 +181,22 @@ export default function Navigation({ onLogout }: NavigationProps) {
         { path: "/unified-inbox", label: "Unified Communications", icon: Mail, permission: "communications.read" },
         { path: "/forms-surveys", label: "Forms & Surveys", icon: FileText, permission: "forms.read" },
       ]
+    },
+    {
+      key: "seo",
+      title: "ARGILETTE SEO",
+      icon: TrendingUp,
+      description: "Complete SEO & backlink analysis platform",
+      modules: [
+        { path: "/seo-audit", label: "SEO Audit", icon: CheckCircle, permission: "seo.read" },
+        { path: "/seo-management", label: "SEO Management", icon: Settings, permission: "seo.read" },
+        { path: "/keywords", label: "Keyword Research", icon: Target, permission: "seo.read" },
+        { path: "/backlinks", label: "Backlink Monitoring", icon: GitBranch, permission: "seo.read" },
+        { path: "/rank-tracking", label: "Rank Tracking", icon: TrendingUp, permission: "seo.read" },
+        { path: "/competitors", label: "Competitor Analysis", icon: Eye, permission: "seo.read" },
+        { path: "/technical-audit", label: "Technical SEO", icon: Terminal, permission: "seo.read" },
+        { path: "/local-seo", label: "Local SEO", icon: MapPin, permission: "seo.read" },
+      ]
     }
   ];
 
