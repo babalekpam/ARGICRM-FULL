@@ -19,8 +19,8 @@ export default function Welcome() {
   const features = [
     {
       icon: Brain,
-      title: "Emotional Intelligence",
-      description: "Understand customer emotions and sentiment in real-time",
+      title: "Advanced AI Insights",
+      description: "Understand customer behavior and sentiment in real-time",
       badge: "AI-Powered"
     },
     {
@@ -107,8 +107,8 @@ export default function Welcome() {
           
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
             ARGILETTE CRM combines advanced customer relationship management with 
-            emotional intelligence to help you understand not just what your customers do, 
-            but how they feel.
+            AI-powered insights to help you understand not just what your customers do, 
+            but their complete behavior patterns.
           </p>
 
           <div className="flex justify-center space-x-4">
@@ -175,7 +175,7 @@ export default function Welcome() {
               </h2>
               <p className="text-lg text-gray-600 mb-8">
                 We've built the most comprehensive CRM platform that combines traditional 
-                customer management with cutting-edge emotional intelligence.
+                customer management with cutting-edge AI-powered analytics.
               </p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -191,7 +191,7 @@ export default function Welcome() {
             <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
               <h3 className="text-2xl font-bold mb-4">Ready to Get Started?</h3>
               <p className="text-blue-100 mb-6">
-                Experience the power of emotional intelligence in customer relationships. 
+                Experience the power of AI-driven insights in customer relationships. 
                 Create your demo account and explore all features instantly.
               </p>
               

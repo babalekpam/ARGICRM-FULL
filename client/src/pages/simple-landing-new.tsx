@@ -90,7 +90,7 @@ export default function SimpleLanding() {
     {
       icon: Brain,
       title: "AI-Powered CRM",
-      description: "Emotional intelligence insights and automated customer interactions"
+      description: "Advanced AI insights and automated customer interactions"
     },
     {
       icon: Heart,

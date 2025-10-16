@@ -11,7 +11,7 @@ export default function AboutPage() {
     <>
       <SEO 
         title="About NODE CRM - AI-Powered Business Management Platform"
-        description="Learn about NODE CRM's mission to revolutionize business management with emotional intelligence CRM, e-commerce tools, and AI automation across 195+ countries."
+        description="Learn about NODE CRM's mission to revolutionize business management with advanced AI CRM, e-commerce tools, and intelligent automation across 195+ countries."
         canonicalUrl="https://argilette.org/about"
       />
       
@@ -39,13 +39,13 @@ export default function AboutPage() {
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4 text-sm px-3 py-1">About NODE CRM</Badge>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-              The World's First <br />
+              The Complete <br />
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Emotional Intelligence CRM
+                AI-Powered Business Platform
               </span>
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
-              NODE CRM combines cutting-edge AI technology with emotional intelligence to create the most comprehensive business management platform for the modern enterprise.
+              NODE CRM combines cutting-edge AI technology with advanced insights to create the most comprehensive business management platform for the modern enterprise.
             </p>
           </div>
 
@@ -60,7 +60,7 @@ export default function AboutPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 text-lg leading-relaxed">
-                  To revolutionize how businesses understand and connect with their customers through emotional intelligence, AI automation, and comprehensive business management tools that scale globally.
+                  To revolutionize how businesses understand and connect with their customers through advanced AI insights, intelligent automation, and comprehensive business management tools that scale globally.
                 </p>
               </CardContent>
             </Card>
@@ -116,7 +116,7 @@ export default function AboutPage() {
                   <Award className="h-8 w-8 text-purple-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">Innovation</h3>
-                <p className="text-gray-600">Continuously pushing the boundaries of what's possible with AI and emotional intelligence in business.</p>
+                <p className="text-gray-600">Continuously pushing the boundaries of what's possible with AI and advanced analytics in business.</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">

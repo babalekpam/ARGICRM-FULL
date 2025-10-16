@@ -34,7 +34,7 @@ const industries: Industry[] = [
   {
     id: 'healthcare-medical',
     name: "Healthcare & Medical",
-    description: "Enhance patient care with emotional intelligence insights",
+    description: "Enhance patient care with comprehensive AI insights",
     icon: Heart,
     category: "Healthcare",
     badge: "High Impact",
@@ -50,7 +50,7 @@ const industries: Industry[] = [
   {
     id: 'financial-services',
     name: "Financial Services",
-    description: "Build trust through emotional understanding of clients",
+    description: "Build trust through comprehensive client insights",
     icon: Briefcase,
     category: "Finance",
     badge: "Most Popular",
@@ -82,7 +82,7 @@ const industries: Industry[] = [
   {
     id: 'education-training',
     name: "Education & Training",
-    description: "Improve learning outcomes through emotional engagement",
+    description: "Improve learning outcomes through intelligent engagement",
     icon: GraduationCap,
     category: "Education",
     badge: "Innovation",
@@ -98,7 +98,7 @@ const industries: Industry[] = [
   {
     id: 'manufacturing-logistics',
     name: "Manufacturing & Logistics",
-    description: "Optimize operations with workforce emotional insights",
+    description: "Optimize operations with workforce analytics insights",
     icon: Truck,
     category: "Manufacturing",
     badge: "Enterprise",
@@ -130,7 +130,7 @@ const industries: Industry[] = [
   {
     id: 'technology-startups',
     name: "Technology & Startups",
-    description: "Scale with emotional intelligence-driven growth strategies",
+    description: "Scale with AI-driven growth strategies",
     icon: Zap,
     category: "Technology",
     badge: "Disruptive",
@@ -146,7 +146,7 @@ const industries: Industry[] = [
   {
     id: 'professional-services',
     name: "Professional Services",
-    description: "Deliver exceptional client experiences with emotional insights",
+    description: "Deliver exceptional client experiences with comprehensive insights",
     icon: Building2,
     category: "Services",
     badge: "Proven",
@@ -215,7 +215,7 @@ export default function IndustriesPage() {
                 Industries We Transform
               </h1>
               <p className="text-xl md:text-2xl mb-8 text-blue-100">
-                Emotional Intelligence • Industry Expertise • Proven Results
+                AI-Powered Insights • Industry Expertise • Proven Results
               </p>
               <div className="flex flex-wrap justify-center gap-4 mb-8">
                 <Badge className="bg-purple-600/20 text-purple-100 px-4 py-2 text-sm">
@@ -272,7 +272,7 @@ export default function IndustriesPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                  Transforming Industries with Emotional Intelligence
+                  Transforming Industries with AI-Powered Insights
                 </h3>
                 <p className="text-gray-600 mb-6">
                   From healthcare to finance, our CRM platform is revolutionizing how businesses understand and connect with their customers across every major industry.
@@ -389,7 +389,7 @@ export default function IndustriesPage() {
               <CardContent className="py-12">
                 <h3 className="text-2xl font-bold mb-4">Ready to Transform Your Industry?</h3>
                 <p className="text-lg mb-6 text-purple-100">
-                  Join industry leaders who've revolutionized their business with emotional intelligence
+                  Join industry leaders who've revolutionized their business with AI-powered insights
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
                   <Button 

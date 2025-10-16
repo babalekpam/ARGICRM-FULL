@@ -29,13 +29,13 @@ const products: Product[] = [
   {
     id: 'bit-crm-professional',
     name: "NODE CRM Professional",
-    description: "Complete customer relationship management with emotional intelligence",
+    description: "Complete customer relationship management with AI-powered insights",
     icon: Users,
     category: "CRM Solutions",
     badge: "Most Popular",
     pricing: "Starting at $59.99/month",
     features: [
-      "Emotional Intelligence Dashboard",
+      "Advanced Analytics Dashboard",
       "Advanced Contact Management",
       "Smart Deal Pipeline",
       "Sentiment Analysis",
@@ -46,14 +46,14 @@ const products: Product[] = [
   {
     id: 'bit-analytics-suite',
     name: "NODE Analytics Suite",
-    description: "Business intelligence with predictive emotional insights",
+    description: "Business intelligence with predictive AI insights",
     icon: TrendingUp,
     category: "Analytics & AI",
     badge: "AI-Powered",
     pricing: "Starting at $119.99/month",
     features: [
       "Predictive Analytics",
-      "Emotional Trend Analysis",
+      "Advanced Trend Analysis",
       "Customer Journey Mapping",
       "ROI Optimization",
       "Custom Dashboards",
@@ -63,13 +63,13 @@ const products: Product[] = [
   {
     id: 'bit-automation-engine',
     name: "NODE Automation Engine",
-    description: "Intelligent workflow automation with emotional triggers",
+    description: "Intelligent workflow automation with smart triggers",
     icon: Zap,
     category: "Automation Tools",
     badge: "Innovation",
     pricing: "Starting at $199.99/month",
     features: [
-      "Emotional Workflow Triggers",
+      "Smart Workflow Triggers",
       "Smart Process Automation",
       "Intelligent Task Management",
       "Adaptive Decision Making",
@@ -80,13 +80,13 @@ const products: Product[] = [
   {
     id: 'navimed-emr-ehr',
     name: "NAVIMED EMR/EHR System",
-    description: "Electronic Medical Records with emotional patient care insights",
+    description: "Electronic Medical Records with comprehensive patient care insights",
     icon: Heart,
     category: "Healthcare Solutions",
     badge: "Healthcare",
     pricing: "Contact for Quote",
     features: [
-      "Patient Emotional Profiling",
+      "Patient Care Profiling",
       "HIPAA-Compliant Data Management",
       "Clinical Decision Support",
       "Care Team Collaboration",
@@ -146,7 +146,7 @@ export default function ProductsPage() {
                 NODE CRM Product Suite
               </h1>
               <p className="text-xl md:text-2xl mb-8 text-blue-100">
-                Revolutionary CRM • AI-Powered Analytics • Emotional Intelligence
+                Revolutionary CRM • AI-Powered Analytics • Advanced Insights
               </p>
               <div className="flex flex-wrap justify-center gap-4 mb-8">
                 <Badge className="bg-purple-600/20 text-purple-100 px-4 py-2 text-sm">
@@ -206,7 +206,7 @@ export default function ProductsPage() {
                   Cutting-Edge CRM Technology
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Experience the future of customer relationship management with our AI-powered platform that combines emotional intelligence, advanced analytics, and seamless automation.
+                  Experience the future of customer relationship management with our AI-powered platform that combines advanced insights, comprehensive analytics, and seamless automation.
                 </p>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center">
