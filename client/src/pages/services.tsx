@@ -171,8 +171,8 @@ export default function ServicesPage() {
     // Analytics & AI
     {
       category: "analytics",
-      title: "Emotional Intelligence Analytics",
-      description: "Revolutionary sentiment analysis and emotional intelligence insights",
+      title: "AI-Powered Sentiment Analytics",
+      description: "Revolutionary sentiment analysis and AI-powered behavioral insights",
       features: ["Sentiment Analysis", "Emotional Profiling", "Communication Insights", "Predictive Modeling"],
       icon: Heart,
       pricing: "Starting at $119.99/month",

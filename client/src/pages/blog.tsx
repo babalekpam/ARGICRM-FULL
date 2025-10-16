@@ -8,8 +8,8 @@ import Logo from "@/components/logo";
 
 const blogPosts = [
   {
-    title: "The Future of AI in CRM: Emotional Intelligence Revolution",
-    excerpt: "Discover how emotional intelligence is transforming customer relationship management and driving better business outcomes.",
+    title: "The Future of AI in CRM: AI-Powered Insights Revolution",
+    excerpt: "Discover how AI-powered analytics is transforming customer relationship management and driving better business outcomes.",
     date: "September 15, 2025",
     author: "NODE CRM Team",
     category: "AI & Technology",
@@ -51,7 +51,7 @@ export default function BlogPage() {
       <SEO 
         title="NODE CRM Blog - Business Insights, CRM Tips & AI Innovation"
         description="Stay updated with the latest CRM insights, AI innovations, and business growth strategies from NODE CRM experts. Learn how to optimize your customer relationships."
-        canonicalUrl="https://argilette.org/blog"
+        canonical="https://argilette.org/blog"
       />
       
       {/* Navigation */}
@@ -94,7 +94,7 @@ export default function BlogPage() {
               <CardContent className="p-6">
                 <Lightbulb className="h-12 w-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-gray-900 mb-2">AI & Innovation</h3>
-                <p className="text-sm text-gray-600">Latest trends in artificial intelligence and emotional intelligence for business</p>
+                <p className="text-sm text-gray-600">Latest trends in artificial intelligence and AI-powered analytics for business</p>
               </CardContent>
             </Card>
             <Card className="bg-white/60 backdrop-blur-sm border border-gray-200 text-center hover:shadow-lg transition-shadow">

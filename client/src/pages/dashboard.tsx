@@ -25,8 +25,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import Logo from "@/components/logo";
 import SEOHead, { generatePageSEO, generateStructuredData } from "@/components/seo-head";
-import EmotionalIntelligenceWidget from "@/components/emotional-intelligence-widget";
-import PlatformWideEmotionalIntelligence from "@/components/platform-wide-emotional-intelligence";
 import TrialBanner from "@/components/trial-banner";
 import TrialWarningBanner from "@/components/trial-warning-banner";
 import { 
@@ -180,8 +178,8 @@ export default function Dashboard() {
     <>
       <SEOHead 
         title="Dashboard - NODE CRM | AI-Powered Customer Relationship Management"
-        description="Access your comprehensive NODE CRM dashboard with AI-powered emotional intelligence, advanced analytics, and complete customer relationship management tools."
-        keywords={["CRM dashboard", "customer management", "AI CRM", "emotional intelligence", "business analytics"]}
+        description="Access your comprehensive NODE CRM dashboard with AI-powered insights, advanced analytics, and complete customer relationship management tools."
+        keywords={["CRM dashboard", "customer management", "AI CRM", "AI-powered analytics", "business analytics"]}
         url="https://nodecrm.com/dashboard"
         structuredData={structuredData}
       />
@@ -207,7 +205,7 @@ export default function Dashboard() {
               <p className="text-gray-600 dark:text-gray-400">
                 {isPlatformOwner 
                   ? "Manage your entire platform with enterprise-grade controls and real-time analytics" 
-                  : "Transform customer relationships with emotional intelligence and predictive insights"}
+                  : "Transform customer relationships with AI-driven analytics and predictive insights"}
               </p>
               {!isPlatformOwner && (
                 <Badge variant="secondary" className="mt-2">
@@ -436,10 +434,7 @@ export default function Dashboard() {
               })}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="argilette-hover-lift">
-                <EmotionalIntelligenceWidget />
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="argilette-hover-lift">
                 <SubscriptionBadge />
               </div>

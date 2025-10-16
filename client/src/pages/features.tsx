@@ -17,8 +17,8 @@ const features = [
     color: "blue",
     features: [
       {
-        name: "Emotional Intelligence Hub",
-        description: "Advanced sentiment analysis to understand customer emotions and respond appropriately",
+        name: "AI Sentiment Analytics",
+        description: "Advanced sentiment analysis to understand customer behavior and respond appropriately",
         icon: Heart
       },
       {

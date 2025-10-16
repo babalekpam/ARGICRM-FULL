@@ -72,7 +72,7 @@ const benefits = [
   },
   {
     title: "Improve Customer Satisfaction",
-    description: "Emotional intelligence features enhance every customer interaction",
+    description: "AI-powered insights enhance every customer interaction",
     stat: "95%"
   },
   {
@@ -94,7 +94,7 @@ export default function OverviewPage() {
             Complete CRM Overview
           </h1>
           <p className="text-xl mb-8 max-w-3xl mx-auto opacity-90">
-            Discover everything ARGILETTE CRM has to offer - from basic contact management to advanced emotional intelligence
+            Discover everything ARGILETTE CRM has to offer - from basic contact management to advanced AI-powered analytics
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100" asChild>
@@ -189,7 +189,7 @@ export default function OverviewPage() {
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl text-white p-12 text-center">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-4xl font-bold mb-6">
-                The World's First Emotional Intelligence CRM
+                The World's First AI-Powered Relationship Intelligence CRM
               </h2>
               <p className="text-xl mb-8 opacity-90">
                 While other CRMs focus on data, we focus on understanding emotions and building meaningful relationships. Our AI doesn't just track what customers do - it understands how they feel.
