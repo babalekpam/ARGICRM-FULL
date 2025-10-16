@@ -70,12 +70,12 @@ export default function Dashboard() {
   });
   
   // Fetch data from APIs
-  const { data: allContacts = [] } = useQuery({ queryKey: ["/api/contacts"] });
-  const { data: allAccounts = [] } = useQuery({ queryKey: ["/api/accounts"] });
-  const { data: allLeads = [] } = useQuery({ queryKey: ["/api/leads"] });
-  const { data: allDeals = [] } = useQuery({ queryKey: ["/api/deals"] });
-  const { data: allTasks = [] } = useQuery({ queryKey: ["/api/tasks"] });
-  const { data: allTickets = [] } = useQuery({ queryKey: ["/api/tickets"] });
+  const { data: allContacts = [] } = useQuery<any[]>({ queryKey: ["/api/contacts"] });
+  const { data: allAccounts = [] } = useQuery<any[]>({ queryKey: ["/api/accounts"] });
+  const { data: allLeads = [] } = useQuery<any[]>({ queryKey: ["/api/leads"] });
+  const { data: allDeals = [] } = useQuery<any[]>({ queryKey: ["/api/deals"] });
+  const { data: allTasks = [] } = useQuery<any[]>({ queryKey: ["/api/tasks"] });
+  const { data: allTickets = [] } = useQuery<any[]>({ queryKey: ["/api/tickets"] });
 
   // Filter data based on user role - Platform owners see all test data, other users see empty/clean data
   const contacts = isPlatformOwner ? allContacts : []; // Non-platform users see no pre-populated contacts
