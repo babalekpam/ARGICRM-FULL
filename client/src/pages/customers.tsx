@@ -39,7 +39,7 @@ const customers: Customer[] = [
     icon: Building2,
     category: "Enterprise",
     badge: "Fortune 500",
-    testimonial: "NODE CRM's emotional intelligence transformed how we understand our customers. Our satisfaction scores increased by 340% in just 6 months.",
+    testimonial: "NODE CRM's AI-powered insights transformed how we understand our customers. Our satisfaction scores increased by 340% in just 6 months.",
     results: [
       "340% increase in customer satisfaction",
       "85% faster issue resolution",
@@ -57,7 +57,7 @@ const customers: Customer[] = [
     icon: Heart,
     category: "Healthcare",
     badge: "Leading Provider",
-    testimonial: "The emotional insights help us provide better patient care. We've seen remarkable improvements in patient outcomes and staff satisfaction.",
+    testimonial: "The AI-powered insights help us provide better patient care. We've seen remarkable improvements in patient outcomes and staff satisfaction.",
     results: [
       "450% improvement in patient satisfaction",
       "60% reduction in readmission rates",
@@ -75,7 +75,7 @@ const customers: Customer[] = [
     icon: TrendingUp,
     category: "Finance",
     badge: "Top Rated",
-    testimonial: "Understanding client emotions revolutionized our advisory services. We've built stronger relationships and achieved better investment outcomes.",
+    testimonial: "Understanding client behavior revolutionized our advisory services. We've built stronger relationships and achieved better investment outcomes.",
     results: [
       "300% increase in client retention",
       "250% growth in assets under management",
@@ -93,7 +93,7 @@ const customers: Customer[] = [
     icon: Users,
     category: "Retail",
     badge: "Market Leader",
-    testimonial: "Emotional analytics helped us personalize customer experiences like never before. Our conversion rates and customer loyalty skyrocketed.",
+    testimonial: "AI-powered analytics helped us personalize customer experiences like never before. Our conversion rates and customer loyalty skyrocketed.",
     results: [
       "280% increase in conversion rates",
       "190% boost in customer lifetime value",
@@ -111,7 +111,7 @@ const customers: Customer[] = [
     icon: Award,
     category: "Education",
     badge: "Innovation Award",
-    testimonial: "Student engagement and learning outcomes improved dramatically with emotional intelligence insights. Our teaching methods are now data-driven.",
+    testimonial: "Student engagement and learning outcomes improved dramatically with AI-powered insights. Our teaching methods are now data-driven.",
     results: [
       "180% improvement in learning outcomes",
       "95% increase in student engagement",
@@ -129,7 +129,7 @@ const customers: Customer[] = [
     icon: Building2,
     category: "Manufacturing",
     badge: "Industry Pioneer",
-    testimonial: "Employee satisfaction and productivity reached new heights. The emotional insights helped us create a better workplace culture.",
+    testimonial: "Employee satisfaction and productivity reached new heights. The AI-driven insights helped us create a better workplace culture.",
     results: [
       "160% increase in operational efficiency",
       "120% improvement in employee satisfaction",
@@ -276,7 +276,7 @@ export default function CustomersPage() {
                   Proven Results Across Industries
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Our customers have achieved remarkable growth and success using NODE CRM's emotional intelligence platform. See how we've transformed businesses worldwide.
+                  Our customers have achieved remarkable growth and success using NODE CRM's AI-powered platform. See how we've transformed businesses worldwide.
                 </p>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="text-center">

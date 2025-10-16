@@ -7,7 +7,7 @@ import { Link } from "wouter";
 import Logo from "@/components/logo";
 
 const aiFeatures = [
-  { title: "Emotional Intelligence", description: "Understand customer emotions and sentiment in real-time", icon: Brain },
+  { title: "Sentiment Analytics", description: "Understand customer sentiment and behavior in real-time", icon: Brain },
   { title: "Predictive Analytics", description: "Forecast sales outcomes and customer behavior patterns", icon: TrendingUp },
   { title: "Intelligent Lead Scoring", description: "Automatically prioritize leads based on conversion probability", icon: Target },
   { title: "Automated Workflows", description: "Smart automation that adapts to your business processes", icon: Zap },
@@ -19,9 +19,9 @@ export default function AiPoweredCrmPage() {
   return (
     <>
       <SEO 
-        title="AI-Powered CRM - Emotional Intelligence Customer Management | NODE CRM"
-        description="Experience the world's first emotional intelligence CRM with AI automation, predictive analytics, and smart recommendations. Transform customer relationships with NODE CRM."
-        canonicalUrl="https://argilette.org/ai-powered-crm"
+        title="AI-Powered CRM - Advanced Customer Intelligence Management | NODE CRM"
+        description="Experience next-generation AI-powered CRM with advanced automation, predictive analytics, and smart recommendations. Transform customer relationships with NODE CRM."
+        canonical="https://argilette.org/ai-powered-crm"
       />
       
       {/* Navigation */}
@@ -50,12 +50,12 @@ export default function AiPoweredCrmPage() {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
               The World's First <br />
               <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Emotional Intelligence CRM
+                AI-Powered Intelligence CRM
               </span>
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
               Harness the power of artificial intelligence to understand, predict, and enhance every customer interaction. 
-              NODE CRM's AI doesn't just manage data—it understands emotions.
+              NODE CRM's AI doesn't just manage data—it understands behavior patterns.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link to="/signup">
@@ -89,33 +89,33 @@ export default function AiPoweredCrmPage() {
             </div>
           </div>
 
-          {/* Emotional Intelligence Features */}
+          {/* AI Intelligence Features */}
           <div className="mb-16">
             <Card className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
               <CardContent className="p-12">
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                   <div>
-                    <h2 className="text-3xl font-bold mb-6">Emotional Intelligence Engine</h2>
+                    <h2 className="text-3xl font-bold mb-6">AI Intelligence Engine</h2>
                     <div className="space-y-4">
                       <div className="flex items-start space-x-3">
                         <CheckCircle className="h-6 w-6 mt-1" />
                         <div>
                           <h4 className="font-semibold mb-1">Real-time Sentiment Analysis</h4>
-                          <p className="opacity-90">Understand customer emotions in emails, calls, and messages</p>
+                          <p className="opacity-90">Understand customer sentiment in emails, calls, and messages</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
                         <CheckCircle className="h-6 w-6 mt-1" />
                         <div>
-                          <h4 className="font-semibold mb-1">Emotional Journey Mapping</h4>
-                          <p className="opacity-90">Track how customer feelings evolve throughout their lifecycle</p>
+                          <h4 className="font-semibold mb-1">Customer Journey Mapping</h4>
+                          <p className="opacity-90">Track how customer behavior evolves throughout their lifecycle</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
                         <CheckCircle className="h-6 w-6 mt-1" />
                         <div>
                           <h4 className="font-semibold mb-1">Empathy-Driven Responses</h4>
-                          <p className="opacity-90">AI suggests the best communication approach for each customer's emotional state</p>
+                          <p className="opacity-90">AI suggests the best communication approach for each customer's behavioral patterns</p>
                         </div>
                       </div>
                     </div>
@@ -124,7 +124,7 @@ export default function AiPoweredCrmPage() {
                     <div className="bg-white/20 rounded-2xl p-8">
                       <Brain className="h-24 w-24 mx-auto mb-4" />
                       <h3 className="text-2xl font-bold mb-2">98% Accuracy</h3>
-                      <p className="opacity-90">In emotion detection and sentiment analysis</p>
+                      <p className="opacity-90">In sentiment detection and behavioral analysis</p>
                     </div>
                   </div>
                 </div>
@@ -154,7 +154,7 @@ export default function AiPoweredCrmPage() {
                 <CardContent className="p-6">
                   <div className="text-3xl font-bold text-green-600 mb-2">200%</div>
                   <div className="text-gray-600 mb-2">Improvement in Customer Satisfaction</div>
-                  <p className="text-sm text-gray-500">Emotional intelligence drives better relationships</p>
+                  <p className="text-sm text-gray-500">AI-powered insights drive better relationships</p>
                 </CardContent>
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 text-center">
@@ -198,16 +198,16 @@ export default function AiPoweredCrmPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Brain className="h-6 w-6 text-blue-600 mr-3" />
-                    Emotion Recognition
+                    Sentiment Recognition
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">
-                    Analyze customer communications to understand their emotional state and suggest the best response approach.
+                    Analyze customer communications to understand their behavioral patterns and suggest the best response approach.
                   </p>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="text-sm text-gray-700">
-                      <strong>Customer Emotion: Frustrated</strong><br />
+                      <strong>Customer Sentiment: Frustrated</strong><br />
                       <span className="text-red-600">● Issue escalation detected</span><br />
                       <span className="text-blue-600">● Recommend: Empathetic response</span><br />
                       <span className="text-green-600">● Suggest: Manager involvement</span>
@@ -239,7 +239,7 @@ export default function AiPoweredCrmPage() {
               <Card className="bg-white/80 backdrop-blur-sm border border-gray-200">
                 <CardContent className="p-6 text-center">
                   <h3 className="font-bold text-xl text-gray-900 mb-3">E-commerce</h3>
-                  <p className="text-gray-600 mb-4">Personalize shopping experiences based on customer emotions and buying behavior.</p>
+                  <p className="text-gray-600 mb-4">Personalize shopping experiences based on customer sentiment and buying behavior.</p>
                   <Badge variant="outline" className="text-xs">250% Higher Conversion Rates</Badge>
                 </CardContent>
               </Card>
@@ -249,9 +249,9 @@ export default function AiPoweredCrmPage() {
           {/* Call to Action */}
           <Card className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white text-center">
             <CardContent className="p-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Experience Emotional Intelligence?</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Experience AI-Powered Intelligence?</h2>
               <p className="text-xl mb-8 opacity-90">
-                Join the AI revolution in customer relationship management. See how emotional intelligence transforms your business.
+                Join the AI revolution in customer relationship management. See how AI-powered insights transform your business.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link to="/signup">

@@ -58,11 +58,11 @@ const availablePermissions = [
   { id: "funnel-builder.read", label: "View Funnels", category: "Marketing" },
   { id: "funnel-builder.write", label: "Create & Edit Funnels", category: "Marketing" },
 
-  // AI & Emotional Intelligence
+  // AI & Analytics
   { id: "ai.read", label: "View AI Features", category: "AI & Intelligence" },
   { id: "ai.write", label: "Configure AI Settings", category: "AI & Intelligence" },
-  { id: "emotional-intelligence.read", label: "View Emotional Analytics", category: "AI & Intelligence" },
-  { id: "emotional-intelligence.write", label: "Manage Emotional Profiles", category: "AI & Intelligence" },
+  { id: "emotional-intelligence.read", label: "View Sentiment Analytics", category: "AI & Intelligence" },
+  { id: "emotional-intelligence.write", label: "Manage Sentiment Profiles", category: "AI & Intelligence" },
   { id: "predictive-analytics.read", label: "View Predictions", category: "AI & Intelligence" },
   { id: "predictive-analytics.write", label: "Configure Predictions", category: "AI & Intelligence" },
   { id: "ai-autonomous.read", label: "View AI Autonomous", category: "AI & Intelligence" },
@@ -210,7 +210,7 @@ const roleTemplates = [
   },
   {
     name: "AI Specialist",
-    description: "AI features and emotional intelligence access",
+    description: "AI features and sentiment analytics access",
     permissions: [
       "ai.read", "ai.write",
       "emotional-intelligence.read", "emotional-intelligence.write",
