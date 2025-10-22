@@ -158,38 +158,17 @@ export default function SchedulingPage() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-3">
-              <CalendarDays className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Calendar & Scheduling
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400 text-lg">
-                  Manage appointments, meetings, and schedule optimization
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-                Live Calendar
-              </Badge>
-              <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-                Smart Scheduling
-              </Badge>
-              <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">
-                AI Optimization
-              </Badge>
-            </div>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <CalendarDays className="h-6 w-6 text-blue-600" />
+              Calendar & Scheduling
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Manage appointments, meetings, and schedule optimization
+            </p>
           </div>
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            <Button variant="outline" className="bg-white shadow-md border-slate-200">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Schedule Analytics
-            </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
                   <Plus className="h-4 w-4 mr-2" />
@@ -300,7 +279,6 @@ export default function SchedulingPage() {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
         </div>
 
         {/* Tabs Layout */}
