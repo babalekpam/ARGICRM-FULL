@@ -1,0 +1,87 @@
+}
+✅ Schema hotfix: Stripe columns ensured in tenants table
+🚫 Rate limiting completely disabled in development for Vite compatibility
+🚫 Auth rate limiting disabled in development
+Initialized global employee storage
+Initialized global transaction storage (empty)
+Initialized global team members storage with sample data
+Initialized global collaboration events storage with sample data
+❌ Error initializing subscription plans: error: relation "subscription_plans" does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async SubscriptionService.initializeDefaultPlans (/home/runner/workspace/server/subscription-service.ts:170:29)
+    at async registerRoutes (/home/runner/workspace/server/routes.ts:5730:5)
+    at async <anonymous> (/home/runner/workspace/server/index.ts:218:5) {
+  length: 118,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '160',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Error initializing package features: error: relation "package_features" does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async SubscriptionService.initializePackageFeatures (/home/runner/workspace/server/subscription-service.ts:187:32)
+    at async registerRoutes (/home/runner/workspace/server/routes.ts:5731:5)
+    at async <anonymous> (/home/runner/workspace/server/index.ts:218:5) {
+  length: 116,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '115',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+✅ Subscription system initialized
+🤖 Store Automation Engine initialized
+✅ API routes registered FIRST
+🚀 Vite middleware initialized AFTER routes (development mode)
+12:34:27 AM [express] Application listening on port 5000
+12:34:27 AM [express] 🚀 Development server ready - React app + Vite HMR on port 5000
+12:34:27 AM [express] 🚫 All rate limiting disabled for Vite compatibility
+Error initializing sample appointments: error: relation "appointments" does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async initializeAppointmentsIfEmpty (/home/runner/workspace/server/routes/appointments.ts:145:36) {
+  length: 112,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '256',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'

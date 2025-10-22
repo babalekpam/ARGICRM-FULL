@@ -192,15 +192,11 @@ class AIFailoverService {
     // Log You.com status
     if (this.providers.has('you')) {
       console.log('✅ You.com AI activated as tertiary provider');
-    } else {
-      console.log('⚠️ You.com AI available but requires YOU_API_KEY environment variable');
     }
     
     // Log QWEN status specifically
     if (this.providers.has('qwen')) {
       console.log('✅ QWEN AI activated in Marketing Hub with intelligent failover');
-    } else {
-      console.log('⚠️ QWEN AI available but requires QWEN_API_KEY environment variable');
     }
   }
 

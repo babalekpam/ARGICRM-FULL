@@ -42,7 +42,6 @@ export class GoogleAPIService {
       this.genAI = new GoogleGenerativeAI(this.apiKey);
     } else {
       this.genAI = null;
-      console.warn('⚠️ GOOGLE_API_KEY not configured - Google API features will be unavailable');
     }
   }
   
