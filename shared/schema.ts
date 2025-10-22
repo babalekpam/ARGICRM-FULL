@@ -2731,8 +2731,6 @@ export const accessControlMatrix = pgTable("access_control_matrix", {
 
 
 // Financial Management Types
-export type ChartOfAccount = typeof chartOfAccounts.$inferSelect;
-export type InsertChartOfAccount = typeof chartOfAccounts.$inferInsert;
 export type FinancialTransaction = typeof transactions.$inferSelect;
 export type InsertFinancialTransaction = typeof transactions.$inferInsert;
 export type Currency = typeof currencies.$inferSelect;
@@ -2884,8 +2882,6 @@ export type Campaign = typeof campaigns.$inferSelect;
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
-export type Project = typeof projects.$inferSelect;
-export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Employee = typeof employees.$inferSelect;
@@ -2968,10 +2964,6 @@ export type EmailSequence = typeof emailSequences.$inferSelect;
 export type InsertEmailSequence = z.infer<typeof insertEmailSequenceSchema>;
 export type LeadScoring = typeof leadScoring.$inferSelect;
 export type InsertLeadScoring = z.infer<typeof insertLeadScoringSchema>;
-export type Territory = typeof territories.$inferSelect;
-export type InsertTerritory = z.infer<typeof insertTerritorySchema>;
-export type Product = typeof products.$inferSelect;
-export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;
 // Duplicate audit log types removed - using Super Admin version above
