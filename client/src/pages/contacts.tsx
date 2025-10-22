@@ -266,59 +266,37 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,Referr
           </div>
         </div>
 
-        {/* Side Tabs Layout */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex gap-6" orientation="vertical">
-          {/* Side Navigation */}
-          <div className="w-64 flex-shrink-0 tabs-vertical">
-            <TabsList className="flex flex-col h-auto w-full space-y-1 bg-gray-50 dark:bg-gray-800 p-2" orientation="vertical">
-              <TabsTrigger 
-                value="list" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Users className="h-4 w-4" />
-                <span>Contact List</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="import" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Upload className="h-4 w-4" />
-                <span>Bulk Import</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="analytics" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>Analytics</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="segments" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Filter className="h-4 w-4" />
-                <span>Segments</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="export" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Download className="h-4 w-4" />
-                <span>Export</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="emotional-intelligence" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-              >
-                <Brain className="h-4 w-4" />
-                <span>AI Intelligence</span>
-                <Badge className="ml-auto bg-purple-100 text-purple-600 text-xs">NEW</Badge>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        {/* Tabs Layout */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
+            <TabsTrigger value="list" className="gap-2" data-testid="tab-list">
+              <Users className="h-4 w-4" />
+              Contact List
+            </TabsTrigger>
+            <TabsTrigger value="import" className="gap-2" data-testid="tab-import">
+              <Upload className="h-4 w-4" />
+              Bulk Import
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="segments" className="gap-2" data-testid="tab-segments">
+              <Filter className="h-4 w-4" />
+              Segments
+            </TabsTrigger>
+            <TabsTrigger value="export" className="gap-2" data-testid="tab-export">
+              <Download className="h-4 w-4" />
+              Export
+            </TabsTrigger>
+            <TabsTrigger value="emotional-intelligence" className="gap-2" data-testid="tab-ai">
+              <Brain className="h-4 w-4" />
+              AI Intelligence
+              <Badge className="ml-1 bg-purple-100 text-purple-600 text-xs">NEW</Badge>
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Main Content Area */}
-          <div className="flex-1">
+          <div>
             <TabsContent value="list" className="space-y-6 mt-0">
             <ContactList />
             
