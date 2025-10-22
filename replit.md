@@ -1,7 +1,7 @@
 # NODE CRM
 
 ## Overview
-NODE CRM is a comprehensive, AI-powered customer relationship management platform designed for global markets. It is a full-stack React/Express application with PostgreSQL, offering features like real-time sentiment analysis, AI campaign generation, multi-cultural optimization, and advanced financial management. The platform aims for autonomous AI operations and competitive pricing, providing a robust solution for businesses worldwide.
+NODE CRM is an AI-powered, full-stack React/Express customer relationship management platform with PostgreSQL, designed for global markets. It offers real-time sentiment analysis, AI campaign generation, multi-cultural optimization, and advanced financial management. The platform aims for autonomous AI operations and competitive pricing, providing a robust solution for businesses worldwide. Key capabilities include comprehensive CRM functionalities, AI-driven marketing and sales tools, e-commerce integration, and advanced data security, all built on a multi-tenant architecture with extensive customization and localization features.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -33,37 +33,37 @@ Authentication System: Fully repaired login and signup flow - Fixed missing data
 Landing Page: Professional redesign completed - Modern B2B SaaS aesthetic with clean hero section, professional stats display, enhanced features grid, trust indicators, strong CTAs, organized footer, smooth scroll navigation, responsive design for all devices
 Database Schema: Core CRM tables created - contacts, deals, accounts, leads, campaigns, tasks tables with proper tenant isolation, foreign key relationships, created_at/updated_at timestamps, all missing columns added (billing_address, shipping_address, account_type, name, lead_source, etc.)
 Code Quality: TypeScript errors fully resolved - Eliminated all 235 TypeScript diagnostics by removing duplicate type exports in shared/schema.ts (Project, Product, Territory, ChartOfAccount duplicates), fixed circular reference warnings, resolved type mismatches. Codebase now has 0 LSP diagnostics with full type safety while maintaining 100% runtime functionality.
+Theme Control: User-selectable dark/light mode - ThemeToggle button added to main header (between notifications and settings icons) allowing users to choose Light, Dark, or System theme preferences. Default theme changed from automatic system-based switching to Light mode for explicit user control. Theme preference persists in localStorage. Located in client/src/components/header.tsx and client/src/components/theme-toggle.tsx.
 
 ## System Architecture
-The application uses a monorepo structure with distinct client and server sides.
+The application features a monorepo structure with a React 18 frontend (Vite, TypeScript, Shadcn/ui, TanStack Query, Wouter, React Hook Form with Zod) and an Express.js backend (TypeScript). PostgreSQL with Drizzle ORM is used for data persistence.
 
-- **Frontend**: React 18 with TypeScript (Vite), Shadcn/ui (Radix UI, Tailwind CSS), TanStack Query for state, Wouter for routing, React Hook Form with Zod for forms.
-- **Backend**: Express.js with TypeScript.
-- **Database**: PostgreSQL with Drizzle ORM.
-- **Monorepo Structure**: Separation of client-side and server-side code.
-- **Data Flow**: Frontend communicates with Express backend via REST APIs, data persisted via Drizzle ORM.
-- **UI/UX Decisions**: Consistent professional styling with gradient headers, animated badges, and modern design patterns across all modules. **Horizontal top tabs** are now the standardized navigation pattern across all CRM modules (replaced vertical sidebar tabs for improved UX and consistency). Tab layout includes icon + label design for better accessibility. Mobile-first responsive design is implemented.
-- **Core Features**:
-    - **CRM Core**: Comprehensive CRUD operations for contacts, leads, deals, tasks, accounts.
-    - **AI & Intelligence**: AI-powered sentiment analysis, campaign generation, autonomous AI operations (lead scoring, workflow optimization), AI-powered template generator.
-    - **Marketing**: Simple Messaging (email/SMS sending), landing page builder, SEO management, reputation management.
-    - **E-commerce**: Full store builder with product creation, store management, unique web link generation, AI recommendations, layout builder, inventory heatmap.
-    - **Financial Management**: Multi-currency bookkeeping, invoice generation, bank feed synchronization, automated tax calculation, financial reporting.
-    - **HR & Project Management**: Employee management, advanced project management (Gantt charts), document management.
-    - **Data Security**: Multi-tenant access control, user data isolation, platform owner dashboard, comprehensive security features (encryption, rate limiting, audit logging).
-    - **Platform Capabilities**: Multi-tenant system with company isolation, roles & permissions system (11 categories, 75+ permissions), comprehensive settings, multi-language support (20+ languages), adaptive signup flow, subscription management with tiered AI activation.
-    - **Collaboration**: Real-time team collaboration heat map, video conferencing integration.
-    - **Offline Capabilities**: Progressive Web App (PWA) with service worker, IndexedDB offline storage, tenant-isolated offline databases, offline-aware data layer, background sync, offline CRUD operations, PWA installation support, offline settings management.
-    - **Platform Owner System**: Restored super admin privileges for platform owner with unlimited subscription access, full tenant oversight, subscription management controls, security administration, and system-wide administrative capabilities.
+- **UI/UX Decisions**: Consistent professional styling with gradient headers, animated badges, modern design patterns, and horizontal top tabs for navigation. Mobile-first responsive design is implemented across all modules.
+- **Technical Implementations**:
+    - **Monorepo Structure**: Separate client-side and server-side codebases for clear organization.
+    - **Data Flow**: Frontend communicates with the Express backend via REST APIs.
+    - **Multi-tenancy**: Robust multi-tenant system with company isolation, user data isolation, and configurable roles & permissions (11 categories, 75+ permissions).
+    - **Offline Capabilities**: Progressive Web App (PWA) with service worker, IndexedDB, background sync, and offline CRUD operations.
+    - **AI Integration**: AI services for sentiment analysis, campaign generation, autonomous operations (lead scoring, workflow optimization), and white-labeled template generation.
+    - **Authentication**: Secure login/signup flow with bcrypt password hashing and email verification.
+- **Feature Specifications**:
+    - **CRM Core**: CRUD operations for contacts, leads, deals, tasks, and accounts.
+    - **Marketing**: Simple Messaging (email/SMS), landing page builder, SEO management, reputation management.
+    - **E-commerce**: Full store builder with product creation, management, unique web links, AI recommendations, and inventory tracking.
+    - **Financial Management**: Multi-currency bookkeeping, invoicing, bank feed synchronization, automated tax calculation, and financial reporting.
+    - **HR & Project Management**: Employee management, advanced project management (Gantt charts), and document management.
+    - **Platform Capabilities**: Comprehensive settings, multi-language support (20+ languages), adaptive signup flow, and subscription management with tiered AI activation.
+    - **Collaboration**: Real-time team collaboration heat map and video conferencing integration.
+    - **Platform Owner System**: Super admin privileges with unlimited subscription access, tenant oversight, and system-wide administrative capabilities.
 
 ## External Dependencies
-- **Database**: PostgreSQL (configured with Drizzle ORM), Neon Database (Serverless PostgreSQL driver).
-- **AI Services**: Argilette AI (white-labeled Replit AI Integrations with OpenAI GPT-4o) as primary provider, Anthropic Claude Sonnet 4 (fallback), Google Gemini AI, You.com AI, QWEN AI.
-- **Email/SMS**: IONOS SMTP (for all emails), Twilio (for SMS).
+- **Database**: PostgreSQL (Drizzle ORM), Neon Database (Serverless PostgreSQL driver).
+- **AI Services**: Argilette AI (white-labeled Replit AI Integrations with OpenAI GPT-4o) as primary, Anthropic Claude Sonnet 4, Google Gemini AI, You.com AI, QWEN AI.
+- **Email/SMS**: IONOS SMTP, Twilio (for SMS).
 - **Authentication**: JWT tokens, bcrypt.
 - **UI/Component Libraries**: Shadcn/ui, Radix UI, Tailwind CSS, TanStack Query, Wouter, React Hook Form, Zod, dnd-kit.
 - **Maps/Translate**: Google Maps API, Google Translate API.
 - **Build Tools**: Vite, esbuild.
-- **Other Integrations**: Zapier, Shopify, Shopware.
+- **Other Integrations**: Zapier, Shopify, Shopware, TikTok, Facebook Business, Instagram Business, LinkedIn Company, Twitter/X Business, Pinterest Business, Snapchat Business.
 - **Security Tools**: Helmet.js.
-- **Payment Gateways**: Stripe, Visa (for tenant configurations).
+- **Payment Gateways**: Stripe, Visa.
