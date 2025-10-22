@@ -76,7 +76,7 @@ class AIFailoverService {
       circuitBreakerResetTimeMs: 300000, // 5 minutes
       enableCaching: true,
       cacheMaxAge: 3600000, // 1 hour
-      priorityOrder: ['you', 'anthropic', 'openai', 'google', 'qwen'],
+      priorityOrder: ['openai', 'anthropic', 'you', 'google', 'qwen'], // OpenAI (Replit AI Integrations) as primary
       fallbackEnabled: true
     };
 
@@ -84,11 +84,11 @@ class AIFailoverService {
   }
 
   private initializeProviders(): void {
-    // Initialize You.com AI (Primary)
+    // Initialize You.com AI (Tertiary)
     if (process.env.YOU_API_KEY) {
       this.providers.set('you', {
         name: 'You.com AI',
-        priority: 1,
+        priority: 3,
         isAvailable: true,
         requestCount: 0,
         successCount: 0,
@@ -103,11 +103,11 @@ class AIFailoverService {
       this.circuitBreakers.set('you', { isOpen: false, failures: 0, lastFailure: 0 });
     }
 
-    // Initialize Anthropic
+    // Initialize Anthropic (Fallback)
     if (process.env.ANTHROPIC_API_KEY) {
       this.providers.set('anthropic', {
         name: 'Anthropic Claude',
-        priority: 2,
+        priority: 2, // Fallback provider
         isAvailable: true,
         requestCount: 0,
         successCount: 0,
@@ -120,11 +120,17 @@ class AIFailoverService {
       this.circuitBreakers.set('anthropic', { isOpen: false, failures: 0, lastFailure: 0 });
     }
 
-    // Initialize OpenAI
-    if (process.env.OPENAI_API_KEY) {
+    // Initialize OpenAI (Replit AI Integrations) - PRIMARY PROVIDER
+    console.log('🔍 Checking OpenAI environment variables:', {
+      hasApiKey: !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      hasBaseURL: !!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
+    });
+    
+    if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+      console.log('✅ Initializing OpenAI (Replit AI Integrations) as PRIMARY provider');
       this.providers.set('openai', {
-        name: 'OpenAI GPT',
-        priority: 3,
+        name: 'OpenAI GPT-5 (Replit AI)',
+        priority: 1, // PRIMARY PROVIDER
         isAvailable: true,
         requestCount: 0,
         successCount: 0,
@@ -132,9 +138,12 @@ class AIFailoverService {
         averageResponseTime: 0
       });
       this.clients.set('openai', new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY
       }));
       this.circuitBreakers.set('openai', { isOpen: false, failures: 0, lastFailure: 0 });
+    } else {
+      console.log('⚠️ OpenAI (Replit AI Integrations) NOT initialized - missing API key');
     }
 
     // Initialize Google Gemini
@@ -175,9 +184,14 @@ class AIFailoverService {
 
     console.log(`🤖 AI Failover Service initialized with ${this.providers.size} providers:`, Array.from(this.providers.keys()).join(', '));
     
-    // Log You.com status specifically
+    // Log OpenAI status specifically
+    if (this.providers.has('openai')) {
+      console.log('✅ OpenAI (Replit AI Integrations) activated as PRIMARY provider with intelligent failover');
+    }
+    
+    // Log You.com status
     if (this.providers.has('you')) {
-      console.log('✅ You.com AI activated as PRIMARY provider with intelligent failover');
+      console.log('✅ You.com AI activated as tertiary provider');
     } else {
       console.log('⚠️ You.com AI available but requires YOU_API_KEY environment variable');
     }
