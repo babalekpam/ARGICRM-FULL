@@ -76,7 +76,7 @@ class AIFailoverService {
       circuitBreakerResetTimeMs: 300000, // 5 minutes
       enableCaching: true,
       cacheMaxAge: 3600000, // 1 hour
-      priorityOrder: ['openai', 'anthropic', 'you', 'google', 'qwen'], // OpenAI (Replit AI Integrations) as primary
+      priorityOrder: ['argilette', 'anthropic', 'you', 'google', 'qwen'], // Argilette AI as primary
       fallbackEnabled: true
     };
 
@@ -128,7 +128,7 @@ class AIFailoverService {
     
     if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
       console.log('✅ Initializing Argilette AI as PRIMARY provider');
-      this.providers.set('openai', {
+      this.providers.set('argilette', {
         name: 'Argilette AI',
         priority: 1, // PRIMARY PROVIDER
         isAvailable: true,
@@ -137,11 +137,11 @@ class AIFailoverService {
         failureCount: 0,
         averageResponseTime: 0
       });
-      this.clients.set('openai', new OpenAI({
+      this.clients.set('argilette', new OpenAI({
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY
       }));
-      this.circuitBreakers.set('openai', { isOpen: false, failures: 0, lastFailure: 0 });
+      this.circuitBreakers.set('argilette', { isOpen: false, failures: 0, lastFailure: 0 });
     } else {
       console.log('⚠️ Argilette AI NOT initialized - missing API key');
     }
@@ -185,7 +185,7 @@ class AIFailoverService {
     console.log(`🤖 AI Failover Service initialized with ${this.providers.size} providers:`, Array.from(this.providers.keys()).join(', '));
     
     // Log Argilette AI status specifically
-    if (this.providers.has('openai')) {
+    if (this.providers.has('argilette')) {
       console.log('✅ Argilette AI activated as PRIMARY provider with intelligent failover');
     }
     
@@ -337,21 +337,21 @@ class AIFailoverService {
         });
         return anthropicResponse.content[0].text;
 
-      case 'openai':
+      case 'argilette':
         const messages: any[] = [];
         if (request.systemPrompt) {
           messages.push({ role: 'system', content: request.systemPrompt });
         }
         messages.push({ role: 'user', content: request.prompt });
 
-        const openaiResponse = await client.chat.completions.create({
-          model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        const argiletteResponse = await client.chat.completions.create({
+          model: 'gpt-4o', // Argilette AI (white-labeled OpenAI)
           messages,
-          max_tokens: request.maxTokens || 1024,
+          max_completion_tokens: request.maxTokens || 1024, // GPT-4o uses max_completion_tokens
           temperature: request.temperature || 0.7,
           ...(request.responseFormat === 'json' && { response_format: { type: 'json_object' } })
         });
-        return openaiResponse.choices[0].message.content || '';
+        return argiletteResponse.choices[0].message.content || '';
 
       case 'google':
         const googleResponse = await client.models.generateContent({

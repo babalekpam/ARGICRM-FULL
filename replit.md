@@ -1,7 +1,7 @@
 # NODE CRM
 
 ## Overview
-NODE CRM is a comprehensive customer relationship management platform with advanced AI-powered capabilities designed for global markets. It is built as a full-stack React/Express application with PostgreSQL for data persistence. Key capabilities include real-time sentiment analysis, AI campaign generation, multi-cultural optimization for 195+ countries, and advanced financial management. The platform offers autonomous AI operations and competitive pricing.
+NODE CRM is a comprehensive, AI-powered customer relationship management platform designed for global markets. It is a full-stack React/Express application with PostgreSQL, offering features like real-time sentiment analysis, AI campaign generation, multi-cultural optimization for over 195 countries, and advanced financial management. The platform aims for autonomous AI operations and competitive pricing, providing a robust solution for businesses worldwide.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -10,7 +10,6 @@ Email Marketing: IONOS SMTP configured for professional bulk email system (Octob
 - SMTP Configuration: Complete with host, port, credentials, and from address
 - Registration/Confirmation Emails: Configured via SMTP_FROM_EMAIL secret
 - Marketing Emails: Use customizable professional addresses via SMTP
-- Previous SendGrid integration removed - now using IONOS SMTP exclusively
 Anti-spam optimization: Personalization, batch sending, compliance features enabled
 Branding: Argilette NODE CRM logos integrated across platform (August 2025) - includes colored and transparent variants with infinity symbol design
 Offline Capabilities: Comprehensive offline functionality implemented platform-wide for tenants without consistent internet access (August 2025)
@@ -29,7 +28,7 @@ Security Services Removal: All ARGILETTE security platform features completely r
 Page Refresh Issue Fix: Fixed persistent page refresh requirement (September 2025) - implemented network-first service worker strategy, added proper cache control headers to prevent stale content serving, reduced aggressive caching that was causing navigation issues
 Lander Redirect Issue: PERMANENT FIX IMPLEMENTED (September 2025) - BULLETPROOF 6-LAYER REDIRECT SYSTEM: 1) Server-side Express middleware redirects /lander to / with 301 status (CRITICAL - never modify), 2) Client-side index.html immediate redirect, 3) Static fallback public/lander/index.html, 4) JavaScript protection via lander-blocker.js, 5) _redirects file for platform compatibility, 6) Health check endpoint /api/lander-health for monitoring. System includes anti-cache headers, multiple redirect methods, and comprehensive logging. PROTECTED CODE: Server redirect marked as CRITICAL in routes.ts with warning comments to prevent accidental removal
 Navigation System: Organized grouped/collapsible navigation (September 2025) - replaced long flat tab lists with categorized navigation groups (Core CRM, Sales & Marketing, Operations, Intelligence, Platform) with expand/collapse functionality, improved UX for better feature discoverability, mobile-optimized responsive design
-AI Integration Migration (October 2025): Migrated from Anthropic Claude to Replit AI Integrations branded as "Argilette AI". All AI services (SEO insights, campaign generation, sentiment analysis, content generation) now use cost-effective Replit AI Integrations with OpenAI GPT-5 under the Argilette AI brand. Charges billed to Replit credits. Multi-provider AI failover system provides redundancy (Argilette AI primary, Anthropic fallback, You.com, Google, Qwen). Key files migrated: server/ai.ts, server/argilette/seo-ai.ts, server/services/ai-failover-service.ts.
+AI Integration Migration (October 2025): Migrated from Anthropic Claude to Replit AI Integrations with COMPLETE WHITE-LABEL branding as "Argilette AI". All AI services (SEO insights, campaign generation, sentiment analysis, content generation) now use cost-effective Replit AI Integrations with OpenAI GPT-4o fully white-labeled. Internal provider identifier changed from "openai" to "argilette" to completely hide OpenAI references from end users in API responses, logs, and UI. API responses show `"provider":"argilette"` with zero OpenAI exposure. Settings page displays "Argilette AI Key" instead of "OpenAI API Key". Server logs show "Argilette AI" branding throughout. Charges billed to Replit credits. Multi-provider AI failover system provides redundancy (Argilette AI primary, Anthropic fallback, You.com, Google, Qwen). Key files: server/ai.ts, server/argilette/seo-ai.ts, server/services/ai-failover-service.ts, client/src/pages/settings.tsx.
 AI Campaign Studio: Complete backend infrastructure (September 2025) - Multi-provider AI failover system, automated ad generation from website/product information, personalized email campaign generation from contact data, tenant-isolated content storage, usage tracking with cost estimation, comprehensive REST API endpoints (/api/ai-campaigns/generate-ad, /api/ai-campaigns/generate-emails, full CRUD for content management), enterprise-grade security with tenant validation and cross-tenant access prevention, integration-ready for Sales Channels and Simple Messaging modules
 Sales Channels: Multi-platform integration system (September 2025) - TikTok, Facebook Business, Instagram Business, LinkedIn Company, Twitter/X Business, Pinterest Business, Snapchat Business connections, database persistence with proper tenant isolation, connection status tracking, secure credential management, API-ready for publishing AI-generated content to connected platforms
 ARGILETTE SEO Platform: Complete Ubersuggest clone integration (October 2025) - Full-featured SEO analytics platform integrated into CRM at /api/argilette endpoints, includes keyword research, site audits, traffic analytics, backlinks monitoring, competitor analysis, rank tracking, Content Intelligence, Technical SEO, automated reporting, API access, local SEO, social media monitoring. Multi-tenant PostgreSQL architecture with AI-powered insights via Anthropic Claude Sonnet 4. All subscriptions are ONE-TIME LIFETIME PAYMENTS. Supports 6 languages. Integration uses dedicated seo-schema.ts with 20+ specialized tables for comprehensive SEO data management. **Navigation & Access (October 2025)**: All 8 SEO pages fully integrated with accessible navigation - ARGILETTE SEO section added to sidebar with collapsible menu containing SEO Audit, SEO Management, Keyword Research, Backlink Monitoring, Rank Tracking, Competitor Analysis, Technical SEO, and Local SEO. Fixed schema exports (insertKeywordSchema, Keyword type re-exported from seo-schema.ts to shared/schema.ts) and added SEO paths to saas-features.ts featureMap for unrestricted access. All pages tested and verified working with successful e2e testing.
@@ -44,31 +43,29 @@ The application uses a monorepo structure with distinct client and server sides.
 - **Backend**: Express.js with TypeScript.
 - **Database**: PostgreSQL with Drizzle ORM.
 - **Monorepo Structure**: Separation of client-side and server-side code.
-- **Data Flow**: Frontend communicates with Express backend via REST APIs, data persisted via Drizzle ORM. Client-side sentiment analysis results are stored with contact records.
+- **Data Flow**: Frontend communicates with Express backend via REST APIs, data persisted via Drizzle ORM.
 - **UI/UX Decisions**: Consistent professional styling with gradient headers, animated badges, and modern design patterns across all modules. Vertical side tabs are used for unified navigation within CRM modules. Mobile-first responsive design is implemented.
 - **Core Features**:
     - **CRM Core**: Comprehensive CRUD operations for contacts, leads, deals, tasks, accounts.
-    - **AI & Intelligence**: AI-powered sentiment analysis, campaign generation, AI autonomous operations (lead scoring, workflow optimization), AI-powered template generator.
-    - **Marketing**: Simple Messaging (email/SMS sending), landing page builder (drag-and-drop, AI recommendations, templates), SEO management, reputation management (multi-platform monitoring, predictive scores).
-    - **E-commerce**: Full store builder with product creation, store management, unique web link generation (subdomains), AI recommendations, layout builder, inventory heatmap.
+    - **AI & Intelligence**: AI-powered sentiment analysis, campaign generation, autonomous AI operations (lead scoring, workflow optimization), AI-powered template generator.
+    - **Marketing**: Simple Messaging (email/SMS sending), landing page builder, SEO management, reputation management.
+    - **E-commerce**: Full store builder with product creation, store management, unique web link generation, AI recommendations, layout builder, inventory heatmap.
     - **Financial Management**: Multi-currency bookkeeping, invoice generation, bank feed synchronization, automated tax calculation, financial reporting.
     - **HR & Project Management**: Employee management, advanced project management (Gantt charts), document management.
-    - **Data Security**: Multi-tenant access control, user data isolation, platform owner dashboard, comprehensive security features (encryption, rate limiting, audit logging) for CRM data protection.
+    - **Data Security**: Multi-tenant access control, user data isolation, platform owner dashboard, comprehensive security features (encryption, rate limiting, audit logging).
     - **Platform Capabilities**: Multi-tenant system with company isolation, roles & permissions system (11 categories, 75+ permissions), comprehensive settings, multi-language support (20+ languages), adaptive signup flow, subscription management with tiered AI activation.
     - **Collaboration**: Real-time team collaboration heat map, video conferencing integration.
     - **Offline Capabilities**: Progressive Web App (PWA) with service worker, IndexedDB offline storage, tenant-isolated offline databases, offline-aware data layer, background sync, offline CRUD operations, PWA installation support, offline settings management.
     - **Platform Owner System**: Restored super admin privileges for platform owner with unlimited subscription access, full tenant oversight, subscription management controls, security administration, and system-wide administrative capabilities.
 
 ## External Dependencies
-- **Database**: PostgreSQL (configured with Drizzle ORM).
-- **Cloud Database**: Neon Database (Serverless PostgreSQL driver).
-- **AI Services**: Argilette AI powered by Replit AI Integrations with GPT-5 (primary), Anthropic Claude Sonnet 4 (fallback), Google Gemini AI.
-- **Email/SMS**: SendGrid (for email confirmation and marketing), Twilio (for SMS).
-- **Authentication**: JWT tokens.
+- **Database**: PostgreSQL (configured with Drizzle ORM), Neon Database (Serverless PostgreSQL driver).
+- **AI Services**: Argilette AI (white-labeled Replit AI Integrations with OpenAI GPT-4o) as primary provider, Anthropic Claude Sonnet 4 (fallback), Google Gemini AI, You.com AI, QWEN AI. Complete white-labeling hides all OpenAI references from end users.
+- **Email/SMS**: IONOS SMTP (for all emails), Twilio (for SMS).
+- **Authentication**: JWT tokens, bcrypt.
 - **UI/Component Libraries**: Shadcn/ui, Radix UI, Tailwind CSS, TanStack Query, Wouter, React Hook Form, Zod, dnd-kit.
 - **Maps/Translate**: Google Maps API, Google Translate API.
 - **Build Tools**: Vite, esbuild.
-- **Other Integrations (examples)**: Zapier, Shopify, Shopware.
-- **Security Tools**: Helmet.js, bcrypt.
+- **Other Integrations**: Zapier, Shopify, Shopware.
+- **Security Tools**: Helmet.js.
 - **Payment Gateways**: Stripe, Visa (for tenant configurations).
-```
