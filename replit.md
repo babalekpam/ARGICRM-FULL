@@ -42,7 +42,7 @@ The application uses a monorepo structure with distinct client and server sides.
 - **Database**: PostgreSQL with Drizzle ORM.
 - **Monorepo Structure**: Separation of client-side and server-side code.
 - **Data Flow**: Frontend communicates with Express backend via REST APIs, data persisted via Drizzle ORM.
-- **UI/UX Decisions**: Consistent professional styling with gradient headers, animated badges, and modern design patterns across all modules. Vertical side tabs are used for unified navigation within CRM modules. Mobile-first responsive design is implemented.
+- **UI/UX Decisions**: Consistent professional styling with gradient headers, animated badges, and modern design patterns across all modules. **Horizontal top tabs** are now the standardized navigation pattern across all CRM modules (replaced vertical sidebar tabs for improved UX and consistency). Tab layout includes icon + label design for better accessibility. Mobile-first responsive design is implemented.
 - **Core Features**:
     - **CRM Core**: Comprehensive CRUD operations for contacts, leads, deals, tasks, accounts.
     - **AI & Intelligence**: AI-powered sentiment analysis, campaign generation, autonomous AI operations (lead scoring, workflow optimization), AI-powered template generator.
