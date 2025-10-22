@@ -393,51 +393,32 @@ export default function LeadsPage() {
           </div>
         </div>
 
-        {/* Side Tabs Layout */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex gap-6">
-          {/* Side Navigation */}
-          <div className="w-64 flex-shrink-0">
-            <TabsList className="flex flex-col h-auto w-full space-y-1 bg-gray-50 dark:bg-gray-800 p-2">
-              <TabsTrigger 
-                value="leads" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Users className="h-4 w-4" />
-                <span>All Leads ({(leads || []).length})</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="templates" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <FileText className="h-4 w-4" />
-                <span>Templates ({(leadTemplates || []).length})</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="analytics" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Target className="h-4 w-4" />
-                <span>Analytics</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="scoring" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Star className="h-4 w-4" />
-                <span>Scoring</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="landing-pages" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Globe className="h-4 w-4" />
-                <span>Landing Pages</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        {/* Tabs Layout */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
+            <TabsTrigger value="leads" className="gap-2" data-testid="tab-leads">
+              <Users className="h-4 w-4" />
+              All Leads ({(leads || []).length})
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="gap-2" data-testid="tab-templates">
+              <FileText className="h-4 w-4" />
+              Templates ({(leadTemplates || []).length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
+              <Target className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="scoring" className="gap-2" data-testid="tab-scoring">
+              <Star className="h-4 w-4" />
+              Scoring
+            </TabsTrigger>
+            <TabsTrigger value="landing-pages" className="gap-2" data-testid="tab-landing-pages">
+              <Globe className="h-4 w-4" />
+              Landing Pages
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Main Content Area */}
-          <div className="flex-1">
+          <div>
 
             <TabsContent value="leads" className="space-y-6 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

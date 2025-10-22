@@ -254,51 +254,32 @@ export default function EmailMarketingPage() {
           </Alert>
         )}
 
-        {/* Side Tabs Layout */}
-        <Tabs defaultValue="compose" className="flex gap-6" orientation="vertical">
-          {/* Side Navigation */}
-          <div className="w-64 flex-shrink-0 tabs-vertical">
-            <TabsList className="flex flex-col h-auto w-full space-y-1 bg-gray-50 dark:bg-gray-800 p-2" orientation="vertical">
-              <TabsTrigger 
-                value="compose" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Mail className="h-4 w-4" />
-                <span>Compose Email</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="cold-email" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <AlertCircle className="h-4 w-4" />
-                <span>Cold Outreach</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="templates" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Eye className="h-4 w-4" />
-                <span>Templates</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="contacts" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Users className="h-4 w-4" />
-                <span>Select Recipients</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="preview" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <CheckCircle className="h-4 w-4" />
-                <span>Preview</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        {/* Tabs Layout */}
+        <Tabs defaultValue="compose" className="space-y-6">
+          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
+            <TabsTrigger value="compose" className="gap-2" data-testid="tab-compose">
+              <Mail className="h-4 w-4" />
+              Compose Email
+            </TabsTrigger>
+            <TabsTrigger value="cold-email" className="gap-2" data-testid="tab-cold-email">
+              <AlertCircle className="h-4 w-4" />
+              Cold Outreach
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="gap-2" data-testid="tab-templates">
+              <Eye className="h-4 w-4" />
+              Templates
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="gap-2" data-testid="tab-contacts">
+              <Users className="h-4 w-4" />
+              Select Recipients
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="gap-2" data-testid="tab-preview">
+              <CheckCircle className="h-4 w-4" />
+              Preview
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Main Content Area */}
-          <div className="flex-1">
+          <div>
 
             <TabsContent value="compose" className="space-y-6 mt-0">
             <Alert className="mb-6 bg-blue-50 border-blue-200">

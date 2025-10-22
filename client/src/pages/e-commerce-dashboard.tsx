@@ -420,79 +420,48 @@ export default function EcommerceDashboard() {
         </Card>
       </div>
 
-      {/* Main Tabs - Vertical Layout */}
-      <Tabs defaultValue="products" className="flex gap-6" orientation="vertical">
-        {/* Side Navigation */}
-        <div className="w-64 flex-shrink-0 tabs-vertical">
-          <TabsList orientation="vertical" className="bg-gray-50 dark:bg-gray-800">
-            <TabsTrigger 
-              value="products" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Package className="h-4 w-4" />
-              <span>Products</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="stores" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Store className="h-4 w-4" />
-              <span>Stores</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="performance" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span>Performance</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="orders" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span>Orders</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="customers" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Users className="h-4 w-4" />
-              <span>Customers</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="reviews" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Star className="h-4 w-4" />
-              <span>Reviews</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="coupons" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Tag className="h-4 w-4" />
-              <span>Coupons</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="analytics" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span>Analytics</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="settings" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      {/* Main Tabs */}
+      <Tabs defaultValue="products" className="space-y-6">
+        <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
+          <TabsTrigger value="products" className="gap-2" data-testid="tab-products">
+            <Package className="h-4 w-4" />
+            Products
+          </TabsTrigger>
+          <TabsTrigger value="stores" className="gap-2" data-testid="tab-stores">
+            <Store className="h-4 w-4" />
+            Stores
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="gap-2" data-testid="tab-performance">
+            <TrendingUp className="h-4 w-4" />
+            Performance
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="gap-2" data-testid="tab-orders">
+            <ShoppingCart className="h-4 w-4" />
+            Orders
+          </TabsTrigger>
+          <TabsTrigger value="customers" className="gap-2" data-testid="tab-customers">
+            <Users className="h-4 w-4" />
+            Customers
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="gap-2" data-testid="tab-reviews">
+            <Star className="h-4 w-4" />
+            Reviews
+          </TabsTrigger>
+          <TabsTrigger value="coupons" className="gap-2" data-testid="tab-coupons">
+            <Tag className="h-4 w-4" />
+            Coupons
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2" data-testid="tab-settings">
+            <Settings className="h-4 w-4" />
+            Settings
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Main Content Area */}
-        <div className="flex-1">
+        <div>
 
         {/* Products Tab */}
         <TabsContent value="products" className="space-y-6">
