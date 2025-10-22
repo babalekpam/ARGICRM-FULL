@@ -832,7 +832,7 @@ export default function AICampaignStudio() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {contentLibrary.length > 0 ? (
+                  {contentLibrary && contentLibrary.length > 0 ? (
                     <div className="space-y-3">
                       {contentLibrary.map((content) => (
                         <div
