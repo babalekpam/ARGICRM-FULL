@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import Logo from "./logo";
 
 export default function Header() {
@@ -36,6 +37,7 @@ export default function Header() {
           <Button variant="ghost" size="sm">
             <Bell className="h-4 w-4" />
           </Button>
+          <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>
             <Link to="/account-settings">
               <Settings className="h-4 w-4" />

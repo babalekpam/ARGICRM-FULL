@@ -119,7 +119,7 @@ function App() {
     <ErrorBoundary>
       <PerformanceProvider>
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider defaultTheme="system" storageKey="argilette-theme">
+          <ThemeProvider defaultTheme="light" storageKey="argilette-theme">
             <LanguageProvider>
               <WhiteLabelProvider>
                 <AuthProvider>
