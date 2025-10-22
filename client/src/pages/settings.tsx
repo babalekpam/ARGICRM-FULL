@@ -911,7 +911,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {Object.entries({
-                  openai: 'OpenAI API Key',
+                  openai: 'Argilette AI Key',
                   sendgrid: 'SendGrid API Key',
                   twilio: 'Twilio API Key',
                   stripe: 'Stripe API Key'

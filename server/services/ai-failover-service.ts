@@ -120,16 +120,16 @@ class AIFailoverService {
       this.circuitBreakers.set('anthropic', { isOpen: false, failures: 0, lastFailure: 0 });
     }
 
-    // Initialize OpenAI (Replit AI Integrations) - PRIMARY PROVIDER
-    console.log('🔍 Checking OpenAI environment variables:', {
+    // Initialize ARGILETTE AI (Replit AI Integrations) - PRIMARY PROVIDER
+    console.log('🔍 Checking Argilette AI environment variables:', {
       hasApiKey: !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
       hasBaseURL: !!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
     });
     
     if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-      console.log('✅ Initializing OpenAI (Replit AI Integrations) as PRIMARY provider');
+      console.log('✅ Initializing Argilette AI as PRIMARY provider');
       this.providers.set('openai', {
-        name: 'OpenAI GPT-5 (Replit AI)',
+        name: 'Argilette AI',
         priority: 1, // PRIMARY PROVIDER
         isAvailable: true,
         requestCount: 0,
@@ -143,7 +143,7 @@ class AIFailoverService {
       }));
       this.circuitBreakers.set('openai', { isOpen: false, failures: 0, lastFailure: 0 });
     } else {
-      console.log('⚠️ OpenAI (Replit AI Integrations) NOT initialized - missing API key');
+      console.log('⚠️ Argilette AI NOT initialized - missing API key');
     }
 
     // Initialize Google Gemini
@@ -184,9 +184,9 @@ class AIFailoverService {
 
     console.log(`🤖 AI Failover Service initialized with ${this.providers.size} providers:`, Array.from(this.providers.keys()).join(', '));
     
-    // Log OpenAI status specifically
+    // Log Argilette AI status specifically
     if (this.providers.has('openai')) {
-      console.log('✅ OpenAI (Replit AI Integrations) activated as PRIMARY provider with intelligent failover');
+      console.log('✅ Argilette AI activated as PRIMARY provider with intelligent failover');
     }
     
     // Log You.com status

@@ -14,7 +14,7 @@ Charges are billed to Replit credits. No separate API key needed.
 const DEFAULT_MODEL_STR = "gpt-5";
 // </important_do_not_delete>
 
-// This is using Replit's AI Integrations service, which provides OpenAI-compatible API access without requiring your own OpenAI API key.
+// This is Argilette AI, powered by Replit's AI Integrations service
 const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY
@@ -25,11 +25,11 @@ const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
 const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
 
 if (!baseURL || !apiKey) {
-  console.error('❌ OpenAI integration not configured. Missing environment variables.');
+  console.error('❌ Argilette AI not configured. Missing environment variables.');
   console.error('   AI_INTEGRATIONS_OPENAI_BASE_URL:', baseURL ? '✓ Set' : '✗ Missing');
   console.error('   AI_INTEGRATIONS_OPENAI_API_KEY:', apiKey ? '✓ Set' : '✗ Missing');
 } else {
-  console.log('✅ OpenAI integration configured correctly (Replit AI Integrations)');
+  console.log('✅ Argilette AI configured correctly (Replit AI Integrations)');
 }
 
 interface SEOContext {
