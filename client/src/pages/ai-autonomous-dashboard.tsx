@@ -165,43 +165,27 @@ export default function AIAutonomousDashboard() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex gap-6" orientation="vertical">
-        {/* Side Navigation */}
-        <div className="w-64 flex-shrink-0 tabs-vertical">
-          <TabsList orientation="vertical" className="bg-gray-50 dark:bg-gray-800">
-            <TabsTrigger 
-              value="overview" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span>Overview</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="autonomous" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Zap className="h-4 w-4" />
-              <span>Autonomous Operations</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="emotional" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Heart className="h-4 w-4" />
-              <span>Emotional Intelligence</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="predictive" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Brain className="h-4 w-4" />
-              <span>Predictive Analytics</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
+          <TabsTrigger value="overview" className="gap-2" data-testid="tab-overview">
+            <BarChart3 className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="autonomous" className="gap-2" data-testid="tab-autonomous">
+            <Zap className="h-4 w-4" />
+            Autonomous Operations
+          </TabsTrigger>
+          <TabsTrigger value="emotional" className="gap-2" data-testid="tab-emotional">
+            <Heart className="h-4 w-4" />
+            Emotional Intelligence
+          </TabsTrigger>
+          <TabsTrigger value="predictive" className="gap-2" data-testid="tab-predictive">
+            <Brain className="h-4 w-4" />
+            Predictive Analytics
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Main Content Area */}
-        <div className="flex-1">
+        <div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">

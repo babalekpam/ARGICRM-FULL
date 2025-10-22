@@ -498,51 +498,32 @@ export default function InventoryManagementPage() {
         </Card>
       </div>
 
-      {/* Side Tabs Layout */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex gap-6" orientation="vertical">
-        {/* Side Navigation */}
-        <div className="w-64 flex-shrink-0 tabs-vertical">
-          <TabsList orientation="vertical" className="bg-gray-50 dark:bg-gray-800">
-            <TabsTrigger 
-              value="inventory" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Package className="h-4 w-4" />
-              <span>Inventory</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="orders" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span>Orders</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="operations" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Upload className="h-4 w-4" />
-              <span>Operations</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="analytics" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span>Analytics</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="suppliers" 
-              className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Truck className="h-4 w-4" />
-              <span>Suppliers</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      {/* Tabs Layout */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
+          <TabsTrigger value="inventory" className="gap-2" data-testid="tab-inventory">
+            <Package className="h-4 w-4" />
+            Inventory
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="gap-2" data-testid="tab-orders">
+            <ShoppingCart className="h-4 w-4" />
+            Orders
+          </TabsTrigger>
+          <TabsTrigger value="operations" className="gap-2" data-testid="tab-operations">
+            <Upload className="h-4 w-4" />
+            Operations
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="suppliers" className="gap-2" data-testid="tab-suppliers">
+            <Truck className="h-4 w-4" />
+            Suppliers
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Main Content Area */}
-        <div className="flex-1">
+        <div>
 
         <TabsContent value="inventory" className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
