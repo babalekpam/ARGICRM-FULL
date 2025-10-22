@@ -282,50 +282,31 @@ export default function SchedulingPage() {
         </div>
 
         {/* Tabs Layout */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} orientation="vertical" className="flex gap-6">
-          {/* Side Navigation */}
-          <div className="w-64 flex-shrink-0">
-            <TabsList className="flex flex-col h-auto w-full space-y-1 bg-gray-50 dark:bg-gray-800 p-2">
-              <TabsTrigger 
-                value="calendar" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <CalendarDays className="h-4 w-4" />
-                <span>Calendar View</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="today" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Clock className="h-4 w-4" />
-                <span>Today's Schedule</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="upcoming" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Bell className="h-4 w-4" />
-                <span>Upcoming</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="analytics" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>Analytics</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
-                className="w-full justify-start space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                <Settings className="h-4 w-4" />
-                <span>Settings</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
+            <TabsTrigger value="calendar" className="gap-2" data-testid="tab-calendar">
+              <CalendarDays className="h-4 w-4" />
+              Calendar View
+            </TabsTrigger>
+            <TabsTrigger value="today" className="gap-2" data-testid="tab-today">
+              <Clock className="h-4 w-4" />
+              Today's Schedule
+            </TabsTrigger>
+            <TabsTrigger value="upcoming" className="gap-2" data-testid="tab-upcoming">
+              <Bell className="h-4 w-4" />
+              Upcoming
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2" data-testid="tab-settings">
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Content Area */}
-          <div className="flex-1">
+          <div>
             <TabsContent value="calendar" className="space-y-6 mt-0">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-1">
