@@ -1518,5 +1518,343 @@ export function createSEORouter(): Router {
     }
   });
 
+  // ========== MULTI-PLATFORM SEARCH OPTIMIZATION ENDPOINTS ==========
+  // Following NP Digital's "Search Everywhere Optimization" methodology
+
+  // Initialize AI platforms for a project
+  router.post("/multi-platform/:projectId/initialize", async (req: any, res: Response) => {
+    try {
+      const { initializeAIPlatforms } = await import("./ai-search-optimization");
+      await initializeAIPlatforms(req.tenantId, req.params.projectId);
+      res.json({ success: true, message: "AI platforms initialized successfully" });
+    } catch (error) {
+      console.error("Error initializing AI platforms:", error);
+      res.status(500).json({ error: "Failed to initialize AI platforms" });
+    }
+  });
+
+  // Track brand mentions across AI platforms
+  router.post("/multi-platform/:projectId/track-mentions", async (req: any, res: Response) => {
+    try {
+      const { trackBrandMentions } = await import("./ai-search-optimization");
+      const { brandName, queries } = req.body;
+      
+      if (!brandName || !queries || !Array.isArray(queries)) {
+        return res.status(400).json({ error: "brandName and queries array are required" });
+      }
+
+      const result = await trackBrandMentions(req.tenantId, req.params.projectId, brandName, queries);
+      res.json(result);
+    } catch (error) {
+      console.error("Error tracking brand mentions:", error);
+      res.status(500).json({ error: "Failed to track brand mentions" });
+    }
+  });
+
+  // Get brand mention statistics
+  router.get("/multi-platform/:projectId/mention-stats", async (req: any, res: Response) => {
+    try {
+      const { getBrandMentionStats } = await import("./ai-search-optimization");
+      const stats = await getBrandMentionStats(req.tenantId, req.params.projectId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching brand mention stats:", error);
+      res.status(500).json({ error: "Failed to fetch brand mention statistics" });
+    }
+  });
+
+  // Get AI platform performance dashboard
+  router.get("/multi-platform/:projectId/dashboard", async (req: any, res: Response) => {
+    try {
+      const { multiPlatformPerformance } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, desc } = await import("drizzle-orm");
+
+      const performance = await db
+        .select()
+        .from(multiPlatformPerformance)
+        .where(and(
+          eq(multiPlatformPerformance.tenantId, req.tenantId),
+          eq(multiPlatformPerformance.projectId, req.params.projectId)
+        ))
+        .orderBy(desc(multiPlatformPerformance.date))
+        .limit(30);
+
+      res.json(performance);
+    } catch (error) {
+      console.error("Error fetching multi-platform dashboard:", error);
+      res.status(500).json({ error: "Failed to fetch multi-platform dashboard" });
+    }
+  });
+
+  // Get AI brand mentions
+  router.get("/multi-platform/:projectId/ai-mentions", async (req: any, res: Response) => {
+    try {
+      const { aiBrandMentions } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, desc } = await import("drizzle-orm");
+
+      const platform = req.query.platform as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      // Build conditions array to ensure tenant isolation is always enforced
+      const conditions = [
+        eq(aiBrandMentions.tenantId, req.tenantId),
+        eq(aiBrandMentions.projectId, req.params.projectId)
+      ];
+
+      if (platform) {
+        conditions.push(eq(aiBrandMentions.platform, platform));
+      }
+
+      const mentions = await db
+        .select()
+        .from(aiBrandMentions)
+        .where(and(...conditions))
+        .orderBy(desc(aiBrandMentions.checkedAt))
+        .limit(limit);
+
+      res.json(mentions);
+    } catch (error) {
+      console.error("Error fetching AI brand mentions:", error);
+      res.status(500).json({ error: "Failed to fetch AI brand mentions" });
+    }
+  });
+
+  // Get sentiment analysis results
+  router.get("/multi-platform/:projectId/sentiment", async (req: any, res: Response) => {
+    try {
+      const { aiSentimentAnalysis } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, desc } = await import("drizzle-orm");
+
+      const platform = req.query.platform as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      // Build conditions array to ensure tenant isolation is always enforced
+      const conditions = [
+        eq(aiSentimentAnalysis.tenantId, req.tenantId),
+        eq(aiSentimentAnalysis.projectId, req.params.projectId)
+      ];
+
+      if (platform) {
+        conditions.push(eq(aiSentimentAnalysis.platform, platform));
+      }
+
+      const sentimentData = await db
+        .select()
+        .from(aiSentimentAnalysis)
+        .where(and(...conditions))
+        .orderBy(desc(aiSentimentAnalysis.analyzedAt))
+        .limit(limit);
+
+      res.json(sentimentData);
+    } catch (error) {
+      console.error("Error fetching sentiment analysis:", error);
+      res.status(500).json({ error: "Failed to fetch sentiment analysis" });
+    }
+  });
+
+  // Get AI citations
+  router.get("/multi-platform/:projectId/citations", async (req: any, res: Response) => {
+    try {
+      const { aiCitations } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, desc } = await import("drizzle-orm");
+
+      const platform = req.query.platform as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      // Build conditions array to ensure tenant isolation is always enforced
+      const conditions = [
+        eq(aiCitations.tenantId, req.tenantId),
+        eq(aiCitations.projectId, req.params.projectId)
+      ];
+
+      if (platform) {
+        conditions.push(eq(aiCitations.platform, platform));
+      }
+
+      const citations = await db
+        .select()
+        .from(aiCitations)
+        .where(and(...conditions))
+        .orderBy(desc(aiCitations.checkedAt))
+        .limit(limit);
+
+      res.json(citations);
+    } catch (error) {
+      console.error("Error fetching AI citations:", error);
+      res.status(500).json({ error: "Failed to fetch AI citations" });
+    }
+  });
+
+  // Search prompt library
+  router.get("/multi-platform/prompts/search", async (req: any, res: Response) => {
+    try {
+      const { promptLibrary } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, like, desc } = await import("drizzle-orm");
+
+      const category = req.query.category as string | undefined;
+      const industry = req.query.industry as string | undefined;
+      const searchTerm = req.query.q as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 100;
+
+      let conditions = [eq(promptLibrary.tenantId, req.tenantId)];
+
+      if (category) {
+        conditions.push(eq(promptLibrary.category, category));
+      }
+      if (industry) {
+        conditions.push(eq(promptLibrary.industry, industry));
+      }
+      if (searchTerm) {
+        conditions.push(like(promptLibrary.prompt, `%${searchTerm}%`));
+      }
+
+      const prompts = await db
+        .select()
+        .from(promptLibrary)
+        .where(and(...conditions))
+        .orderBy(desc(promptLibrary.searchVolume))
+        .limit(limit);
+
+      res.json(prompts);
+    } catch (error) {
+      console.error("Error searching prompt library:", error);
+      res.status(500).json({ error: "Failed to search prompt library" });
+    }
+  });
+
+  // Add prompt to library
+  router.post("/multi-platform/prompts", async (req: any, res: Response) => {
+    try {
+      const { insertPromptLibrarySchema } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { promptLibrary } = await import("./seo-schema");
+
+      const validatedData = insertPromptLibrarySchema.parse({ ...req.body, tenantId: req.tenantId });
+      const [newPrompt] = await db.insert(promptLibrary).values(validatedData).returning();
+      
+      res.json(newPrompt);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid prompt data", details: error.errors });
+      }
+      console.error("Error adding prompt:", error);
+      res.status(500).json({ error: "Failed to add prompt to library" });
+    }
+  });
+
+  // Get social search metrics
+  router.get("/multi-platform/:projectId/social-search", async (req: any, res: Response) => {
+    try {
+      const { socialSearchMetrics } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, desc } = await import("drizzle-orm");
+
+      const platform = req.query.platform as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      // Build conditions array to ensure tenant isolation is always enforced
+      const conditions = [
+        eq(socialSearchMetrics.tenantId, req.tenantId),
+        eq(socialSearchMetrics.projectId, req.params.projectId)
+      ];
+
+      if (platform) {
+        conditions.push(eq(socialSearchMetrics.platform, platform));
+      }
+
+      const metrics = await db
+        .select()
+        .from(socialSearchMetrics)
+        .where(and(...conditions))
+        .orderBy(desc(socialSearchMetrics.checkedAt))
+        .limit(limit);
+
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching social search metrics:", error);
+      res.status(500).json({ error: "Failed to fetch social search metrics" });
+    }
+  });
+
+  // Get competitive AI benchmark
+  router.get("/multi-platform/:projectId/competitive-benchmark", async (req: any, res: Response) => {
+    try {
+      const { competitiveAiBenchmark } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, desc } = await import("drizzle-orm");
+
+      const benchmarks = await db
+        .select()
+        .from(competitiveAiBenchmark)
+        .where(and(
+          eq(competitiveAiBenchmark.tenantId, req.tenantId),
+          eq(competitiveAiBenchmark.projectId, req.params.projectId)
+        ))
+        .orderBy(desc(competitiveAiBenchmark.lastAnalyzed));
+
+      res.json(benchmarks);
+    } catch (error) {
+      console.error("Error fetching competitive benchmark:", error);
+      res.status(500).json({ error: "Failed to fetch competitive benchmark" });
+    }
+  });
+
+  // Get audience insights
+  router.get("/multi-platform/:projectId/audience-insights", async (req: any, res: Response) => {
+    try {
+      const { audienceInsights } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, desc } = await import("drizzle-orm");
+
+      const insights = await db
+        .select()
+        .from(audienceInsights)
+        .where(and(
+          eq(audienceInsights.tenantId, req.tenantId),
+          eq(audienceInsights.projectId, req.params.projectId)
+        ))
+        .orderBy(desc(audienceInsights.priority), desc(audienceInsights.createdAt));
+
+      res.json(insights);
+    } catch (error) {
+      console.error("Error fetching audience insights:", error);
+      res.status(500).json({ error: "Failed to fetch audience insights" });
+    }
+  });
+
+  // Get EEAT signals
+  router.get("/multi-platform/:projectId/eeat-signals", async (req: any, res: Response) => {
+    try {
+      const { eeatSignals } = await import("./seo-schema");
+      const { db } = await import("../db");
+      const { eq, and, desc } = await import("drizzle-orm");
+
+      const url = req.query.url as string | undefined;
+
+      let query = db
+        .select()
+        .from(eeatSignals)
+        .where(and(
+          eq(eeatSignals.tenantId, req.tenantId),
+          eq(eeatSignals.projectId, req.params.projectId)
+        ));
+
+      if (url) {
+        query = query.where(eq(eeatSignals.url, url));
+      }
+
+      const signals = await query.orderBy(desc(eeatSignals.overallEeatScore), desc(eeatSignals.analyzedAt));
+      res.json(signals);
+    } catch (error) {
+      console.error("Error fetching EEAT signals:", error);
+      res.status(500).json({ error: "Failed to fetch EEAT signals" });
+    }
+  });
+
   return router;
 }

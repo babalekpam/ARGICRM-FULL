@@ -1,7 +1,7 @@
 # NODE CRM
 
 ## Overview
-NODE CRM is an AI-powered, full-stack React/Express customer relationship management platform with PostgreSQL, designed for global markets. It offers real-time sentiment analysis, AI campaign generation, multi-cultural optimization, and advanced financial management. The platform aims for autonomous AI operations and competitive pricing, providing a robust solution for businesses worldwide. Key capabilities include comprehensive CRM functionalities, AI-driven marketing and sales tools, e-commerce integration, and advanced data security, all built on a multi-tenant architecture with extensive customization and localization features.
+NODE CRM is an AI-powered, full-stack React/Express customer relationship management platform with PostgreSQL, designed for global markets. It offers real-time sentiment analysis, AI campaign generation, multi-cultural optimization, advanced financial management, and e-commerce integration. The platform aims for autonomous AI operations, competitive pricing, and robust data security, providing a comprehensive solution for businesses worldwide. It includes extensive SEO and multi-platform search optimization capabilities, designed for B2B acquisition and lead generation, built on a multi-tenant architecture with customization and localization features.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -29,6 +29,7 @@ AI Integration Migration: Migrated from Anthropic Claude to Replit AI Integratio
 AI Campaign Studio: Complete backend infrastructure - Multi-provider AI failover system, automated ad generation from website/product information, personalized email campaign generation from contact data, tenant-isolated content storage, usage tracking with cost estimation, comprehensive REST API endpoints (/api/ai-campaigns/generate-ad, /api/ai-campaigns/generate-emails, full CRUD for content management), enterprise-grade security with tenant validation and cross-tenant access prevention, integration-ready for Sales Channels and Simple Messaging modules
 Sales Channels: Multi-platform integration system - TikTok, Facebook Business, Instagram Business, LinkedIn Company, Twitter/X Business, Pinterest Business, Snapchat Business connections, database persistence with proper tenant isolation, connection status tracking, secure credential management, API-ready for publishing AI-generated content to connected platforms
 ARGILETTE SEO Platform: Complete Ubersuggest clone integration - Full-featured SEO analytics platform integrated into CRM at /api/argilette endpoints, includes keyword research, site audits, traffic analytics, backlinks monitoring, competitor analysis, rank tracking, Content Intelligence, Technical SEO, automated reporting, API access, local SEO, social media monitoring. Multi-tenant PostgreSQL architecture with AI-powered insights via Anthropic Claude Sonnet 4. All subscriptions are ONE-TIME LIFETIME PAYMENTS. Supports 6 languages. Integration uses dedicated seo-schema.ts with 20+ specialized tables for comprehensive SEO data management. Navigation & Access: All 8 SEO pages fully integrated with accessible navigation - ARGILETTE SEO section added to sidebar with collapsible menu containing SEO Audit, SEO Management, Keyword Research, Backlink Monitoring, Rank Tracking, Competitor Analysis, Technical SEO, and Local SEO. Fixed schema exports (insertKeywordSchema, Keyword type re-exported from seo-schema.ts to shared/schema.ts) and added SEO paths to saas-features.ts featureMap for unrestricted access. All pages tested and verified working with successful e2e testing.
+Multi-Platform Search Optimization: NP Digital "Search Everywhere Optimization" implementation - Comprehensive database schema with 10 specialized tables for tracking brand visibility across AI platforms (ChatGPT, Perplexity, Gemini, Copilot, Google AI Overviews, Claude), social search (TikTok, Instagram, YouTube, Pinterest), and traditional SEO in unified system. Backend AI Search Optimization service (server/argilette/ai-search_optimization.ts) provides brand mention tracking, sentiment analysis using Argilette AI, citation monitoring, competitive benchmarking, prompt mining database, social search metrics, multi-platform performance dashboard, audience targeting platform (ATP), and EEAT signal optimization. Tables: ai_search_platforms, ai_brand_mentions, ai_citations, ai_sentiment_analysis, prompt_library, social_search_metrics, multi_platform_performance, competitive_ai_benchmark, audience_insights, eeat_signals. Service functions: initializeAIPlatforms(), trackBrandMentions(), getBrandMentionStats(), performSentimentAnalysis() with AI-powered deep analysis of brand perception across all platforms.
 Authentication System: Fully repaired login and signup flow - Fixed missing database columns in users and tenants tables, implemented bcrypt password hashing, proper tenant-first registration flow, email verification tokens, super admin account created (abel@argilette.com with password Serrega1208@!!), all authentication endpoints working successfully
 Landing Page: Professional redesign completed - Modern B2B SaaS aesthetic with clean hero section, professional stats display, enhanced features grid, trust indicators, strong CTAs, organized footer, smooth scroll navigation, responsive design for all devices
 Database Schema: Core CRM tables created - contacts, deals, accounts, leads, campaigns, tasks tables with proper tenant isolation, foreign key relationships, created_at/updated_at timestamps, all missing columns added (billing_address, shipping_address, account_type, name, lead_source, etc.)
@@ -38,32 +39,37 @@ Theme Control: User-selectable dark/light mode - ThemeToggle button added to mai
 ## System Architecture
 The application features a monorepo structure with a React 18 frontend (Vite, TypeScript, Shadcn/ui, TanStack Query, Wouter, React Hook Form with Zod) and an Express.js backend (TypeScript). PostgreSQL with Drizzle ORM is used for data persistence.
 
-- **UI/UX Decisions**: Consistent professional styling with gradient headers, animated badges, modern design patterns, and horizontal top tabs for navigation. Mobile-first responsive design is implemented across all modules.
-- **Technical Implementations**:
-    - **Monorepo Structure**: Separate client-side and server-side codebases for clear organization.
-    - **Data Flow**: Frontend communicates with the Express backend via REST APIs.
-    - **Multi-tenancy**: Robust multi-tenant system with company isolation, user data isolation, and configurable roles & permissions (11 categories, 75+ permissions).
-    - **Offline Capabilities**: Progressive Web App (PWA) with service worker, IndexedDB, background sync, and offline CRUD operations.
-    - **AI Integration**: AI services for sentiment analysis, campaign generation, autonomous operations (lead scoring, workflow optimization), and white-labeled template generation.
-    - **Authentication**: Secure login/signup flow with bcrypt password hashing and email verification.
-- **Feature Specifications**:
-    - **CRM Core**: CRUD operations for contacts, leads, deals, tasks, and accounts.
-    - **Marketing**: Simple Messaging (email/SMS), landing page builder, SEO management, reputation management.
-    - **E-commerce**: Full store builder with product creation, management, unique web links, AI recommendations, and inventory tracking.
-    - **Financial Management**: Multi-currency bookkeeping, invoicing, bank feed synchronization, automated tax calculation, and financial reporting.
-    - **HR & Project Management**: Employee management, advanced project management (Gantt charts), and document management.
-    - **Platform Capabilities**: Comprehensive settings, multi-language support (20+ languages), adaptive signup flow, and subscription management with tiered AI activation.
-    - **Collaboration**: Real-time team collaboration heat map and video conferencing integration.
-    - **Platform Owner System**: Super admin privileges with unlimited subscription access, tenant oversight, and system-wide administrative capabilities.
+### UI/UX Decisions
+- Consistent professional styling with gradient headers, animated badges, modern design patterns.
+- Horizontal top tabs for navigation, and mobile-first responsive design.
+- User-selectable dark/light mode.
+
+### Technical Implementations
+- **Monorepo Structure**: Separate client-side and server-side codebases.
+- **Multi-tenancy**: Robust multi-tenant system with company/user data isolation, configurable roles & permissions.
+- **Offline Capabilities**: PWA with service worker, IndexedDB, background sync, and offline CRUD.
+- **AI Integration**: AI services for sentiment analysis, campaign generation, autonomous operations, and white-labeled template generation using a multi-provider failover system.
+- **Authentication**: Secure login/signup with bcrypt password hashing and email verification.
+- **Translation System**: Page-wide automatic translation with RTL support and caching.
+- **SEO Optimization**: Comprehensive meta tags, Open Graph, Twitter Cards, structured data, sitemap, robots.txt, Google Search Console verification, and SEO-friendly routing.
+- **Lander Redirect System**: Bulletproof 6-layer redirect system for `/lander` to `/landing`.
+
+### Feature Specifications
+- **CRM Core**: CRUD for contacts, leads, deals, tasks, accounts.
+- **Marketing**: Simple Messaging (email/SMS), landing page builder, SEO management (Ubersuggest clone), reputation management, AI Campaign Studio, Multi-platform Search Optimization, Sales Channels integration.
+- **E-commerce**: Full store builder with product creation, management, unique web links, AI recommendations, and inventory tracking with global currency support for 54 African currencies.
+- **Financial Management**: Multi-currency bookkeeping, invoicing, bank feed synchronization, automated tax calculation, and financial reporting.
+- **HR & Project Management**: Employee management, advanced project management (Gantt charts), and document management.
+- **Platform Capabilities**: Comprehensive settings, multi-language support, adaptive signup flow, subscription management with tiered AI activation, and a Super Admin Dashboard with user registration tracking.
+- **Collaboration**: Real-time team collaboration heat map and video conferencing integration.
 
 ## External Dependencies
-- **Database**: PostgreSQL (Drizzle ORM), Neon Database (Serverless PostgreSQL driver).
-- **AI Services**: Argilette AI (white-labeled Replit AI Integrations with OpenAI GPT-4o) as primary, Anthropic Claude Sonnet 4, Google Gemini AI, You.com AI, QWEN AI.
-- **Email/SMS**: IONOS SMTP, Twilio (for SMS).
+- **Database**: PostgreSQL (Drizzle ORM), Neon Database.
+- **AI Services**: Argilette AI (white-labeled Replit AI Integrations with OpenAI GPT-4o), Anthropic Claude Sonnet 4, Google Gemini AI, You.com AI, QWEN AI.
+- **Email/SMS**: IONOS SMTP, Twilio.
 - **Authentication**: JWT tokens, bcrypt.
 - **UI/Component Libraries**: Shadcn/ui, Radix UI, Tailwind CSS, TanStack Query, Wouter, React Hook Form, Zod, dnd-kit.
 - **Maps/Translate**: Google Maps API, Google Translate API.
-- **Build Tools**: Vite, esbuild.
-- **Other Integrations**: Zapier, Shopify, Shopware, TikTok, Facebook Business, Instagram Business, LinkedIn Company, Twitter/X Business, Pinterest Business, Snapchat Business.
+- **Other Integrations**: Zapier, Shopify, Shopware, Google Analytics 4, Google Ads, Meta Pixel, LinkedIn Insight Tag, TikTok, Facebook Business, Instagram Business, LinkedIn Company, Twitter/X Business, Pinterest Business, Snapchat Business.
 - **Security Tools**: Helmet.js.
 - **Payment Gateways**: Stripe, Visa.
