@@ -467,6 +467,296 @@ export const socialMetrics = pgTable("social_metrics", {
   recordedAt: timestamp("recorded_at").defaultNow(),
 });
 
+// ========== MULTI-PLATFORM SEARCH OPTIMIZATION (NP Digital "Search Everywhere") ==========
+
+// AI Search Platforms - Track configured AI platforms
+export const aiSearchPlatforms = pgTable("ai_search_platforms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(), // chatgpt, perplexity, gemini, copilot, google_ai_overviews, claude
+  isActive: integer("is_active").notNull().default(1), // Boolean as int
+  trackingEnabled: integer("tracking_enabled").notNull().default(1),
+  lastChecked: timestamp("last_checked"),
+  apiKey: text("api_key"), // Optional API key for platform-specific tracking
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// AI Brand Mentions - Track brand visibility in AI responses
+export const aiBrandMentions = pgTable("ai_brand_mentions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  platformId: varchar("platform_id").notNull().references(() => aiSearchPlatforms.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(), // chatgpt, perplexity, gemini, copilot, google_ai_overviews
+  query: text("query").notNull(), // User query that triggered mention
+  brandName: text("brand_name").notNull(),
+  mentionType: text("mention_type").notNull().default('direct'), // direct, indirect, competitive, citation
+  position: integer("position"), // Position in AI response (1 = first mention)
+  context: text("context"), // Surrounding text context
+  fullResponse: text("full_response"), // Complete AI response
+  citationUrl: text("citation_url"), // URL cited if applicable
+  domainAuthority: integer("domain_authority"), // DA of cited source
+  sentiment: text("sentiment").default('neutral'), // positive, negative, neutral
+  sentimentScore: real("sentiment_score"), // -1.0 to 1.0
+  visibility: text("visibility").default('low'), // high, medium, low (based on position/prominence)
+  competitorMentioned: text("competitor_mentioned"), // Competitor name if mentioned
+  queryIntent: text("query_intent"), // informational, transactional, navigational, commercial
+  queryCategory: text("query_category"), // Product research, comparison, how-to, etc.
+  checkedAt: timestamp("checked_at").defaultNow(),
+});
+
+// AI Citation Tracking - Monitor domain citations in LLM responses
+export const aiCitations = pgTable("ai_citations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  platformId: varchar("platform_id").notNull().references(() => aiSearchPlatforms.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(),
+  domain: text("domain").notNull(), // Cited domain
+  url: text("url").notNull(), // Specific URL cited
+  pageTitle: text("page_title"),
+  query: text("query").notNull(), // Query that triggered citation
+  citationPosition: integer("citation_position"), // Position in citation list
+  citationType: text("citation_type").default('source'), // source, reference, supporting_link
+  domainAuthority: integer("domain_authority"),
+  pageAuthority: integer("page_authority"),
+  totalCitations: integer("total_citations").notNull().default(1), // Count of citations
+  isCompetitor: integer("is_competitor").notNull().default(0), // Boolean
+  competitorName: text("competitor_name"),
+  checkedAt: timestamp("checked_at").defaultNow(),
+});
+
+// AI Sentiment Analysis - Track how AI platforms describe brands
+export const aiSentimentAnalysis = pgTable("ai_sentiment_analysis", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  platformId: varchar("platform_id").notNull().references(() => aiSearchPlatforms.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(),
+  query: text("query").notNull(),
+  brandName: text("brand_name").notNull(),
+  sentiment: text("sentiment").notNull(), // positive, negative, neutral, mixed
+  sentimentScore: real("sentiment_score").notNull(), // -1.0 to 1.0
+  positiveAspects: text("positive_aspects").array(), // Array of positive mentions
+  negativeAspects: text("negative_aspects").array(), // Array of negative mentions
+  neutralAspects: text("neutral_aspects").array(),
+  emotions: text("emotions").array(), // trust, anticipation, joy, fear, etc.
+  emotionScores: jsonb("emotion_scores"), // {trust: 0.8, joy: 0.5, etc.}
+  keyPhrases: text("key_phrases").array(), // Important phrases used
+  comparisonMade: integer("comparison_made").notNull().default(0), // Boolean - was brand compared to others
+  comparedTo: text("compared_to").array(), // Competitor names mentioned in comparison
+  overallTone: text("overall_tone").default('factual'), // factual, promotional, critical, enthusiastic
+  aiGeneratedSummary: text("ai_generated_summary"), // AI summary of sentiment
+  analyzedAt: timestamp("analyzed_at").defaultNow(),
+});
+
+// Prompt Mining Database - Consumer search prompts library
+export const promptLibrary = pgTable("prompt_library", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  category: text("category").notNull(), // industry, product_type, use_case
+  industry: text("industry"), // Technology, Healthcare, Finance, etc.
+  prompt: text("prompt").notNull(),
+  promptType: text("prompt_type").notNull(), // question, comparison, how-to, what-is, best-for
+  searchIntent: text("search_intent").notNull(), // informational, commercial, transactional, navigational
+  searchVolume: integer("search_volume"), // Estimated monthly searches
+  difficulty: integer("difficulty"), // 0-100 ranking difficulty
+  platforms: text("platforms").array(), // Platforms where prompt performs well
+  avgResponseLength: integer("avg_response_length"), // Average AI response length
+  topBrands: text("top_brands").array(), // Brands mentioned in responses
+  topDomains: text("top_domains").array(), // Domains cited in responses
+  seasonality: text("seasonality"), // Year-round, seasonal, trending
+  trendDirection: text("trend_direction").default('stable'), // rising, falling, stable
+  relatedPrompts: text("related_prompts").array(), // Similar prompts
+  userJourneyStage: text("user_journey_stage"), // awareness, consideration, decision, retention
+  conversionPotential: text("conversion_potential").default('medium'), // high, medium, low
+  contentRecommendations: jsonb("content_recommendations"), // Suggested content types
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  isActive: integer("is_active").notNull().default(1),
+});
+
+// Social Search Optimization - TikTok, Instagram, YouTube search tracking
+export const socialSearchMetrics = pgTable("social_search_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  accountId: varchar("account_id").references(() => socialAccounts.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(), // tiktok, instagram, youtube, pinterest
+  searchTerm: text("search_term").notNull(),
+  contentId: text("content_id"), // Platform-specific content ID
+  contentUrl: text("content_url").notNull(),
+  contentType: text("content_type"), // video, image, reel, short, story, pin
+  rankingPosition: integer("ranking_position"), // Position in search results
+  searchVolume: integer("search_volume"), // Platform-specific search volume
+  views: integer("views").notNull().default(0),
+  likes: integer("likes").notNull().default(0),
+  comments: integer("comments").notNull().default(0),
+  shares: integer("shares").notNull().default(0),
+  saves: integer("saves").notNull().default(0),
+  engagementRate: real("engagement_rate"), // Overall engagement percentage
+  clickThroughRate: real("click_through_rate"), // CTR to profile/website
+  conversionRate: real("conversion_rate"), // Actions taken after viewing
+  avgWatchTime: integer("avg_watch_time"), // Seconds (for video)
+  completionRate: real("completion_rate"), // % who watched entire video
+  hashtags: text("hashtags").array(), // Hashtags used
+  visualMetadata: jsonb("visual_metadata"), // Alt text, captions, tags
+  audioTrack: text("audio_track"), // Audio/music used (TikTok/Reels)
+  trending: integer("trending").notNull().default(0), // Boolean - is content trending
+  viralScore: integer("viral_score"), // 0-100 viral potential score
+  competitorContent: jsonb("competitor_content"), // Similar competitor content
+  checkedAt: timestamp("checked_at").defaultNow(),
+});
+
+// Multi-Platform Performance Dashboard - Unified tracking
+export const multiPlatformPerformance = pgTable("multi_platform_performance", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  date: text("date").notNull(), // YYYY-MM-DD
+  // Traditional SEO
+  googlePosition: integer("google_position"),
+  googleTraffic: integer("google_traffic"),
+  googleImpressions: integer("google_impressions"),
+  googleCtr: real("google_ctr"),
+  bingPosition: integer("bing_position"),
+  bingTraffic: integer("bing_traffic"),
+  // AI Search
+  chatgptMentions: integer("chatgpt_mentions").notNull().default(0),
+  perplexityMentions: integer("perplexity_mentions").notNull().default(0),
+  geminiMentions: integer("gemini_mentions").notNull().default(0),
+  copilotMentions: integer("copilot_mentions").notNull().default(0),
+  googleAiMentions: integer("google_ai_mentions").notNull().default(0),
+  totalAiMentions: integer("total_ai_mentions").notNull().default(0),
+  avgAiPosition: real("avg_ai_position"), // Average position across AI platforms
+  aiCitations: integer("ai_citations").notNull().default(0),
+  aiSentimentScore: real("ai_sentiment_score"), // Average sentiment -1.0 to 1.0
+  // Social Search
+  tiktokSearchViews: integer("tiktok_search_views").notNull().default(0),
+  instagramSearchReach: integer("instagram_search_reach").notNull().default(0),
+  youtubeSearchViews: integer("youtube_search_views").notNull().default(0),
+  pinterestSearchImpressions: integer("pinterest_search_impressions").notNull().default(0),
+  totalSocialSearchEngagement: integer("total_social_search_engagement").notNull().default(0),
+  // Unified Metrics
+  totalVisibility: integer("total_visibility").notNull().default(0), // Combined visibility score
+  totalTraffic: integer("total_traffic").notNull().default(0), // All sources combined
+  totalEngagement: integer("total_engagement").notNull().default(0),
+  overallSentiment: text("overall_sentiment").default('neutral'),
+  platformDiversity: real("platform_diversity"), // Distribution across platforms 0-1
+  recordedAt: timestamp("recorded_at").defaultNow(),
+});
+
+// Competitive AI Benchmarking - Compare brand against competitors
+export const competitiveAiBenchmark = pgTable("competitive_ai_benchmark", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  competitorId: varchar("competitor_id").references(() => competitors.id, { onDelete: "cascade" }),
+  competitorDomain: text("competitor_domain").notNull(),
+  competitorName: text("competitor_name").notNull(),
+  platform: text("platform").notNull(), // chatgpt, perplexity, gemini, copilot, google_ai, all
+  // AI Visibility Metrics
+  totalMentions: integer("total_mentions").notNull().default(0),
+  avgPosition: real("avg_position"), // Average position in AI responses
+  citationCount: integer("citation_count").notNull().default(0),
+  sentimentScore: real("sentiment_score"), // -1.0 to 1.0
+  visibilityShare: real("visibility_share"), // % of total market mentions
+  // Competitive Positioning
+  winRate: real("win_rate"), // % queries where they rank higher than us
+  lossRate: real("loss_rate"), // % queries where we rank higher
+  tieRate: real("tie_rate"), // % queries with equal positioning
+  avgPositionDifference: real("avg_position_difference"), // Their avg pos - our avg pos
+  // Social Search Metrics
+  socialSearchVolume: integer("social_search_volume").notNull().default(0),
+  socialEngagementRate: real("social_engagement_rate"),
+  socialViralScore: integer("social_viral_score"),
+  // Content Strategy Insights
+  topPerformingTopics: text("top_performing_topics").array(),
+  contentGaps: text("content_gaps").array(), // Topics they cover that we don't
+  contentStrengths: text("content_strengths").array(), // Our advantages
+  recommendedActions: jsonb("recommended_actions"), // AI-generated recommendations
+  lastAnalyzed: timestamp("last_analyzed").defaultNow(),
+});
+
+// Audience Targeting Platform (ATP) - Transform search intent into content
+export const audienceInsights = pgTable("audience_insights", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  audienceSegment: text("audience_segment").notNull(), // SMB owners, Enterprise CIOs, etc.
+  searchIntent: text("search_intent").notNull(), // What they're searching for
+  intentCategory: text("intent_category").notNull(), // informational, commercial, transactional
+  painPoints: text("pain_points").array(), // Problems they're trying to solve
+  questions: text("questions").array(), // Questions they're asking
+  comparisons: text("comparisons").array(), // Comparisons they're making
+  language: text("language").array(), // Language patterns they use
+  platforms: text("platforms").array(), // Where they search
+  preferredContentTypes: text("preferred_content_types").array(), // video, article, infographic
+  journeyStage: text("journey_stage"), // awareness, consideration, decision
+  // Content Brief Generation
+  suggestedTopics: text("suggested_topics").array(),
+  suggestedKeywords: text("suggested_keywords").array(),
+  suggestedHeadings: text("suggested_headings").array(),
+  toneRecommendation: text("tone_recommendation"), // professional, casual, technical
+  lengthRecommendation: integer("length_recommendation"), // Suggested word count
+  multiMediaRecommendations: jsonb("multi_media_recommendations"), // Images, videos, infographics
+  competitorContentAnalysis: jsonb("competitor_content_analysis"),
+  contentBrief: text("content_brief"), // AI-generated complete brief
+  estimatedImpact: text("estimated_impact").default('medium'), // high, medium, low
+  priority: integer("priority").notNull().default(50), // 0-100 priority score
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// EEAT Optimization - Track Experience, Expertise, Authoritativeness, Trustworthiness signals
+export const eeatSignals = pgTable("eeat_signals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  pageTitle: text("page_title"),
+  // Experience Signals
+  hasAuthorBio: integer("has_author_bio").notNull().default(0),
+  authorCredentials: text("author_credentials"),
+  authorExperience: text("author_experience"),
+  firstHandExperience: integer("first_hand_experience").notNull().default(0),
+  caseStudies: integer("case_studies").notNull().default(0),
+  customerTestimonials: integer("customer_testimonials").notNull().default(0),
+  // Expertise Signals
+  industryExpertise: text("industry_expertise"),
+  certifications: text("certifications").array(),
+  publications: text("publications").array(),
+  speakingEngagements: text("speaking_engagements").array(),
+  awardsMentions: text("awards_mentions").array(),
+  // Authoritativeness Signals
+  backlinkCount: integer("backlink_count").notNull().default(0),
+  domainAuthority: integer("domain_authority"),
+  brandMentions: integer("brand_mentions").notNull().default(0),
+  mediaCoverage: text("media_coverage").array(),
+  industryRecognition: text("industry_recognition").array(),
+  // Trustworthiness Signals
+  hasPrivacyPolicy: integer("has_privacy_policy").notNull().default(0),
+  hasTermsOfService: integer("has_terms_of_service").notNull().default(0),
+  hasContactInfo: integer("has_contact_info").notNull().default(0),
+  hasSecureConnection: integer("has_secure_connection").notNull().default(1),
+  hasTransparency: integer("has_transparency").notNull().default(0), // About us, team page
+  reviewRating: real("review_rating"), // Average customer rating
+  reviewCount: integer("review_count"),
+  contentFreshness: timestamp("content_freshness"), // Last updated date
+  // Schema Markup
+  hasSchemaMarkup: integer("has_schema_markup").notNull().default(0),
+  schemaTypes: text("schema_types").array(), // Article, Person, Organization, etc.
+  structuredDataScore: integer("structured_data_score"), // 0-100
+  // Overall Scores
+  experienceScore: integer("experience_score").notNull().default(0), // 0-100
+  expertiseScore: integer("expertise_score").notNull().default(0),
+  authoritativenessScore: integer("authoritativeness_score").notNull().default(0),
+  trustworthinessScore: integer("trustworthiness_score").notNull().default(0),
+  overallEeatScore: integer("overall_eeat_score").notNull().default(0), // 0-100
+  improvementSuggestions: jsonb("improvement_suggestions"),
+  analyzedAt: timestamp("analyzed_at").defaultNow(),
+});
+
 // Insert schemas - omit id, createdAt/updatedAt, and tenantId (provided by server)
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, tenantId: true });
@@ -499,6 +789,18 @@ export const insertLocalCitationSchema = createInsertSchema(localCitations).omit
 export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({ id: true, connectedAt: true, tenantId: true });
 export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, lastSyncedAt: true, tenantId: true });
 export const insertSocialMetricSchema = createInsertSchema(socialMetrics).omit({ id: true, recordedAt: true, tenantId: true });
+
+// Multi-Platform Search Optimization Insert Schemas
+export const insertAiSearchPlatformSchema = createInsertSchema(aiSearchPlatforms).omit({ id: true, createdAt: true, tenantId: true });
+export const insertAiBrandMentionSchema = createInsertSchema(aiBrandMentions).omit({ id: true, checkedAt: true, tenantId: true });
+export const insertAiCitationSchema = createInsertSchema(aiCitations).omit({ id: true, checkedAt: true, tenantId: true });
+export const insertAiSentimentAnalysisSchema = createInsertSchema(aiSentimentAnalysis).omit({ id: true, analyzedAt: true, tenantId: true });
+export const insertPromptLibrarySchema = createInsertSchema(promptLibrary).omit({ id: true, lastUpdated: true, tenantId: true });
+export const insertSocialSearchMetricSchema = createInsertSchema(socialSearchMetrics).omit({ id: true, checkedAt: true, tenantId: true });
+export const insertMultiPlatformPerformanceSchema = createInsertSchema(multiPlatformPerformance).omit({ id: true, recordedAt: true, tenantId: true });
+export const insertCompetitiveAiBenchmarkSchema = createInsertSchema(competitiveAiBenchmark).omit({ id: true, lastAnalyzed: true, tenantId: true });
+export const insertAudienceInsightSchema = createInsertSchema(audienceInsights).omit({ id: true, createdAt: true, updatedAt: true, tenantId: true });
+export const insertEeatSignalSchema = createInsertSchema(eeatSignals).omit({ id: true, analyzedAt: true, tenantId: true });
 
 // User types - Required for Replit Auth
 export type UpsertUser = typeof users.$inferInsert;
@@ -598,3 +900,34 @@ export type SocialPost = typeof socialPosts.$inferSelect;
 
 export type InsertSocialMetric = z.infer<typeof insertSocialMetricSchema>;
 export type SocialMetric = typeof socialMetrics.$inferSelect;
+
+// Multi-Platform Search Optimization Types
+export type InsertAiSearchPlatform = z.infer<typeof insertAiSearchPlatformSchema>;
+export type AiSearchPlatform = typeof aiSearchPlatforms.$inferSelect;
+
+export type InsertAiBrandMention = z.infer<typeof insertAiBrandMentionSchema>;
+export type AiBrandMention = typeof aiBrandMentions.$inferSelect;
+
+export type InsertAiCitation = z.infer<typeof insertAiCitationSchema>;
+export type AiCitation = typeof aiCitations.$inferSelect;
+
+export type InsertAiSentimentAnalysis = z.infer<typeof insertAiSentimentAnalysisSchema>;
+export type AiSentimentAnalysis = typeof aiSentimentAnalysis.$inferSelect;
+
+export type InsertPromptLibrary = z.infer<typeof insertPromptLibrarySchema>;
+export type PromptLibrary = typeof promptLibrary.$inferSelect;
+
+export type InsertSocialSearchMetric = z.infer<typeof insertSocialSearchMetricSchema>;
+export type SocialSearchMetric = typeof socialSearchMetrics.$inferSelect;
+
+export type InsertMultiPlatformPerformance = z.infer<typeof insertMultiPlatformPerformanceSchema>;
+export type MultiPlatformPerformance = typeof multiPlatformPerformance.$inferSelect;
+
+export type InsertCompetitiveAiBenchmark = z.infer<typeof insertCompetitiveAiBenchmarkSchema>;
+export type CompetitiveAiBenchmark = typeof competitiveAiBenchmark.$inferSelect;
+
+export type InsertAudienceInsight = z.infer<typeof insertAudienceInsightSchema>;
+export type AudienceInsight = typeof audienceInsights.$inferSelect;
+
+export type InsertEeatSignal = z.infer<typeof insertEeatSignalSchema>;
+export type EeatSignal = typeof eeatSignals.$inferSelect;
