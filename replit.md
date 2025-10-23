@@ -53,11 +53,12 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - **Translation System**: Page-wide automatic translation with RTL support and caching.
 - **SEO Optimization**: Comprehensive meta tags, Open Graph, Twitter Cards, structured data, sitemap, robots.txt, Google Search Console verification, and SEO-friendly routing.
 - **Lander Redirect System**: Bulletproof 6-layer redirect system for `/lander` to `/landing`.
+- **Database Schema**: Core CRM tables for contacts, leads, deals, tasks, accounts with proper tenant isolation.
 
 ### Feature Specifications
 - **CRM Core**: CRUD for contacts, leads, deals, tasks, accounts.
 - **Marketing**: Simple Messaging (email/SMS), landing page builder, SEO management (Ubersuggest clone), reputation management, AI Campaign Studio, Multi-platform Search Optimization, Sales Channels integration.
-- **E-commerce**: Full store builder with product creation, management, unique web links, AI recommendations, and inventory tracking with global currency support for 54 African currencies.
+- **E-commerce**: Full store builder with product creation, management, AI recommendations, and inventory tracking with global currency support for 54 African currencies.
 - **Financial Management**: Multi-currency bookkeeping, invoicing, bank feed synchronization, automated tax calculation, and financial reporting.
 - **HR & Project Management**: Employee management, advanced project management (Gantt charts), and document management.
 - **Platform Capabilities**: Comprehensive settings, multi-language support, adaptive signup flow, subscription management with tiered AI activation, and a Super Admin Dashboard with user registration tracking.

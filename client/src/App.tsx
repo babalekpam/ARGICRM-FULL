@@ -77,6 +77,7 @@ const RankTrackingPage = lazy(() => import("@/pages/rank-tracking"));
 const TechnicalAuditPage = lazy(() => import("@/pages/technical-audit"));
 const CompetitorsPage = lazy(() => import("@/pages/competitors"));
 const LocalSeoPage = lazy(() => import("@/pages/local-seo"));
+const MultiPlatformSearchPage = lazy(() => import("@/pages/multi-platform-search"));
 
 // Platform Administration
 const IntegrityDashboardPage = lazy(() => import("@/pages/integrity-dashboard"));
@@ -359,6 +360,11 @@ function App() {
                           <Route path="/local-seo" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><LocalSeoPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/multi-platform-search" element={
+                            <ProtectedRoute requiredPermission="seo.read">
+                              <PageTranslator><MultiPlatformSearchPage /></PageTranslator>
                             </ProtectedRoute>
                           } />
                           

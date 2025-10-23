@@ -195,6 +195,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
         { path: "/competitors", label: "Competitor Analysis", icon: Eye, permission: "seo.read" },
         { path: "/technical-audit", label: "Technical SEO", icon: Terminal, permission: "seo.read" },
         { path: "/local-seo", label: "Local SEO", icon: MapPin, permission: "seo.read" },
+        { path: "/multi-platform-search", label: "Multi-Platform Search", icon: Brain, permission: "seo.read" },
       ]
     }
   ];
