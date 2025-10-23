@@ -577,29 +577,50 @@ body > [data-radix-portal]:not(:has(.chatbot-container)) {
 }
 
 :root {
-  --background: hsl(0, 0%, 98%);
-  --foreground: hsl(0, 0%, 26%);
-  --muted: hsl(210, 40%, 96%);
-  --muted-foreground: hsl(215, 16%, 47%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(0, 0%, 26%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(0, 0%, 26%);
-  --border: hsl(214, 32%, 91%);
-  --input: hsl(214, 32%, 91%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(0, 0%, 98%);
-  --secondary: hsl(210, 40%, 96%);
-  --secondary-foreground: hsl(0, 0%, 13%);
-  --accent: hsl(210, 40%, 96%);
-  --accent-foreground: hsl(0, 0%, 13%);
-  --destructive: hsl(0, 74%, 42%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --success: hsl(122, 39%, 49%);
-  --success-foreground: hsl(0, 0%, 98%);
-  --warning: hsl(36, 100%, 47%);
-  --warning-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(0, 0%, 26%);
+  /* Modern rich backgrounds - subtle blue-gray gradient feel */
+  --background: 220 15% 97%;
+  --foreground: 222 47% 11%;
+  
+  /* Elevated surfaces - cards stand out */
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  
+  /* Muted elements */
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 9% 46%;
+  
+  /* Popovers and dropdowns */
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  
+  /* Professional blue primary */
+  --primary: 221 83% 53%;
+  --primary-foreground: 210 40% 98%;
+  
+  /* Subtle secondary */
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 222 47% 11%;
+  
+  /* Accent for highlights */
+  --accent: 210 100% 97%;
+  --accent-foreground: 221 83% 53%;
+  
+  /* Border and input */
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  
+  /* Status colors */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --success: 142 76% 36%;
+  --success-foreground: 144 61% 97%;
+  
+  --warning: 38 92% 50%;
+  --warning-foreground: 48 96% 89%;
+  
+  /* Focus ring */
+  --ring: 221 83% 53%;
   --radius: 0.5rem;
   
   /* White label custom properties */
@@ -608,29 +629,50 @@ body > [data-radix-portal]:not(:has(.chatbot-container)) {
 }
 
 .dark {
-  --background: hsl(240, 10%, 3.9%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(0, 0%, 98%);
-  --secondary: hsl(240, 3.7%, 15.9%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(240, 3.7%, 15.9%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --success: hsl(122, 39%, 49%);
-  --success-foreground: hsl(0, 0%, 98%);
-  --warning: hsl(36, 100%, 47%);
-  --warning-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
+  /* Rich dark backgrounds - deep blue-gray */
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  
+  /* Elevated dark surfaces */
+  --card: 222 47% 14%;
+  --card-foreground: 210 40% 98%;
+  
+  /* Muted dark elements */
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  
+  /* Dark popovers */
+  --popover: 222 47% 14%;
+  --popover-foreground: 210 40% 98%;
+  
+  /* Bright primary in dark mode */
+  --primary: 217 91% 60%;
+  --primary-foreground: 222 47% 11%;
+  
+  /* Dark secondary */
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  
+  /* Dark accent */
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+  
+  /* Dark borders */
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+  
+  /* Status colors for dark mode */
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --success: 142 76% 36%;
+  --success-foreground: 144 61% 97%;
+  
+  --warning: 38 92% 50%;
+  --warning-foreground: 222 47% 11%;
+  
+  /* Dark focus ring */
+  --ring: 217 91% 60%;
   --radius: 0.5rem;
 }
 
@@ -727,6 +769,58 @@ body > [data-radix-portal]:not(:has(.chatbot-container)) {
   
   .border-destructive\/20 {
     border-color: hsl(var(--destructive) / 0.2);
+  }
+  
+  /* Modern card shadows for depth */
+  .shadow-card {
+    box-shadow: 
+      0 1px 3px 0 rgb(0 0 0 / 0.1),
+      0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+  
+  .shadow-card-hover {
+    box-shadow: 
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  
+  /* Subtle background gradients */
+  .bg-gradient-subtle {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--background)) 0%,
+      hsl(var(--muted)) 100%
+    );
+  }
+  
+  .bg-gradient-card {
+    background: linear-gradient(
+      to bottom right,
+      hsl(var(--card)) 0%,
+      hsl(var(--card)) 100%
+    );
+  }
+  
+  /* Premium hover effects */
+  .hover-lift {
+    transition: all 0.2s ease-out;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 20px 25px -5px rgb(0 0 0 / 0.1),
+      0 8px 10px -6px rgb(0 0 0 / 0.1);
+  }
+  
+  /* Focus states */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  /* Smooth transitions */
+  .transition-all-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 

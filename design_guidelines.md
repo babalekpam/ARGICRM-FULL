@@ -1,211 +1,306 @@
-# ARGILETTE Design Guidelines
-## Analytics Dashboard Clone of Neil Patel's Ubersuggest
+# NODE CRM Design Guidelines
+**AI-Powered B2B SaaS Platform**
 
-### Design Approach: Professional Analytics Dashboard System
+## Design Philosophy
 
-**Selected Approach**: Design System-based approach inspired by modern analytics platforms (Material Design principles for data-rich applications)
+**Approach**: Hybrid system combining Linear's clarity, Notion's comfort, and Stripe's polish for enterprise CRM requiring sophisticated data visualization and comfortable long-session usability.
 
-**Justification**: SEO analytics dashboard requiring clarity, data density, and professional credibility. Utility-focused with information-dense content where performance and usability are paramount.
-
-**Core Design Principles**:
-- Clarity over complexity - present complex data digestibly
-- Card-based modular layouts for metric grouping
-- Single-page overview philosophy with minimal nested navigation
-- Professional, trustworthy aesthetic for B2B SaaS context
-
----
-
-## Color Palette
-
-### Light Mode (Primary)
-**Primary Brand**: 220 70% 45% (Professional blue - trust and reliability)
-**Accent**: 142 65% 45% (Success green for positive metrics)
-**Warning**: 25 85% 55% (Orange for alerts)
-**Error**: 0 72% 51% (Red for critical issues)
-**Background**: 0 0% 98% (Near white)
-**Surface**: 0 0% 100% (Pure white cards)
-**Border**: 220 15% 90% (Subtle gray)
-**Text Primary**: 220 20% 15% (Near black)
-**Text Secondary**: 220 10% 45% (Medium gray)
-
-### Dark Mode
-**Background**: 220 18% 12% (Deep blue-gray)
-**Surface**: 220 15% 16% (Elevated cards)
-**Border**: 220 15% 24% (Subtle borders)
-**Text Primary**: 220 15% 95% (Near white)
-**Text Secondary**: 220 10% 65% (Light gray)
+**Core Principles**:
+- Depth through layering (rich backgrounds, elevated surfaces)
+- Progressive disclosure (organize complexity)
+- Consistent polish (every page intentional)
+- Professional warmth (trustworthy yet approachable)
 
 ---
 
 ## Typography
 
-**Primary Font**: Inter (via Google Fonts CDN)
-**Monospace Font**: JetBrains Mono (for metrics/numbers)
+**Fonts**: Inter (primary), JetBrains Mono (data/metrics)
 
-**Hierarchy**:
-- **Page Titles**: text-2xl font-semibold (Dashboard sections)
-- **Card Headers**: text-lg font-medium
-- **Body Text**: text-sm font-normal
-- **Metric Values**: text-3xl font-bold (using monospace)
-- **Labels**: text-xs font-medium uppercase tracking-wide
-- **Button Text**: text-sm font-medium
-
----
-
-## Layout System
-
-**Spacing Primitives**: Tailwind units of 2, 4, 6, 8, 12, 16, 20 (p-2, m-4, gap-6, etc.)
-
-**Grid Structure**:
-- **Sidebar**: Fixed w-64 with vertical navigation
-- **Main Content**: Flexible flex-1 with max-w-7xl container
-- **Card Grid**: grid-cols-1 md:grid-cols-2 lg:grid-cols-3 with gap-6
-- **Responsive Padding**: px-4 md:px-6 lg:px-8
-- **Section Spacing**: mb-8 between major sections
+**Scale**:
+```
+Page Titles:      text-3xl font-bold
+Section Headers:  text-xl font-semibold  
+Card Titles:      text-lg font-medium
+Body:             text-base font-normal
+Meta/Subtext:     text-sm font-normal
+Labels:           text-xs font-medium uppercase tracking-wider
+Metrics:          text-2xl md:text-4xl font-bold (monospace)
+Buttons:          text-sm font-medium
+```
 
 ---
 
-## Component Library
+## Layout & Spacing
 
-### Navigation (Left Sidebar)
-**Structure**: Fixed vertical sidebar with logo at top, navigation items with icons, user profile at bottom
+**Primitives**: Use Tailwind units: 2, 3, 4, 6, 8, 12, 16, 20, 24
+
+**Structure**:
+- **Sidebar**: Fixed w-64 lg:w-72
+- **Content**: max-w-7xl, px-6 lg:px-8
+- **Top Bar**: h-16 sticky with backdrop-blur-md
+- **Card Grids**: grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6
+
+**Rhythm**:
+- Page padding: py-8 lg:py-12
+- Section spacing: mb-8 lg:mb-12
+- Card padding: p-6 lg:p-8
+- List items: py-4
+
+---
+
+## Visual Treatment
+
+**Backgrounds**:
+- Base: Subtle diagonal gradients (top-left to bottom-right)
+- Cards: Distinct backgrounds with borders (not transparent)
+- Three depth levels: base → elevated (cards) → floating (modals)
+
+**Shadows**:
+- Cards: shadow-sm, hover:shadow-lg
+- Dropdowns: shadow-xl
+- Modals: shadow-2xl with backdrop blur
+- Floating actions: shadow-lg with ring
+
+---
+
+## Components
+
+### Navigation Sidebar
+
+**Structure**: Fixed vertical nav with logo (h-16), grouped items, user footer
 
 **Elements**:
-- ARGILETTE logo/wordmark (h-8)
-- Navigation items with Heroicons (outline style) and labels
-- Active state: bg-primary/10 with border-l-4 border-primary
-- Hover state: bg-surface-secondary
-- Categories: Dashboard, Keyword Research, Traffic Analyzer, SEO Analyzer, Competitors
+- Icons: Heroicons outline, 20x20
+- Active state: Background + border-l-4 accent
+- Badges: Count pills on items
+- Collapsible sections for sub-nav
 
-### Dashboard Cards
-**Base Style**: 
-- White background (dark mode: elevated surface)
-- Rounded corners: rounded-lg
-- Subtle shadow: shadow-sm hover:shadow-md
-- Padding: p-6
-- Border: border border-border
-
-**Card Types**:
-1. **Metric Cards**: Large number display with trend indicator (↑↓) and sparkline
-2. **Chart Cards**: Header with title/action button, chart area, footer with legend
-3. **List Cards**: Header, scrollable list with row items, "View all" footer link
-4. **Action Cards**: Icon, title, description, primary CTA button
-
-### Data Visualization
-
-**Chart Library**: Use Chart.js or Recharts via CDN
-
-**Chart Types**:
-- **Pie Charts**: For keyword ranking distribution (positions 1-3, 4-10, 11-20, 21+)
-- **Line Graphs**: For traffic trends over 30-day periods
-- **Bar Charts**: For competitor comparisons and backlink growth
-- **Sparklines**: For metric trend indicators in cards
-
-**Color Coding**:
-- Positive metrics: Success green
-- Negative metrics: Error red  
-- Neutral/stable: Text secondary gray
-- Primary data series: Primary brand blue
-
-### Forms & Inputs
-**Style**:
-- Input fields: h-10 rounded-md border border-border px-3
-- Focus state: ring-2 ring-primary/20 border-primary
-- Dark mode: bg-surface with proper contrast
-- Search bars: w-full with search icon (Heroicons)
-- Dropdowns: Select with chevron icon, max-h-60 overflow-auto
-
-### Buttons
-**Primary**: bg-primary text-white hover:bg-primary/90 rounded-md px-4 py-2
-**Secondary**: border border-border hover:bg-surface-secondary rounded-md px-4 py-2
-**Ghost**: text-primary hover:bg-primary/10 rounded-md px-4 py-2
-**Icon Buttons**: Square p-2 with icon, hover:bg-surface-secondary rounded-md
-
-### Tables
-**Structure**: 
-- Striped rows for readability (alternate bg-surface-secondary/50)
-- Sticky header: bg-surface-secondary font-medium
-- Sortable columns with sort indicators
-- Responsive: Scroll horizontally on mobile
-- Cell padding: px-4 py-3
-
-### Modals & Overlays
-**Modal**: max-w-2xl centered with backdrop blur-sm bg-black/50
-**Dropdown Menus**: Elevated with shadow-lg, rounded-lg, border
-**Tooltips**: Small rounded bg-gray-900 text-white px-2 py-1 text-xs
-
----
-
-## Page Sections
+**Categories**: Dashboard, Contacts, Companies, Deals, Pipeline, Tasks, Email, Reports, SEO Tools, Settings
 
 ### Top Bar
-- Breadcrumb navigation (Home > Projects > Dashboard)
-- Project switcher dropdown (right side)
-- User avatar/settings (far right)
-- Height: h-16 with border-b border-border
 
-### Project Overview Card
-- Project name (text-2xl font-bold)
-- Domain URL with copy button
-- Integration badges (Google Analytics, Search Console)
-- Quick action buttons (Edit, Delete, Settings)
+- Left: Breadcrumbs (Icon > Parent > Current)
+- Center: Search (w-64, focus:w-96, cmd+k hint)
+- Right: Quick actions, notifications, user menu with avatar dropdown
 
-### SEO Health Score Section
-- Large circular progress indicator (0-100 score)
-- Color-coded: Red (<50), Orange (50-70), Green (70+)
-- "Improve Score" CTA button
-- List of top 3-5 critical issues with severity indicators
+### Cards
 
-### Keyword Ranking Widget
-- Pie chart showing distribution by position ranges
-- Legend with counts: Top 3, 4-10, 11-20, 21-50, 50+
-- Date range selector (Last 7 days, 30 days, 90 days)
-- Average position metric prominently displayed
+**1. Metric Cards (KPI)**:
+- Large monospace value
+- Trend indicator with % change
+- Optional mini sparkline
+- Comparison text
+- CTA link
 
-### Traffic Analytics Card
-- Line graph showing 30-day organic traffic trend
-- Y-axis: Visit count, X-axis: Dates
-- Metric callouts: Total visits, % change vs previous period
-- Google Analytics integration badge
-- Export chart button (icon only)
+**2. Chart Cards**:
+- Title + time range selector
+- Full-width chart with padding
+- Horizontal legend below
+- Export/fullscreen buttons (top-right)
+- Footer with insights
 
-### Backlinks Overview
-- Headline metric: Total backlinks count
-- Line graph: Backlink growth over time
-- Referring domains count
-- "View Opportunities" CTA linking to full backlink tool
+**3. List Cards**:
+- Scrollable (max-h-96)
+- Rows: avatar/icon, title, subtitle, timestamp
+- Hover states
+- "View all" footer
+- Empty state with illustration + CTA
 
-### Competitor Tracking Section
-- Grid of competitor cards (up to 3)
-- Each card: Domain, domain score, top keyword, traffic estimate
-- "+ Add Competitor" card to add new ones
-- "Compare All" button
+**4. Pipeline Cards**:
+- Stage name + count header
+- Draggable deal items
+- Progress indicator (total value)
+- "+ Add deal" action
+
+### Contact/Company Cards (Grid)
+
+- Avatar (rounded-full) or logo (rounded-lg)
+- Name (font-semibold), role/industry
+- Key metrics (deal value, last contact)
+- Quick actions (email, call, view)
+- Hover elevation
+
+### Data Tables
+
+**Features**:
+- Sticky header with sort
+- Fixed first column
+- Row selection checkboxes
+- Inline editing (double-click)
+- Bulk actions toolbar
+- Pagination + density toggle
+
+**Styling**:
+- Alternating row backgrounds
+- Full row hover highlight
+- Cell formatting (links, tags, badges)
+- Column visibility controls
+
+### Forms
+
+**Inputs** (h-11, rounded-lg):
+- Label above with required indicator
+- Helper text below
+- Error/success states with icons
+- Icon support (left/right)
+
+**Types**:
+- Text/email, select (searchable), multi-select (pills)
+- Date pickers (range capable), rich text (toolbar)
+- File upload (drag-drop with preview)
+
+### Modals
+
+**Sizes**: max-w-md (small), max-w-2xl (medium), max-w-5xl (large), full-screen
+
+**Structure**:
+- Header: Title, close, optional subtitle
+- Scrollable body with padding
+- Footer: Primary right, secondary left
+- Backdrop: Blur with opacity
+
+### Buttons
+
+**Variants & Sizes**:
+```
+Primary:   Bold, gradient-capable (main actions)
+Secondary: Bordered (alternatives)
+Ghost:     Minimal (tertiary)
+Danger:    Red (destructive)
+Icon-only: Square with tooltip
+
+Small:  h-8 px-3 text-sm
+Medium: h-10 px-4 text-sm  
+Large:  h-12 px-6 text-base
+```
+
+**States**: Hover, active, loading (spinner), disabled
+
+### Badges & Tags
+
+- Pill: rounded-full px-3 py-1
+- Dot indicator with label
+- Color-coded: success, warning, error, info, neutral
+- Removable (X icon)
+
+### Empty States
+
+- Icon/illustration (120x120)
+- Primary message (text-lg font-medium)
+- Description text
+- Primary CTA button
+- Optional secondary link
 
 ---
 
-## Animations
+## Page Layouts
 
-**Minimal Approach**: 
-- Card hover: Subtle shadow elevation (150ms ease)
-- Chart rendering: Fade-in on load (300ms)
-- Page transitions: None (instant)
-- Loading states: Skeleton screens with subtle pulse
+### Dashboard
+
+1. Welcome header (user name, date)
+2. KPI row (4 metrics: Revenue, Deals, Contacts, Tasks)
+3. Pipeline overview (horizontal stages)
+4. Recent activity (left 2/3) + Quick actions (right 1/3)
+5. Upcoming tasks/meetings
+
+### CRM Pages (Contacts/Companies/Deals)
+
+- Collapsible filter sidebar (saved views, filters)
+- Table/grid toggle
+- Bulk action toolbar
+- Floating "+ Create" button (bottom-right)
+
+### Analytics & Reports
+
+- Time range selector (top-right)
+- Summary metrics row
+- Large featured chart
+- Secondary insights (2-column)
+- Exportable data table
+
+### SEO Tools
+
+- Domain/project selector (top)
+- Health score (prominent)
+- Issue prioritization (critical/medium/low)
+- Charts (line, pie)
+- Actionable recommendations list
+
+### Settings
+
+- Tab-based with vertical side menu
+- Sectioned forms
+- Save/cancel always visible
+- Progressive disclosure for advanced options
 
 ---
 
-## Icons
+## Data Visualization
 
-**Library**: Heroicons (outline style) via CDN
-**Common Icons**: 
-- Dashboard: ChartBarIcon
-- Keywords: MagnifyingGlassIcon  
-- Traffic: ChartLineUpIcon
-- SEO: CheckCircleIcon/ExclamationTriangleIcon
-- Competitors: UsersIcon
-- Settings: CogIcon
+**Library**: Chart.js or Recharts
+
+**Charts**:
+- Line: Trends (revenue, contacts)
+- Bar: Comparisons (stages, performance)
+- Pie/Donut: Distributions (sources, status)
+- Funnel: Pipeline conversion
+- Heatmap: Activity patterns
+
+**Styling**:
+- Smooth curves (line charts)
+- Clear axis labels + gridlines
+- Interactive tooltips
+- Context-appropriate legends
+- Responsive with min-height
 
 ---
 
-## Images
+## Icons & Images
 
-**No hero images** - This is a data-focused dashboard utility application. All visual elements are functional (charts, graphs, icons, data visualizations). Profile pictures and website favicons only where functionally necessary.
+**Icons**: Heroicons (outline primary, solid for active)
+- Nav: 20x20
+- Buttons: 16x16 or 20x20
+- Cards: 24x24
+- Empty states: 48x48 to 120x120
+
+**Images**:
+- Avatars: Circular, 32/40/48/64px, initials fallback
+- Logos: Rounded square, 40/56/80px
+- Empty states: Professional SVG
+- Fallback: Colored backgrounds with initials
+
+---
+
+## Animations & Interactions
+
+**Timing** (subtle, purposeful):
+- Page transitions: 200ms fade
+- Card hover: 150ms ease-out elevation
+- Dropdowns: 200ms scale + fade
+- Modals: 250ms scale (95% to 100%)
+- Skeleton loading: Subtle pulse
+
+---
+
+## Accessibility
+
+**Requirements**:
+- Focus rings on all interactive elements (with offset)
+- Full keyboard navigation (tab order, escape)
+- Screen reader labels on icon buttons
+- Proper heading hierarchy (h1→h2→h3)
+- WCAG contrast ratios
+- 44x44px minimum touch targets
+- Loading states for async operations
+- Error recovery guidance
+
+**Consistency Rules**:
+- Use only defined spacing primitives
+- Reuse component patterns across pages
+- Apply typography scale uniformly
+- Identical interactive states everywhere
+
+---
+
+**Implementation Note**: Mobile-first responsive design. Prioritize information density with breathing room. Every element serves utility and builds trust.

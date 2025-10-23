@@ -58,20 +58,20 @@ export default function Layout({ children }: LayoutProps) {
   }, [settings.announcements, announce]);
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 dark:from-slate-900 dark:via-gray-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-subtle">
       {/* Skip Navigation Links */}
       {settings.skipNavigation && (
         <>
           <a 
             href="#main-navigation" 
-            className="skip-link bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg"
+            className="skip-link bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg focus-ring"
             onFocus={() => announce('Skip to navigation', 'polite')}
           >
             Skip to Navigation
           </a>
           <a 
             href="#main-content" 
-            className="skip-link bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg"
+            className="skip-link bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg focus-ring"
             onFocus={() => announce('Skip to main content', 'polite')}
           >
             Skip to Main Content
@@ -94,12 +94,12 @@ export default function Layout({ children }: LayoutProps) {
       
       <main 
         id="main-content"
-        className="md:ml-64 md:pt-16 pt-0 min-h-screen"
+        className="md:ml-64 md:pt-16 pt-0 min-h-screen transition-all-smooth"
         role="main"
         aria-label="Main content area"
         tabIndex={-1}
       >
-        <div className="p-4 md:p-8">
+        <div className="p-6 md:p-8 lg:p-12">
           <div className="max-w-7xl mx-auto">
             <PageTranslator context="main-content">
               {children}
@@ -108,21 +108,21 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </main>
 
-      <footer className="md:ml-64 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg border-t border-slate-200 dark:border-slate-700">
+      <footer className="md:ml-64 bg-card/95 backdrop-blur-md shadow-card border-t border-border">
         <div className="px-4 md:px-8 py-6">
           <div className="max-w-7xl mx-auto">
             <PageTranslator context="footer">
               <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                 <div className="flex items-center space-x-4">
-                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                  <p className="text-sm text-foreground/80 font-medium">
                     © 2025 NODE CRM – Enterprise-Grade Customer Intelligence Platform
                   </p>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">All Systems Operational</span>
+                    <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                    <span className="text-xs text-muted-foreground">All Systems Operational</span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                   <span>SOC 2 Certified</span>
                   <span>•</span>
                   <span>GDPR Compliant</span>

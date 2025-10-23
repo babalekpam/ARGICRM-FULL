@@ -252,10 +252,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
         <button
           onClick={() => toggleSection(group.key)}
           className={cn(
-            "w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 group hover:shadow-md",
+            "w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-lg transition-all-smooth hover-lift",
             hasActiveItem
-              ? "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 dark:from-blue-900 dark:to-purple-900 dark:text-blue-200"
-              : "text-slate-600 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              ? "bg-primary/10 text-primary border border-primary/20"
+              : "text-foreground/70 hover:bg-accent hover:text-accent-foreground"
           )}
           aria-expanded={!isCollapsed}
           data-testid={`nav-group-${group.key}`}
@@ -263,7 +263,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
           <div className="flex items-center">
             <GroupIcon className={cn(
               "mr-3 h-4 w-4 transition-all duration-200",
-              hasActiveItem ? "text-blue-600 scale-110" : "group-hover:scale-110"
+              hasActiveItem ? "text-primary scale-110" : "group-hover:scale-110"
             )} />
             <div className="text-left">
               <div className="font-semibold">{group.title}</div>
@@ -271,7 +271,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs px-2 py-1 rounded-full font-medium">
+            <div className="bg-muted text-muted-foreground text-xs px-2 py-1 rounded-full font-medium">
               {visibleModules.length}
             </div>
             {isCollapsed ? (
@@ -287,7 +287,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
           "transition-all duration-300 ease-in-out overflow-hidden",
           isCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
         )}>
-          <div className="mt-2 ml-6 space-y-1 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
+          <div className="mt-2 ml-6 space-y-1 border-l-2 border-border pl-4">
             {visibleModules.map((item: any) => {
               const Icon = item.icon;
               const canAccess = saasFeatures.canAccessFeature(item.path);
@@ -321,10 +321,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
                   key={item.path} 
                   to={item.path}
                   className={cn(
-                    "group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                    "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all-smooth cursor-pointer focus-ring relative",
                     isActive(item.path)
-                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-[1.02]"
-                      : "text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                      ? "bg-primary text-primary-foreground shadow-card hover:shadow-card-hover scale-[1.02] border-l-4 border-primary-foreground/30"
+                      : "text-foreground/70 hover:bg-accent hover:text-accent-foreground"
                   )}
                   role="menuitem"
                   aria-label={`Navigate to ${item.label}`}
@@ -333,11 +333,13 @@ export default function Navigation({ onLogout }: NavigationProps) {
                 >
                   <Icon className={cn(
                     "mr-3 h-4 w-4 flex-shrink-0 transition-transform duration-200",
-                    isActive(item.path) ? "text-white scale-110" : "group-hover:scale-110"
+                    isActive(item.path) ? "text-primary-foreground scale-110 animate-pulse" : "group-hover:scale-110"
                   )} aria-hidden="true" />
-                  <span className="truncate">{item.label}</span>
+                  <span className="truncate font-semibold">{item.label}</span>
                   {isActive(item.path) && (
-                    <div className="ml-auto w-2 h-2 bg-white rounded-full opacity-80"></div>
+                    <div className="ml-auto flex items-center gap-1">
+                      <div className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse"></div>
+                    </div>
                   )}
                 </Link>
               );
@@ -351,33 +353,33 @@ export default function Navigation({ onLogout }: NavigationProps) {
   return (
     <nav 
       id="main-navigation"
-      className="fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-md dark:bg-slate-900/95 shadow-2xl border-r border-slate-200/60 dark:border-slate-700/60 overflow-y-auto z-30"
+      className="fixed left-0 top-0 h-full w-64 bg-card/95 backdrop-blur-md shadow-2xl border-r border-border overflow-y-auto z-30"
       role="navigation"
       aria-label="Main navigation"
     >
       <div className="flex flex-col h-full">
-        <div className="p-6 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700">
+        <div className="p-6 border-b border-border bg-accent/50">
           <div className="flex items-center">
             <div className="relative">
               <BrandedLogo />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-green-400 to-blue-500 rounded-full animate-pulse"></div>
             </div>
             <div className="ml-3">
-              <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h2 className="text-lg font-bold text-primary">
                 NODE CRM
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-xs text-muted-foreground font-medium">
                 Enterprise AI Platform
               </p>
             </div>
           </div>
           <div className="mt-4 flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">All Systems Operational</span>
+            <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+            <span className="text-xs text-muted-foreground font-medium">All Systems Operational</span>
           </div>
         </div>
         
-        <div className="flex-1 px-2 py-4 space-y-4">
+        <div className="flex-1 px-3 py-6 space-y-2">
           {/* Render all navigation groups */}
           {navigationGroups.map((group) => renderCollapsibleGroup(group))}
         </div>
