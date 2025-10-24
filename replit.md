@@ -1,7 +1,7 @@
-## Overview
+### Overview
 NODE CRM is an AI-powered, full-stack React/Express customer relationship management platform designed for global markets. It integrates real-time sentiment analysis, AI campaign generation, multi-cultural optimization, advanced financial management, and e-commerce functionalities. The platform aims for autonomous AI operations, competitive pricing, and robust data security, providing a comprehensive solution for businesses worldwide. It includes extensive SEO and multi-platform search optimization, built on a multi-tenant architecture with customization and localization features for B2B acquisition and lead generation. The business vision is to provide an all-encompassing, secure, and globally adaptable CRM solution that leverages AI for operational efficiency and market responsiveness.
 
-## User Preferences
+### User Preferences
 Preferred communication style: Simple, everyday language.
 CRM Name: NODE CRM
 Email Marketing: IONOS SMTP configured for professional bulk email system
@@ -29,15 +29,16 @@ ARGILETTE SEO Platform: Complete Ubersuggest clone integration - Full-featured S
 Multi-Platform Search Optimization: PRODUCTION-READY NP Digital "Search Everywhere Optimization" implementation - COMPLETE FULL-STACK SYSTEM with architect security approval. Backend: Database schema with 10 specialized tables for tracking brand visibility across AI platforms (ChatGPT, Perplexity, Gemini, Copilot, Google AI Overviews, Claude), social search (TikTok, Instagram, YouTube, Pinterest), and traditional SEO in unified system. Backend AI Search Optimization service (server/argilette/ai-search_optimization.ts) provides brand mention tracking, deep sentiment analysis using Argilette AI with AI-powered insights, citation monitoring, competitive benchmarking, prompt mining database, social search metrics, multi-platform performance dashboard, audience targeting platform (ATP), and EEAT signal optimization. 13 secure REST API endpoints at /api/argilette/multi-platform/* with proper tenant isolation, conditional filtering security, comprehensive error handling. Tables: ai_search_platforms, ai_brand_mentions, ai_citations, ai_sentiment_analysis, prompt_library, social_search_metrics, multi_platform_performance, competitive_ai_benchmark, audience_insights, eeat_signals. Service functions: initializeAIPlatforms(), trackBrandMentions(), getBrandMentionStats(), performSentimentAnalysis(). Security: Fixed critical cross-tenant data exposure vulnerabilities in conditional filtering endpoints, all queries now properly compose predicates to preserve tenant isolation. Frontend: Comprehensive Multi-Platform Dashboard (client/src/pages/multi-platform-search.tsx) with four main tabs - AI Platforms tab showing brand mentions across 6 AI platforms with visibility scores and query tracking, Social Search tab displaying TikTok/Instagram/YouTube/Pinterest performance metrics with impressions/engagement/rank/CTR, Sentiment Analysis tab with AI-powered insights and color-coded sentiment cards, and Competitive Benchmarking tab. Overview cards show AI Platforms count, Brand Mentions, Sentiment Score, and Social Reach. Full TanStack Query integration hitting all 13 backend endpoints with proper loading states, empty states with CTAs, and responsive design. Navigation integrated in ARGILETTE SEO section. Both backend and frontend architect-reviewed and approved for production deployment.
 Authentication System: Fully repaired login and signup flow - Fixed missing database columns in users and tenants tables, implemented bcrypt password hashing, proper tenant-first registration flow, email verification tokens, super admin account created (abel@argilette.com with password Serrega1208@!!), all authentication endpoints working successfully
 Landing Page: Complete modern redesign with top navigation - Fixed top navigation bar displaying all 7 key platform features (CRM, Marketing, E-commerce, SEO, AI Tools, Analytics, Multi-Platform) with working navigation links, modern hero section with AI-powered badge and compelling CTAs, 8-feature grid with hover effects, benefits section with highlighted cards, centered login form, primary CTA section, and organized footer. Fully responsive with mobile menu, smooth scroll navigation, and consistent modern design matching platform aesthetic. All interactive elements have proper data-testid attributes for testing. Navigation fix implemented: removed button nesting inside Link components to enable instant tab switching without page refresh - Links now handle navigation directly with proper styling and accessibility
+Marketing Pages Navigation Fix: Fixed critical routing inconsistency preventing bi-directional navigation between Features, Pricing, Sign Up, and Login tabs - standardized all marketing pages (features.tsx, pricing.tsx) to use react-router-dom Link component instead of mixed wouter/react-router-dom usage, enabling seamless tab switching without navigation failure, aligned with App.tsx BrowserRouter architecture
 Database Schema: Core CRM tables created - contacts, deals, accounts, leads, campaigns, tasks tables with proper tenant isolation, foreign key relationships, created_at/updated_at timestamps, all missing columns added (billing_address, shipping_address, account_type, name, lead_source, etc.)
 Code Quality: TypeScript errors fully resolved - Eliminated all 235 TypeScript diagnostics by removing duplicate type exports in shared/schema.ts (Project, Product, Territory, ChartOfAccount duplicates), fixed circular reference warnings, resolved type mismatches. Codebase now has 0 LSP diagnostics with full type safety while maintaining 100% runtime functionality.
 Theme Control: User-selectable dark/light mode - ThemeToggle button added to main header (between notifications and settings icons) allowing users to choose Light, Dark, or System theme preferences. Default theme changed from automatic system-based switching to Light mode for explicit user control. Theme preference persists in localStorage. Located in client/src/components/header.tsx and client/src/components/theme-toggle.tsx.
 Modern UI Design Transformation: Complete visual redesign implemented platform-wide - Created comprehensive modern design guidelines inspired by Linear, Notion, and Stripe for premium B2B SaaS experience. Updated index.css with professional color system using semantic design tokens (rich backgrounds, proper contrast, modern blues and grays) replacing hard-coded colors. Enhanced core components: Layout with subtle background gradients and improved spacing, Navigation sidebar with modern depth/shadows/hover states, Header with backdrop blur and professional styling, Card component with smooth transitions and elevation effects. Added utility classes for shadows (shadow-card, shadow-card-hover), gradients (bg-gradient-subtle), hover-lift), and smooth transitions (transition-all-smooth). All pages now feature non-transparent rich backgrounds, comfortable spacing, proper visual hierarchy, and polished professional appearance. Design system ensures consistency across dashboard pages, CRM tools, SEO platform, and admin interfaces with both light and dark modes equally polished.
 
-## System Architecture
+### System Architecture
 The application features a monorepo structure with a React 18 frontend (Vite, TypeScript, Shadcn/ui, TanStack Query, Wouter, React Hook Form with Zod) and an Express.js backend (TypeScript). PostgreSQL with Drizzle ORM is used for data persistence.
 
-### UI/UX Decisions
+#### UI/UX Decisions
 - Consistent professional styling with gradient headers, animated badges, and modern design patterns inspired by Linear, Notion, and Stripe.
 - Horizontal top tabs for navigation and mobile-first responsive design.
 - User-selectable dark/light mode with persistence.
@@ -45,7 +46,7 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - Organized grouped/collapsible navigation for improved user experience and feature discoverability.
 - Semantic design tokens, enhanced core components (Layout, Navigation sidebar, Header, Card), and utility classes for visual effects (shadows, gradients, hover-effects, transitions) ensuring a polished, professional appearance.
 
-### Technical Implementations
+#### Technical Implementations
 - **Monorepo Structure**: Separated client-side and server-side codebases.
 - **Multi-tenancy**: Robust system with data isolation, configurable roles & permissions.
 - **Offline Capabilities**: PWA with service worker, IndexedDB, background sync, and offline CRUD.
@@ -67,7 +68,7 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - **Platform Capabilities**: Comprehensive settings, multi-language support, adaptive signup flow, subscription management with tiered AI activation, and a Super Admin Dashboard with user registration tracking.
 - **Code Quality**: Resolved all TypeScript errors and removed duplicate type exports, ensuring 0 LSP diagnostics.
 
-## External Dependencies
+### External Dependencies
 - **Database**: PostgreSQL (Drizzle ORM), Neon Database.
 - **AI Services**: Argilette AI (white-labeled Replit AI Integrations with OpenAI GPT-4o), Anthropic Claude Sonnet 4, Google Gemini AI, You.com AI, QWEN AI.
 - **Email/SMS**: IONOS SMTP, Twilio.
