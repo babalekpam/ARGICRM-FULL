@@ -195,14 +195,14 @@ export default function Landing() {
               {platformFeatures.map((feature) => {
                 const Icon = feature.icon;
                 return (
-                  <Link key={feature.name} href={feature.path}>
-                    <button
-                      className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth"
-                      data-testid={`nav-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{feature.name}</span>
-                    </button>
+                  <Link 
+                    key={feature.name} 
+                    href={feature.path}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth cursor-pointer"
+                    data-testid={`nav-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{feature.name}</span>
                   </Link>
                 );
               })}
@@ -236,15 +236,15 @@ export default function Landing() {
               {platformFeatures.map((feature) => {
                 const Icon = feature.icon;
                 return (
-                  <Link key={feature.name} href={feature.path}>
-                    <button
-                      className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth"
-                      onClick={() => setMobileMenuOpen(false)}
-                      data-testid={`mobile-nav-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span>{feature.name}</span>
-                    </button>
+                  <Link 
+                    key={feature.name} 
+                    href={feature.path}
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                    data-testid={`mobile-nav-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{feature.name}</span>
                   </Link>
                 );
               })}

@@ -1,7 +1,7 @@
 # NODE CRM
 
 ## Overview
-NODE CRM is an AI-powered, full-stack React/Express customer relationship management platform designed for global markets. It integrates real-time sentiment analysis, AI campaign generation, multi-cultural optimization, advanced financial management, and e-commerce functionalities. The platform aims for autonomous AI operations, competitive pricing, and robust data security, providing a comprehensive solution for businesses worldwide. It includes extensive SEO and multi-platform search optimization, built on a multi-tenant architecture with customization and localization features for B2B acquisition and lead generation.
+NODE CRM is an AI-powered, full-stack React/Express customer relationship management platform designed for global markets. It integrates real-time sentiment analysis, AI campaign generation, multi-cultural optimization, advanced financial management, and e-commerce functionalities. The platform aims for autonomous AI operations, competitive pricing, and robust data security, providing a comprehensive solution for businesses worldwide. It includes extensive SEO and multi-platform search optimization, built on a multi-tenant architecture with customization and localization features for B2B acquisition and lead generation. The business vision is to provide an all-encompassing, secure, and globally adaptable CRM solution that leverages AI for operational efficiency and market responsiveness.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -43,9 +43,9 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - Consistent professional styling with gradient headers, animated badges, and modern design patterns inspired by Linear, Notion, and Stripe.
 - Horizontal top tabs for navigation and mobile-first responsive design.
 - User-selectable dark/light mode with persistence.
-- Professional landing page redesign with B2B SaaS aesthetic.
-- Organized grouped/collapsible navigation for improved user experience.
-- Semantic design tokens, enhanced core components (Layout, Navigation sidebar, Header, Card), and utility classes for visual effects (shadows, gradients, hover-effects, transitions).
+- Professional landing page redesign with a B2B SaaS aesthetic.
+- Organized grouped/collapsible navigation for improved user experience and feature discoverability.
+- Semantic design tokens, enhanced core components (Layout, Navigation sidebar, Header, Card), and utility classes for visual effects (shadows, gradients, hover-effects, transitions) ensuring a polished, professional appearance.
 
 ### Technical Implementations
 - **Monorepo Structure**: Separated client-side and server-side codebases.
@@ -59,15 +59,14 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - **Database Schema**: Core CRM tables (contacts, leads, deals, tasks, accounts) with tenant isolation and relationships.
 - **AI Campaign Studio**: Backend for automated ad/email generation, tenant-isolated content, usage tracking, and REST API.
 - **Sales Channels**: Multi-platform integration for publishing AI-generated content to social/business platforms.
-- **ARGILETTE SEO Platform**: Integrated Ubersuggest clone with keyword research, site audits, backlinks, rank tracking, competitor analysis, content intelligence, and local SEO. Multi-tenant PostgreSQL architecture with AI-powered insights.
-- **Multi-Platform Search Optimization**: System for tracking brand visibility and sentiment across AI platforms (ChatGPT, Perplexity, Gemini, Copilot, Google AI Overviews, Claude), social search (TikTok, Instagram, YouTube, Pinterest), and traditional SEO.
+- **ARGILETTE SEO Platform**: Integrated Ubersuggest clone with keyword research, site audits, backlinks, rank tracking, competitor analysis, content intelligence, and local SEO, built on a multi-tenant PostgreSQL architecture with AI insights.
+- **Multi-Platform Search Optimization**: System for tracking brand visibility and sentiment across AI platforms (e.g., ChatGPT, Gemini), social search (e.g., TikTok, Instagram), and traditional SEO.
 - **CRM Core**: CRUD for contacts, leads, deals, tasks, accounts.
 - **Marketing**: Simple Messaging (email/SMS), landing page builder, SEO management, reputation management, AI Campaign Studio, Multi-platform Search Optimization, Sales Channels integration.
 - **E-commerce**: Full store builder with product creation, management, AI recommendations, inventory tracking, and global currency support (54 African currencies).
 - **Financial Management**: Multi-currency bookkeeping, invoicing, bank feed synchronization, automated tax calculation, and financial reporting.
 - **HR & Project Management**: Employee management, advanced project management (Gantt charts), and document management.
 - **Platform Capabilities**: Comprehensive settings, multi-language support, adaptive signup flow, subscription management with tiered AI activation, and a Super Admin Dashboard with user registration tracking.
-- **Collaboration**: Real-time team collaboration heat map and video conferencing integration.
 - **Code Quality**: Resolved all TypeScript errors and removed duplicate type exports, ensuring 0 LSP diagnostics.
 
 ## External Dependencies
