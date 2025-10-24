@@ -1,7 +1,9 @@
-### Overview
-NODE CRM is an AI-powered, full-stack React/Express customer relationship management platform designed for global markets. It integrates real-time sentiment analysis, AI campaign generation, multi-cultural optimization, advanced financial management, and e-commerce functionalities. The platform aims for autonomous AI operations, competitive pricing, and robust data security, providing a comprehensive solution for businesses worldwide. It includes extensive SEO and multi-platform search optimization, built on a multi-tenant architecture with customization and localization features for B2B acquisition and lead generation. The business vision is to provide an all-encompassing, secure, and globally adaptable CRM solution that leverages AI for operational efficiency and market responsiveness.
+## Overview
 
-### User Preferences
+NODE CRM is an AI-powered, full-stack React/Express customer relationship management platform designed for global markets. It integrates real-time sentiment analysis, AI campaign generation, multi-cultural optimization, advanced financial management, and e-commerce functionalities. The platform aims for autonomous AI operations, competitive pricing, and robust data security, providing a comprehensive solution for businesses worldwide. The business vision is to provide an all-encompassing, secure, and globally adaptable CRM solution that leverages AI for operational efficiency and market responsiveness.
+
+## User Preferences
+
 Preferred communication style: Simple, everyday language.
 CRM Name: NODE CRM
 Email Marketing: IONOS SMTP configured for professional bulk email system
@@ -35,10 +37,11 @@ Code Quality: TypeScript errors fully resolved - Eliminated all 235 TypeScript d
 Theme Control: User-selectable dark/light mode - ThemeToggle button added to main header (between notifications and settings icons) allowing users to choose Light, Dark, or System theme preferences. Default theme changed from automatic system-based switching to Light mode for explicit user control. Theme preference persists in localStorage. Located in client/src/components/header.tsx and client/src/components/theme-toggle.tsx.
 Modern UI Design Transformation: Complete visual redesign implemented platform-wide - Created comprehensive modern design guidelines inspired by Linear, Notion, and Stripe for premium B2B SaaS experience. Updated index.css with professional color system using semantic design tokens (rich backgrounds, proper contrast, modern blues and grays) replacing hard-coded colors. Enhanced core components: Layout with subtle background gradients and improved spacing, Navigation sidebar with modern depth/shadows/hover states, Header with backdrop blur and professional styling, Card component with smooth transitions and elevation effects. Added utility classes for shadows (shadow-card, shadow-card-hover), gradients (bg-gradient-subtle), hover-lift), and smooth transitions (transition-all-smooth). All pages now feature non-transparent rich backgrounds, comfortable spacing, proper visual hierarchy, and polished professional appearance. Design system ensures consistency across dashboard pages, CRM tools, SEO platform, and admin interfaces with both light and dark modes equally polished.
 
-### System Architecture
+## System Architecture
+
 The application features a monorepo structure with a React 18 frontend (Vite, TypeScript, Shadcn/ui, TanStack Query, Wouter, React Hook Form with Zod) and an Express.js backend (TypeScript). PostgreSQL with Drizzle ORM is used for data persistence.
 
-#### UI/UX Decisions
+### UI/UX Decisions
 - Consistent professional styling with gradient headers, animated badges, and modern design patterns inspired by Linear, Notion, and Stripe.
 - Horizontal top tabs for navigation and mobile-first responsive design.
 - User-selectable dark/light mode with persistence.
@@ -46,7 +49,7 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - Organized grouped/collapsible navigation for improved user experience and feature discoverability.
 - Semantic design tokens, enhanced core components (Layout, Navigation sidebar, Header, Card), and utility classes for visual effects (shadows, gradients, hover-effects, transitions) ensuring a polished, professional appearance.
 
-#### Technical Implementations
+### Technical Implementations
 - **Monorepo Structure**: Separated client-side and server-side codebases.
 - **Multi-tenancy**: Robust system with data isolation, configurable roles & permissions.
 - **Offline Capabilities**: PWA with service worker, IndexedDB, background sync, and offline CRUD.
@@ -68,7 +71,8 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - **Platform Capabilities**: Comprehensive settings, multi-language support, adaptive signup flow, subscription management with tiered AI activation, and a Super Admin Dashboard with user registration tracking.
 - **Code Quality**: Resolved all TypeScript errors and removed duplicate type exports, ensuring 0 LSP diagnostics.
 
-### External Dependencies
+## External Dependencies
+
 - **Database**: PostgreSQL (Drizzle ORM), Neon Database.
 - **AI Services**: Argilette AI (white-labeled Replit AI Integrations with OpenAI GPT-4o), Anthropic Claude Sonnet 4, Google Gemini AI, You.com AI, QWEN AI.
 - **Email/SMS**: IONOS SMTP, Twilio.

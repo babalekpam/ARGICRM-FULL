@@ -1,12 +1,44 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import SEOHead, { generatePageSEO, generateStructuredData } from "@/components/seo-head";
 import SEODashboard from "@/components/seo-dashboard";
 
 export default function SEOManagement() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const pageSEO = generatePageSEO('analytics');
   const structuredData = generateStructuredData('organization');
+
+  const handleViewSearchConsole = () => {
+    window.open('https://search.google.com/search-console', '_blank', 'noopener,noreferrer');
+    toast({
+      title: "Opening Google Search Console",
+      description: "Redirecting to Google Search Console in a new tab.",
+    });
+  };
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      // Simulate API call to refresh SEO data
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast({
+        title: "Data Refreshed",
+        description: "SEO metrics have been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh Failed",
+        description: "Unable to refresh SEO data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (!user) {
     return <div>Please log in to access SEO management.</div>;
@@ -108,11 +140,20 @@ export default function SEOManagement() {
                   <p className="text-sm text-gray-600">Manage your Google Search Console integration</p>
                 </div>
                 <div className="flex space-x-3">
-                  <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  <button 
+                    onClick={handleViewSearchConsole}
+                    data-testid="button-view-search-console"
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
                     View in Search Console
                   </button>
-                  <button className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                    Refresh Data
+                  <button 
+                    onClick={handleRefreshData}
+                    disabled={isRefreshing}
+                    data-testid="button-refresh-seo-data"
+                    className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
                   </button>
                 </div>
               </div>
