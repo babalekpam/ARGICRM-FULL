@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import SEOHead, { generatePageSEO, generateStructuredData } from "@/components/seo-head";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,40 +30,124 @@ import {
 
 export default function MultiPlatformSearch() {
   const { user } = useAuth();
-  const [selectedProjectId] = useState("default-project");
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const [isTracking, setIsTracking] = useState(false);
   
   const pageSEO = generatePageSEO('analytics');
   const structuredData = generateStructuredData('organization');
 
+  // Load user's available projects
+  const { data: projects, isLoading: projectsLoading } = useQuery({
+    queryKey: ['/api/projects'],
+    enabled: !!user
+  });
+
+  // Use the first available project or null
+  const selectedProjectId = Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null;
+
   // Fetch multi-platform dashboard data
   const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
     queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/dashboard`],
-    enabled: !!user
+    enabled: !!user && !!selectedProjectId
   });
 
   // Fetch brand mention stats
   const { data: mentionStats, isLoading: statsLoading } = useQuery({
     queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/mention-stats`],
-    enabled: !!user
+    enabled: !!user && !!selectedProjectId
   });
 
   // Fetch AI mentions
   const { data: aiMentions, isLoading: mentionsLoading } = useQuery({
     queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/ai-mentions`],
-    enabled: !!user
+    enabled: !!user && !!selectedProjectId
   });
 
   // Fetch sentiment analysis
   const { data: sentimentData, isLoading: sentimentLoading } = useQuery({
     queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/sentiment`],
-    enabled: !!user
+    enabled: !!user && !!selectedProjectId
   });
 
   // Fetch social search metrics
   const { data: socialMetrics, isLoading: socialLoading } = useQuery({
     queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/social-search`],
-    enabled: !!user
+    enabled: !!user && !!selectedProjectId
   });
+
+  const handleStartTracking = async () => {
+    if (!selectedProjectId) {
+      toast({
+        title: "No Project Available",
+        description: "Please create a project first to start tracking.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTracking(true);
+    try {
+      // Step 1: Initialize multi-platform tracking
+      await apiRequest(`/api/argilette/multi-platform/${selectedProjectId}/initialize`, {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      
+      // Step 2: Start tracking brand mentions (example queries)
+      await apiRequest(`/api/argilette/multi-platform/${selectedProjectId}/track-mentions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          brandName: "NODE CRM",
+          queries: [
+            "best CRM software",
+            "AI-powered CRM",
+            "customer relationship management tools"
+          ]
+        })
+      });
+      
+      // Step 3: Invalidate queries to fetch new data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/ai-mentions`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/mention-stats`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/dashboard`] })
+      ]);
+      
+      toast({
+        title: "Tracking Started Successfully",
+        description: "Your brand is now being tracked across AI platforms. Data will appear shortly.",
+      });
+    } catch (error) {
+      console.error("Tracking error:", error);
+      toast({
+        title: "Failed to Start Tracking",
+        description: "Unable to initialize tracking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTracking(false);
+    }
+  };
+
+  const handleConnectPlatforms = () => {
+    toast({
+      title: "Redirecting to Sales Channels",
+      description: "Connect your social platforms to start tracking social search metrics.",
+    });
+    // Navigate to Sales Channels page where user can connect platforms
+    setLocation('/sales-channels');
+  };
+
+  const handleAddCompetitor = () => {
+    toast({
+      title: "Competitor Tracking",
+      description: "Navigate to Settings → Competitors to add and track competitor performance.",
+    });
+    // Navigate to competitors page where user can add competitors
+    setLocation('/competitors');
+  };
 
   if (!user) {
     return <div>Please log in to access Multi-Platform Search Optimization.</div>;
@@ -270,9 +357,13 @@ export default function MultiPlatformSearch() {
                         Start tracking your brand mentions across AI platforms
                       </p>
                     </div>
-                    <Button data-testid="button-track-mentions">
+                    <Button 
+                      onClick={handleStartTracking}
+                      disabled={isTracking}
+                      data-testid="button-track-mentions"
+                    >
                       <Target className="w-4 h-4 mr-2" />
-                      Start Tracking
+                      {isTracking ? 'Starting...' : 'Start Tracking'}
                     </Button>
                   </div>
                 )}
@@ -337,7 +428,10 @@ export default function MultiPlatformSearch() {
                         Connect your social platforms to start tracking
                       </p>
                     </div>
-                    <Button data-testid="button-connect-social">
+                    <Button 
+                      onClick={handleConnectPlatforms}
+                      data-testid="button-connect-social"
+                    >
                       <Globe className="w-4 h-4 mr-2" />
                       Connect Platforms
                     </Button>
@@ -452,7 +546,10 @@ export default function MultiPlatformSearch() {
                       Add competitors to start benchmarking your performance
                     </p>
                   </div>
-                  <Button data-testid="button-add-competitor">
+                  <Button 
+                    onClick={handleAddCompetitor}
+                    data-testid="button-add-competitor"
+                  >
                     <Target className="w-4 h-4 mr-2" />
                     Add Competitor
                   </Button>
