@@ -59,7 +59,7 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - **Database Schema**: Core CRM tables (contacts, leads, deals, tasks, accounts) with tenant isolation and relationships.
 - **AI Campaign Studio**: Backend for automated ad/email generation, tenant-isolated content, usage tracking, and REST API.
 - **Sales Channels**: Multi-platform integration for publishing AI-generated content to social/business platforms.
-- **ARGILETTE SEO Platform**: Integrated Ubersuggest clone with keyword research, site audits, backlinks, rank tracking, competitor analysis, content intelligence, and local SEO.
+- **ARGILETTE SEO Platform**: Integrated Ubersuggest clone with keyword research, site audits, backlinks, rank tracking, competitor analysis, content intelligence, and local SEO. Multi-tenant PostgreSQL architecture with AI-powered insights.
 - **Multi-Platform Search Optimization**: System for tracking brand visibility and sentiment across AI platforms (ChatGPT, Perplexity, Gemini, Copilot, Google AI Overviews, Claude), social search (TikTok, Instagram, YouTube, Pinterest), and traditional SEO.
 - **CRM Core**: CRUD for contacts, leads, deals, tasks, accounts.
 - **Marketing**: Simple Messaging (email/SMS), landing page builder, SEO management, reputation management, AI Campaign Studio, Multi-platform Search Optimization, Sales Channels integration.

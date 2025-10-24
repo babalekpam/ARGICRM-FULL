@@ -195,14 +195,15 @@ export default function Landing() {
               {platformFeatures.map((feature) => {
                 const Icon = feature.icon;
                 return (
-                  <button
-                    key={feature.name}
-                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth"
-                    data-testid={`nav-${feature.name.toLowerCase()}`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{feature.name}</span>
-                  </button>
+                  <Link key={feature.name} href={feature.path}>
+                    <button
+                      className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth"
+                      data-testid={`nav-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{feature.name}</span>
+                    </button>
+                  </Link>
                 );
               })}
             </div>
@@ -235,25 +236,32 @@ export default function Landing() {
               {platformFeatures.map((feature) => {
                 const Icon = feature.icon;
                 return (
-                  <button
-                    key={feature.name}
-                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth"
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{feature.name}</span>
-                  </button>
+                  <Link key={feature.name} href={feature.path}>
+                    <button
+                      className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth"
+                      onClick={() => setMobileMenuOpen(false)}
+                      data-testid={`mobile-nav-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{feature.name}</span>
+                    </button>
+                  </Link>
                 );
               })}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
                 <Link href="/demo-signup">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" data-testid="mobile-button-signup">
                     Get Started
                   </Button>
                 </Link>
-                <Button className="w-full" onClick={() => {
-                  setMobileMenuOpen(false);
-                  document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}>
+                <Button 
+                  className="w-full" 
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  data-testid="mobile-button-login"
+                >
                   Sign In
                 </Button>
               </div>
