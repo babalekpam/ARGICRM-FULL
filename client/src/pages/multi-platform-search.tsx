@@ -25,8 +25,10 @@ import {
   Users,
   ArrowUpRight,
   ArrowDownRight,
-  Minus
+  Minus,
+  ShoppingBag
 } from "lucide-react";
+import { SiGoogle, SiTiktok, SiPinterest, SiAmazon } from "react-icons/si";
 
 export default function MultiPlatformSearch() {
   const { user } = useAuth();
@@ -160,9 +162,12 @@ export default function MultiPlatformSearch() {
     copilot: MessageSquare,
     claude: Brain,
     'google-ai-overviews': Globe,
+    google: Globe,
     tiktok: Video,
     instagram: Instagram,
     youtube: Youtube,
+    pinterest: Video,
+    amazon: ShoppingBag,
   };
 
   const getSentimentColor = (sentiment: string) => {
@@ -187,35 +192,126 @@ export default function MultiPlatformSearch() {
   return (
     <>
       <SEOHead 
-        title="Multi-Platform Search Optimization - NODE CRM | Search Everywhere Analytics"
-        description="Track your brand visibility across AI platforms (ChatGPT, Perplexity, Gemini), social search (TikTok, Instagram, YouTube), and traditional search engines in one unified dashboard."
-        keywords={["multi-platform search", "AI search optimization", "social search", "brand visibility", "search everywhere"]}
+        title="Search Everywhere Optimization - NODE CRM | Be Found on Google, YouTube, Instagram, TikTok, Pinterest, Amazon & ChatGPT"
+        description="We make sure customers find you everywhere. Track and optimize your brand visibility across Google, YouTube, Instagram, TikTok, Pinterest, Amazon, and ChatGPT. Search starts on Google but doesn't end there."
+        keywords={["search everywhere", "multi-platform search", "Google optimization", "YouTube SEO", "Instagram search", "TikTok marketing", "Pinterest SEO", "Amazon visibility", "ChatGPT optimization", "brand visibility"]}
         url="https://nodecrm.com/multi-platform-search"
         structuredData={structuredData}
       />
       
       <div className="space-y-6" data-testid="page-multi-platform-search">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Multi-Platform Search Optimization</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Track your brand visibility across AI platforms, social search, and traditional search engines in one unified dashboard.
-          </p>
+        {/* Hero Section */}
+        <div className="text-center space-y-6 py-8">
+          <div className="space-y-3">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
+              We Make Sure Customers Find You Everywhere
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-400">
+              From Google to ChatGPT
+            </p>
+            <p className="text-base text-gray-500 dark:text-gray-500 max-w-2xl mx-auto">
+              Search starts on Google but it doesn't end there. Show up everywhere your buyers are.
+            </p>
+          </div>
+          
+          {/* Search Everywhere Visualization */}
+          <div className="max-w-4xl mx-auto space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+              <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg px-4 py-3">
+                <Search className="w-5 h-5 text-gray-400" />
+                <span className="text-gray-400 flex-1">Search Everywhere Optimization...</span>
+              </div>
+            </div>
+            
+            {/* Platform Icons */}
+            <div className="flex items-center justify-center gap-6 flex-wrap">
+              <div className="flex flex-col items-center gap-2 group" data-testid="platform-icon-google">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center hover-elevate transition-all-smooth">
+                  <SiGoogle className="w-6 h-6 text-[#4285F4]" />
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Google</span>
+              </div>
+              
+              <div className="flex flex-col items-center gap-2 group" data-testid="platform-icon-youtube">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center hover-elevate transition-all-smooth">
+                  <Youtube className="w-6 h-6 text-[#FF0000]" />
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">YouTube</span>
+              </div>
+              
+              <div className="flex flex-col items-center gap-2 group" data-testid="platform-icon-instagram">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center hover-elevate transition-all-smooth">
+                  <Instagram className="w-6 h-6 text-[#E4405F]" />
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Instagram</span>
+              </div>
+              
+              <div className="flex flex-col items-center gap-2 group" data-testid="platform-icon-tiktok">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center hover-elevate transition-all-smooth">
+                  <SiTiktok className="w-6 h-6 text-gray-900 dark:text-white" />
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">TikTok</span>
+              </div>
+              
+              <div className="flex flex-col items-center gap-2 group" data-testid="platform-icon-pinterest">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center hover-elevate transition-all-smooth">
+                  <SiPinterest className="w-6 h-6 text-[#E60023]" />
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Pinterest</span>
+              </div>
+              
+              <div className="flex flex-col items-center gap-2 group" data-testid="platform-icon-amazon">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center hover-elevate transition-all-smooth">
+                  <SiAmazon className="w-6 h-6 text-[#FF9900]" />
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Amazon</span>
+              </div>
+              
+              <div className="flex flex-col items-center gap-2 group" data-testid="platform-icon-chatgpt">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center hover-elevate transition-all-smooth">
+                  <Brain className="w-6 h-6 text-[#10A37F]" />
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">ChatGPT</span>
+              </div>
+            </div>
+            
+            {/* CTA Button */}
+            <div className="flex justify-center gap-4 pt-4">
+              <Button 
+                size="lg"
+                onClick={handleStartTracking}
+                disabled={isTracking || !selectedProjectId}
+                data-testid="button-start-tracking-hero"
+              >
+                <Target className="w-4 h-4 mr-2" />
+                {isTracking ? 'Starting Tracking...' : 'Start Tracking Now'}
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={handleConnectPlatforms}
+                data-testid="button-connect-platforms-hero"
+              >
+                <Globe className="w-4 h-4 mr-2" />
+                Connect Platforms
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card data-testid="card-ai-platforms">
+          <Card data-testid="card-total-platforms">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">AI Platforms</CardTitle>
-              <Brain className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Platforms</CardTitle>
+              <Globe className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-ai-platforms-count">
-                {(mentionStats as any)?.totalPlatforms || 6}
+              <div className="text-2xl font-bold" data-testid="text-total-platforms-count">
+                7
               </div>
               <p className="text-xs text-muted-foreground">
-                ChatGPT, Perplexity, Gemini, Copilot, Claude, Google AI
+                Google, YouTube, Instagram, TikTok, Pinterest, Amazon, ChatGPT
               </p>
             </CardContent>
           </Card>
