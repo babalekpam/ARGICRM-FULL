@@ -5,6 +5,7 @@ NODE CRM is an AI-powered, full-stack customer relationship management platform 
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
+Pricing Model: Lifetime payment structure with four tiers (Starter $497, Professional $1,297, Business $2,997, Enterprise $7,997). All white-label branding options (Basic, Full, Complete Ownership) available as custom-priced add-ons requiring sales contact for quotes. Platform includes CRM + SEO + E-commerce + 7-platform tracking in all base plans.
 Platform Owner Privileges: Restored unlimited access for platform owner (abel@argilette.com) with super admin rights, no subscription limits, and full platform oversight capabilities
 Login Page: Clean NODE CRM branding with credentials-only interface, no role indicators or quick login buttons - access levels determined purely by email credentials
 Settings Backup: Fully functional backup system with browser save dialog popup - includes backup.html standalone solution for guaranteed reliability, comprehensive JSON export with platform data, settings, and metadata
