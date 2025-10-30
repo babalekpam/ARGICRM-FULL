@@ -1,10 +1,10 @@
-import { pgTable, text, integer, decimal, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, serial, decimal, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Store configuration table
 export const stores = pgTable("stores", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
   tenantId: text("tenant_id"),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
@@ -27,7 +27,7 @@ export const stores = pgTable("stores", {
 
 // Products table
 export const products = pgTable("products", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
   storeId: integer("store_id").references(() => stores.id),
   tenantId: text("tenant_id"),
   name: text("name").notNull(),
@@ -58,7 +58,7 @@ export const products = pgTable("products", {
 
 // Product categories table
 export const categories = pgTable("categories", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
   storeId: integer("store_id").references(() => stores.id),
   tenantId: text("tenant_id"),
   name: text("name").notNull(),
@@ -74,7 +74,7 @@ export const categories = pgTable("categories", {
 
 // Orders table
 export const orders = pgTable("orders", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
   storeId: integer("store_id").references(() => stores.id),
   tenantId: text("tenant_id"),
   orderNumber: text("order_number").notNull(),
@@ -103,7 +103,7 @@ export const orders = pgTable("orders", {
 
 // Customers table
 export const customers = pgTable("customers", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
   storeId: integer("store_id").references(() => stores.id),
   tenantId: text("tenant_id"),
   email: text("email").notNull(),
@@ -123,7 +123,7 @@ export const customers = pgTable("customers", {
 
 // Store pages table (for custom pages)
 export const storePages = pgTable("store_pages", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  id: serial("id").primaryKey(),
   storeId: integer("store_id").references(() => stores.id),
   tenantId: text("tenant_id"),
   title: text("title").notNull(),
@@ -138,61 +138,22 @@ export const storePages = pgTable("store_pages", {
 });
 
 // Zod schemas for validation
-export const insertStoreSchema = createInsertSchema(stores, {
-  isActive: z.boolean().default(true),
-  isPublished: z.boolean().default(false),
-  enableInventoryTracking: z.boolean().default(true),
-  allowGuestCheckout: z.boolean().default(true),
-  enableCoupons: z.boolean().default(false),
-  enableReviews: z.boolean().default(true)
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
+export const insertStoreSchema = createInsertSchema(stores).omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertProductSchema = createInsertSchema(products, {
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true }).extend({
   price: z.union([z.string(), z.number()]).transform(val => String(val)),
   compareAtPrice: z.union([z.string(), z.number(), z.null()]).transform(val => val ? String(val) : null).optional(),
   cost: z.union([z.string(), z.number(), z.null()]).transform(val => val ? String(val) : null).optional(),
-  weight: z.union([z.string(), z.number(), z.null()]).transform(val => val ? String(val) : null).optional(),
-  isActive: z.boolean().default(true),
-  isFeatured: z.boolean().default(false),
-  trackInventory: z.boolean().default(true),
-  allowBackorder: z.boolean().default(false)
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
+  weight: z.union([z.string(), z.number(), z.null()]).transform(val => val ? String(val) : null).optional()
 });
 
-export const insertCategorySchema = createInsertSchema(categories, {
-  isActive: z.boolean().default(true)
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
+export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertOrderSchema = createInsertSchema(orders).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertCustomerSchema = createInsertSchema(customers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
+export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertStorePageSchema = createInsertSchema(storePages, {
-  isPublished: z.boolean().default(false)
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
+export const insertStorePageSchema = createInsertSchema(storePages).omit({ id: true, createdAt: true, updatedAt: true });
 
 // TypeScript types
 export type Store = typeof stores.$inferSelect;
