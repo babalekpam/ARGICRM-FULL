@@ -2328,6 +2328,9 @@ export const insertStoreSchema = createInsertSchema(stores).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Make currency required to ensure it's always explicitly provided
+  currency: z.string().min(1, "Currency is required"),
 });
 
 export const insertEcommerceProductSchema = createInsertSchema(ecommerceProducts).omit({
