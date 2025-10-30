@@ -141,15 +141,25 @@ export async function login(req: Request, res: Response) {
     // Update last login
     await storage.updateUserLastLogin(user.id);
 
+    // SECURITY: Set JWT token as httpOnly cookie (prevents XSS attacks)
+    res.cookie('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
     res.json({
-      token,
+      success: true,
+      token,  // Also send in response body for backward compatibility
       user: {
         id: user.id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        permissions: userWithPermissions.permissions
+        permissions: userWithPermissions.permissions,
+        isPlatformOwner: email === 'abel@argilette.com' || email === 'admin@default.com'
       },
       tenant: {
         id: tenant.id,
