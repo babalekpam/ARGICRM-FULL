@@ -18,6 +18,8 @@ export const stores = pgTable("stores", {
   currency: text("currency").default("USD"),
   timezone: text("timezone").default("UTC"),
   isActive: boolean("is_active").default(true),
+  isPublic: boolean("is_public").default(false),
+  status: text("status").default("inactive"),
   settings: jsonb("settings").default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()

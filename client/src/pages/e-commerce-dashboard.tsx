@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -35,7 +37,9 @@ import {
   Trash2,
   Zap,
   Sparkles,
-  Eye
+  Eye,
+  CheckCircle,
+  Clock
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -63,6 +67,8 @@ export default function EcommerceDashboard() {
     expiresAt: '',
     minOrderAmount: 0
   });
+  const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false);
+  const [storeToUnpublish, setStoreToUnpublish] = useState<{ id: number; name: string } | null>(null);
 
   // Product creation state
   const [newProduct, setNewProduct] = useState({
@@ -266,6 +272,52 @@ export default function EcommerceDashboard() {
   const handleDeleteStore = (storeId: number, storeName: string) => {
     if (window.confirm(`Are you sure you want to delete the store "${storeName}"? This action cannot be undone.`)) {
       deleteStoreMutation.mutate(storeId);
+    }
+  };
+
+  // Toggle publish mutation
+  const togglePublishMutation = useMutation({
+    mutationFn: async ({ storeId, isPublic }: { storeId: number; isPublic: boolean }) => {
+      const response = await apiRequest('PUT', `/api/ecommerce/stores/${storeId}`, {
+        isPublic,
+        status: isPublic ? 'active' : 'inactive'
+      });
+      return await response.json();
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: variables.isPublic ? "Store Published" : "Store Unpublished",
+        description: variables.isPublic 
+          ? "Your store is now live and visible to customers" 
+          : "Your store is now hidden from customers"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/ecommerce/stores'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update store status",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Handle toggle publish with confirmation for unpublish
+  const handleTogglePublish = (storeId: number, isPublic: boolean, storeName: string) => {
+    if (!isPublic) {
+      setStoreToUnpublish({ id: storeId, name: storeName });
+      setUnpublishDialogOpen(true);
+    } else {
+      togglePublishMutation.mutate({ storeId, isPublic });
+    }
+  };
+
+  // Confirm unpublish
+  const confirmUnpublish = () => {
+    if (storeToUnpublish) {
+      togglePublishMutation.mutate({ storeId: storeToUnpublish.id, isPublic: false });
+      setUnpublishDialogOpen(false);
+      setStoreToUnpublish(null);
     }
   };
 
@@ -896,16 +948,43 @@ export default function EcommerceDashboard() {
               </div>
             ) : (
               Array.isArray(stores) && stores.map((store: any) => (
-                <Card key={store.id} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{store.name}</h3>
-                        <p className="text-sm text-gray-600">{store.description}</p>
-                      </div>
-                      <Badge variant={store.isActive ? "default" : "secondary"}>
-                        {store.isActive ? "Active" : "Inactive"}
+                <Card key={store.id} className="overflow-hidden" data-testid={`card-store-${store.id}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-lg">{store.name}</CardTitle>
+                      <Badge 
+                        variant={store.isPublic ? "default" : "secondary"}
+                        className={store.isPublic ? "bg-green-600 hover:bg-green-700" : ""}
+                        data-testid={`badge-status-${store.id}`}
+                      >
+                        {store.isPublic ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Published
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="h-3 w-3 mr-1" />
+                            Draft
+                          </>
+                        )}
                       </Badge>
+                    </div>
+                    {store.description && (
+                      <p className="text-sm text-muted-foreground mt-2">{store.description}</p>
+                    )}
+                  </CardHeader>
+                  <CardContent className="p-6 pt-0">
+                    <div className="flex items-center gap-2 mb-4 p-3 bg-muted rounded-lg">
+                      <Switch 
+                        checked={store.isPublic || false}
+                        onCheckedChange={(checked) => handleTogglePublish(store.id, checked, store.name)}
+                        disabled={togglePublishMutation.isPending}
+                        data-testid={`switch-publish-${store.id}`}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {store.isPublic ? "Store is live" : "Store is in draft mode"}
+                      </span>
                     </div>
                     
                     <div className="space-y-3">
@@ -1447,6 +1526,31 @@ export default function EcommerceDashboard() {
         </TabsContent>
         </div>
       </Tabs>
+
+      {/* Unpublish Confirmation Dialog */}
+      <AlertDialog open={unpublishDialogOpen} onOpenChange={setUnpublishDialogOpen}>
+        <AlertDialogContent data-testid="dialog-unpublish-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish Store?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unpublish "{storeToUnpublish?.name}"? 
+              Customers will no longer be able to access this store.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-unpublish">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmUnpublish}
+              className="bg-destructive hover:bg-destructive/90"
+              data-testid="button-confirm-unpublish"
+            >
+              Unpublish Store
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </Layout>
   );

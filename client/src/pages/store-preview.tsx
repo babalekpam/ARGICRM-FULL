@@ -1,10 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
 import {
   Package,
   ShoppingCart,
@@ -15,9 +16,10 @@ import {
   Instagram,
   Mail,
   AlertCircle,
-  Eye
+  Eye,
+  Globe
 } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { CURRENCIES } from '@shared/currencies';
 
 interface Store {
@@ -31,6 +33,7 @@ interface Store {
   currency: string;
   logo?: string;
   status: string;
+  isPublic?: boolean;
 }
 
 interface Product {
@@ -47,6 +50,7 @@ interface Product {
 export default function StorePreview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Fetch store data
   const { data: store, isLoading: storeLoading, error: storeError } = useQuery<Store>({
@@ -60,6 +64,36 @@ export default function StorePreview() {
     },
     enabled: !!id
   });
+
+  // Publish store mutation
+  const publishStoreMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('PUT', `/api/ecommerce/stores/${id}`, {
+        isPublic: true,
+        status: 'active'
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Store Published",
+        description: "Your store is now live and visible to customers"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/ecommerce/stores', id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/ecommerce/stores'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Publish Failed",
+        description: error.message || "Failed to publish store",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handlePublishFromPreview = () => {
+    publishStoreMutation.mutate();
+  };
 
   // Fetch products for this store
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
@@ -127,26 +161,45 @@ export default function StorePreview() {
 
   return (
     <div className="min-h-screen bg-gray-50" data-testid="page-store-preview">
-      {/* PREVIEW MODE Banner */}
+      {/* PREVIEW/DRAFT MODE Banner */}
       <div 
-        className="fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-black px-4 py-3 shadow-lg"
-        data-testid="banner-preview-mode"
+        className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 shadow-lg ${
+          !store?.isPublic ? 'bg-orange-500' : 'bg-yellow-500'
+        } text-black`}
+        data-testid={!store?.isPublic ? "banner-draft-mode" : "banner-preview-mode"}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Eye className="w-5 h-5" />
-            <span className="font-semibold">PREVIEW MODE</span>
-            <span className="hidden sm:inline">- This is how your store will look to customers</span>
+            <span className="font-semibold">
+              {!store?.isPublic ? "DRAFT MODE - " : "PREVIEW MODE - "}
+              This is how your store will look to customers
+            </span>
           </div>
-          <Button 
-            size="sm" 
-            variant="secondary"
-            onClick={() => navigate('/ecommerce-dashboard')}
-            data-testid="button-back-dashboard"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
+          <div className="flex items-center gap-2">
+            {!store?.isPublic && (
+              <Button
+                size="sm"
+                variant="default"
+                onClick={handlePublishFromPreview}
+                disabled={publishStoreMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="button-publish-from-preview"
+              >
+                <Globe className="w-4 h-4 mr-1" />
+                {publishStoreMutation.isPending ? 'Publishing...' : 'Publish Store'}
+              </Button>
+            )}
+            <Button 
+              size="sm" 
+              variant="secondary"
+              onClick={() => navigate('/ecommerce-dashboard')}
+              data-testid="button-back-to-dashboard"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
       </div>
 
