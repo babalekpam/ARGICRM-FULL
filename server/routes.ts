@@ -1193,6 +1193,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forgot password endpoint - generates reset token and sends email
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      // ISSUE 2: Zod validation for email
+      const forgotPasswordSchema = z.object({
+        email: z.string().email('Invalid email format')
+      });
+
+      const validatedData = forgotPasswordSchema.parse(req.body);
+      const { email } = validatedData;
+
+      // Find the user
+      const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+      
+      if (!user) {
+        // Security: Don't reveal if user exists or not
+        return res.json({
+          success: true,
+          message: 'If an account exists with this email, you will receive a password reset link shortly.'
+        });
+      }
+
+      // ISSUE 3: Generate secure password reset token using crypto
+      const crypto = await import('crypto');
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
+
+      // ISSUE 3: Hash the token with bcrypt before saving to database
+      const bcrypt = await import('bcrypt');
+      const hashedToken = await bcrypt.hash(resetToken, 10);
+
+      // ISSUE 3: Save HASHED token to database
+      await db.update(users)
+        .set({
+          passwordResetToken: hashedToken,
+          passwordResetExpires: resetExpires,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id));
+
+      console.log(`🔐 Password reset token generated and hashed for: ${email}`);
+
+      // ISSUE 3: Send UNHASHED token in the email (user needs the plain token to reset)
+      const { emailService } = await import('./email-service.js');
+      const baseUrl = process.env.REPLIT_DOMAINS || 'http://localhost:5000';
+      const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+      
+      const emailSent = await emailService.sendPasswordResetEmail({
+        email,
+        firstName: user.firstName || email.split('@')[0],
+        resetUrl
+      });
+
+      if (emailSent) {
+        console.log(`✅ Password reset email sent successfully to: ${email}`);
+      }
+
+      res.json({
+        success: true,
+        message: 'If an account exists with this email, you will receive a password reset link shortly.',
+        emailSent
+      });
+    } catch (error) {
+      // Handle Zod validation errors
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: 'Validation failed', 
+          details: error.errors.map(e => e.message).join(', ')
+        });
+      }
+      console.error('Forgot password error:', error);
+      res.status(500).json({ error: 'Failed to process password reset request' });
+    }
+  });
+
+  // Reset password endpoint - verifies token and updates password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      // ISSUE 2: Zod validation for reset password
+      const resetPasswordSchema = z.object({
+        token: z.string().min(1, 'Token is required'),
+        email: z.string().email('Invalid email format'),
+        newPassword: z.string().min(8, 'Password must be at least 8 characters long')
+      });
+
+      const validatedData = resetPasswordSchema.parse(req.body);
+      const { token, email, newPassword } = validatedData;
+
+      // ISSUE 3: Query users where passwordResetExpires > now()
+      const now = new Date();
+      const potentialUsers = await db.select().from(users)
+        .where(eq(users.email, email.toLowerCase()));
+
+      if (potentialUsers.length === 0) {
+        return res.status(400).json({ error: 'Invalid or expired reset token' });
+      }
+
+      // ISSUE 3: For each potential match, use bcrypt.compare to find matching token
+      const bcrypt = await import('bcrypt');
+      let matchedUser = null;
+
+      for (const user of potentialUsers) {
+        // Check if token hasn't expired
+        if (!user.passwordResetExpires || now > user.passwordResetExpires) {
+          continue;
+        }
+
+        // Check if token is set
+        if (!user.passwordResetToken) {
+          continue;
+        }
+
+        // ISSUE 3: Use bcrypt.compare to verify the token against the hashed token
+        const isTokenValid = await bcrypt.compare(token, user.passwordResetToken);
+        if (isTokenValid) {
+          matchedUser = user;
+          break;
+        }
+      }
+
+      if (!matchedUser) {
+        return res.status(400).json({ error: 'Invalid or expired reset token' });
+      }
+
+      // Hash new password
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+
+      // Update password and clear reset token
+      await db.update(users)
+        .set({
+          passwordHash,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, matchedUser.id));
+
+      console.log(`✅ Password reset successful for: ${email}`);
+
+      res.json({
+        success: true,
+        message: 'Password has been reset successfully. You can now login with your new password.'
+      });
+    } catch (error) {
+      // Handle Zod validation errors
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: 'Validation failed', 
+          details: error.errors.map(e => e.message).join(', ')
+        });
+      }
+      console.error('Reset password error:', error);
+      res.status(500).json({ error: 'Failed to reset password' });
+    }
+  });
+
 
   // Contact routes - ARGILETTE's NODE CRM Implementation
   app.get("/api/contacts", authenticate, async (req, res) => {

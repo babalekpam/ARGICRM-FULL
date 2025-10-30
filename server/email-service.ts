@@ -8,6 +8,12 @@ interface EmailVerificationData {
   verificationUrl: string;
 }
 
+interface PasswordResetData {
+  email: string;
+  firstName: string;
+  resetUrl: string;
+}
+
 class EmailService {
   private transporter: any = null;
   private isConfigured = false;
@@ -128,6 +134,51 @@ The NODE CRM Team`
     `;
   }
 
+  async sendPasswordResetEmail(data: PasswordResetData): Promise<boolean> {
+    // Force email initialization if not configured
+    if (!this.isConfigured || !this.transporter) {
+      console.log('🔄 Re-initializing email service for password reset email...');
+      await this.initializeService();
+    }
+    
+    if (!this.isConfigured || !this.transporter) {
+      console.log('📧 EMAIL NOT SENT - SMTP not configured');
+      console.log('📪 Would send password reset email to:', data.email);
+      console.log('🔗 Reset link:', data.resetUrl);
+      return false;
+    }
+
+    try {
+      const fromEmail = process.env.SMTP_FROM_EMAIL || 'no-reply@argilette.org';
+      const mailOptions = {
+        from: `"NODE CRM" <${fromEmail}>`,
+        to: data.email,
+        subject: 'Reset Your NODE CRM Password',
+        html: this.getPasswordResetEmailTemplate(data),
+        text: `Hi ${data.firstName},
+
+We received a request to reset your NODE CRM password. Click the link below to create a new password:
+
+${data.resetUrl}
+
+This link will expire in 1 hour.
+
+If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+
+Best regards,
+The NODE CRM Team`
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log('✅ Password reset email sent successfully to:', data.email);
+      console.log('📧 Sent from:', fromEmail);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send password reset email:', error);
+      return false;
+    }
+  }
+
   async sendWelcomeEmail(email: string, firstName: string): Promise<boolean> {
     if (!this.isConfigured || !this.transporter) {
       console.log('📧 Welcome email would be sent to:', email);
@@ -222,6 +273,59 @@ The NODE CRM Team`
             <p>Need help getting started? Our support team is here to assist you at <a href="mailto:info@argilette.com">info@argilette.com</a></p>
             
             <p>Thank you for choosing NODE CRM!<br>The NODE CRM Team</p>
+        </div>
+        <div class="footer">
+            <p>© 2025 NODE CRM. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+  }
+
+  private getPasswordResetEmailTemplate(data: PasswordResetData): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your NODE CRM Password</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
+        .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Password Reset Request</h1>
+        </div>
+        <div class="content">
+            <p>Hi ${data.firstName},</p>
+            
+            <p>We received a request to reset your NODE CRM password. If you made this request, click the button below to set a new password:</p>
+            
+            <div style="text-align: center;">
+                <a href="${data.resetUrl}" class="button">Reset My Password</a>
+            </div>
+            
+            <p><strong>This link will expire in 1 hour.</strong></p>
+            
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace;">${data.resetUrl}</p>
+            
+            <div class="warning">
+                <strong>⚠️ Security Note:</strong><br>
+                If you didn't request a password reset, please ignore this email. Your password will remain unchanged and your account is secure.
+            </div>
+            
+            <p>Best regards,<br>The NODE CRM Team</p>
         </div>
         <div class="footer">
             <p>© 2025 NODE CRM. All rights reserved.</p>

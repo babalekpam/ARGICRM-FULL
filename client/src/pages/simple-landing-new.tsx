@@ -464,9 +464,9 @@ export default function SimpleLanding() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
-                      <a href="#" className="text-sm text-primary hover:underline">
+                      <Link to="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
                         Forgot password?
-                      </a>
+                      </Link>
                     </div>
                     <Input
                       id="password"

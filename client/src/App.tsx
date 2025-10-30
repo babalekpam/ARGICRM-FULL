@@ -16,6 +16,9 @@ import React, { lazy, Suspense, useEffect } from 'react';
 // OPTIMIZED: Core pages loaded immediately - no lazy loading for nav items
 import SimpleLanding from "@/pages/simple-landing-new";
 import SignupPage from "@/pages/signup";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
+import HelpCenterPage from "@/pages/help-center";
 import Dashboard from "@/pages/dashboard";
 import DashboardRedirect from "@/components/dashboard-redirect";
 import UserDashboard from "@/pages/user-dashboard";
@@ -135,6 +138,10 @@ function App() {
                           <Route path="/" element={<PageTranslator><SimpleLanding /></PageTranslator>} />
                           <Route path="/login" element={<Navigate to="/" replace />} />
                           <Route path="/signup" element={<PageTranslator><SignupPage /></PageTranslator>} />
+                          <Route path="/forgot-password" element={<PageTranslator><ForgotPasswordPage /></PageTranslator>} />
+                          <Route path="/reset-password" element={<PageTranslator><ResetPasswordPage /></PageTranslator>} />
+                          <Route path="/help-center" element={<PageTranslator><HelpCenterPage /></PageTranslator>} />
+                          <Route path="/help" element={<PageTranslator><HelpCenterPage /></PageTranslator>} />
                           <Route path="/unsubscribe" element={<UnsubscribePage />} />
                           <Route path="/features" element={<PageTranslator><FeaturesPage /></PageTranslator>} />
                           <Route path="/pricing" element={<PageTranslator><PricingPage /></PageTranslator>} />
