@@ -3246,38 +3246,63 @@ Respond in JSON format:
 
   app.post('/api/ai/generate-content', async (req: Request, res: Response) => {
     try {
-      const { type, audience, tone, keywords, length } = req.body;
+      const { type, audience, tone, keywords, length, prompt: userPrompt, context } = req.body;
       
       try {
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI('AIzaSyBDbO931nTw9t5PueEt9l0YlO47QQiyDQ0');
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        const prompt = `Generate ${type} content:
-- Audience: ${audience}
-- Tone: ${tone}
-- Keywords: ${keywords?.join(', ')}
-- Length: ${length}
-
-Respond in JSON format:
-{
-  "content": "Generated content here...",
-  "suggestions": ["Improvement 1", "Improvement 2"],
-  "seoScore": 0.85
-}`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const content = JSON.parse(response.text());
+        // Use Argilette AI (Replit AI Integrations) instead of hardcoded API key
+        const { generateAIResponse } = await import('./ai.js');
         
-        res.json(content);
+        let finalPrompt = '';
+        
+        // Handle store wizard requests
+        if (type === 'name') {
+          finalPrompt = userPrompt || 'Generate a creative, memorable store name for an e-commerce business';
+        } else if (type === 'description') {
+          finalPrompt = userPrompt || `Generate a compelling store description${context?.storeName ? ` for ${context.storeName}` : ''}`;
+        } else if (type === 'product') {
+          finalPrompt = userPrompt || 'Generate a detailed product description';
+        } else {
+          // Handle legacy format
+          finalPrompt = `Generate ${type} content:
+- Audience: ${audience || 'general'}
+- Tone: ${tone || 'professional'}
+- Keywords: ${keywords?.join(', ') || 'none'}
+- Length: ${length || 'medium'}`;
+        }
+        
+        const result = await generateAIResponse(finalPrompt, 'argilette');
+        
+        // Parse response for different content types
+        if (type === 'name') {
+          // Extract store name from response
+          const name = result.trim().replace(/^["']|["']$/g, '').split('\n')[0];
+          res.json({ name });
+        } else if (type === 'description') {
+          res.json({ description: result.trim() });
+        } else if (type === 'product') {
+          res.json({ content: result.trim() });
+        } else {
+          // Legacy format response
+          res.json({
+            content: result.trim(),
+            suggestions: ["Add personalization", "Include call-to-action", "Optimize for SEO"],
+            seoScore: 0.85
+          });
+        }
       } catch (aiError) {
+        console.error('AI content generation error:', aiError);
         // Fallback content
-        res.json({
-          content: `Sample ${type} content for ${audience}`,
-          suggestions: ["Add personalization", "Include call-to-action"],
-          seoScore: 0.6
-        });
+        if (type === 'name') {
+          res.json({ name: 'My Awesome Store' });
+        } else if (type === 'description') {
+          res.json({ description: 'A premium online store offering quality products and exceptional customer service.' });
+        } else {
+          res.json({
+            content: `Sample ${type} content${audience ? ` for ${audience}` : ''}`,
+            suggestions: ["Add personalization", "Include call-to-action"],
+            seoScore: 0.6
+          });
+        }
       }
     } catch (error) {
       console.error('Content generation error:', error);

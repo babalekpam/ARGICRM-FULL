@@ -31,7 +31,9 @@ import {
   Copy,
   ExternalLink,
   RefreshCw,
-  Trash2
+  Trash2,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -41,10 +43,12 @@ import Layout from '@/components/layout';
 // Import our shopping cart component
 import ShoppingCartComponent, { AddToCartButton } from '@/components/shopping-cart';
 import ShopifyPerformanceDashboard from '@/components/shopify-performance-dashboard';
+import { StoreLaunchWizard } from '@/components/store-launch-wizard';
 
 export default function EcommerceDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showLaunchWizard, setShowLaunchWizard] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
@@ -91,10 +95,8 @@ export default function EcommerceDashboard() {
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
       params.append('sort', sortBy);
       
-      return await apiRequest('GET', `/api/ecommerce/products?${params.toString()}`, undefined, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('GET', `/api/ecommerce/products?${params.toString()}`);
+      return await response.json();
     }
   });
 
@@ -102,10 +104,8 @@ export default function EcommerceDashboard() {
   const { data: categories = [] } = useQuery({
     queryKey: ['/api/ecommerce/categories'],
     queryFn: async () => {
-      return await apiRequest('GET', '/api/ecommerce/categories', undefined, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('GET', '/api/ecommerce/categories');
+      return await response.json();
     }
   });
 
@@ -113,10 +113,8 @@ export default function EcommerceDashboard() {
   const { data: orders = [] } = useQuery({
     queryKey: ['/api/ecommerce/orders'],
     queryFn: async () => {
-      return await apiRequest('GET', '/api/ecommerce/orders', undefined, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('GET', '/api/ecommerce/orders');
+      return await response.json();
     }
   });
 
@@ -124,10 +122,8 @@ export default function EcommerceDashboard() {
   const { data: customers = [] } = useQuery({
     queryKey: ['/api/ecommerce/customers'],
     queryFn: async () => {
-      return await apiRequest('GET', '/api/ecommerce/customers', undefined, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('GET', '/api/ecommerce/customers');
+      return await response.json();
     }
   });
 
@@ -135,10 +131,8 @@ export default function EcommerceDashboard() {
   const { data: reviews = [] } = useQuery({
     queryKey: ['/api/ecommerce/reviews'],
     queryFn: async () => {
-      return await apiRequest('GET', '/api/ecommerce/reviews', undefined, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('GET', '/api/ecommerce/reviews');
+      return await response.json();
     }
   });
 
@@ -146,10 +140,8 @@ export default function EcommerceDashboard() {
   const { data: coupons = [] } = useQuery({
     queryKey: ['/api/ecommerce/coupons'],
     queryFn: async () => {
-      return await apiRequest('GET', '/api/ecommerce/coupons', undefined, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('GET', '/api/ecommerce/coupons');
+      return await response.json();
     }
   });
 
@@ -174,10 +166,8 @@ export default function EcommerceDashboard() {
   // Create review mutation
   const createReviewMutation = useMutation({
     mutationFn: async (reviewData: any) => {
-      return await apiRequest('POST', '/api/ecommerce/reviews', reviewData, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('POST', '/api/ecommerce/reviews', reviewData);
+      return await response.json();
     },
     onSuccess: () => {
       toast({ title: "Review Added", description: "Product review submitted successfully" });
@@ -196,10 +186,8 @@ export default function EcommerceDashboard() {
   // Create coupon mutation
   const createCouponMutation = useMutation({
     mutationFn: async (couponData: any) => {
-      return await apiRequest('POST', '/api/ecommerce/coupons', couponData, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('POST', '/api/ecommerce/coupons', couponData);
+      return await response.json();
     },
     onSuccess: () => {
       toast({ title: "Coupon Created", description: "Discount coupon created successfully" });
@@ -224,10 +212,8 @@ export default function EcommerceDashboard() {
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
-      return await apiRequest('POST', '/api/ecommerce/products', productData, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('POST', '/api/ecommerce/products', productData);
+      return await response.json();
     },
     onSuccess: () => {
       toast({ title: "Product Created", description: "Product added successfully" });
@@ -257,10 +243,8 @@ export default function EcommerceDashboard() {
   // Delete store mutation
   const deleteStoreMutation = useMutation({
     mutationFn: async (storeId: number) => {
-      return await apiRequest('DELETE', `/api/ecommerce/stores/${storeId}`, undefined, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('DELETE', `/api/ecommerce/stores/${storeId}`);
+      return await response.json();
     },
     onSuccess: () => {
       toast({ title: "Store Deleted", description: "Store removed successfully" });
@@ -285,12 +269,10 @@ export default function EcommerceDashboard() {
   // Create store mutation
   const createStoreMutation = useMutation({
     mutationFn: async (storeData: any) => {
-      return await apiRequest('POST', '/api/ecommerce/stores', storeData, {
-        'x-auth-email': 'abel@argilette.com',
-        'authorization': 'Bearer demo-token'
-      });
+      const response = await apiRequest('POST', '/api/ecommerce/stores', storeData);
+      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       const webUrl = data.domain || `${data.subdomain}.argilette-store.com`;
       const subdomainMessage = data.subdomain !== newStore.subdomain ? 
         ` (subdomain adjusted to "${data.subdomain}" for uniqueness)` : '';
@@ -347,6 +329,11 @@ export default function EcommerceDashboard() {
     }
   }) : [];
 
+  // Show wizard if triggered
+  if (showLaunchWizard) {
+    return <StoreLaunchWizard onClose={() => setShowLaunchWizard(false)} />;
+  }
+
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-8">
@@ -357,6 +344,15 @@ export default function EcommerceDashboard() {
           <p className="text-gray-600">Complete e-commerce management system</p>
         </div>
         <div className="flex items-center gap-4">
+          <Button 
+            size="lg"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            onClick={() => setShowLaunchWizard(true)}
+            data-testid="button-launch-store"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            Launch New Store
+          </Button>
           <ShoppingCartComponent />
           <Button variant="outline">
             <Settings className="h-4 w-4 mr-2" />
