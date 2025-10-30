@@ -30,6 +30,9 @@ import {
 import Logo from "@/components/logo";
 import { SEO } from "@/components/SEO";
 import { useConversionTracking } from "@/components/conversion-tracking";
+import { PageTranslator } from "@/components/PageTranslator";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 
 // Import professional stock images
 import heroImage from "@assets/stock_images/modern_business_team_a855356a.jpg";
@@ -42,6 +45,7 @@ export default function SimpleLanding() {
   const { trackConversion } = useConversionTracking();
   const { login, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { currentLanguage, isRTL } = useLanguage();
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -167,13 +171,14 @@ export default function SimpleLanding() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <SEO
-        title="ARGILETTE - Complete AI Business Management Platform"
-        description="Revolutionary AI-powered business platform combining CRM, e-commerce, marketing automation, and financial operations. Transform your business with comprehensive automation."
-        keywords="AI business management, CRM software, e-commerce platform, email marketing, financial management"
-        canonical="https://argilette.org/"
-      />
+    <PageTranslator context="landing-page">
+      <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        <SEO
+          title="ARGILETTE - Complete AI Business Management Platform"
+          description="Revolutionary AI-powered business platform combining CRM, e-commerce, marketing automation, and financial operations. Transform your business with comprehensive automation."
+          keywords="AI business management, CRM software, e-commerce platform, email marketing, financial management"
+          canonical="https://argilette.org/"
+        />
       
       {/* Modern Navigation with Glass Effect */}
       <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -185,7 +190,7 @@ export default function SimpleLanding() {
                 ARGILETTE
               </span>
             </div>
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-6">
               <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Features
               </a>
@@ -195,6 +200,7 @@ export default function SimpleLanding() {
               <a href="#benefits" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Benefits
               </a>
+              <LanguageSelector />
               <Button asChild size="sm" className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" data-testid="button-get-started">
                 <Link to="/signup">Get Started</Link>
               </Button>
@@ -560,6 +566,7 @@ export default function SimpleLanding() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </PageTranslator>
   );
 }
