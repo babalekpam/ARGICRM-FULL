@@ -595,10 +595,10 @@ export const purchaseOrderItems = pgTable("purchase_order_items", {
 
 // Online stores (tenant-specific storefronts)
 export const stores = pgTable("stores", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  userId: text("user_id").notNull(), // Required field for store ownership
-  name: text("name").notNull(),
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id").notNull(),
+  userId: varchar("user_id").notNull(), // Required field for store ownership
+  name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   subdomain: text("subdomain").unique(), // custom-store.nodecrm.com
   customDomain: text("custom_domain"), // www.mystore.com
@@ -606,8 +606,8 @@ export const stores = pgTable("stores", {
   favicon: text("favicon"),
   primaryColor: text("primary_color").default("#3b82f6"),
   secondaryColor: text("secondary_color").default("#1f2937"),
-  theme: text("theme").default("modern"), // modern, classic, minimal, custom
-  currency: text("currency").default("USD"),
+  theme: varchar("theme", { length: 50 }).default("modern"), // modern, classic, minimal, custom
+  currency: varchar("currency", { length: 10 }).notNull(),
   timezone: text("timezone").default("UTC"),
   language: text("language").default("en"),
   status: text("status").default("active"), // active, inactive, maintenance
@@ -645,94 +645,30 @@ export const stores = pgTable("stores", {
     taxRate?: number;
     taxName?: string;
   }>().default({}),
-  createdBy: uuid("created_by").references(() => users.id),
+  isPublished: boolean("is_published").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_stores_tenant").on(table.tenantId),
-  index("idx_stores_subdomain").on(table.subdomain),
+  index("idx_stores_user").on(table.userId),
 ]);
 
-// Enhanced product catalog for e-commerce
+// Enhanced product catalog for e-commerce (simplified to match DB)
 export const ecommerceProducts = pgTable("ecommerce_products", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  storeId: uuid("store_id").references(() => stores.id).notNull(),
-  sku: text("sku").notNull(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull(), // SEO-friendly URL
-  shortDescription: text("short_description"),
-  longDescription: text("long_description"),
-  productType: text("product_type").default("physical"), // physical, digital, service, subscription
-  category: text("category"),
-  subcategory: text("subcategory"),
-  brand: text("brand"),
-  tags: jsonb("tags").$type<string[]>().default([]),
-  
-  // Pricing
-  basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
-  salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
-  costPrice: decimal("cost_price", { precision: 10, scale: 2 }),
-  compareAtPrice: decimal("compare_at_price", { precision: 10, scale: 2 }),
-  currency: text("currency").default("USD"),
-  taxable: boolean("taxable").default(true),
-  
-  // Inventory
-  trackInventory: boolean("track_inventory").default(true),
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  storeId: varchar("store_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  imageUrl: text("image_url"),
+  category: varchar("category", { length: 100 }),
   stockQuantity: integer("stock_quantity").default(0),
-  allowBackorders: boolean("allow_backorders").default(false),
-  lowStockThreshold: integer("low_stock_threshold").default(10),
-  
-  // SEO and Marketing
-  seoTitle: text("seo_title"),
-  seoDescription: text("seo_description"),
-  seoKeywords: jsonb("seo_keywords").$type<string[]>().default([]),
-  featured: boolean("featured").default(false),
-  
-  // Media
-  images: jsonb("images").$type<Array<{
-    url: string;
-    alt: string;
-    primary?: boolean;
-  }>>().default([]),
-  videos: jsonb("videos").$type<Array<{
-    url: string;
-    thumbnail: string;
-    title?: string;
-  }>>().default([]),
-  
-  // Shipping
-  weight: decimal("weight", { precision: 8, scale: 3 }),
-  dimensions: jsonb("dimensions").$type<{
-    length?: number;
-    width?: number;
-    height?: number;
-    unit?: string;
-  }>().default({}),
-  shippingClass: text("shipping_class"),
-  
-  // Status and visibility
-  status: text("status").default("draft"), // draft, active, archived
-  visibility: text("visibility").default("visible"), // visible, hidden, password
-  publishedAt: timestamp("published_at"),
-  
-  // Advanced features
-  variants: boolean("has_variants").default(false),
-  customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
-  relatedProducts: jsonb("related_products").$type<string[]>().default([]),
-  crossSells: jsonb("cross_sells").$type<string[]>().default([]),
-  upSells: jsonb("up_sells").$type<string[]>().default([]),
-  
-  createdBy: uuid("created_by").references(() => users.id),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
-  index("idx_ecommerce_products_tenant").on(table.tenantId),
-  index("idx_ecommerce_products_store").on(table.storeId),
-  index("idx_ecommerce_products_sku").on(table.sku),
-  index("idx_ecommerce_products_slug").on(table.slug),
-  index("idx_ecommerce_products_status").on(table.status),
-  index("idx_ecommerce_products_category").on(table.category),
+  index("idx_products_store_id").on(table.storeId),
+  index("idx_products_category").on(table.category),
 ]);
 
 // Product variants (size, color, etc.)
