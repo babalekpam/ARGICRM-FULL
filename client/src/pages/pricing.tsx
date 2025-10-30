@@ -9,7 +9,7 @@ import Logo from "@/components/logo";
 const plans = [
   {
     name: "Starter",
-    price: "$497",
+    price: "$497.99",
     originalPrice: "$997",
     period: "one-time payment",
     description: "Perfect for freelancers and solo entrepreneurs",
@@ -38,7 +38,7 @@ const plans = [
   },
   {
     name: "Professional",
-    price: "$1,297",
+    price: "$1,297.99",
     originalPrice: "$2,997",
     period: "one-time payment",
     description: "Ideal for small businesses and marketing agencies",
@@ -68,7 +68,7 @@ const plans = [
   },
   {
     name: "Business",
-    price: "$2,997",
+    price: "$2,997.99",
     originalPrice: "$6,997",
     period: "one-time payment",
     description: "Comprehensive solution for growing agencies",
@@ -97,7 +97,7 @@ const plans = [
   },
   {
     name: "Enterprise",
-    price: "$7,997",
+    price: "$7,997.99",
     originalPrice: "$15,997",
     period: "one-time payment",
     description: "Ultimate solution for large organizations",
@@ -277,7 +277,7 @@ const comparisons = [
   {
     feature: "Total 3-Year Cost",
     competitors: "$15,000 - $30,000+",
-    argilette: "$497 - $7,997 (one-time)"
+    argilette: "$497.99 - $7,997.99 (one-time)"
   }
 ];
 
@@ -286,7 +286,7 @@ export default function PricingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <SEO
         title="ARGILETTE Pricing - All-in-One CRM, SEO & Multi-Platform Tracking | Lifetime Payment"
-        description="Pay once, own forever. ARGILETTE combines CRM, SEO tools, e-commerce, and unique 7-platform tracking (Google to ChatGPT) in one lifetime payment. From $497. No monthly fees."
+        description="Pay once, own forever. ARGILETTE combines CRM, SEO tools, e-commerce, and unique 7-platform tracking (Google to ChatGPT) in one lifetime payment. From $497.99. No monthly fees."
         keywords="lifetime CRM pricing, SEO tool pricing, white-label CRM, multi-platform tracking, one-time payment CRM, affordable SEO platform, ChatGPT tracking, social media SEO"
         canonical="https://argilette.org/pricing"
       />

@@ -205,14 +205,14 @@ export default function SimpleLanding() {
         "offers": {
           "@type": "AggregateOffer",
           "priceCurrency": "USD",
-          "lowPrice": "497",
-          "highPrice": "7997",
+          "lowPrice": "497.99",
+          "highPrice": "7997.99",
           "offerCount": "4",
           "offers": [
             {
               "@type": "Offer",
               "name": "Starter Plan",
-              "price": "497",
+              "price": "497.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
               "description": "Lifetime access - Perfect for startups and small businesses"
@@ -220,7 +220,7 @@ export default function SimpleLanding() {
             {
               "@type": "Offer",
               "name": "Professional Plan",
-              "price": "1297",
+              "price": "1297.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
               "description": "Lifetime access - Advanced features for growing businesses"
@@ -228,7 +228,7 @@ export default function SimpleLanding() {
             {
               "@type": "Offer",
               "name": "Business Plan",
-              "price": "2997",
+              "price": "2997.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
               "description": "Lifetime access - Complete solution for established companies"
@@ -236,7 +236,7 @@ export default function SimpleLanding() {
             {
               "@type": "Offer",
               "name": "Enterprise Plan",
-              "price": "7997",
+              "price": "7997.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
               "description": "Lifetime access - Ultimate platform for large enterprises"
@@ -297,7 +297,7 @@ export default function SimpleLanding() {
             "name": "Does ARGILETTE offer lifetime pricing?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes! ARGILETTE offers lifetime payment plans starting at $497 for the Starter tier up to $7,997 for Enterprise. All plans include CRM, SEO, E-commerce, and 7-platform tracking with no recurring fees."
+              "text": "Yes! ARGILETTE offers lifetime payment plans starting at $497.99 for the Starter tier up to $7,997.99 for Enterprise. All plans include CRM, SEO, E-commerce, and 7-platform tracking with no recurring fees."
             }
           }
         ]
@@ -333,7 +333,7 @@ export default function SimpleLanding() {
       <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <SEO
           title="ARGILETTE - AI Business Platform | CRM + E-commerce + SEO Tools"
-          description="All-in-one AI-powered business platform with CRM, e-commerce builder, SEO tools, and marketing automation. Track your brand across 11 platforms. Lifetime pricing from $497. 20+ languages, 195+ countries."
+          description="All-in-one AI-powered business platform with CRM, e-commerce builder, SEO tools, and marketing automation. Track your brand across 11 platforms. Lifetime pricing from $497.99. 20+ languages, 195+ countries."
           keywords="AI business platform, CRM software, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software, lifetime deal CRM"
           canonical="https://argilette.org/"
           structuredData={structuredData}
@@ -400,7 +400,7 @@ export default function SimpleLanding() {
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-lg">
-                All-in-one CRM software + E-commerce builder + SEO tools + Marketing automation. Track your brand across 11 platforms. Lifetime pricing starting at $497.
+                All-in-one CRM software + E-commerce builder + SEO tools + Marketing automation. Track your brand across 11 platforms. Lifetime pricing starting at $497.99.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
