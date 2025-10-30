@@ -34,6 +34,8 @@ import {
   type AIContent, type InsertAIContent,
   type AICampaign, type InsertAICampaign,
   type AIUsage, type InsertAIUsage,
+  type Store, type InsertStore,
+  type EcommerceProduct, type InsertEcommerceProduct,
   leads, contacts, accounts, deals, tasks, employees, campaigns, tickets, projects, invoices,
   tenants, users, tenantSubscriptions, auditLogs, systemMetrics, salesChannels,
   aiContents, aiCampaigns, aiUsage,
@@ -169,6 +171,20 @@ export interface IStorage {
   getAIUsageByTenant(tenantId: string, filters?: { provider?: string; startDate?: Date; endDate?: Date }): Promise<AIUsage[]>;
   createAIUsage(usage: InsertAIUsage): Promise<AIUsage>;
   getTenantAIUsageStats(tenantId: string): Promise<{ totalCost: number; totalTokens: number; byProvider: Record<string, number> }>;
+
+  // Store operations - TENANT ISOLATED
+  createStore(data: InsertStore): Promise<Store>;
+  getStores(tenantId: string): Promise<Store[]>;
+  getStoreById(id: string, tenantId: string): Promise<Store | undefined>;
+  updateStore(id: string, tenantId: string, data: Partial<InsertStore>): Promise<Store>;
+  deleteStore(id: string, tenantId: string): Promise<void>;
+
+  // Product operations - TENANT ISOLATED
+  createEcommerceProduct(data: InsertEcommerceProduct): Promise<EcommerceProduct>;
+  bulkCreateEcommerceProducts(products: InsertEcommerceProduct[]): Promise<EcommerceProduct[]>;
+  getEcommerceProducts(tenantId: string, storeId?: string): Promise<EcommerceProduct[]>;
+  updateEcommerceProduct(id: string, tenantId: string, data: Partial<InsertEcommerceProduct>): Promise<EcommerceProduct>;
+  deleteEcommerceProduct(id: string, tenantId: string): Promise<void>;
 
   // Appointment operations
   getAppointments(): Promise<Appointment[]>;

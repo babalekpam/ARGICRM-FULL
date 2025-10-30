@@ -1942,4 +1942,221 @@ export class DatabaseStorage implements IStorage {
       return { totalCost: 0, totalTokens: 0, byProvider: {} };
     }
   }
+
+  // ================== STORE OPERATIONS ==================
+  async createStore(data: InsertStore): Promise<Store> {
+    try {
+      const storeWithTenant = {
+        ...data,
+        tenantId: this.tenantId
+      };
+      
+      const [newStore] = await db.insert(stores)
+        .values(storeWithTenant)
+        .returning();
+      return newStore;
+    } catch (error) {
+      console.error('Error creating store:', error);
+      throw error;
+    }
+  }
+
+  async getStores(tenantId: string): Promise<Store[]> {
+    try {
+      return await db.select().from(stores)
+        .where(eq(stores.tenantId, tenantId))
+        .orderBy(desc(stores.createdAt));
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+      return [];
+    }
+  }
+
+  async getStoreById(id: string, tenantId: string): Promise<Store | undefined> {
+    try {
+      const [store] = await db.select().from(stores)
+        .where(and(eq(stores.id, id), eq(stores.tenantId, tenantId)));
+      return store || undefined;
+    } catch (error) {
+      console.error('Error fetching store:', error);
+      return undefined;
+    }
+  }
+
+  async updateStore(id: string, tenantId: string, data: Partial<InsertStore>): Promise<Store> {
+    try {
+      const [updatedStore] = await db.update(stores)
+        .set({ ...data, updatedAt: new Date() })
+        .where(and(eq(stores.id, id), eq(stores.tenantId, tenantId)))
+        .returning();
+      
+      if (!updatedStore) {
+        throw new Error('Store not found');
+      }
+      
+      return updatedStore;
+    } catch (error) {
+      console.error('Error updating store:', error);
+      throw error;
+    }
+  }
+
+  async deleteStore(id: string, tenantId: string): Promise<void> {
+    try {
+      await db.delete(stores)
+        .where(and(eq(stores.id, id), eq(stores.tenantId, tenantId)));
+    } catch (error) {
+      console.error('Error deleting store:', error);
+      throw error;
+    }
+  }
+
+  // ================== ECOMMERCE PRODUCT OPERATIONS ==================
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private async ensureUniqueSlug(baseSlug: string, storeId: string, excludeId?: string): Promise<string> {
+    let slug = baseSlug;
+    let counter = 1;
+    
+    while (true) {
+      const conditions = [
+        eq(ecommerceProducts.slug, slug),
+        eq(ecommerceProducts.storeId, storeId)
+      ];
+      
+      if (excludeId) {
+        conditions.push(sql`${ecommerceProducts.id} != ${excludeId}`);
+      }
+      
+      const [existing] = await db.select().from(ecommerceProducts)
+        .where(and(...conditions))
+        .limit(1);
+      
+      if (!existing) {
+        return slug;
+      }
+      
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+  }
+
+  async createEcommerceProduct(data: InsertEcommerceProduct): Promise<EcommerceProduct> {
+    try {
+      const baseSlug = data.slug || this.generateSlug(data.name);
+      const uniqueSlug = await this.ensureUniqueSlug(baseSlug, data.storeId);
+      
+      const productWithTenant = {
+        ...data,
+        tenantId: this.tenantId,
+        slug: uniqueSlug
+      };
+      
+      const [newProduct] = await db.insert(ecommerceProducts)
+        .values(productWithTenant)
+        .returning();
+      return newProduct;
+    } catch (error) {
+      console.error('Error creating ecommerce product:', error);
+      throw error;
+    }
+  }
+
+  async bulkCreateEcommerceProducts(products: InsertEcommerceProduct[]): Promise<EcommerceProduct[]> {
+    try {
+      const createdProducts: EcommerceProduct[] = [];
+      
+      await db.transaction(async (tx) => {
+        for (const productData of products) {
+          // Defensively force tenantId to prevent caller-controlled tenant assignment
+          const safeProduct = {
+            ...productData,
+            tenantId: this.tenantId, // Always use authenticated tenant
+          };
+          
+          // Generate slug if not provided
+          const baseSlug = safeProduct.slug || this.generateSlug(safeProduct.name);
+          const uniqueSlug = await this.ensureUniqueSlug(baseSlug, safeProduct.storeId);
+          
+          const productWithSlug = {
+            ...safeProduct,
+            slug: uniqueSlug
+          };
+          
+          const [newProduct] = await tx.insert(ecommerceProducts)
+            .values(productWithSlug)
+            .returning();
+          
+          createdProducts.push(newProduct);
+        }
+      });
+      
+      return createdProducts;
+    } catch (error) {
+      console.error('Error bulk creating ecommerce products:', error);
+      throw error;
+    }
+  }
+
+  async getEcommerceProducts(tenantId: string, storeId?: string): Promise<EcommerceProduct[]> {
+    try {
+      const conditions = [eq(ecommerceProducts.tenantId, tenantId)];
+      
+      if (storeId) {
+        conditions.push(eq(ecommerceProducts.storeId, storeId));
+      }
+      
+      return await db.select().from(ecommerceProducts)
+        .where(and(...conditions))
+        .orderBy(desc(ecommerceProducts.createdAt));
+    } catch (error) {
+      console.error('Error fetching ecommerce products:', error);
+      return [];
+    }
+  }
+
+  async updateEcommerceProduct(id: string, tenantId: string, data: Partial<InsertEcommerceProduct>): Promise<EcommerceProduct> {
+    try {
+      let updateData = { ...data };
+      
+      if (data.name && !data.slug) {
+        const [product] = await db.select().from(ecommerceProducts)
+          .where(and(eq(ecommerceProducts.id, id), eq(ecommerceProducts.tenantId, tenantId)));
+        
+        if (product) {
+          const baseSlug = this.generateSlug(data.name);
+          updateData.slug = await this.ensureUniqueSlug(baseSlug, product.storeId, id);
+        }
+      }
+      
+      const [updatedProduct] = await db.update(ecommerceProducts)
+        .set({ ...updateData, updatedAt: new Date() })
+        .where(and(eq(ecommerceProducts.id, id), eq(ecommerceProducts.tenantId, tenantId)))
+        .returning();
+      
+      if (!updatedProduct) {
+        throw new Error('Product not found');
+      }
+      
+      return updatedProduct;
+    } catch (error) {
+      console.error('Error updating ecommerce product:', error);
+      throw error;
+    }
+  }
+
+  async deleteEcommerceProduct(id: string, tenantId: string): Promise<void> {
+    try {
+      await db.delete(ecommerceProducts)
+        .where(and(eq(ecommerceProducts.id, id), eq(ecommerceProducts.tenantId, tenantId)));
+    } catch (error) {
+      console.error('Error deleting ecommerce product:', error);
+      throw error;
+    }
+  }
 }

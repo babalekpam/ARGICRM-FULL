@@ -170,12 +170,32 @@ export function StoreLaunchWizard({ onClose }: { onClose: () => void }) {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/ecommerce/stores'] });
       
-      // If products were added, create them
+      // If products were added, create them using bulk endpoint
       if (storeData.products.length > 0) {
-        for (const product of storeData.products) {
-          await apiRequest('POST', '/api/ecommerce/products', {
+        try {
+          const productsWithStore = storeData.products.map(product => ({
             ...product,
             storeId: store.id
+          }));
+          
+          const bulkResponse = await apiRequest('POST', '/api/ecommerce/products/bulk', {
+            products: productsWithStore
+          });
+          
+          const bulkResult = await bulkResponse.json();
+          
+          toast({
+            title: "Products Added!",
+            description: `Successfully added ${bulkResult.created || storeData.products.length} products to your store`,
+          });
+          
+          queryClient.invalidateQueries({ queryKey: ['/api/ecommerce/products'] });
+        } catch (error) {
+          console.error('Error creating products:', error);
+          toast({
+            title: "Product Creation Warning",
+            description: "Store created but some products may not have been added",
+            variant: "destructive"
           });
         }
       }
