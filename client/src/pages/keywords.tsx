@@ -34,20 +34,35 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { useSearch } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 interface KeywordsProps {
-  projectId: string;
+  projectId?: string;
 }
 
 type KeywordFormValues = z.infer<typeof insertKeywordSchema>;
 
-export default function Keywords({ projectId }: KeywordsProps) {
+export default function Keywords({ projectId: propProjectId }: KeywordsProps = {}) {
+  const { user } = useAuth();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const urlProjectId = params.get('projectId');
+  
+  const { data: projects } = useQuery({
+    queryKey: ['/api/projects'],
+    enabled: !!user && !propProjectId && !urlProjectId
+  });
+  
+  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: keywords, isLoading } = useQuery<Keyword[]>({
     queryKey: ["/api/keywords", projectId],
+    enabled: !!projectId,
     queryFn: async () => {
       const res = await fetch(`/api/keywords?projectId=${projectId}`);
       if (!res.ok) throw new Error("Failed to fetch keywords");
@@ -58,7 +73,7 @@ export default function Keywords({ projectId }: KeywordsProps) {
   const form = useForm<KeywordFormValues>({
     resolver: zodResolver(insertKeywordSchema),
     defaultValues: {
-      projectId,
+      projectId: null,
       keyword: "",
       searchVolume: 0,
       difficulty: 0,
@@ -68,15 +83,41 @@ export default function Keywords({ projectId }: KeywordsProps) {
     },
   });
 
+  useEffect(() => {
+    if (projectId) {
+      form.reset({
+        projectId,
+        keyword: "",
+        searchVolume: 0,
+        difficulty: 0,
+        cpc: 0,
+        position: undefined,
+        trend: "stable",
+      });
+    }
+  }, [projectId, form]);
+
   const createKeywordMutation = useMutation({
     mutationFn: async (data: KeywordFormValues) => {
-      return await apiRequest("POST", "/api/keywords", data);
+      if (!projectId && !data.projectId) {
+        throw new Error("No project selected");
+      }
+      const dataWithProjectId = { ...data, projectId: projectId || data.projectId };
+      return await apiRequest("POST", "/api/keywords", dataWithProjectId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/keywords", projectId] });
       toast({ title: "Keyword added successfully" });
       setDialogOpen(false);
-      form.reset();
+      form.reset({
+        projectId,
+        keyword: "",
+        searchVolume: 0,
+        difficulty: 0,
+        cpc: 0,
+        position: undefined,
+        trend: "stable",
+      });
     },
     onError: () => {
       toast({ title: "Failed to add keyword", variant: "destructive" });

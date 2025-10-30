@@ -28,12 +28,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSearch } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BacklinksProps {
-  projectId: string;
+  projectId?: string;
 }
 
-export default function Backlinks({ projectId }: BacklinksProps) {
+export default function Backlinks({ projectId: propProjectId }: BacklinksProps = {}) {
+  const { user } = useAuth();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const urlProjectId = params.get('projectId');
+  
+  const { data: projects } = useQuery({
+    queryKey: ['/api/projects'],
+    enabled: !!user && !propProjectId && !urlProjectId
+  });
+  
+  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [domain, setDomain] = useState("");
@@ -42,6 +55,7 @@ export default function Backlinks({ projectId }: BacklinksProps) {
 
   const { data: backlinks, isLoading } = useQuery<Backlink[]>({
     queryKey: ["/api/backlinks", projectId],
+    enabled: !!projectId,
     queryFn: async () => {
       const res = await fetch(`/api/backlinks?projectId=${projectId}`);
       if (!res.ok) throw new Error("Failed to fetch backlinks");
@@ -183,7 +197,7 @@ export default function Backlinks({ projectId }: BacklinksProps) {
                 </Button>
                 <Button
                   onClick={() => generateBacklinksMutation.mutate()}
-                  disabled={!domain || generateBacklinksMutation.isPending}
+                  disabled={!projectId || !domain || generateBacklinksMutation.isPending}
                   data-testid="button-confirm-fetch"
                 >
                   {generateBacklinksMutation.isPending ? "Processing..." : (useAI ? "Generate with AI" : "Fetch from API")}

@@ -92,22 +92,16 @@ export default function MultiPlatformSearch() {
     setIsTracking(true);
     try {
       // Step 1: Initialize multi-platform tracking
-      await apiRequest(`/api/argilette/multi-platform/${selectedProjectId}/initialize`, {
-        method: 'POST',
-        body: JSON.stringify({})
-      });
+      await apiRequest('POST', `/api/argilette/multi-platform/${selectedProjectId}/initialize`, {});
       
       // Step 2: Start tracking brand mentions (example queries)
-      await apiRequest(`/api/argilette/multi-platform/${selectedProjectId}/track-mentions`, {
-        method: 'POST',
-        body: JSON.stringify({
-          brandName: "NODE CRM",
-          queries: [
-            "best CRM software",
-            "AI-powered CRM",
-            "customer relationship management tools"
-          ]
-        })
+      await apiRequest('POST', `/api/argilette/multi-platform/${selectedProjectId}/track-mentions`, {
+        brandName: "NODE CRM",
+        queries: [
+          "best CRM software",
+          "AI-powered CRM",
+          "customer relationship management tools"
+        ]
       });
       
       // Step 3: Invalidate queries to fetch new data
@@ -455,7 +449,7 @@ export default function MultiPlatformSearch() {
                     </div>
                     <Button 
                       onClick={handleStartTracking}
-                      disabled={isTracking}
+                      disabled={isTracking || !selectedProjectId}
                       data-testid="button-track-mentions"
                     >
                       <Target className="w-4 h-4 mr-2" />

@@ -14,16 +14,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useSearch } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 interface RankTrackingProps {
-  projectId: string;
+  projectId?: string;
 }
 
-export default function RankTracking({ projectId }: RankTrackingProps) {
+export default function RankTracking({ projectId: propProjectId }: RankTrackingProps = {}) {
+  const { user } = useAuth();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const urlProjectId = params.get('projectId');
+  
+  const { data: projects } = useQuery({
+    queryKey: ['/api/projects'],
+    enabled: !!user && !propProjectId && !urlProjectId
+  });
+  
+  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
   const [selectedKeywordId, setSelectedKeywordId] = useState<string | null>(null);
 
   const { data: keywords } = useQuery<Keyword[]>({
     queryKey: ["/api/keywords", projectId],
+    enabled: !!projectId,
     queryFn: async () => {
       const res = await fetch(`/api/keywords?projectId=${projectId}`);
       if (!res.ok) throw new Error("Failed to fetch keywords");
@@ -33,6 +47,7 @@ export default function RankTracking({ projectId }: RankTrackingProps) {
 
   const { data: rankHistory, isLoading: isLoadingHistory } = useQuery<KeywordRankHistory[]>({
     queryKey: ["/api/rank-tracking/history", projectId, selectedKeywordId],
+    enabled: !!projectId,
     queryFn: async () => {
       const url = selectedKeywordId
         ? `/api/rank-tracking/history?projectId=${projectId}&keywordId=${selectedKeywordId}`
@@ -45,6 +60,7 @@ export default function RankTracking({ projectId }: RankTrackingProps) {
 
   const { data: competitorRanks } = useQuery<CompetitorRankSnapshot[]>({
     queryKey: ["/api/rank-tracking/competitor-ranks", projectId],
+    enabled: !!projectId,
     queryFn: async () => {
       const res = await fetch(`/api/rank-tracking/competitor-ranks?projectId=${projectId}`);
       if (!res.ok) throw new Error("Failed to fetch competitor ranks");

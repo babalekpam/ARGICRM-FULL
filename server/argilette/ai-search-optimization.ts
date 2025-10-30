@@ -22,14 +22,21 @@ interface AIPlatformConfig {
   trackingMethod: 'api' | 'simulation' | 'manual';
 }
 
-// Supported AI platforms for brand tracking
+// Supported AI platforms + Social Media + E-commerce for brand tracking
 const AI_PLATFORMS: AIPlatformConfig[] = [
+  // AI Platforms
   { platform: 'chatgpt', displayName: 'ChatGPT', apiSupport: true, trackingMethod: 'api' },
   { platform: 'perplexity', displayName: 'Perplexity', apiSupport: false, trackingMethod: 'simulation' },
   { platform: 'gemini', displayName: 'Google Gemini', apiSupport: true, trackingMethod: 'api' },
   { platform: 'copilot', displayName: 'Microsoft Copilot', apiSupport: false, trackingMethod: 'simulation' },
   { platform: 'google_ai_overviews', displayName: 'Google AI Overviews', apiSupport: false, trackingMethod: 'simulation' },
-  { platform: 'claude', displayName: 'Claude', apiSupport: true, trackingMethod: 'api' }
+  { platform: 'claude', displayName: 'Claude', apiSupport: true, trackingMethod: 'api' },
+  // Social Media & E-commerce Platforms (AI-powered search simulation)
+  { platform: 'youtube', displayName: 'YouTube Search', apiSupport: false, trackingMethod: 'simulation' },
+  { platform: 'instagram', displayName: 'Instagram Search', apiSupport: false, trackingMethod: 'simulation' },
+  { platform: 'tiktok', displayName: 'TikTok Search', apiSupport: false, trackingMethod: 'simulation' },
+  { platform: 'pinterest', displayName: 'Pinterest Search', apiSupport: false, trackingMethod: 'simulation' },
+  { platform: 'amazon', displayName: 'Amazon Search', apiSupport: false, trackingMethod: 'simulation' }
 ];
 
 interface BrandMentionResult {
@@ -96,6 +103,28 @@ export async function initializeAIPlatforms(tenantId: string, projectId: string)
 }
 
 /**
+ * Get platform-specific prompt for simulation
+ */
+function getPlatformPrompt(platform: string, query: string, brandName: string): string {
+  const basePlatforms: Record<string, string> = {
+    youtube: `You are simulating YouTube search results. For the search query "${query}", list 5-10 video titles that would appear, including relevance to "${brandName}" if applicable. Format: video titles with view counts and channel names. Focus on video content, tutorials, reviews, and product demonstrations.`,
+    instagram: `You are simulating Instagram search results. For the search query "${query}", describe posts, profiles, reels, and hashtags that would appear, mentioning "${brandName}" if relevant. Include engagement metrics like likes and followers. Focus on visual content, influencer posts, and brand accounts.`,
+    tiktok: `You are simulating TikTok search results. For the search query "${query}", describe trending videos and creators that would appear, mentioning "${brandName}" if relevant. Include view counts and hashtags. Focus on short-form video content, trends, and viral content.`,
+    pinterest: `You are simulating Pinterest search results. For the search query "${query}", describe pins, boards, and ideas that would appear, mentioning "${brandName}" if relevant. Include save counts. Focus on visual inspiration, DIY projects, product ideas, and lifestyle content.`,
+    amazon: `You are simulating Amazon product search results. For the search query "${query}", list products that would appear, including "${brandName}" products if relevant. Include star ratings, prices, and review counts. Focus on product listings, best sellers, and customer favorites.`
+  };
+
+  // Use platform-specific prompt or default AI chat prompt
+  const platformPrompt = basePlatforms[platform];
+  if (platformPrompt) {
+    return platformPrompt;
+  }
+
+  // Default AI chat platform prompt
+  return `${query}\n\nNote: Focus on providing accurate, helpful information about ${brandName} if relevant to the query. Simulate a response as if from ${platform}.`;
+}
+
+/**
  * Query AI platform with brand-related prompts
  */
 async function queryAIPlatform(
@@ -105,7 +134,7 @@ async function queryAIPlatform(
 ): Promise<string> {
   try {
     // Use Argilette AI (white-labeled Replit AI Integration) for all platforms
-    const userPrompt = `${query}\n\nNote: Focus on providing accurate, helpful information about ${brandName} if relevant to the query. Simulate a response as if from ${platform}.`;
+    const userPrompt = getPlatformPrompt(platform, query, brandName);
     
     const response = await aiService.chat(userPrompt);
 

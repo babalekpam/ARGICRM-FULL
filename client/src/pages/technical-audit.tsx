@@ -11,12 +11,25 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Play, Clock, CheckCircle2, AlertCircle, Gauge, Smartphone, Shield, Code } from "lucide-react";
 import type { AuditScan, PageMetric } from "@shared/schema";
+import { useSearch } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TechnicalAuditProps {
-  projectId: string;
+  projectId?: string;
 }
 
-export default function TechnicalAudit({ projectId }: TechnicalAuditProps) {
+export default function TechnicalAudit({ projectId: propProjectId }: TechnicalAuditProps = {}) {
+  const { user } = useAuth();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const urlProjectId = params.get('projectId');
+  
+  const { data: projects } = useQuery({
+    queryKey: ['/api/projects'],
+    enabled: !!user && !propProjectId && !urlProjectId
+  });
+  
+  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
   const { toast } = useToast();
   const [urls, setUrls] = useState("");
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);

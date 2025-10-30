@@ -5,12 +5,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, AlertTriangle, Info, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import Layout from "@/components/layout";
+import { useSearch } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SeoAuditProps {
-  projectId: string;
+  projectId?: string;
 }
 
-export default function SeoAudit({ projectId }: SeoAuditProps) {
+export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {}) {
+  const { user } = useAuth();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const urlProjectId = params.get('projectId');
+  
+  // Load user's available projects if no projectId is provided
+  const { data: projects } = useQuery({
+    queryKey: ['/api/projects'],
+    enabled: !!user && !propProjectId && !urlProjectId
+  });
+  
+  // Use propProjectId, then URL param, then first available project, or null
+  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
   const { data: issues, isLoading } = useQuery<SeoIssue[]>({
     queryKey: ["/api/seo-issues", projectId],
     queryFn: async () => {
@@ -18,6 +34,7 @@ export default function SeoAudit({ projectId }: SeoAuditProps) {
       if (!res.ok) throw new Error("Failed to fetch SEO issues");
       return res.json();
     },
+    enabled: !!projectId
   });
 
   const criticalIssues = issues?.filter(i => i.severity === "critical").length || 0;

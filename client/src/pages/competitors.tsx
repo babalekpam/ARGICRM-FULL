@@ -13,14 +13,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useSearch } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CompetitorsProps {
-  projectId: string;
+  projectId?: string;
 }
 
-export default function Competitors({ projectId }: CompetitorsProps) {
+export default function Competitors({ projectId: propProjectId }: CompetitorsProps = {}) {
+  const { user } = useAuth();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const urlProjectId = params.get('projectId');
+  
+  const { data: projects } = useQuery({
+    queryKey: ['/api/projects'],
+    enabled: !!user && !propProjectId && !urlProjectId
+  });
+  
+  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
   const { data: competitors, isLoading } = useQuery<Competitor[]>({
     queryKey: ["/api/competitors", projectId],
+    enabled: !!projectId,
     queryFn: async () => {
       const res = await fetch(`/api/competitors?projectId=${projectId}`);
       if (!res.ok) throw new Error("Failed to fetch competitors");

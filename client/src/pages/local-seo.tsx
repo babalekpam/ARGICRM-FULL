@@ -26,12 +26,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSearch } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LocalSEOProps {
-  projectId: string;
+  projectId?: string;
 }
 
-export default function LocalSEO({ projectId }: LocalSEOProps) {
+export default function LocalSEO({ projectId: propProjectId }: LocalSEOProps = {}) {
+  const { user } = useAuth();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const urlProjectId = params.get('projectId');
+  
+  const { data: projects } = useQuery({
+    queryKey: ['/api/projects'],
+    enabled: !!user && !propProjectId && !urlProjectId
+  });
+  
+  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
   const { toast } = useToast();
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [businessName, setBusinessName] = useState("");
@@ -40,14 +53,17 @@ export default function LocalSEO({ projectId }: LocalSEOProps) {
 
   const { data: localRankings, isLoading: rankingsLoading } = useQuery<LocalRanking[]>({
     queryKey: ["/api/projects", projectId, "local-rankings"],
+    enabled: !!projectId,
   });
 
   const { data: googleProfile, isLoading: profileLoading } = useQuery<GoogleBusinessProfile>({
     queryKey: ["/api/projects", projectId, "google-business-profile"],
+    enabled: !!projectId,
   });
 
   const { data: citations, isLoading: citationsLoading } = useQuery<LocalCitation[]>({
     queryKey: ["/api/projects", projectId, "local-citations"],
+    enabled: !!projectId,
   });
 
   const generateMutation = useMutation({
@@ -396,7 +412,7 @@ export default function LocalSEO({ projectId }: LocalSEOProps) {
             </Button>
             <Button
               onClick={() => generateMutation.mutate()}
-              disabled={!businessName || !locations || generateMutation.isPending}
+              disabled={!projectId || !businessName || !locations || generateMutation.isPending}
               data-testid="button-confirm-generate"
             >
               {generateMutation.isPending ? (
