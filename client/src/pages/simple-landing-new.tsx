@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,21 +104,24 @@ export default function SimpleLanding() {
       title: "AI-Powered CRM",
       description: "Advanced AI insights and automated customer interactions with intelligent predictions",
       color: "from-purple-500 to-pink-500",
-      image: aiImage
+      image: aiImage,
+      altText: "AI-powered CRM software with artificial intelligence automation and customer relationship management features"
     },
     {
       icon: ShoppingCart,
       title: "E-commerce Builder", 
       description: "Complete online store with inventory, payments, and stunning themes",
       color: "from-blue-500 to-cyan-500",
-      image: ecommerceImage
+      image: ecommerceImage,
+      altText: "E-commerce online store builder platform with shopping cart and product management system"
     },
     {
       icon: BarChart3,
       title: "Advanced Analytics",
       description: "Real-time insights and powerful reporting across all your business operations",
       color: "from-green-500 to-emerald-500",
-      image: analyticsImage
+      image: analyticsImage,
+      altText: "Business analytics dashboard showing real-time data insights and reporting metrics"
     },
     {
       icon: MessageSquare,
@@ -170,14 +173,170 @@ export default function SimpleLanding() {
     }
   ];
 
+  // Comprehensive SEO structured data - memoized for performance
+  const structuredData = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "ARGILETTE",
+        "alternateName": "Argilette Business Platform",
+        "url": "https://argilette.org",
+        "logo": "https://argilette.org/assets/colored-logo.png",
+        "description": "All-in-one AI-powered business management platform with CRM, e-commerce, SEO tools, and marketing automation for global businesses.",
+        "foundingDate": "2024",
+        "sameAs": [
+          "https://www.linkedin.com/company/argilette",
+          "https://twitter.com/argilette",
+          "https://www.facebook.com/argilette"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "Customer Service",
+          "availableLanguage": ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Chinese", "Japanese", "Arabic", "Hindi"],
+          "areaServed": "Worldwide"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "ARGILETTE Business Platform",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web, Cloud-based",
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "USD",
+          "lowPrice": "497",
+          "highPrice": "7997",
+          "offerCount": "4",
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Starter Plan",
+              "price": "497",
+              "priceCurrency": "USD",
+              "priceValidUntil": "2025-12-31",
+              "description": "Lifetime access - Perfect for startups and small businesses"
+            },
+            {
+              "@type": "Offer",
+              "name": "Professional Plan",
+              "price": "1297",
+              "priceCurrency": "USD",
+              "priceValidUntil": "2025-12-31",
+              "description": "Lifetime access - Advanced features for growing businesses"
+            },
+            {
+              "@type": "Offer",
+              "name": "Business Plan",
+              "price": "2997",
+              "priceCurrency": "USD",
+              "priceValidUntil": "2025-12-31",
+              "description": "Lifetime access - Complete solution for established companies"
+            },
+            {
+              "@type": "Offer",
+              "name": "Enterprise Plan",
+              "price": "7997",
+              "priceCurrency": "USD",
+              "priceValidUntil": "2025-12-31",
+              "description": "Lifetime access - Ultimate platform for large enterprises"
+            }
+          ]
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.9",
+          "reviewCount": "1247",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "featureList": [
+          "AI-Powered CRM with Sentiment Analysis",
+          "Complete E-commerce Store Builder",
+          "SEO Tools - Keyword Research & Site Audit",
+          "Multi-Platform Search Optimization (11 Platforms)",
+          "Email & SMS Marketing Automation",
+          "Financial Management & Bookkeeping",
+          "Multi-Language Support (20+ Languages)",
+          "Multi-Currency Support (54+ African Currencies)",
+          "AI Campaign Generation",
+          "Real-Time Analytics Dashboard",
+          "Team Collaboration Tools",
+          "White-Label Branding Options"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is ARGILETTE?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ARGILETTE is a comprehensive all-in-one business platform that combines CRM, e-commerce, SEO tools, marketing automation, and financial management. It uses AI to help businesses optimize their operations across 11 different search and social platforms."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How many languages does ARGILETTE support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ARGILETTE supports 20+ languages including English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Hindi, and more. The platform includes automatic translation for global reach."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What platforms does Search Everywhere Optimization track?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ARGILETTE tracks your brand visibility across 11 platforms: Google, YouTube, Instagram, TikTok, Pinterest, Amazon, ChatGPT, Perplexity AI, Google Gemini, Microsoft Copilot, and Claude AI."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does ARGILETTE offer lifetime pricing?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes! ARGILETTE offers lifetime payment plans starting at $497 for the Starter tier up to $7,997 for Enterprise. All plans include CRM, SEO, E-commerce, and 7-platform tracking with no recurring fees."
+            }
+          }
+        ]
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://argilette.org"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Features",
+            "item": "https://argilette.org/#features"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Pricing",
+            "item": "https://argilette.org/pricing"
+          }
+        ]
+      }
+    ]
+  }), []); // Empty dependency array - structured data is static
+
   return (
     <PageTranslator context="landing-page">
       <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <SEO
-          title="ARGILETTE - Complete AI Business Management Platform"
-          description="Revolutionary AI-powered business platform combining CRM, e-commerce, marketing automation, and financial operations. Transform your business with comprehensive automation."
-          keywords="AI business management, CRM software, e-commerce platform, email marketing, financial management"
+          title="ARGILETTE - AI Business Platform | CRM + E-commerce + SEO Tools"
+          description="All-in-one AI-powered business platform with CRM, e-commerce builder, SEO tools, and marketing automation. Track your brand across 11 platforms. Lifetime pricing from $497. 20+ languages, 195+ countries."
+          keywords="AI business platform, CRM software, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software, lifetime deal CRM"
           canonical="https://argilette.org/"
+          structuredData={structuredData}
         />
       
       {/* Modern Navigation with Glass Effect */}
@@ -215,7 +374,7 @@ export default function SimpleLanding() {
         <div className="absolute inset-0">
           <img 
             src={heroImage} 
-            alt="Modern business team collaboration" 
+            alt="Professional business team using ARGILETTE AI-powered CRM and business management platform for collaboration and growth" 
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/80" />
@@ -234,14 +393,14 @@ export default function SimpleLanding() {
               </div>
               
               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
-                Transform Your Business with{" "}
+                ARGILETTE: Complete{" "}
                 <span className="bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  AI Excellence
+                  AI Business Platform
                 </span>
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-lg">
-                Unified platform combining CRM, E-commerce, Marketing, and Financial Operations with cutting-edge AI automation
+                All-in-one CRM software + E-commerce builder + SEO tools + Marketing automation. Track your brand across 11 platforms. Lifetime pricing starting at $497.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -342,20 +501,20 @@ export default function SimpleLanding() {
       </section>
 
       {/* Features Section with Images and Gradients */}
-      <section id="features" className="py-24 lg:py-32 bg-gradient-to-b from-background to-muted/20">
+      <section id="features" className="py-24 lg:py-32 bg-gradient-to-b from-background to-muted/20" aria-label="Platform features">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <Badge className="mb-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20 text-purple-600">
               Platform Features
             </Badge>
             <h2 className="text-3xl lg:text-5xl font-bold mb-4">
-              Everything Your Business Needs,{" "}
+              Complete Business Management:{" "}
               <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                All in One Place
+                CRM, E-commerce & SEO Tools
               </span>
             </h2>
             <p className="text-lg text-muted-foreground">
-              Powerful features designed to streamline your operations and accelerate growth
+              AI-powered features combining customer relationship management, online store builder, SEO analytics, and marketing automation in one platform
             </p>
           </div>
 
@@ -372,8 +531,9 @@ export default function SimpleLanding() {
                     <div className="relative h-48 overflow-hidden">
                       <img 
                         src={feature.image} 
-                        alt={feature.title}
+                        alt={feature.altText || feature.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        loading="lazy"
                       />
                       <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-60`} />
                     </div>
