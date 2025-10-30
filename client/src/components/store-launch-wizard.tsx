@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,8 +118,10 @@ const STEPS = [
 export function StoreLaunchWizard({ onClose }: { onClose: () => void }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [createdStore, setCreatedStore] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [storeData, setStoreData] = useState<StoreData>({
     name: '',
@@ -200,7 +203,8 @@ export function StoreLaunchWizard({ onClose }: { onClose: () => void }) {
         }
       }
       
-      onClose();
+      // Set the created store to show success screen
+      setCreatedStore(store);
     },
     onError: (error: any) => {
       toast({
@@ -270,6 +274,81 @@ export function StoreLaunchWizard({ onClose }: { onClose: () => void }) {
   };
 
   const progress = (currentStep / 5) * 100;
+
+  // If store was successfully created, show success screen
+  if (createdStore) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8 flex items-center justify-center">
+        <Card className="max-w-2xl w-full" data-testid="card-store-success">
+          <CardContent className="p-8 text-center">
+            <div className="mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-400 to-green-600 rounded-full mb-4">
+                <Check className="h-10 w-10 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Store Created Successfully!</h2>
+              <p className="text-gray-600 text-lg">
+                Your store is ready to go live
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm text-gray-500 block">Store Name</span>
+                  <span className="text-lg font-semibold text-gray-900">{createdStore.name}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500 block">Store URL</span>
+                  <span className="text-lg font-mono text-blue-600">
+                    {createdStore.customDomain || `${createdStore.subdomain}.argilette-store.com`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <span className="text-sm text-gray-500 block">Theme</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div 
+                        className="w-6 h-6 rounded border"
+                        style={{ backgroundColor: createdStore.primaryColor }}
+                      />
+                      <div 
+                        className="w-6 h-6 rounded border"
+                        style={{ backgroundColor: createdStore.secondaryColor }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500 block">Currency</span>
+                    <Badge variant="secondary" className="mt-1">{createdStore.currency}</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                className="flex-1"
+                size="lg"
+                onClick={() => navigate(`/store-preview/${createdStore.id}`)}
+                data-testid="button-preview-your-store"
+              >
+                <Eye className="h-5 w-5 mr-2" />
+                Preview Your Store
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={onClose}
+                data-testid="button-close-success"
+              >
+                Close
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">

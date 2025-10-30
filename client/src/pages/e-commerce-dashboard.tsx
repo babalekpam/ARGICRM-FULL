@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +34,8 @@ import {
   RefreshCw,
   Trash2,
   Zap,
-  Sparkles
+  Sparkles,
+  Eye
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +50,7 @@ import { StoreLaunchWizard } from '@/components/store-launch-wizard';
 export default function EcommerceDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [showLaunchWizard, setShowLaunchWizard] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -952,11 +955,25 @@ export default function EcommerceDashboard() {
                           const url = store.domain || `${store.subdomain}.argilette-store.com`;
                           window.open(`https://${url}`, '_blank');
                         }}
+                        data-testid={`button-visit-store-${store.id}`}
                       >
                         <ExternalLink className="h-4 w-4 mr-1" />
                         Visit Store
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/store-preview/${store.id}`)}
+                        data-testid={`button-preview-store-${store.id}`}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Preview
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        data-testid={`button-edit-store-${store.id}`}
+                      >
                         <Settings className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
@@ -966,6 +983,7 @@ export default function EcommerceDashboard() {
                         onClick={() => handleDeleteStore(store.id, store.name)}
                         disabled={deleteStoreMutation.isPending}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        data-testid={`button-delete-store-${store.id}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

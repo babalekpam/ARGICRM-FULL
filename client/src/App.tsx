@@ -29,6 +29,7 @@ import SchedulingPage from "@/pages/scheduling";
 import SimpleMessagingPage from "@/pages/simple-messaging";
 import FunnelBuilderPage from "@/pages/funnel-builder";
 import EcommerceDashboardPage from "@/pages/e-commerce-dashboard";
+import StorePreview from "@/pages/store-preview";
 import FeaturesPage from "@/pages/features";
 import PricingPage from "@/pages/pricing";
 import AboutPage from "@/pages/about";
@@ -212,6 +213,11 @@ function App() {
                           <Route path="/e-commerce-dashboard" element={
                             <ProtectedRoute requiredPermission="inventory.read">
                               <PageTranslator><EcommerceDashboardPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/store-preview/:id" element={
+                            <ProtectedRoute requiredPermission="inventory.read">
+                              <StorePreview />
                             </ProtectedRoute>
                           } />
                           
