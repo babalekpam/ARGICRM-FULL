@@ -19,7 +19,7 @@ export default function Logo({
     '2xl': 'h-16 w-auto'
   };
 
-  const logoSrc = variant === 'transparent' ? '/assets/transparent-logo.png?v=2' : '/assets/colored-logo.png?v=2';
+  const logoSrc = variant === 'transparent' ? '/assets/transparent-logo.png?v=3' : '/assets/colored-logo.png?v=3';
 
   return (
     <div className={`flex items-center ${className}`}>
