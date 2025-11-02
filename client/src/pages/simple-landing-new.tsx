@@ -393,10 +393,10 @@ export default function SimpleLanding() {
               </div>
               
               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
-                ARGILETTE: Complete{" "}
                 <span className="bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  AI Business Platform
-                </span>
+                  AI Business Platform:
+                </span>{" "}
+                CRM Software + SEO Tools + Link Building
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-lg">
@@ -676,6 +676,102 @@ export default function SimpleLanding() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      </section>
+
+      {/* FAQ Section - Optimized for SEO Featured Snippets */}
+      <section className="py-24 lg:py-32 bg-muted/30">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge className="mb-4">Frequently Asked Questions</Badge>
+              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+                Everything You Need to Know About ARGILETTE
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Get instant answers to common questions about our all-in-one business platform
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">What is ARGILETTE?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    ARGILETTE is a comprehensive all-in-one business platform that combines CRM, e-commerce, SEO tools, marketing automation, and financial management. It uses AI to help businesses optimize their operations across 11 different search and social platforms.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">How much does ARGILETTE cost?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    ARGILETTE offers flexible monthly subscription plans starting at just $49.99/month for the Starter tier up to $799.99/month for Enterprise. All plans include CRM, SEO, E-commerce, Link Building, and 11-platform tracking. Much more affordable than buying Semrush + HubSpot + Shopify separately!
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">What platforms does ARGILETTE track?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    ARGILETTE tracks your brand visibility across 11 platforms: Google, YouTube, Instagram, TikTok, Pinterest, Amazon, ChatGPT, Perplexity AI, Google Gemini, Microsoft Copilot, and Claude AI. This gives you complete visibility into where your brand appears online.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">How many languages does ARGILETTE support?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    ARGILETTE supports 20+ languages including English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Hindi, and more. The platform includes automatic translation for global reach.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">What makes ARGILETTE better than competitors like Semrush or HubSpot?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Unlike competitors that only focus on one area (SEO, CRM, or e-commerce), ARGILETTE combines everything in one platform. You get Semrush-level SEO tools, HubSpot-level CRM, Shopify-level e-commerce, PLUS link building and AI-powered insights - all at a fraction of the cost of buying these tools separately.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Does ARGILETTE include link building tools?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Yes! ARGILETTE includes comprehensive link building features with AI-powered opportunity discovery, competitor backlink analysis, broken link detection, automated outreach campaigns with AI-generated personalized emails, and link health monitoring. This feature alone is worth hundreds of dollars per month from competitors like Ahrefs.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="text-center mt-12">
+              <p className="text-muted-foreground mb-4">
+                Have more questions?
+              </p>
+              <Button asChild variant="outline" data-testid="button-contact-support">
+                <Link to="/contact">
+                  Contact Our Support Team
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
