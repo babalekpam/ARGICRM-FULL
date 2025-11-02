@@ -30,6 +30,8 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [fixIssueDialogOpen, setFixIssueDialogOpen] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<SeoIssue | null>(null);
   
   // Load user's available SEO projects
   const { data: projectsData } = useQuery<any[]>({
@@ -335,7 +337,15 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
                     Affects {issue.affectedPages} {issue.affectedPages === 1 ? 'page' : 'pages'}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" data-testid={`button-fix-${issue.id}`}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  data-testid={`button-fix-${issue.id}`}
+                  onClick={() => {
+                    setSelectedIssue(issue);
+                    setFixIssueDialogOpen(true);
+                  }}
+                >
                   Fix Issue
                 </Button>
               </div>
@@ -343,6 +353,71 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
           </div>
         </CardContent>
       </Card>
+
+      {/* Fix Issue Dialog */}
+      <Dialog open={fixIssueDialogOpen} onOpenChange={setFixIssueDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]" data-testid="dialog-fix-issue">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedIssue && getSeverityIcon(selectedIssue.severity)}
+              Fix Issue
+            </DialogTitle>
+            <DialogDescription>
+              Follow these recommendations to resolve this issue
+            </DialogDescription>
+          </DialogHeader>
+          {selectedIssue && (
+            <div className="space-y-4 py-4">
+              <div>
+                <h4 className="font-semibold mb-2">{selectedIssue.title}</h4>
+                <p className="text-sm text-muted-foreground mb-4">{selectedIssue.description}</p>
+              </div>
+              
+              <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                <h5 className="font-semibold mb-2 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Recommended Action
+                </h5>
+                <p className="text-sm">{selectedIssue.recommendedAction}</p>
+              </div>
+
+              {selectedIssue.affectedUrls && selectedIssue.affectedUrls.length > 0 && (
+                <div>
+                  <h5 className="font-semibold mb-2">Affected URLs</h5>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {selectedIssue.affectedUrls.map((url, idx) => (
+                      <div key={idx} className="text-xs bg-muted/30 p-2 rounded border border-border">
+                        {url}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setFixIssueDialogOpen(false)}
+              data-testid="button-close-fix-dialog"
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                toast({
+                  title: "Issue Noted",
+                  description: "Follow the recommended actions to fix this issue on your website",
+                });
+                setFixIssueDialogOpen(false);
+              }}
+              data-testid="button-mark-understood"
+            >
+              Mark as Understood
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
