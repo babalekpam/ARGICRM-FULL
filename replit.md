@@ -47,7 +47,7 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 - **Financial Management**: Multi-currency bookkeeping, invoicing, bank feed synchronization, automated tax calculation, and financial reporting.
 - **HR & Project Management**: Employee management, advanced project management (Gantt charts), and document management.
 - **Platform Capabilities**: Comprehensive settings, multi-language support, adaptive signup flow, subscription management with tiered AI activation, and a Super Admin Dashboard with user registration tracking.
-- **Code Quality**: Resolved all TypeScript errors and removed duplicate type exports, ensuring 0 LSP diagnostics. Fixed runtime errors by handling null query data explicitly.
+- **Code Quality**: Resolved all TypeScript errors and removed duplicate type exports, ensuring 0 LSP diagnostics. Fixed runtime errors by handling null query data explicitly across all query-dependent components (AI Campaign Studio, SEO Audit, Invoices). Applied systematic null-safe pattern: `const { data: queryData } = useQuery(); const safeData = queryData || [];` to prevent "Cannot read properties of null" errors during TanStack Query initialization.
 
 ## External Dependencies
 

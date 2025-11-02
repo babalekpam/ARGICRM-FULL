@@ -31,7 +31,7 @@ export default function InvoicesPage() {
   });
   const queryClient = useQueryClient();
 
-  const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
+  const { data: invoicesData, isLoading } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
     queryFn: async () => {
       const response = await fetch("/api/invoices");
@@ -44,8 +44,9 @@ export default function InvoicesPage() {
     },
     staleTime: 0,
   });
+  const invoices = invoicesData || [];
 
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+  const { data: accountsData, isLoading: accountsLoading } = useQuery({
     queryKey: ["/api/accounts"],
     queryFn: async () => {
       const response = await fetch("/api/accounts");
@@ -57,8 +58,9 @@ export default function InvoicesPage() {
       return data;
     },
   });
+  const accounts = accountsData || [];
 
-  const { data: contacts = [], isLoading: contactsLoading } = useQuery({
+  const { data: contactsData, isLoading: contactsLoading } = useQuery({
     queryKey: ["/api/contacts"],
     queryFn: async () => {
       const response = await fetch("/api/contacts");
@@ -70,6 +72,7 @@ export default function InvoicesPage() {
       return data;
     },
   });
+  const contacts = contactsData || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
