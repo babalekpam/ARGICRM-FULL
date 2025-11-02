@@ -24,7 +24,10 @@ import {
   CheckCircle,
   Grid,
   Activity,
-  Globe
+  Globe,
+  ExternalLink,
+  HelpCircle,
+  Info
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import Layout from '@/components/layout';
@@ -116,6 +119,16 @@ function SalesChannelsManager() {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [connectionData, setConnectionData] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
+
+  // Reset platform selection when dialog closes
+  const handleConnectDialogChange = (open: boolean) => {
+    setConnectDialog(open);
+    if (!open) {
+      // Reset state when dialog is closed
+      setSelectedPlatform(null);
+      setConnectionData({});
+    }
+  };
 
   // Fetch sales channels for current tenant
   const { data: channelsResponse, isLoading, error } = useQuery({
@@ -246,8 +259,8 @@ function SalesChannelsManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sales/channels'] });
-      setConnectDialog(false);
-      setConnectionData({});
+      // Use the centralized handler to properly reset all state
+      handleConnectDialogChange(false);
     }
   });
 
@@ -307,43 +320,314 @@ function SalesChannelsManager() {
 
   const handleSubmitConnection = () => {
     if (!selectedPlatform) return;
+    
+    // Validate all required fields are filled
+    const requiredFields = getConnectionFields(selectedPlatform.id).filter(f => !f.optional);
+    const missingFields = requiredFields.filter(f => !connectionData[f.key] || connectionData[f.key].trim() === '');
+    
+    if (missingFields.length > 0) {
+      // Don't submit if fields are missing - button should be disabled anyway
+      return;
+    }
+    
     connectMutation.mutate({ 
       platform: selectedPlatform, 
       connectionData: connectionData 
     });
   };
 
+  const isConnectionFormValid = () => {
+    if (!selectedPlatform) return false;
+    const requiredFields = getConnectionFields(selectedPlatform.id).filter(f => !f.optional);
+    return requiredFields.every(f => connectionData[f.key] && connectionData[f.key].trim() !== '');
+  };
+
   const getConnectionFields = (platformId: string) => {
-    const fields: Record<string, Array<{key: string; label: string; type: string; placeholder: string}>> = {
+    const fields: Record<string, Array<{
+      key: string; 
+      label: string; 
+      type: string; 
+      placeholder: string;
+      optional?: boolean;
+      helpText?: string;
+      helpLink?: string;
+      helpLinkText?: string;
+    }>> = {
       tiktok: [
-        { key: 'accessToken', label: 'Access Token', type: 'password', placeholder: 'Enter TikTok access token' },
-        { key: 'accountId', label: 'Account ID', type: 'text', placeholder: 'Your TikTok account ID' }
+        { 
+          key: 'accessToken', 
+          label: 'Access Token', 
+          type: 'password', 
+          placeholder: 'Enter TikTok access token',
+          helpText: 'Go to TikTok for Business → Developer Portal → Create App → Copy your Access Token',
+          helpLink: 'https://business-api.tiktok.com/portal/auth',
+          helpLinkText: 'Get TikTok Access Token →'
+        },
+        { 
+          key: 'accountId', 
+          label: 'Account ID', 
+          type: 'text', 
+          placeholder: 'Your TikTok account ID',
+          helpText: 'Find this in TikTok Ads Manager → Settings → Account Info',
+          helpLink: 'https://ads.tiktok.com/i18n/account/info',
+          helpLinkText: 'Open TikTok Ads Manager →'
+        }
       ],
       facebook_business: [
-        { key: 'accessToken', label: 'Access Token', type: 'password', placeholder: 'Facebook access token' },
-        { key: 'businessManagerId', label: 'Business Manager ID', type: 'text', placeholder: 'Your Business Manager ID' },
-        { key: 'pixelId', label: 'Pixel ID (Optional)', type: 'text', placeholder: 'Facebook Pixel ID' }
+        { 
+          key: 'accessToken', 
+          label: 'Access Token', 
+          type: 'password', 
+          placeholder: 'Facebook access token',
+          helpText: 'Go to Meta for Developers → Tools → Access Token Tool → Generate Token with pages_read_engagement, leads_retrieval permissions',
+          helpLink: 'https://developers.facebook.com/tools/accesstoken/',
+          helpLinkText: 'Get Facebook Access Token →'
+        },
+        { 
+          key: 'businessManagerId', 
+          label: 'Business Manager ID', 
+          type: 'text', 
+          placeholder: 'Your Business Manager ID',
+          helpText: 'Find this in Meta Business Suite → Business Settings → Business Info',
+          helpLink: 'https://business.facebook.com/settings',
+          helpLinkText: 'Open Business Settings →'
+        },
+        { 
+          key: 'pixelId', 
+          label: 'Pixel ID (Optional)', 
+          type: 'text', 
+          placeholder: 'Facebook Pixel ID',
+          optional: true,
+          helpText: 'Find in Events Manager → Data Sources → Select your Pixel',
+          helpLink: 'https://business.facebook.com/events_manager2',
+          helpLinkText: 'Open Events Manager →'
+        }
       ],
       instagram_business: [
-        { key: 'accessToken', label: 'Access Token', type: 'password', placeholder: 'Instagram access token' },
-        { key: 'businessAccountId', label: 'Business Account ID', type: 'text', placeholder: 'Instagram Business Account ID' }
+        { 
+          key: 'accessToken', 
+          label: 'Access Token', 
+          type: 'password', 
+          placeholder: 'Instagram access token',
+          helpText: 'Use the same token from Facebook (Instagram Business accounts are linked to Facebook)',
+          helpLink: 'https://developers.facebook.com/tools/accesstoken/',
+          helpLinkText: 'Get Access Token →'
+        },
+        { 
+          key: 'businessAccountId', 
+          label: 'Business Account ID', 
+          type: 'text', 
+          placeholder: 'Instagram Business Account ID',
+          helpText: 'Go to Instagram Settings → Account → View Professional Dashboard → Account Details',
+          helpLink: 'https://www.instagram.com/accounts/manage_access/',
+          helpLinkText: 'Open Instagram Settings →'
+        }
       ],
       google_ads: [
-        { key: 'accessToken', label: 'Access Token', type: 'password', placeholder: 'Google Ads access token' },
-        { key: 'refreshToken', label: 'Refresh Token', type: 'password', placeholder: 'Google refresh token' },
-        { key: 'customerId', label: 'Customer ID', type: 'text', placeholder: 'Google Ads customer ID' }
+        { 
+          key: 'accessToken', 
+          label: 'Access Token', 
+          type: 'password', 
+          placeholder: 'Google Ads access token',
+          helpText: 'Go to Google Cloud Console → Create OAuth 2.0 Client → Generate Access Token',
+          helpLink: 'https://console.cloud.google.com/apis/credentials',
+          helpLinkText: 'Get Google Access Token →'
+        },
+        { 
+          key: 'refreshToken', 
+          label: 'Refresh Token', 
+          type: 'password', 
+          placeholder: 'Google refresh token',
+          helpText: 'This is generated along with the Access Token in OAuth flow',
+          helpLink: 'https://developers.google.com/identity/protocols/oauth2',
+          helpLinkText: 'Learn About OAuth 2.0 →'
+        },
+        { 
+          key: 'customerId', 
+          label: 'Customer ID', 
+          type: 'text', 
+          placeholder: 'Google Ads customer ID (10 digits)',
+          helpText: 'Find this in Google Ads (top right corner) - format: XXX-XXX-XXXX',
+          helpLink: 'https://ads.google.com/',
+          helpLinkText: 'Open Google Ads →'
+        }
       ],
       twitter_business: [
-        { key: 'accessToken', label: 'Access Token', type: 'password', placeholder: 'Twitter/X access token' },
-        { key: 'accountId', label: 'Account ID', type: 'text', placeholder: 'Twitter account ID' }
+        { 
+          key: 'accessToken', 
+          label: 'Access Token', 
+          type: 'password', 
+          placeholder: 'X (Twitter) access token',
+          helpText: 'Go to X Developer Portal → Create App → Keys and Tokens → Generate Access Token',
+          helpLink: 'https://developer.twitter.com/en/portal/dashboard',
+          helpLinkText: 'Get X Access Token →'
+        },
+        { 
+          key: 'accountId', 
+          label: 'Account ID', 
+          type: 'text', 
+          placeholder: 'X account ID',
+          helpText: 'Your account ID is in X Ads Manager URL or Settings',
+          helpLink: 'https://ads.twitter.com/',
+          helpLinkText: 'Open X Ads Manager →'
+        }
       ],
       linkedin_business: [
-        { key: 'accessToken', label: 'Access Token', type: 'password', placeholder: 'LinkedIn access token' },
-        { key: 'companyPageId', label: 'Company Page ID', type: 'text', placeholder: 'LinkedIn Company Page ID' }
+        { 
+          key: 'accessToken', 
+          label: 'Access Token', 
+          type: 'password', 
+          placeholder: 'LinkedIn access token',
+          helpText: 'Go to LinkedIn Developers → Create App → Auth → Generate Access Token with r_ads, rw_ads permissions',
+          helpLink: 'https://www.linkedin.com/developers/apps',
+          helpLinkText: 'Get LinkedIn Access Token →'
+        },
+        { 
+          key: 'companyPageId', 
+          label: 'Company Page ID', 
+          type: 'text', 
+          placeholder: 'LinkedIn Company Page ID',
+          helpText: 'Find in your Company Page URL: linkedin.com/company/YOUR-PAGE-ID',
+          helpLink: 'https://www.linkedin.com/company/',
+          helpLinkText: 'View Your Company Pages →'
+        }
+      ],
+      snapchat_business: [
+        { 
+          key: 'accessToken', 
+          label: 'Access Token', 
+          type: 'password', 
+          placeholder: 'Snapchat access token',
+          helpText: 'Go to Snapchat Business → API Token → Generate Token',
+          helpLink: 'https://business.snapchat.com/',
+          helpLinkText: 'Get Snapchat Token →'
+        },
+        { 
+          key: 'adAccountId', 
+          label: 'Ad Account ID', 
+          type: 'text', 
+          placeholder: 'Snapchat ad account ID',
+          helpText: 'Find in Ads Manager → Billing → Ad Account ID',
+          helpLink: 'https://ads.snapchat.com/',
+          helpLinkText: 'Open Snapchat Ads →'
+        }
+      ],
+      pinterest_business: [
+        { 
+          key: 'accessToken', 
+          label: 'Access Token', 
+          type: 'password', 
+          placeholder: 'Pinterest access token',
+          helpText: 'Go to Pinterest Developers → Create App → Generate Access Token',
+          helpLink: 'https://developers.pinterest.com/apps/',
+          helpLinkText: 'Get Pinterest Token →'
+        },
+        { 
+          key: 'adAccountId', 
+          label: 'Ad Account ID', 
+          type: 'text', 
+          placeholder: 'Pinterest ad account ID',
+          helpText: 'Find in Ads Manager → Account settings',
+          helpLink: 'https://ads.pinterest.com/',
+          helpLinkText: 'Open Pinterest Ads →'
+        }
       ]
     };
 
     return fields[platformId] || [];
+  };
+
+  const getPlatformSetupGuide = (platformId: string) => {
+    const guides: Record<string, { title: string; steps: string[] }> = {
+      tiktok: {
+        title: 'How to Connect TikTok for Business',
+        steps: [
+          'Log in to TikTok for Business at business.tiktok.com',
+          'Go to Developer Portal and create a new app',
+          'Request access to Marketing API',
+          'Generate an Access Token with required permissions',
+          'Copy your Ad Account ID from Ads Manager',
+          'Paste both values below to connect'
+        ]
+      },
+      facebook_business: {
+        title: 'How to Connect Facebook Business',
+        steps: [
+          'Go to Meta for Developers (developers.facebook.com)',
+          'Create an app or use existing app',
+          'Go to Tools → Access Token Tool',
+          'Generate a User Access Token with pages_read_engagement, leads_retrieval, ads_read permissions',
+          'Find your Business Manager ID in Business Settings',
+          '(Optional) Add your Pixel ID from Events Manager',
+          'Paste the values below to connect'
+        ]
+      },
+      instagram_business: {
+        title: 'How to Connect Instagram Business',
+        steps: [
+          'Make sure your Instagram account is a Business account',
+          'Link it to a Facebook Page in Instagram Settings',
+          'Get a Facebook Access Token (same as Facebook Business)',
+          'Find your Instagram Business Account ID in settings',
+          'Paste the values below to connect'
+        ]
+      },
+      google_ads: {
+        title: 'How to Connect Google Ads',
+        steps: [
+          'Go to Google Cloud Console (console.cloud.google.com)',
+          'Create a project and enable Google Ads API',
+          'Create OAuth 2.0 credentials',
+          'Generate Access Token and Refresh Token',
+          'Copy your Customer ID from Google Ads (top right)',
+          'Paste all three values below to connect'
+        ]
+      },
+      twitter_business: {
+        title: 'How to Connect X (Twitter) Business',
+        steps: [
+          'Go to X Developer Portal (developer.twitter.com)',
+          'Create a new app or use existing app',
+          'Go to Keys and Tokens tab',
+          'Generate Access Token and Secret',
+          'Find your Ad Account ID in X Ads Manager',
+          'Paste the values below to connect'
+        ]
+      },
+      linkedin_business: {
+        title: 'How to Connect LinkedIn Business',
+        steps: [
+          'Go to LinkedIn Developers (linkedin.com/developers)',
+          'Create an app or use existing app',
+          'Request access to Marketing Developer Platform',
+          'Generate Access Token with r_ads, rw_ads permissions',
+          'Find your Company Page ID in your page URL',
+          'Paste the values below to connect'
+        ]
+      },
+      snapchat_business: {
+        title: 'How to Connect Snapchat Business',
+        steps: [
+          'Go to Snapchat Business Manager',
+          'Navigate to API Token section',
+          'Generate a new API token',
+          'Copy your Ad Account ID from Billing settings',
+          'Paste the values below to connect'
+        ]
+      },
+      pinterest_business: {
+        title: 'How to Connect Pinterest Business',
+        steps: [
+          'Go to Pinterest Developers (developers.pinterest.com)',
+          'Create an app or use existing app',
+          'Generate an Access Token',
+          'Copy your Ad Account ID from Ads Manager',
+          'Paste the values below to connect'
+        ]
+      }
+    };
+
+    return guides[platformId] || { title: 'Setup Guide', steps: [] };
   };
 
   // Show stable loading state
@@ -391,9 +675,9 @@ function SalesChannelsManager() {
             <p className="text-gray-600">Connect and manage your social media and advertising platforms</p>
           </div>
           <div className="flex items-center gap-4">
-            <Dialog open={connectDialog} onOpenChange={setConnectDialog}>
+            <Dialog open={connectDialog} onOpenChange={handleConnectDialogChange}>
               <DialogTrigger asChild>
-                <Button>
+                <Button data-testid="button-connect-platform">
                   <Plus className="h-4 w-4 mr-2" />
                   Connect Platform
                 </Button>
@@ -427,18 +711,43 @@ function SalesChannelsManager() {
                   ))}
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Connecting to <strong>{selectedPlatform.name}</strong>. Please provide your API credentials.
+                <div className="space-y-6">
+                  {/* Setup Guide */}
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-900">
+                      <div className="font-semibold mb-2">
+                        {getPlatformSetupGuide(selectedPlatform.id).title}
+                      </div>
+                      <ol className="text-sm space-y-1 ml-4 list-decimal">
+                        {getPlatformSetupGuide(selectedPlatform.id).steps.map((step, index) => (
+                          <li key={index}>{step}</li>
+                        ))}
+                      </ol>
                     </AlertDescription>
                   </Alert>
                   
-                  <div className="grid gap-4">
+                  {/* Connection Fields */}
+                  <div className="grid gap-6">
                     {getConnectionFields(selectedPlatform.id).map((field) => (
                       <div key={field.key} className="space-y-2">
-                        <Label htmlFor={field.key}>{field.label}</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={field.key} className="text-base font-medium">
+                            {field.label}
+                          </Label>
+                          {field.helpLink && (
+                            <Button 
+                              variant="link" 
+                              size="sm"
+                              className="h-auto p-0 text-blue-600"
+                              onClick={() => window.open(field.helpLink, '_blank')}
+                              data-testid={`link-help-${field.key}`}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              {field.helpLinkText}
+                            </Button>
+                          )}
+                        </div>
                         <Input
                           id={field.key}
                           type={field.type}
@@ -448,22 +757,44 @@ function SalesChannelsManager() {
                             ...prev,
                             [field.key]: e.target.value
                           }))}
+                          data-testid={`input-${field.key}`}
+                          className="font-mono text-sm"
                         />
+                        {field.helpText && (
+                          <p className="text-xs text-muted-foreground flex items-start gap-1">
+                            <HelpCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            <span>{field.helpText}</span>
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
+                  
+                  {connectMutation.error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Failed to connect: {connectMutation.error instanceof Error ? connectMutation.error.message : 'Unknown error'}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               )}
 
               <DialogFooter>
                 {selectedPlatform && (
                   <>
-                    <Button variant="outline" onClick={() => setSelectedPlatform(null)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setSelectedPlatform(null)}
+                      data-testid="button-back-to-platforms"
+                    >
                       Back
                     </Button>
                     <Button 
                       onClick={handleSubmitConnection}
-                      disabled={connectMutation.isPending}
+                      disabled={connectMutation.isPending || !isConnectionFormValid()}
+                      data-testid="button-submit-connection"
                     >
                       {connectMutation.isPending ? 'Connecting...' : 'Connect Platform'}
                     </Button>
