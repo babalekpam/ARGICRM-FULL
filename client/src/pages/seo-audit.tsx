@@ -1,13 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { SeoIssue } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, AlertTriangle, Info, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertCircle, AlertTriangle, Info, RefreshCw, Plus, Globe } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Layout from "@/components/layout";
 import { useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface SeoAuditProps {
   projectId?: string;
@@ -15,18 +22,26 @@ interface SeoAuditProps {
 
 export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {}) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const search = useSearch();
   const params = new URLSearchParams(search);
   const urlProjectId = params.get('projectId');
   
-  // Load user's available projects if no projectId is provided
-  const { data: projects } = useQuery({
-    queryKey: ['/api/projects'],
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  
+  // Load user's available SEO projects
+  const { data: projectsData } = useQuery<any[]>({
+    queryKey: ['/api/seo/projects'],
     enabled: !!user && !propProjectId && !urlProjectId
   });
+  const projects = projectsData || [];
   
-  // Use propProjectId, then URL param, then first available project, or null
-  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
+  // Use propProjectId, then URL param, then selectedProject, then first available project, or null
+  const projectId = propProjectId || urlProjectId || selectedProjectId || (projects.length > 0 ? String(projects[0].id) : null);
+  
+  // Fetch SEO issues
   const { data: issues, isLoading } = useQuery<SeoIssue[]>({
     queryKey: ["/api/seo-issues", projectId],
     queryFn: async () => {
@@ -35,6 +50,33 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
       return res.json();
     },
     enabled: !!projectId
+  });
+  
+  // Run audit mutation
+  const runAuditMutation = useMutation({
+    mutationFn: async ({ projectId, url }: { projectId: string, url: string }) => {
+      const response = await apiRequest("POST", "/api/seo/technical-audit/start", {
+        projectId,
+        urls: [url]
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Audit Started",
+        description: `Successfully started audit for ${data.pagesScanned} page(s)`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/seo-issues", projectId] });
+      setDialogOpen(false);
+      setWebsiteUrl("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Audit Failed",
+        description: error.message || "Failed to start website audit",
+        variant: "destructive",
+      });
+    },
   });
 
   const criticalIssues = issues?.filter(i => i.severity === "critical").length || 0;
@@ -80,6 +122,21 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
     );
   }
 
+  const handleRunAudit = () => {
+    if (!websiteUrl) {
+      toast({
+        title: "URL Required",
+        description: "Please enter a website URL to audit",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // If no project selected and no existing projects, create a default one
+    const targetProjectId = projectId || "default-project";
+    runAuditMutation.mutate({ projectId: targetProjectId, url: websiteUrl });
+  };
+
   return (
     <div className="p-6 space-y-6" data-testid="seo-audit-page">
       <div className="flex items-center justify-between">
@@ -87,9 +144,83 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
           <h1 className="text-3xl font-bold mb-2">SEO Audit</h1>
           <p className="text-muted-foreground">Comprehensive website health analysis</p>
         </div>
-        <Button data-testid="button-run-audit">
-          <RefreshCw className="mr-2 h-4 w-4" /> Run Audit
-        </Button>
+        <div className="flex gap-2">
+          {projects && projects.length > 1 && (
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+              <SelectTrigger className="w-[200px]" data-testid="select-project">
+                <SelectValue placeholder="Select Project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project: any) => (
+                  <SelectItem key={project.id} value={String(project.id)}>
+                    {project.name || project.domain}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-run-audit">
+                <Plus className="mr-2 h-4 w-4" /> Run New Audit
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]" data-testid="dialog-run-audit">
+              <DialogHeader>
+                <DialogTitle>Run SEO Audit</DialogTitle>
+                <DialogDescription>
+                  Enter your website URL to perform a comprehensive SEO analysis
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="website-url">Website URL</Label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="website-url"
+                      data-testid="input-website-url"
+                      type="url"
+                      placeholder="https://example.com"
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    We'll analyze your website's performance, SEO, accessibility, and best practices
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  data-testid="button-cancel-audit"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleRunAudit}
+                  disabled={runAuditMutation.isPending || !websiteUrl}
+                  data-testid="button-start-audit"
+                >
+                  {runAuditMutation.isPending ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Running Audit...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Start Audit
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
