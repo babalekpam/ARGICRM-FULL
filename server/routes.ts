@@ -11677,6 +11677,17 @@ ${req.body.companyName} Team`;
   registerSeoRoutes(app);
 
   // ARGILETTE SEO Analytics - Full SEO Platform Integration
+  // Mount at /api/seo for frontend compatibility
+  app.use('/api/seo', authenticate, (req: any, res, next) => {
+    // Set tenantId from authenticated user
+    req.tenantId = req.user.tenantId;
+    req.userId = req.user.id;
+    req.isAdmin = req.user.email === 'abel@argilette.com' || req.user.isPlatformOwner;
+    next();
+  });
+  app.use('/api/seo', createSEORouter());
+  
+  // Also mount at /api/argilette for backward compatibility
   app.use('/api/argilette', authenticate, (req: any, res, next) => {
     // Set tenantId from authenticated user
     req.tenantId = req.user.tenantId;
