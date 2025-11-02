@@ -378,7 +378,7 @@ function App() {
                           } />
                           <Route path="/link-building" element={
                             <ProtectedRoute requiredPermission="seo.read">
-                              <PageTranslator><LinkBuildingPage selectedProjectId="1" /></PageTranslator>
+                              <PageTranslator><LinkBuildingPage /></PageTranslator>
                             </ProtectedRoute>
                           } />
                           <Route path="/multi-platform-search" element={

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -54,10 +56,25 @@ import type {
 } from "server/argilette/seo-schema";
 
 interface LinkBuildingPageProps {
-  selectedProjectId: string;
+  selectedProjectId?: string;
 }
 
-export default function LinkBuildingPage({ selectedProjectId }: LinkBuildingPageProps) {
+export default function LinkBuildingPage({ selectedProjectId: propProjectId }: LinkBuildingPageProps) {
+  const { user } = useAuth();
+  const [location] = useLocation();
+  
+  // Get projectId from URL params
+  const urlParams = new URLSearchParams(location.split('?')[1] || '');
+  const urlProjectId = urlParams.get('projectId');
+  
+  // Fetch user's projects if no projectId is provided
+  const { data: projects } = useQuery<any[]>({
+    queryKey: ['/api/projects'],
+    enabled: !!user && !propProjectId && !urlProjectId
+  });
+  
+  // Determine projectId: prop > URL param > first available project
+  const selectedProjectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("opportunities");
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,17 +83,20 @@ export default function LinkBuildingPage({ selectedProjectId }: LinkBuildingPage
   const [aiRecommendations, setAIRecommendations] = useState<string | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
 
-  // Fetch data
+  // Fetch data only when we have a valid projectId
   const { data: opportunities = [], isLoading: loadingOpportunities } = useQuery<BacklinkOpportunity[]>({
     queryKey: ['/api/link-building/opportunities', selectedProjectId],
+    enabled: !!selectedProjectId,
   });
 
   const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery<OutreachCampaign[]>({
     queryKey: ['/api/link-building/campaigns', selectedProjectId],
+    enabled: !!selectedProjectId,
   });
 
   const { data: gaps = [], isLoading: loadingGaps } = useQuery<BacklinkGap[]>({
     queryKey: ['/api/link-building/gaps', selectedProjectId],
+    enabled: !!selectedProjectId,
   });
 
   const { data: contacts = [] } = useQuery<OutreachContact[]>({
@@ -161,13 +181,53 @@ export default function LinkBuildingPage({ selectedProjectId }: LinkBuildingPage
     }
   };
 
+  // Show loading or empty state if no project is selected
+  if (!selectedProjectId) {
+    return (
+      <div className="p-6 space-y-6" data-testid="page-link-building">
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+          <Link2 className="h-16 w-16 text-muted-foreground" />
+          <h2 className="text-2xl font-semibold">No Project Selected</h2>
+          <p className="text-muted-foreground text-center max-w-md">
+            Please create a project in SEO Management first to start tracking link building opportunities.
+          </p>
+          <Button onClick={() => window.location.href = '/seo-management'} data-testid="button-create-project">
+            Go to SEO Management
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-link-building">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold" data-testid="heading-link-building">Link Building</h1>
           <p className="text-muted-foreground">Build high-quality backlinks to boost your SEO</p>
         </div>
+        
+        {projects && projects.length > 1 && (
+          <div className="flex items-center gap-2 mr-4">
+            <Label htmlFor="project-selector">Project:</Label>
+            <Select
+              value={selectedProjectId}
+              onValueChange={(value) => window.location.href = `/link-building?projectId=${value}`}
+            >
+              <SelectTrigger className="w-[250px]" id="project-selector" data-testid="select-project">
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project: any) => (
+                  <SelectItem key={project.id} value={String(project.id)} data-testid={`select-project-${project.id}`}>
+                    {project.name} ({project.domain})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        
         <div className="flex gap-2">
           <CreateOpportunityDialog projectId={selectedProjectId} />
           <CreateCampaignDialog projectId={selectedProjectId} />
