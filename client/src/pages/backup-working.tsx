@@ -7,7 +7,7 @@ export default function BackupWorkingPage() {
       company: "ARGILETTE",
       settings: {
         name: "Default Settings",
-        email: "contact@argilette.com",
+        email: "contact@argilette.org",
         phone: "+1-555-0123"
       },
       exported: new Date().toISOString(),

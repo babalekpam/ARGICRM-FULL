@@ -3,10 +3,12 @@
 ## Overview
 NODE CRM is an AI-powered, full-stack customer relationship management platform designed for global markets. It integrates real-time sentiment analysis, AI campaign generation, multi-cultural optimization, advanced financial management, and e-commerce functionalities. The platform aims for autonomous AI operations, competitive pricing, and robust data security, providing a comprehensive solution for businesses worldwide. Its business vision is to provide an all-encompassing, secure, and globally adaptable CRM solution that leverages AI for operational efficiency and market responsiveness.
 
+**Domain:** ARGILETTE.org - All platform email addresses use @argilette.org domain (support@argilette.org, info@argilette.org, enterprise@argilette.org).
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Pricing Model: Lifetime payment structure with four tiers (Starter $497.99, Professional $1,297.99, Business $2,997.99, Enterprise $7,997.99). All white-label branding options (Basic, Full, Complete Ownership) available as custom-priced add-ons requiring sales contact for quotes. Platform includes CRM + SEO + E-commerce + 7-platform tracking in all base plans.
-Platform Owner Privileges: Restored unlimited access for platform owner (abel@argilette.com) with super admin rights, no subscription limits, and full platform oversight capabilities
+Platform Owner Privileges: Restored unlimited access for platform owner (abel@argilette.org) with super admin rights, no subscription limits, and full platform oversight capabilities
 Login Page: Clean NODE CRM branding with credentials-only interface, no role indicators or quick login buttons - access levels determined purely by email credentials
 Settings Backup: Fully functional backup system with browser save dialog popup - includes backup.html standalone solution for guaranteed reliability, comprehensive JSON export with platform data, settings, and metadata
 E-commerce Currency System: Comprehensive global currency support - 54 African currencies across all regions (North, West, East, Central, Southern Africa), complete with flag indicators and regional organization, covering every African country including CFA Franc zones, island nations, and emerging economies

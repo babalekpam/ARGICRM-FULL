@@ -7,7 +7,7 @@ export default function DashboardRedirect() {
   const { user } = useAuth();
   
   // Check if user is platform owner
-  const isPlatformOwner = Boolean(user?.email === 'abel@argilette.com' || user?.email === 'admin@default.com');
+  const isPlatformOwner = Boolean(user?.email === 'abel@argilette.org' || user?.email === 'admin@default.com');
   
   // Platform owners should be redirected to super-admin-dashboard
   if (isPlatformOwner) {

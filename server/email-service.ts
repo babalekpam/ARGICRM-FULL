@@ -270,7 +270,7 @@ The NODE CRM Team`
                 Get insights with powerful reporting and dashboard features
             </div>
             
-            <p>Need help getting started? Our support team is here to assist you at <a href="mailto:info@argilette.com">info@argilette.com</a></p>
+            <p>Need help getting started? Our support team is here to assist you at <a href="mailto:info@argilette.org">info@argilette.org</a></p>
             
             <p>Thank you for choosing NODE CRM!<br>The NODE CRM Team</p>
         </div>

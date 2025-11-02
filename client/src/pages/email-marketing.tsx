@@ -30,7 +30,7 @@ export default function EmailMarketingPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [customSubject, setCustomSubject] = useState("");
   const [customContent, setCustomContent] = useState("");
-  const [fromEmail, setFromEmail] = useState("demo@argilette.com");
+  const [fromEmail, setFromEmail] = useState("demo@argilette.org");
   const [fromName, setFromName] = useState("ARGILETTE CRM");
   const [testMode, setTestMode] = useState(true);
   const [previewContact, setPreviewContact] = useState<Contact | null>(null);

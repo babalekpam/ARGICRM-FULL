@@ -32,8 +32,8 @@ export default function ContactsPage() {
     persistKey: "contacts-page"
   });
 
-  // Check if user is platform owner - ONLY abel@argilette.com and admin@default.com
-  const isPlatformOwner = user?.email === 'admin@default.com' || user?.email === 'abel@argilette.com';
+  // Check if user is platform owner - ONLY abel@argilette.org and admin@default.com
+  const isPlatformOwner = user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org';
   const [uploading, setUploading] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
   const [previewData, setPreviewData] = useState<any>(null);

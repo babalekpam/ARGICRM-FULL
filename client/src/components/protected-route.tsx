@@ -29,7 +29,7 @@ export default function ProtectedRoute({
   }
 
   // Enhanced platform owner check with multiple validation methods
-  const isPlatformOwner = user?.email === 'abel@argilette.com' || 
+  const isPlatformOwner = user?.email === 'abel@argilette.org' || 
                          user?.email === 'admin@default.com' || 
                          user?.role === 'platform_owner' ||
                          user?.isPlatformOwner === true;

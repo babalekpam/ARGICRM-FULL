@@ -23,7 +23,7 @@ export function useOffline() {
     const initializeOffline = async () => {
       try {
         // Get user context from localStorage or auth
-        const userEmail = localStorage.getItem('user_email') || 'default@argilette.com';
+        const userEmail = localStorage.getItem('user_email') || 'default@argilette.org';
         const tenantId = localStorage.getItem('tenant_id') || 'default-tenant';
         
         await offlineService.initialize(tenantId, userEmail);

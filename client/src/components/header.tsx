@@ -14,7 +14,7 @@ import Logo from "./logo";
 
 export default function Header() {
   const { user, logout } = useAuth();
-  const isPlatformOwner = user?.email === 'abel@argilette.com';
+  const isPlatformOwner = user?.email === 'abel@argilette.org';
 
   return (
     <header className="fixed top-0 right-0 left-64 bg-card/95 backdrop-blur-md border-b border-border shadow-sm z-40">

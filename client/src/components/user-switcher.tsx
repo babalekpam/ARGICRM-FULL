@@ -61,13 +61,13 @@ export function UserSwitcher({ currentUser }: UserSwitcherProps) {
         </div>
         
         <DropdownMenuItem 
-          onClick={() => handleUserSwitch('abel@argilette.com', true)}
+          onClick={() => handleUserSwitch('abel@argilette.org', true)}
           className="gap-2"
         >
           <Crown className="h-4 w-4 text-amber-500" />
           <div>
             <div className="font-medium">Platform Owner</div>
-            <div className="text-xs text-gray-500">abel@argilette.com</div>
+            <div className="text-xs text-gray-500">abel@argilette.org</div>
             <div className="text-xs text-green-600">All privileges</div>
           </div>
         </DropdownMenuItem>

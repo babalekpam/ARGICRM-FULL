@@ -84,7 +84,7 @@ export class UnsubscribeService {
         <p style="margin-top: 10px;">
           ${companyName}<br>
           Argilette Organization<br>
-          Email: info@argilette.com
+          Email: info@argilette.org
         </p>
       </div>
     `;
@@ -109,7 +109,7 @@ export class UnsubscribeService {
 To unsubscribe from these emails, visit: ${url}
 
 © ${new Date().getFullYear()} NODE CRM - Argilette Organization
-Email: info@argilette.com
+Email: info@argilette.org
 `;
 
     return textContent + footer;

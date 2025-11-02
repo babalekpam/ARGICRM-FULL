@@ -211,7 +211,7 @@ export class BugResolutionService {
         status: 'pass',
         message: 'Platform owner authentication working correctly',
         executionTime: Date.now() - startTime,
-        details: { user: 'abel@argilette.com', role: 'platform_owner' }
+        details: { user: 'abel@argilette.org', role: 'platform_owner' }
       },
       {
         name: 'JWT Token Validation',

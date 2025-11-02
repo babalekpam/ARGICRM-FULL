@@ -58,9 +58,9 @@ const CollaborationIndicators: React.FC = () => {
     const initializeUsers = () => {
       const sampleUsers: CollaborationUser[] = [
         {
-          id: 'abel@argilette.com',
+          id: 'abel@argilette.org',
           name: 'Platform Administrator',
-          email: 'abel@argilette.com',
+          email: 'abel@argilette.org',
           status: 'online',
           lastActivity: new Date(),
           currentActivity: {

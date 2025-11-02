@@ -93,7 +93,7 @@ ${content}
       <p>You're receiving this email because you're a valued customer of ARGILETTE CRM.</p>
       <p>
         <a href="${unsubscribeUrl}?email=${encodeURIComponent(contactEmail)}" style="color: #666;">Unsubscribe</a> | 
-        <a href="mailto:support@argilette.com" style="color: #666;">Contact Support</a>
+        <a href="mailto:support@argilette.org" style="color: #666;">Contact Support</a>
       </p>
       <p>ARGILETTE CRM, 123 Business Ave, Suite 100, Business City, BC 12345</p>
     </div>`;

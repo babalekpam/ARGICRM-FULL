@@ -6,7 +6,7 @@ export interface User {
 }
 
 export const isPlatformOwner = (user: User | null): boolean => {
-  return user?.email === 'admin@default.com' || user?.email === 'abel@argilette.com';
+  return user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org';
 };
 
 export const hasFeatureAccess = (user: User | null, featureId: string): boolean => {

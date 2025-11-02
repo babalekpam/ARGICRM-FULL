@@ -46,7 +46,7 @@ export default function Dashboard() {
   const structuredData = generateStructuredData('organization');
   
   // Define role variables - Updated to include both platform owner emails
-  const isPlatformOwner = Boolean(user?.email === 'admin@default.com' || user?.email === 'abel@argilette.com');
+  const isPlatformOwner = Boolean(user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org');
   const isDemoAdmin = Boolean(user?.role === 'demo_admin' && !isPlatformOwner);
   const isAdmin = Boolean(user?.role === 'admin' && !isPlatformOwner);
 
@@ -249,7 +249,7 @@ export default function Dashboard() {
         <OnboardingTrigger userRole={user?.role} />
 
         {/* Personalized Welcome Screen - Only mount when user is known and not platform owner */}
-        {user && !isPlatformOwner && !user?.isPlatformOwner && user.email !== 'admin@default.com' && user.email !== 'abel@argilette.com' && user.role !== 'platform_owner' && <PersonalizedWelcome />}
+        {user && !isPlatformOwner && !user?.isPlatformOwner && user.email !== 'admin@default.com' && user.email !== 'abel@argilette.org' && user.role !== 'platform_owner' && <PersonalizedWelcome />}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stats.map((stat) => {

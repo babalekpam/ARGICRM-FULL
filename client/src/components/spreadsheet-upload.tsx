@@ -95,7 +95,7 @@ export function SpreadsheetUpload({ store, open, onOpenChange, type = "ecommerce
           method: 'POST',
           body: formData,
           headers: {
-            'x-auth-email': 'abel@argilette.com',
+            'x-auth-email': 'abel@argilette.org',
             'authorization': 'Bearer demo-token'
           }
         });
@@ -163,7 +163,7 @@ export function SpreadsheetUpload({ store, open, onOpenChange, type = "ecommerce
           method: 'POST',
           body: formData,
           headers: {
-            'x-auth-email': 'abel@argilette.com',
+            'x-auth-email': 'abel@argilette.org',
             'authorization': 'Bearer demo-token'
           }
         });

@@ -98,7 +98,7 @@ export default function LiveChatWidget() {
                 </Card>
               </Link>
 
-              <a href="mailto:support@argilette.com">
+              <a href="mailto:support@argilette.org">
                 <Card className="hover-elevate cursor-pointer" data-testid="card-email-support-link">
                   <CardContent className="p-3 flex items-center gap-2">
                     <Mail className="h-4 w-4 text-primary" />

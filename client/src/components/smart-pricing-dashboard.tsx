@@ -85,7 +85,7 @@ export default function SmartPricingDashboard() {
   const analyzePricingMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest('POST', '/api/ecommerce/pricing/analyze', data, {
-        'x-auth-email': 'abel@argilette.com',
+        'x-auth-email': 'abel@argilette.org',
         'authorization': 'Bearer demo-token'
       });
     },
@@ -108,7 +108,7 @@ export default function SmartPricingDashboard() {
   const bulkAnalysisMutation = useMutation({
     mutationFn: async (productIds: number[]) => {
       return await apiRequest('POST', '/api/ecommerce/pricing/bulk-analyze', { productIds }, {
-        'x-auth-email': 'abel@argilette.com',
+        'x-auth-email': 'abel@argilette.org',
         'authorization': 'Bearer demo-token'
       });
     },
@@ -133,7 +133,7 @@ export default function SmartPricingDashboard() {
       return await apiRequest('PUT', `/api/ecommerce/pricing/apply/${productId}`, 
         { newPrice },
         {
-          'x-auth-email': 'abel@argilette.com',
+          'x-auth-email': 'abel@argilette.org',
           'authorization': 'Bearer demo-token'
         }
       );

@@ -9,7 +9,7 @@ export default function BackupSimplePage() {
         platform: "ARGILETTE NODE CRM",
         settings: {
           companyName: "ARGILETTE CRM",
-          companyEmail: "contact@argilette.com",
+          companyEmail: "contact@argilette.org",
           companyPhone: "+1 (555) 123-4567",
           timezone: "UTC",
           currency: "USD"

@@ -85,7 +85,7 @@ class ZoomProvider implements VideoConferenceProvider {
 VERSION:2.0
 PRODID:-//ARGILETTE CRM//EN
 BEGIN:VEVENT
-UID:${Date.now()}@argilette.com
+UID:${Date.now()}@argilette.org
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
 DTSTART:${options.startTime.toISOString().replace(/[-:]/g, '').split('.')[0]}Z
 SUMMARY:${options.topic || 'Team Meeting'}

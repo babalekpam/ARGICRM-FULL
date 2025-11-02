@@ -54,7 +54,7 @@ export default function AICampaignStudio() {
   const [emailGoal, setEmailGoal] = useState("");
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
   const [uploadedContacts, setUploadedContacts] = useState<Contact[]>([]);
-  const [senderEmail, setSenderEmail] = useState("noreply@argilette.com");
+  const [senderEmail, setSenderEmail] = useState("noreply@argilette.org");
   const [senderName, setSenderName] = useState("NODE CRM");
 
   // Generated content preview
@@ -546,7 +546,7 @@ export default function AICampaignStudio() {
                           id="sender-email"
                           data-testid="input-sender-email"
                           type="email"
-                          placeholder="support@argilette.com"
+                          placeholder="support@argilette.org"
                           value={senderEmail}
                           onChange={(e) => setSenderEmail(e.target.value)}
                         />
@@ -571,44 +571,44 @@ export default function AICampaignStudio() {
                           size="sm"
                           className="text-xs h-7"
                           onClick={() => {
-                            setSenderEmail("support@argilette.com");
+                            setSenderEmail("support@argilette.org");
                             setSenderName("NODE CRM Support");
                           }}
                         >
-                          support@argilette.com
+                          support@argilette.org
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="text-xs h-7"
                           onClick={() => {
-                            setSenderEmail("hello@argilette.com");
+                            setSenderEmail("hello@argilette.org");
                             setSenderName("NODE CRM Team");
                           }}
                         >
-                          hello@argilette.com
+                          hello@argilette.org
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="text-xs h-7"
                           onClick={() => {
-                            setSenderEmail("sales@argilette.com");
+                            setSenderEmail("sales@argilette.org");
                             setSenderName("NODE CRM Sales");
                           }}
                         >
-                          sales@argilette.com
+                          sales@argilette.org
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="text-xs h-7"
                           onClick={() => {
-                            setSenderEmail("marketing@argilette.com");
+                            setSenderEmail("marketing@argilette.org");
                             setSenderName("NODE CRM Marketing");
                           }}
                         >
-                          marketing@argilette.com
+                          marketing@argilette.org
                         </Button>
                       </div>
                     </div>

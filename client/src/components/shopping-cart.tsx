@@ -168,7 +168,7 @@ export default function ShoppingCart() {
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
       return await apiRequest('POST', '/api/ecommerce/orders', orderData, {
-        'x-auth-email': 'abel@argilette.com',
+        'x-auth-email': 'abel@argilette.org',
         'authorization': 'Bearer demo-token'
       });
     },

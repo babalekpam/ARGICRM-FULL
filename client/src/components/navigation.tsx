@@ -89,8 +89,8 @@ export default function Navigation({ onLogout }: NavigationProps) {
     setCollapsedSections(newCollapsed);
   };
   
-  // Check if user is platform owner - ONLY abel@argilette.com or admin@default.com
-  const isPlatformOwner = Boolean(user?.email === 'abel@argilette.com' || user?.email === 'admin@default.com');
+  // Check if user is platform owner - ONLY abel@argilette.org or admin@default.com
+  const isPlatformOwner = Boolean(user?.email === 'abel@argilette.org' || user?.email === 'admin@default.com');
 
   // Define navigation groups with icons and modules
   const dashboardPath = isPlatformOwner ? "/super-admin-dashboard" : "/user-dashboard";

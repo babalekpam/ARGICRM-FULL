@@ -407,9 +407,9 @@ export class MemStorage implements IStorage {
     });
 
     // Platform owner account
-    this.users.set('abel@argilette.com', {
+    this.users.set('abel@argilette.org', {
       id: '3',
-      email: 'abel@argilette.com',
+      email: 'abel@argilette.org',
       password: 'Serrega1208@',
       firstName: 'Abel',
       lastName: 'Platform Owner',
@@ -1792,11 +1792,11 @@ export class MemStorage implements IStorage {
 
   async getUserWithPermissions(userId: string): Promise<any> {
     // Handle platform owner specially (same logic as DatabaseStorage)
-    // Check for both 'platform-owner-1' and '3' (JWT contains id: '3' for abel@argilette.com)
+    // Check for both 'platform-owner-1' and '3' (JWT contains id: '3' for abel@argilette.org)
     if (userId === 'platform-owner-1' || userId === '3') {
       return {
         id: userId, // Use the actual JWT id 
-        email: 'abel@argilette.com',
+        email: 'abel@argilette.org',
         firstName: 'Abel',
         lastName: 'Dessalegn',
         role: 'platform_owner',

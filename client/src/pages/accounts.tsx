@@ -19,7 +19,7 @@ export default function AccountsPage() {
   const navigate = useNavigate();
 
   // Check if user is platform owner - platform owners can see all accounts
-  const isPlatformOwner = user?.email === 'admin@default.com' || user?.email === 'abel@argilette.com';
+  const isPlatformOwner = user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org';
   
   console.log("DEBUG - User email:", user?.email);
   console.log("DEBUG - isPlatformOwner:", isPlatformOwner);

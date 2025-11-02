@@ -78,7 +78,7 @@ const faqs: FAQ[] = [
   {
     category: "Account & Billing",
     question: "Do you offer discounts for annual plans?",
-    answer: "Yes! Annual plans save you 20% compared to monthly billing. Nonprofit organizations and educational institutions may qualify for additional discounts - contact sales@argilette.com."
+    answer: "Yes! Annual plans save you 20% compared to monthly billing. Nonprofit organizations and educational institutions may qualify for additional discounts - contact sales@argilette.org."
   },
   
   // Features & Usage
@@ -122,7 +122,7 @@ const faqs: FAQ[] = [
   {
     category: "Technical Support",
     question: "Why can't I log in?",
-    answer: "Common reasons: incorrect password, unverified email, or account suspension. Try resetting your password. If issues persist, contact support@argilette.com with your email address."
+    answer: "Common reasons: incorrect password, unverified email, or account suspension. Try resetting your password. If issues persist, contact support@argilette.org with your email address."
   },
   {
     category: "Technical Support",
@@ -399,9 +399,9 @@ export default function HelpCenterPage() {
                     <p className="text-sm text-muted-foreground mb-4">
                       Get help via email within 24 hours
                     </p>
-                    <a href="mailto:support@argilette.com">
+                    <a href="mailto:support@argilette.org">
                       <Button variant="outline" className="w-full" data-testid="button-email-support">
-                        support@argilette.com
+                        support@argilette.org
                       </Button>
                     </a>
                   </CardContent>
@@ -427,11 +427,11 @@ export default function HelpCenterPage() {
                 <p className="text-sm text-muted-foreground">
                   Enterprise customers:{" "}
                   <a 
-                    href="mailto:enterprise@argilette.com" 
+                    href="mailto:enterprise@argilette.org" 
                     className="text-primary hover:underline font-medium"
                     data-testid="link-enterprise-support"
                   >
-                    enterprise@argilette.com
+                    enterprise@argilette.org
                   </a>
                 </p>
               </div>

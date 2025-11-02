@@ -2,7 +2,7 @@
 export function getAuthHeaders(): Record<string, string> {
   // Get current user from localStorage or default to platform owner
   const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  const email = user.email || 'abel@argilette.com';
+  const email = user.email || 'abel@argilette.org';
   
   return {
     'Content-Type': 'application/json',
@@ -22,5 +22,5 @@ export function isAuthenticated(): boolean {
 
 export function isPlatformOwner(): boolean {
   const user = getCurrentUser();
-  return user.email === 'abel@argilette.com' || user.email === 'admin@default.com';
+  return user.email === 'abel@argilette.org' || user.email === 'admin@default.com';
 }

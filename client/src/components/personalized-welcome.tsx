@@ -57,7 +57,7 @@ export default function PersonalizedWelcome() {
   
   // Compute owner status once - no early return to avoid hooks rule violation
   const emailFromLS = localStorage.getItem('user_email') || localStorage.getItem('userEmail');
-  const isOwner = user?.isPlatformOwner || [user?.email, emailFromLS].some(e => ['admin@default.com','abel@argilette.com'].includes((e||'').toLowerCase()));
+  const isOwner = user?.isPlatformOwner || [user?.email, emailFromLS].some(e => ['admin@default.com','abel@argilette.org'].includes((e||'').toLowerCase()));
   
   // Debug logging to track mounting
   console.warn('PersonalizedWelcome mounted', { userEmail: user?.email, emailFromLS, isOwner, pathname: window.location.pathname });
@@ -133,7 +133,7 @@ export default function PersonalizedWelcome() {
     let role = 'Administrator';
     let company = 'Your Company';
     
-    if (email === 'abel@argilette.com') {
+    if (email === 'abel@argilette.org') {
       firstName = 'Platform';
       lastName = 'Administrator';
       role = 'Platform Owner';

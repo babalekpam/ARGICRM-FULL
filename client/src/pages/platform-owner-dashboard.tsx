@@ -23,7 +23,7 @@ export default function PlatformOwnerDashboard() {
     queryFn: async () => {
       const response = await fetch('/api/admin/registered-users', {
         headers: {
-          'x-auth-email': 'abel@argilette.com'
+          'x-auth-email': 'abel@argilette.org'
         }
       });
       if (!response.ok) throw new Error('Failed to fetch registered users');
@@ -36,7 +36,7 @@ export default function PlatformOwnerDashboard() {
     queryFn: async () => {
       const response = await fetch('/api/superadmin/tenants', {
         headers: {
-          'x-auth-email': 'abel@argilette.com'
+          'x-auth-email': 'abel@argilette.org'
         }
       });
       if (!response.ok) throw new Error('Failed to fetch tenants');
@@ -49,7 +49,7 @@ export default function PlatformOwnerDashboard() {
     queryFn: async () => {
       const response = await fetch('/api/superadmin/registrations', {
         headers: {
-          'x-auth-email': 'abel@argilette.com'
+          'x-auth-email': 'abel@argilette.org'
         }
       });
       if (!response.ok) throw new Error('Failed to fetch registration stats');
