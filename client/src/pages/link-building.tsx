@@ -51,7 +51,7 @@ import type {
   OutreachCampaign, 
   OutreachContact,
   BacklinkGap 
-} from "@shared/schema";
+} from "server/argilette/seo-schema";
 
 interface LinkBuildingPageProps {
   selectedProjectId: string;
