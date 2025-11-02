@@ -1,6 +1,6 @@
-export type SubscriptionPlan = 'free' | 'individual' | 'business' | 'enterprise' | 'lifetime';
+export type SubscriptionPlan = 'free' | 'starter' | 'professional' | 'business' | 'enterprise';
 
-export type BillingCycle = 'lifetime';
+export type BillingCycle = 'monthly' | 'annual';
 
 export interface PlanFeatures {
   name: string;
@@ -28,7 +28,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
     name: 'free',
     displayName: 'Free',
     price: 0,
-    billingCycle: 'lifetime',
+    billingCycle: 'monthly',
     features: {
       maxProjects: 1,
       maxKeywords: 10,
@@ -43,11 +43,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
       apiAccess: false,
     },
   },
-  individual: {
-    name: 'individual',
-    displayName: 'Individual',
-    price: 290, // $290 one-time payment
-    billingCycle: 'lifetime',
+  starter: {
+    name: 'starter',
+    displayName: 'Starter',
+    price: 49.99, // $49.99/month
+    billingCycle: 'monthly',
     features: {
       maxProjects: 5,
       maxKeywords: 100,
@@ -62,11 +62,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
       apiAccess: false,
     },
   },
-  business: {
-    name: 'business',
-    displayName: 'Business',
-    price: 790, // $790 one-time payment
-    billingCycle: 'lifetime',
+  professional: {
+    name: 'professional',
+    displayName: 'Professional',
+    price: 149.99, // $149.99/month
+    billingCycle: 'monthly',
     features: {
       maxProjects: 25,
       maxKeywords: 500,
@@ -81,11 +81,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
       apiAccess: false,
     },
   },
-  enterprise: {
-    name: 'enterprise',
-    displayName: 'Enterprise',
-    price: 1990, // $1,990 one-time payment
-    billingCycle: 'lifetime',
+  business: {
+    name: 'business',
+    displayName: 'Business',
+    price: 299.99, // $299.99/month
+    billingCycle: 'monthly',
     features: {
       maxProjects: 100,
       maxKeywords: 2000,
@@ -100,11 +100,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanFeatures> = {
       apiAccess: true,
     },
   },
-  lifetime: {
-    name: 'lifetime',
-    displayName: 'Lifetime Premium',
-    price: 4990, // $4,990 one-time payment
-    billingCycle: 'lifetime',
+  enterprise: {
+    name: 'enterprise',
+    displayName: 'Enterprise',
+    price: 799.99, // $799.99/month
+    billingCycle: 'monthly',
     features: {
       maxProjects: 9999,
       maxKeywords: 9999,

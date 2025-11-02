@@ -205,41 +205,41 @@ export default function SimpleLanding() {
         "offers": {
           "@type": "AggregateOffer",
           "priceCurrency": "USD",
-          "lowPrice": "497.99",
-          "highPrice": "7997.99",
+          "lowPrice": "49.99",
+          "highPrice": "799.99",
           "offerCount": "4",
           "offers": [
             {
               "@type": "Offer",
               "name": "Starter Plan",
-              "price": "497.99",
+              "price": "49.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
-              "description": "Lifetime access - Perfect for startups and small businesses"
+              "description": "Monthly subscription - Perfect for startups and small businesses"
             },
             {
               "@type": "Offer",
               "name": "Professional Plan",
-              "price": "1297.99",
+              "price": "149.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
-              "description": "Lifetime access - Advanced features for growing businesses"
+              "description": "Monthly subscription - Advanced features for growing businesses"
             },
             {
               "@type": "Offer",
               "name": "Business Plan",
-              "price": "2997.99",
+              "price": "299.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
-              "description": "Lifetime access - Complete solution for established companies"
+              "description": "Monthly subscription - Complete solution for established companies"
             },
             {
               "@type": "Offer",
               "name": "Enterprise Plan",
-              "price": "7997.99",
+              "price": "799.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
-              "description": "Lifetime access - Ultimate platform for large enterprises"
+              "description": "Monthly subscription - Ultimate platform for large enterprises"
             }
           ]
         },
@@ -297,7 +297,7 @@ export default function SimpleLanding() {
             "name": "Does ARGILETTE offer lifetime pricing?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes! ARGILETTE offers lifetime payment plans starting at $497.99 for the Starter tier up to $7,997.99 for Enterprise. All plans include CRM, SEO, E-commerce, and 7-platform tracking with no recurring fees."
+              "text": "Yes! ARGILETTE offers flexible monthly subscription plans starting at just $49.99/month for the Starter tier up to $799.99/month for Enterprise. All plans include CRM, SEO, E-commerce, Link Building, and 11-platform tracking. Much more affordable than buying Semrush + HubSpot + Shopify separately!"
             }
           }
         ]
@@ -333,7 +333,7 @@ export default function SimpleLanding() {
       <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <SEO
           title="ARGILETTE - AI Business Platform | CRM + E-commerce + SEO Tools"
-          description="All-in-one AI-powered business platform with CRM, e-commerce builder, SEO tools, and marketing automation. Track your brand across 11 platforms. Lifetime pricing from $497.99. 20+ languages, 195+ countries."
+          description="All-in-one AI-powered business platform with CRM, e-commerce builder, SEO tools, Link Building, and marketing automation. Track your brand across 11 platforms. Monthly subscription from $49.99. 20+ languages, 195+ countries."
           keywords="AI business platform, CRM software, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software, lifetime deal CRM"
           canonical="https://argilette.org/"
           structuredData={structuredData}
@@ -400,7 +400,7 @@ export default function SimpleLanding() {
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-lg">
-                All-in-one CRM software + E-commerce builder + SEO tools + Marketing automation. Track your brand across 11 platforms. Lifetime pricing starting at $497.99.
+                All-in-one CRM software + E-commerce builder + SEO tools + Link Building + Marketing automation. Track your brand across 11 platforms. Monthly subscription starting at $49.99.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">

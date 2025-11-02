@@ -9,9 +9,9 @@ import Logo from "@/components/logo";
 const plans = [
   {
     name: "Starter",
-    price: "$497.99",
-    originalPrice: "$997",
-    period: "one-time payment",
+    price: "$49.99",
+    originalPrice: "$99",
+    period: "per month",
     description: "Perfect for freelancers and solo entrepreneurs",
     popular: false,
     icon: Star,
@@ -34,13 +34,13 @@ const plans = [
     ],
     cta: "Get Started",
     highlight: "Great for getting started",
-    savings: "Save $500"
+    savings: "Save 50%"
   },
   {
     name: "Professional",
-    price: "$1,297.99",
-    originalPrice: "$2,997",
-    period: "one-time payment",
+    price: "$149.99",
+    originalPrice: "$299",
+    period: "per month",
     description: "Ideal for small businesses and marketing agencies",
     popular: true,
     icon: Zap,
@@ -64,13 +64,13 @@ const plans = [
     ],
     cta: "Start Professional",
     highlight: "Most popular - Best value",
-    savings: "Save $1,700"
+    savings: "Save 50%"
   },
   {
     name: "Business",
-    price: "$2,997.99",
-    originalPrice: "$6,997",
-    period: "one-time payment",
+    price: "$299.99",
+    originalPrice: "$599",
+    period: "per month",
     description: "Comprehensive solution for growing agencies",
     popular: false,
     icon: Crown,
@@ -93,13 +93,13 @@ const plans = [
     ],
     cta: "Get Business",
     highlight: "Best for agencies",
-    savings: "Save $4,000"
+    savings: "Save 50%"
   },
   {
     name: "Enterprise",
-    price: "$7,997.99",
-    originalPrice: "$15,997",
-    period: "one-time payment",
+    price: "$799.99",
+    originalPrice: "$1,599",
+    period: "per month",
     description: "Ultimate solution for large organizations",
     popular: false,
     icon: Sparkles,
@@ -120,7 +120,7 @@ const plans = [
     ],
     cta: "Contact Sales",
     highlight: "Everything you need",
-    savings: "Save $8,000"
+    savings: "Save 50%"
   }
 ];
 
