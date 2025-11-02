@@ -21,13 +21,15 @@ export default function SentimentAnalysis() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: contacts = [] } = useQuery<Contact[]>({
+  const { data: contactsData } = useQuery<Contact[]>({
     queryKey: ["/api/contacts"],
   });
+  const contacts = contactsData || [];
 
-  const { data: recentAnalyses = [] } = useQuery<SentimentAnalysis[]>({
+  const { data: analysesData } = useQuery<SentimentAnalysis[]>({
     queryKey: ["/api/sentiment"],
   });
+  const recentAnalyses = analysesData || [];
 
   const form = useForm<AnalysisFormData>({
     defaultValues: {
@@ -55,14 +57,18 @@ export default function SentimentAnalysis() {
       
       // Transform the API result to match the expected frontend format
       const transformedResult = {
+        id: result.id || 0,
         sentiment: result.sentiment?.toUpperCase() || 'NEUTRAL',
         score: Math.round((result.confidence || 0) * 100), // Convert to percentage
         keywords: Array.isArray(result.keywords) ? result.keywords.join(', ') : (result.keywords || 'None detected'),
         emotionalTone: result.emotionalTone || (result.sentiment === 'positive' ? 'Happy' : result.sentiment === 'negative' ? 'Frustrated' : 'Neutral'),
         urgencyLevel: result.urgency || 'low',
         contactId: result.contactId,
-        createdAt: new Date().toISOString()
-      };
+        message: result.text || '',
+        tenantId: result.tenantId || '',
+        createdAt: result.createdAt ? new Date(result.createdAt) : new Date(),
+        updatedAt: result.updatedAt ? new Date(result.updatedAt) : null
+      } as SentimentAnalysis;
       
       console.log("[SentimentAnalysis] Transformed result:", transformedResult);
       setAnalysisResult(transformedResult);
