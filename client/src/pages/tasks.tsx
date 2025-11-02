@@ -32,7 +32,7 @@ export default function TasksPage() {
   const [filter, setFilter] = useState("all");
   const queryClient = useQueryClient();
 
-  const { data: tasks = [], isLoading, refetch } = useQuery<Task[]>({
+  const { data: tasksData, isLoading, refetch } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
     queryFn: async () => {
       const response = await fetch("/api/tasks");
@@ -45,10 +45,12 @@ export default function TasksPage() {
     },
     staleTime: 0,
   });
+  const tasks = tasksData || [];
 
-  const { data: contacts = [] } = useQuery({
+  const { data: contactsData } = useQuery({
     queryKey: ["/api/contacts"],
   });
+  const contacts = contactsData || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {

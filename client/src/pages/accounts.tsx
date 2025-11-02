@@ -24,13 +24,14 @@ export default function AccountsPage() {
   console.log("DEBUG - User email:", user?.email);
   console.log("DEBUG - isPlatformOwner:", isPlatformOwner);
 
-  const { data: allAccounts = [], isLoading, refetch } = useQuery<Account[]>({
+  const { data: allAccountsData, isLoading, refetch } = useQuery<Account[]>({
     queryKey: ["/api/accounts"],
     staleTime: 0,
   });
+  const allAccounts = allAccountsData || [];
 
   // Filter data based on user role - Platform owners see all test data, other users see empty/clean data
-  const accounts = isPlatformOwner ? (allAccounts || []) : []; // Non-platform users see no pre-populated accounts
+  const accounts = isPlatformOwner ? allAccounts : []; // Non-platform users see no pre-populated accounts
   
   console.log("DEBUG - allAccounts:", allAccounts);
   console.log("DEBUG - accounts (after filter):", accounts);

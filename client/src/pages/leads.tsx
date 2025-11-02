@@ -200,7 +200,7 @@ export default function LeadsPage() {
     },
   });
 
-  const { data: allLeads = [], isLoading, refetch } = useQuery<Lead[]>({
+  const { data: allLeadsData, isLoading, refetch } = useQuery<Lead[]>({
     queryKey: ["/api/leads"],
     queryFn: async () => {
       const response = await fetch("/api/leads");
@@ -213,6 +213,7 @@ export default function LeadsPage() {
     },
     staleTime: 0,
   });
+  const allLeads = allLeadsData || [];
 
   // Filter data based on user role - Platform owners see all data, other users see empty/clean data
   const leads = isPlatformOwner ? allLeads : []; // Non-platform users see no pre-populated leads

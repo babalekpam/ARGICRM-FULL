@@ -17,7 +17,7 @@ export default function TicketsPage() {
   const queryClient = useQueryClient();
   const { isConnected } = useWebSocketNotifications();
 
-  const { data: tickets = [], isLoading } = useQuery<TicketType[]>({
+  const { data: ticketsData, isLoading } = useQuery<TicketType[]>({
     queryKey: ["/api/tickets"],
     queryFn: async () => {
       const response = await fetch("/api/tickets");
@@ -30,8 +30,9 @@ export default function TicketsPage() {
     },
     staleTime: 0,
   });
+  const tickets = ticketsData || [];
 
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery<Account[]>({
+  const { data: accountsData, isLoading: accountsLoading } = useQuery<Account[]>({
     queryKey: ["/api/accounts"],
     queryFn: async () => {
       const response = await fetch("/api/accounts");
@@ -44,8 +45,9 @@ export default function TicketsPage() {
     },
     staleTime: 0,
   });
+  const accounts = accountsData || [];
 
-  const { data: contacts = [], isLoading: contactsLoading } = useQuery<Contact[]>({
+  const { data: contactsData, isLoading: contactsLoading } = useQuery<Contact[]>({
     queryKey: ["/api/contacts"],
     queryFn: async () => {
       const response = await fetch("/api/contacts");
@@ -58,6 +60,7 @@ export default function TicketsPage() {
     },
     staleTime: 0,
   });
+  const contacts = contactsData || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {

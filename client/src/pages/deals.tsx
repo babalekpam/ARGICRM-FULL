@@ -35,7 +35,7 @@ export default function DealsPage() {
     }
   }, [search, toast]);
 
-  const { data: deals = [], isLoading, refetch } = useQuery<Deal[]>({
+  const { data: dealsData, isLoading, refetch } = useQuery<Deal[]>({
     queryKey: ["/api/deals"],
     queryFn: async () => {
       const response = await fetch("/api/deals");
@@ -48,8 +48,9 @@ export default function DealsPage() {
     },
     staleTime: 0,
   });
+  const deals = dealsData || [];
 
-  const { data: contacts = [] } = useQuery({
+  const { data: contactsData } = useQuery({
     queryKey: ["/api/contacts"],
     queryFn: async () => {
       const response = await fetch("/api/contacts");
@@ -59,6 +60,7 @@ export default function DealsPage() {
       return data;
     },
   });
+  const contacts = contactsData || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {

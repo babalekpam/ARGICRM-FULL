@@ -70,12 +70,19 @@ export default function Dashboard() {
   });
   
   // Fetch data from APIs
-  const { data: allContacts = [] } = useQuery<any[]>({ queryKey: ["/api/contacts"] });
-  const { data: allAccounts = [] } = useQuery<any[]>({ queryKey: ["/api/accounts"] });
-  const { data: allLeads = [] } = useQuery<any[]>({ queryKey: ["/api/leads"] });
-  const { data: allDeals = [] } = useQuery<any[]>({ queryKey: ["/api/deals"] });
-  const { data: allTasks = [] } = useQuery<any[]>({ queryKey: ["/api/tasks"] });
-  const { data: allTickets = [] } = useQuery<any[]>({ queryKey: ["/api/tickets"] });
+  const { data: allContactsData } = useQuery<any[]>({ queryKey: ["/api/contacts"] });
+  const { data: allAccountsData } = useQuery<any[]>({ queryKey: ["/api/accounts"] });
+  const { data: allLeadsData } = useQuery<any[]>({ queryKey: ["/api/leads"] });
+  const { data: allDealsData } = useQuery<any[]>({ queryKey: ["/api/deals"] });
+  const { data: allTasksData } = useQuery<any[]>({ queryKey: ["/api/tasks"] });
+  const { data: allTicketsData } = useQuery<any[]>({ queryKey: ["/api/tickets"] });
+  
+  const allContacts = allContactsData || [];
+  const allAccounts = allAccountsData || [];
+  const allLeads = allLeadsData || [];
+  const allDeals = allDealsData || [];
+  const allTasks = allTasksData || [];
+  const allTickets = allTicketsData || [];
 
   // Filter data based on user role - Platform owners see all test data, other users see empty/clean data
   const contacts = isPlatformOwner ? allContacts : []; // Non-platform users see no pre-populated contacts

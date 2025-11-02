@@ -25,7 +25,7 @@ export default function EmployeesPage() {
 
   const queryClient = useQueryClient();
 
-  const { data: employees = [], isLoading, refetch } = useQuery({
+  const { data: employeesData, isLoading, refetch } = useQuery({
     queryKey: ["/api/employees"],
     queryFn: async () => {
       console.log('Fetching employees...');
@@ -41,6 +41,7 @@ export default function EmployeesPage() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+  const employees = employeesData || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {

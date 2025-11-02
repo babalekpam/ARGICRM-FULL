@@ -44,12 +44,19 @@ export default function UserDashboard() {
   const { user } = useAuth();
   
   // Fetch user-specific data with proper typing
-  const { data: contacts = [] } = useQuery<any[]>({ queryKey: ["/api/contacts"] });
-  const { data: accounts = [] } = useQuery<any[]>({ queryKey: ["/api/accounts"] });
-  const { data: leads = [] } = useQuery<any[]>({ queryKey: ["/api/leads"] });
-  const { data: deals = [] } = useQuery<any[]>({ queryKey: ["/api/deals"] });
-  const { data: tasks = [] } = useQuery<any[]>({ queryKey: ["/api/tasks"] });
-  const { data: tickets = [] } = useQuery<any[]>({ queryKey: ["/api/tickets"] });
+  const { data: contactsData } = useQuery<any[]>({ queryKey: ["/api/contacts"] });
+  const { data: accountsData } = useQuery<any[]>({ queryKey: ["/api/accounts"] });
+  const { data: leadsData } = useQuery<any[]>({ queryKey: ["/api/leads"] });
+  const { data: dealsData } = useQuery<any[]>({ queryKey: ["/api/deals"] });
+  const { data: tasksData } = useQuery<any[]>({ queryKey: ["/api/tasks"] });
+  const { data: ticketsData } = useQuery<any[]>({ queryKey: ["/api/tickets"] });
+  
+  const contacts = contactsData || [];
+  const accounts = accountsData || [];
+  const leads = leadsData || [];
+  const deals = dealsData || [];
+  const tasks = tasksData || [];
+  const tickets = ticketsData || [];
 
   // Calculate user-specific metrics
   const stats: StatCard[] = [
