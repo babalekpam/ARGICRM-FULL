@@ -101,7 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         setUser(authenticatedUser);
         localStorage.setItem('auth_user', JSON.stringify(authenticatedUser));
-        // Note: JWT token is now stored as secure httpOnly cookie, not in localStorage
+        // Store JWT token in localStorage for API requests (in addition to httpOnly cookie)
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('auth_token', data.token);
+        }
         localStorage.setItem('user_email', email);
         localStorage.setItem('userEmail', email); // Store both for consistency
         
@@ -124,6 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     // Clear all auth-related localStorage items immediately
     localStorage.removeItem('auth_user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('auth_token');
     localStorage.removeItem('user_email');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('isPlatformOwner');
