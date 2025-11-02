@@ -67,7 +67,6 @@ const RolesPage = lazy(() => import("@/pages/roles"));
 const AICampaignStudioPage = lazy(() => import("@/pages/ai-campaign-studio"));
 const CloeAIAgentPage = lazy(() => import("@/pages/cloe-ai-agent"));
 const AIAutonomousPage = lazy(() => import("@/pages/ai-autonomous-dashboard"));
-const SentimentPage = lazy(() => import("@/pages/sentiment"));
 const UnifiedInboxPage = lazy(() => import("@/pages/unified-inbox"));
 const FormsSurveysPage = lazy(() => import("@/pages/forms-surveys"));
 const SalesChannelsPage = lazy(() => import("@/components/sales-channels-manager"));
@@ -315,13 +314,8 @@ function App() {
                             </ProtectedRoute>
                           } />
                           <Route path="/ai-autonomous" element={
-                            <ProtectedRoute requiredPermission="sentiment.read">
+                            <ProtectedRoute requiredPermission="ai.read">
                               <PageTranslator><AIAutonomousPage /></PageTranslator>
-                            </ProtectedRoute>
-                          } />
-                          <Route path="/sentiment" element={
-                            <ProtectedRoute requiredPermission="sentiment.read">
-                              <PageTranslator><SentimentPage /></PageTranslator>
                             </ProtectedRoute>
                           } />
                           <Route path="/unified-inbox" element={

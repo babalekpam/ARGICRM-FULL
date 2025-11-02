@@ -176,8 +176,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
       modules: [
         { path: "/ai-campaign-studio", label: "AI Campaign Studio", icon: Sparkles, permission: "ai.read" },
         { path: "/cloe-ai-agent", label: "Cloe AI Agent", icon: Bot, permission: "ai.read" },
-        { path: "/ai-autonomous", label: "AI Automation", icon: Brain, permission: "sentiment.read" },
-        { path: "/sentiment", label: "Sentiment Analysis", icon: MessageSquare, permission: "sentiment.read" },
+        { path: "/ai-autonomous", label: "AI Automation", icon: Brain, permission: "ai.read" },
         { path: "/unified-inbox", label: "Unified Communications", icon: Mail, permission: "communications.read" },
         { path: "/forms-surveys", label: "Forms & Surveys", icon: FileText, permission: "forms.read" },
       ]
