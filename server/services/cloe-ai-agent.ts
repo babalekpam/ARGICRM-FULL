@@ -1,9 +1,24 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null;
+/*
+<important_code_snippet_instructions>
+This integration uses Replit AI Integrations (OpenAI-compatible).
+The newest OpenAI model is "gpt-5" which was released August 7, 2025. Do not change this unless explicitly requested by the user.
+Charges are billed to Replit credits. No separate API key needed.
+</important_code_snippet_instructions>
+*/
+
+// <important_do_not_delete>
+// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+const DEFAULT_MODEL_STR = "gpt-5";
+// </important_do_not_delete>
+
+// This is Argilette AI, powered by Replit's AI Integrations service
+const openai = new OpenAI({
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY
+});
 
 // Schemas for different AI agent capabilities
 export const OnboardingRequestSchema = z.object({
@@ -102,11 +117,11 @@ export class CloeAIAgent {
 
   // 1. Interactive Onboarding with NLP
   async handleOnboardingQuery(request: z.infer<typeof OnboardingRequestSchema>): Promise<CloeResponse> {
-    if (!openai) {
+    if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
       return {
         success: false,
-        response: "AI features are currently unavailable. Please check your OpenAI API configuration.",
-        nextSteps: ["Contact support for API configuration help"]
+        response: "AI features are currently unavailable. Please check your Argilette AI configuration.",
+        nextSteps: ["Contact support for AI configuration help"]
       };
     }
     
@@ -126,7 +141,7 @@ Provide helpful, role-specific guidance that:
 Be conversational, supportive, and concise. Focus on practical value.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        model: DEFAULT_MODEL_STR,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: request.userMessage }
@@ -153,11 +168,11 @@ Be conversational, supportive, and concise. Focus on practical value.`;
 
   // 2. E-commerce Automation (Shopify/Shopware Integration)
   async automateEcommerce(request: z.infer<typeof EcommerceAutomationSchema>): Promise<CloeResponse> {
-    if (!openai) {
+    if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
       return {
         success: false,
-        response: "AI automation features are currently unavailable. Please check your OpenAI API configuration.",
-        nextSteps: ["Configure OpenAI API key", "Contact support for help"]
+        response: "AI automation features are currently unavailable. Please check your Argilette AI configuration.",
+        nextSteps: ["Configure Argilette AI", "Contact support for help"]
       };
     }
     
@@ -178,7 +193,7 @@ Provide JSON response with:
 Focus on practical, implementable solutions.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: DEFAULT_MODEL_STR,
         messages: [{ role: "user", content: automationPrompt }],
         response_format: { type: "json_object" },
       });
@@ -246,11 +261,11 @@ Focus on practical, implementable solutions.`;
 
   // 3. SEO Optimization with ML Analysis
   async analyzeSEO(request: z.infer<typeof SEOAnalysisSchema>): Promise<CloeResponse> {
-    if (!openai) {
+    if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
       return {
         success: false,
-        response: "AI SEO analysis is currently unavailable. Please check your OpenAI API configuration.",
-        nextSteps: ["Configure OpenAI API key"]
+        response: "AI SEO analysis is currently unavailable. Please check your Argilette AI configuration.",
+        nextSteps: ["Configure Argilette AI"]
       };
     }
     
@@ -272,7 +287,7 @@ Provide comprehensive SEO analysis with:
 Return JSON with prioritized, actionable recommendations.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: DEFAULT_MODEL_STR,
         messages: [{ role: "user", content: seoPrompt }],
         response_format: { type: "json_object" },
       });
@@ -333,11 +348,11 @@ Return JSON with prioritized, actionable recommendations.`;
 
   // 4. Cross-Platform Advertising Automation
   async createAdCampaign(request: z.infer<typeof AdCampaignSchema>): Promise<CloeResponse> {
-    if (!openai) {
+    if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
       return {
         success: false,
-        response: "AI ad campaign creation is currently unavailable. Please check your OpenAI API configuration.",
-        nextSteps: ["Configure OpenAI API key"]
+        response: "AI ad campaign creation is currently unavailable. Please check your Argilette AI configuration.",
+        nextSteps: ["Configure Argilette AI"]
       };
     }
     
@@ -361,7 +376,7 @@ Provide comprehensive campaign strategy with:
 Return detailed JSON campaign plan.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: DEFAULT_MODEL_STR,
         messages: [{ role: "user", content: adPrompt }],
         response_format: { type: "json_object" },
       });
@@ -411,11 +426,11 @@ Return detailed JSON campaign plan.`;
 
   // 5. Email Recovery System with Personalization
   async createEmailRecovery(request: z.infer<typeof EmailRecoverySchema>): Promise<CloeResponse> {
-    if (!openai) {
+    if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
       return {
         success: false,
-        response: "AI email recovery creation is currently unavailable. Please check your OpenAI API configuration.",
-        nextSteps: ["Configure OpenAI API key"]
+        response: "AI email recovery creation is currently unavailable. Please check your Argilette AI configuration.",
+        nextSteps: ["Configure Argilette AI"]
       };
     }
     
@@ -437,7 +452,7 @@ Design a compelling email recovery sequence with:
 Focus on re-engagement and conversion optimization. Return detailed JSON campaign.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: DEFAULT_MODEL_STR,
         messages: [{ role: "user", content: emailPrompt }],
         response_format: { type: "json_object" },
       });
