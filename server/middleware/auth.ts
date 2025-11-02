@@ -159,7 +159,7 @@ export async function login(req: Request, res: Response) {
         lastName: user.lastName,
         role: user.role,
         permissions: userWithPermissions.permissions,
-        isPlatformOwner: email === 'abel@argilette.org' || email === 'admin@default.com'
+        isPlatformOwner: email === 'abel@argilette.com' || email === 'admin@default.com'
       },
       tenant: {
         id: tenant.id,

@@ -168,8 +168,8 @@ export const PLAN_LIMITS = {
 export function requireFeature(featureName: string) {
   return async (req: FeatureCheckRequest, res: Response, next: NextFunction) => {
     try {
-      // Skip feature check for platform owner - abel@argilette.org or admin@default.com
-      if (req.user?.email === 'abel@argilette.org' || req.user?.email === 'admin@default.com' || req.user?.role === 'platform_owner') {
+      // Skip feature check for platform owner - abel@argilette.com or admin@default.com
+      if (req.user?.email === 'abel@argilette.com' || req.user?.email === 'admin@default.com' || req.user?.role === 'platform_owner') {
         return next();
       }
 
@@ -226,8 +226,8 @@ export function requireFeature(featureName: string) {
 export function checkUsageLimit(resource: string) {
   return async (req: FeatureCheckRequest, res: Response, next: NextFunction) => {
     try {
-      // Skip for platform owner - abel@argilette.org or admin@default.com
-      if (req.user?.email === 'abel@argilette.org' || req.user?.email === 'admin@default.com' || req.user?.role === 'platform_owner') {
+      // Skip for platform owner - abel@argilette.com or admin@default.com
+      if (req.user?.email === 'abel@argilette.com' || req.user?.email === 'admin@default.com' || req.user?.role === 'platform_owner') {
         return next();
       }
 

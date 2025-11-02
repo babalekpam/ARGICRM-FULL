@@ -68,7 +68,7 @@ export class WelcomeService {
       const onboardingService = new OnboardingService(this.storage);
       
       // Get user ID from email - handle both admin emails
-      const isPlatformOwner = email === 'admin@default.com' || email === 'abel@argilette.org';
+      const isPlatformOwner = email === 'admin@default.com' || email === 'abel@argilette.com';
       const userId = isPlatformOwner ? 'platform-owner-1' : 'demo-user-1';
       const tenantId = 'default-tenant';
       
@@ -94,8 +94,8 @@ export class WelcomeService {
     }
     
     // Fallback to default profile if onboarding data not available
-    // For abel@argilette.org, use proper admin name instead of parsing email
-    if (email === 'abel@argilette.org') {
+    // For abel@argilette.com, use proper admin name instead of parsing email
+    if (email === 'abel@argilette.com') {
       return {
         firstName: 'Platform',
         lastName: 'Administrator',

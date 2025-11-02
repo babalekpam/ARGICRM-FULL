@@ -19,7 +19,7 @@ router.use(validateUserTenant);
 function getUserStorage(req: any): IStorage {
   const userEmail = req.user?.email || 'system@default.com';
   const tenantId = req.tenant?.id || 'default-tenant';
-  const isPlatformOwner = userEmail === 'abel@argilette.org' || userEmail === 'admin@default.com';
+  const isPlatformOwner = userEmail === 'abel@argilette.com' || userEmail === 'admin@default.com';
   return new DatabaseStorage(userEmail, tenantId, isPlatformOwner);
 }
 

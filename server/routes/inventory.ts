@@ -610,7 +610,7 @@ export function registerInventoryRoutes(app: Express) {
       try {
         // Get proper user storage context
         const userEmail = req.headers['x-auth-email'] as string;
-        const tenantId = userEmail === 'abel@argilette.org' ? 'platform-tenant' : `tenant-${userEmail?.split('@')[0]}`;
+        const tenantId = userEmail === 'abel@argilette.com' ? 'platform-tenant' : `tenant-${userEmail?.split('@')[0]}`;
         
         console.log(`Saving ${processedInventoryItems.length} AI-analyzed inventory items for tenant: ${tenantId}`);
         

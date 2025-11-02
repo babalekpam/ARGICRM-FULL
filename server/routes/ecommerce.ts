@@ -19,7 +19,7 @@ function getUserStorage(req: any): DatabaseStorage {
   
   const userEmail = authenticatedUser.email;
   const tenantId = authenticatedUser.tenantId;
-  const isPlatformOwner = userEmail === 'abel@argilette.org' || userEmail === 'admin@default.com';
+  const isPlatformOwner = userEmail === 'abel@argilette.com' || userEmail === 'admin@default.com';
   
   return new DatabaseStorage(userEmail, tenantId, isPlatformOwner);
 }

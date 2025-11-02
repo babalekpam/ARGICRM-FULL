@@ -44,7 +44,7 @@ function getUserStorage(req: any) {
   const tenantId = authenticatedUser.tenantId;
   
   // Platform owner detection based on verified data only
-  const isPlatformOwner = userEmail === 'abel@argilette.org' || userEmail === 'admin@default.com';
+  const isPlatformOwner = userEmail === 'abel@argilette.com' || userEmail === 'admin@default.com';
   
   // CRITICAL FIX: Create per-request storage instances with proper tenant isolation
   return new DatabaseStorage(userEmail, tenantId, isPlatformOwner);
@@ -341,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // CRITICAL FIX: Use DatabaseStorage for proper authentication
         // Create platform owner storage for authentication operations (can access all tenants)
-        const authStorage = new DatabaseStorage('abel@argilette.org', '00000000-0000-0000-0000-000000000001', true);
+        const authStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
         
         // Find user by email in database
         const user = await authStorage.getUserByEmail(email);
@@ -398,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Ensure permissions exist with defaults for platform owner
         if (!userWithPermissions.permissions) {
-          const isPlatformOwner = user.email === 'abel@argilette.org';
+          const isPlatformOwner = user.email === 'abel@argilette.com';
           userWithPermissions.permissions = isPlatformOwner ? [
             'contacts.read', 'contacts.write', 'accounts.read', 'accounts.write',
             'leads.read', 'leads.write', 'deals.read', 'deals.write',
@@ -521,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const jwt = await import('jsonwebtoken');
         const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'default-secret-key') as { email: string };
         const sessionEmail = decoded.email;
-        const isPlatformOwner = sessionEmail === 'abel@argilette.org' || sessionEmail === 'admin@default.com';
+        const isPlatformOwner = sessionEmail === 'abel@argilette.com' || sessionEmail === 'admin@default.com';
         console.log('GET /api/me called with authenticated email:', sessionEmail);
       
       // Handle specific tenant accounts
@@ -530,8 +530,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userRole = 'demo_admin';
 
       if (isPlatformOwner) {
-        firstName = sessionEmail === 'abel@argilette.org' ? 'Abel' : 'Admin';
-        lastName = sessionEmail === 'abel@argilette.org' ? 'Dessalegn' : 'User';
+        firstName = sessionEmail === 'abel@argilette.com' ? 'Abel' : 'Admin';
+        lastName = sessionEmail === 'abel@argilette.com' ? 'Dessalegn' : 'User';
         userRole = 'platform_owner';
       }
 
@@ -723,7 +723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // CRITICAL FIX: Create tenant first, then user with proper UUID foreign keys
       try {
         const { DatabaseStorage } = await import('./database-storage.js');
-        const platformStorage = new DatabaseStorage('abel@argilette.org', '00000000-0000-0000-0000-000000000001', true);
+        const platformStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
         
         // Step 1: Create tenant with UUID (let database generate)
         console.log('🔄 Creating tenant in database:', company);
@@ -735,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ Tenant created with UUID:', createdTenant.id);
         
         // Step 2: Create user with tenant-scoped storage (CRITICAL FIX)
-        const tenantStorage = new DatabaseStorage('abel@argilette.org', createdTenant.id, true);
+        const tenantStorage = new DatabaseStorage('abel@argilette.com', createdTenant.id, true);
         const userData = {
           email: normalizedEmail,
           firstName,
@@ -854,7 +854,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`ADMIN REQUEST: ${currentUserEmail} requested user list`);
 
         // RBAC: Only platform owners can access user list
-        const adminEmails = ['abel@argilette.org', 'admin@default.com'];
+        const adminEmails = ['abel@argilette.com', 'admin@default.com'];
         if (!adminEmails.includes(currentUserEmail)) {
           return res.status(403).json({ error: 'Platform owner access required' });
         }
@@ -905,7 +905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // SECURITY FIX: Use database storage for verification (no auth required for email verification)
-      const dbStorage = new DatabaseStorage('abel@argilette.org', '00000000-0000-0000-0000-000000000001', true);
+      const dbStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
       
       // Find user by verification token
       const user = await dbStorage.getUserByVerificationToken(token as string);
@@ -939,7 +939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify the user (this updates isVerified to true and clears verification token)
       // Create tenant-scoped storage for this user's verification
-      const userStorage = new DatabaseStorage(user.email, user.tenantId, user.email === 'abel@argilette.org' || user.email === 'admin@default.com');
+      const userStorage = new DatabaseStorage(user.email, user.tenantId, user.email === 'abel@argilette.com' || user.email === 'admin@default.com');
       await userStorage.updateUserEmailVerification(user.id, true);
       
       console.log(`✅ Email verification successful for: ${email}`);
@@ -1082,7 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // SECURITY FIX: Use database storage for user creation in signup
       const { DatabaseStorage } = await import('./database-storage.js');
-      const platformStorage = new DatabaseStorage('abel@argilette.org', '00000000-0000-0000-0000-000000000001', true);
+      const platformStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
       // const platformStorage = storage; // Using existing storage temporarily while preserving security logic
       await platformStorage.createUser({
         firstName,
@@ -2073,7 +2073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Use platform owner storage for admin operations
-      const adminStorage = new DatabaseStorage('abel@argilette.org', '00000000-0000-0000-0000-000000000001', true);
+      const adminStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
       
       const user = await adminStorage.getUserByEmail(email);
       
@@ -2137,7 +2137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         console.log('Creating new tenant and user for:', email);
         const { DatabaseStorage } = await import('./database-storage.js');
-        const dbStorage = new DatabaseStorage('abel@argilette.org', '00000000-0000-0000-0000-000000000001', true);
+        const dbStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
 
         // CRITICAL: Create tenant FIRST to satisfy foreign key constraint
         const tenant = await dbStorage.createTenant({
@@ -2234,7 +2234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // SECURITY FIX: Use database storage for unauthenticated verification
-      const dbStorage = new DatabaseStorage('abel@argilette.org', '00000000-0000-0000-0000-000000000001', true);
+      const dbStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
       const user = await dbStorage.getUserByVerificationToken(token as string);
       
       if (!user) {
@@ -2316,7 +2316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`ADMIN DASHBOARD REQUEST: ${currentUserEmail} requested dashboard stats`);
 
         // RBAC: Only platform owners can access dashboard
-        const adminEmails = ['abel@argilette.org', 'admin@default.com'];
+        const adminEmails = ['abel@argilette.com', 'admin@default.com'];
         if (!adminEmails.includes(currentUserEmail)) {
           return res.status(403).json({ error: 'Platform owner access required' });
         }
@@ -2373,7 +2373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const decoded = verifyToken(token);
         
         // SECURITY: Only platform owners can access roles
-        const adminEmails = ['abel@argilette.org', 'admin@default.com'];
+        const adminEmails = ['abel@argilette.com', 'admin@default.com'];
         if (!adminEmails.includes(decoded.email)) {
           return res.status(403).json({ error: 'Platform owner access required' });
         }
@@ -2419,7 +2419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const decoded = verifyToken(token);
         
         // SECURITY: Only platform owners can access permissions
-        const adminEmails = ['abel@argilette.org', 'admin@default.com'];
+        const adminEmails = ['abel@argilette.com', 'admin@default.com'];
         if (!adminEmails.includes(decoded.email)) {
           return res.status(403).json({ error: 'Platform owner access required' });
         }
@@ -2462,7 +2462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only platform owners can access
-      if (authenticatedUser.email !== 'abel@argilette.org' && authenticatedUser.email !== 'admin@default.com') {
+      if (authenticatedUser.email !== 'abel@argilette.com' && authenticatedUser.email !== 'admin@default.com') {
         return res.status(403).json({ error: 'Platform owner access required' });
       }
 
@@ -2503,7 +2503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only platform owners can access
-      if (authenticatedUser.email !== 'abel@argilette.org' && authenticatedUser.email !== 'admin@default.com') {
+      if (authenticatedUser.email !== 'abel@argilette.com' && authenticatedUser.email !== 'admin@default.com') {
         return res.status(403).json({ error: 'Platform owner access required' });
       }
 
@@ -2537,7 +2537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only platform owners can access
-      if (authenticatedUser.email !== 'abel@argilette.org' && authenticatedUser.email !== 'admin@default.com') {
+      if (authenticatedUser.email !== 'abel@argilette.com' && authenticatedUser.email !== 'admin@default.com') {
         return res.status(403).json({ error: 'Platform owner access required' });
       }
 
@@ -2580,7 +2580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only platform owners can access
-      if (authenticatedUser.email !== 'abel@argilette.org' && authenticatedUser.email !== 'admin@default.com') {
+      if (authenticatedUser.email !== 'abel@argilette.com' && authenticatedUser.email !== 'admin@default.com') {
         return res.status(403).json({ error: 'Platform owner access required' });
       }
 
@@ -2685,8 +2685,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/superadmin/registrations', async (req, res) => {
     try {
       // Only platform owner can access
-      const userEmail = req.headers['x-auth-email'] as string || 'abel@argilette.org';
-      if (userEmail !== 'abel@argilette.org' && userEmail !== 'admin@default.com') {
+      const userEmail = req.headers['x-auth-email'] as string || 'abel@argilette.com';
+      if (userEmail !== 'abel@argilette.com' && userEmail !== 'admin@default.com') {
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -5931,13 +5931,13 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,Referr
       const userEmail = decoded.email;
     
       // Determine user data based on JWT verified email
-      if (userEmail === 'abel@argilette.org' || userEmail === 'admin@default.com') {
+      if (userEmail === 'abel@argilette.com' || userEmail === 'admin@default.com') {
         req.user = {
           id: 'platform-owner-1',
           email: userEmail,
           role: 'platform_owner',
-          firstName: userEmail === 'abel@argilette.org' ? 'Abel' : 'John',
-          lastName: userEmail === 'abel@argilette.org' ? 'Gutierrez' : 'Smith',
+          firstName: userEmail === 'abel@argilette.com' ? 'Abel' : 'John',
+          lastName: userEmail === 'abel@argilette.com' ? 'Gutierrez' : 'Smith',
           tenantId: '00000000-0000-0000-0000-000000000001'
         };
         console.log('SIMPLE AUTH: Set PLATFORM OWNER user');
@@ -6491,7 +6491,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         const sessionEmail = decoded.email;
         console.log('GET /api/me called');
         console.log('Email from JWT:', sessionEmail);
-        const isPlatformOwner = sessionEmail === 'abel@argilette.org' || sessionEmail === 'admin@default.com';
+        const isPlatformOwner = sessionEmail === 'abel@argilette.com' || sessionEmail === 'admin@default.com';
       
       // Handle specific tenant accounts
       let firstName = 'Demo';
@@ -6500,7 +6500,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       if (sessionEmail === 'motena.des@gmail.com') {
         firstName = 'Motena';
         lastName = 'Des';
-      } else if (sessionEmail === 'abel@argilette.org') {
+      } else if (sessionEmail === 'abel@argilette.com') {
         firstName = 'Abel';
         lastName = 'Argilette';
       } else if (sessionEmail === 'admin@default.com') {
@@ -7324,7 +7324,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       const { OnboardingService } = await import('./services/onboarding-service.js');
       const onboardingService = new OnboardingService(storage);
       
-      const userEmail = req.user?.email || 'abel@argilette.org';
+      const userEmail = req.user?.email || 'abel@argilette.com';
       const userId = req.user?.id || 'demo-user-1';
       const tenantId = 'default-tenant';
       
@@ -7555,8 +7555,8 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   app.get('/api/personalized/welcome-data',  async (req: AuthRequest, res) => {
     try {
       // BACKEND GUARD: Platform owners should never get personalized data
-      const userEmail = req.user?.email || 'abel@argilette.org';
-      if (['admin@default.com', 'abel@argilette.org'].includes(userEmail.toLowerCase())) {
+      const userEmail = req.user?.email || 'abel@argilette.com';
+      if (['admin@default.com', 'abel@argilette.com'].includes(userEmail.toLowerCase())) {
         console.warn('PersonalizedWelcome API blocked for platform owner:', userEmail);
         return res.status(204).send(); // No content - prevents UI blocking
       }
@@ -7564,7 +7564,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       const { WelcomeService } = await import('./services/welcome-service.js');
       const welcomeService = new WelcomeService(storage);
       // Use proper UUID format for platform owner
-      const tenantId = userEmail === 'abel@argilette.org' ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000002';
+      const tenantId = userEmail === 'abel@argilette.com' ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000002';
       
       const data = await welcomeService.getPersonalizedData(userEmail, tenantId);
       
@@ -7586,9 +7586,9 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       const { WelcomeService } = await import('./services/welcome-service.js');
       const welcomeService = new WelcomeService(storage);
       
-      const userEmail = req.user?.email || 'abel@argilette.org';
+      const userEmail = req.user?.email || 'abel@argilette.com';
       // Use proper UUID format for platform owner
-      const tenantId = userEmail === 'abel@argilette.org' ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000002';
+      const tenantId = userEmail === 'abel@argilette.com' ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000002';
       
       const recommendations = await welcomeService.getGreetingRecommendations(userEmail, tenantId);
       
@@ -7608,8 +7608,8 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   app.get('/api/personalized/upcoming-events',  async (req: AuthRequest, res) => {
     try {
       // BACKEND GUARD: Platform owners should never get upcoming events
-      const userEmail = req.user?.email || 'abel@argilette.org';
-      if (['admin@default.com', 'abel@argilette.org'].includes(userEmail.toLowerCase())) {
+      const userEmail = req.user?.email || 'abel@argilette.com';
+      if (['admin@default.com', 'abel@argilette.com'].includes(userEmail.toLowerCase())) {
         console.warn('PersonalizedWelcome upcoming-events blocked for platform owner:', userEmail);
         return res.status(204).send(); // No content - prevents UI blocking
       }
@@ -11671,7 +11671,7 @@ ${req.body.companyName} Team`;
     // Set tenantId from authenticated user
     req.tenantId = req.user.tenantId;
     req.userId = req.user.id;
-    req.isAdmin = req.user.email === 'abel@argilette.org' || req.user.isPlatformOwner;
+    req.isAdmin = req.user.email === 'abel@argilette.com' || req.user.isPlatformOwner;
     next();
   });
   app.use('/api/argilette', createSEORouter());

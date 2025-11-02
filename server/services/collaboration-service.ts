@@ -65,9 +65,9 @@ class CollaborationService extends EventEmitter {
     // Initialize with only platform owner
     const sampleUsers: CollaborationUser[] = [
       {
-        id: 'abel@argilette.org',
+        id: 'abel@argilette.com',
         name: 'Platform Administrator',
-        email: 'abel@argilette.org',
+        email: 'abel@argilette.com',
         status: 'online',
         lastActivity: new Date(),
         sessionId: 'session-admin',
