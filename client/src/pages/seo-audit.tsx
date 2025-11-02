@@ -41,16 +41,52 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
   // Use propProjectId, then URL param, then selectedProject, then first available project, or null
   const projectId = propProjectId || urlProjectId || selectedProjectId || (projects.length > 0 ? String(projects[0].id) : null);
   
-  // Fetch SEO issues
-  const { data: issues, isLoading } = useQuery<SeoIssue[]>({
-    queryKey: ["/api/seo-issues", projectId],
+  // Fetch latest audit scan results
+  const { data: auditScan, isLoading } = useQuery<any>({
+    queryKey: ["/api/seo/technical-audit/latest", projectId],
     queryFn: async () => {
-      const res = await fetch(`/api/seo-issues?projectId=${projectId}`);
-      if (!res.ok) throw new Error("Failed to fetch SEO issues");
+      const res = await fetch(`/api/seo/technical-audit/latest/${projectId}`, {
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        throw new Error("Failed to fetch audit results");
+      }
       return res.json();
     },
     enabled: !!projectId
   });
+  
+  // Convert audit scan data to issues format for display
+  const issues: SeoIssue[] = auditScan ? [
+    {
+      id: `perf-${auditScan.id}`,
+      title: `Performance Score: ${auditScan.performanceScore}/100`,
+      description: `Overall website performance rating`,
+      severity: auditScan.performanceScore < 50 ? "critical" : auditScan.performanceScore < 80 ? "warning" : "info",
+      affectedUrls: [],
+      recommendedAction: auditScan.performanceScore < 80 ? "Optimize images, reduce JavaScript, enable caching" : "Performance is good!",
+      category: "performance"
+    },
+    {
+      id: `seo-${auditScan.id}`,
+      title: `SEO Score: ${auditScan.seoScore}/100`,
+      description: `Search engine optimization rating`,
+      severity: auditScan.seoScore < 50 ? "critical" : auditScan.seoScore < 80 ? "warning" : "info",
+      affectedUrls: [],
+      recommendedAction: auditScan.seoScore < 80 ? "Improve meta tags, headings, and content structure" : "SEO is good!",
+      category: "seo"
+    },
+    {
+      id: `access-${auditScan.id}`,
+      title: `Accessibility Score: ${auditScan.accessibilityScore}/100`,
+      description: `Website accessibility for users with disabilities`,
+      severity: auditScan.accessibilityScore < 50 ? "critical" : auditScan.accessibilityScore < 80 ? "warning" : "info",
+      affectedUrls: [],
+      recommendedAction: auditScan.accessibilityScore < 80 ? "Add alt text to images, improve color contrast, add ARIA labels" : "Accessibility is good!",
+      category: "accessibility"
+    }
+  ] : [];
   
   // Run audit mutation
   const runAuditMutation = useMutation({
@@ -63,10 +99,11 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
     },
     onSuccess: (data) => {
       toast({
-        title: "Audit Started",
-        description: `Successfully started audit for ${data.pagesScanned} page(s)`,
+        title: "Audit Completed",
+        description: `Successfully analyzed your website with performance score: ${data.performanceScore}/100`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/seo-issues", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/technical-audit/latest", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/projects"] });
       setDialogOpen(false);
       setWebsiteUrl("");
     },
