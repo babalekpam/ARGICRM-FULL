@@ -24,6 +24,7 @@ interface Product {
   category?: string;
   price: number;
   cost?: number;
+  stockQuantity?: number;
   quantityOnHand?: number;
   reorderLevel?: number;
   maxStockLevel?: number;
@@ -87,19 +88,21 @@ export default function InventoryManagementPage() {
   const queryClient = useQueryClient();
 
   // Fetch products
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const { data: productsData, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ['/api/products'],
     enabled: true,
   });
+  const products: Product[] = productsData || [];
 
   // Fetch orders
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+  const { data: ordersData, isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
     enabled: true,
   });
+  const orders: Order[] = ordersData || [];
 
   // Fetch operations
-  const { data: operationsResponse, isLoading: operationsLoading } = useQuery({
+  const { data: operationsResponse, isLoading: operationsLoading } = useQuery<{ data: Operation[] }>({
     queryKey: ['/api/operations'],
     enabled: true,
   });
@@ -276,7 +279,10 @@ export default function InventoryManagementPage() {
   // Calculate inventory statistics
   const inventoryStats = {
     totalProducts: products.length,
-    lowStock: products.filter((p: Product) => (p.stockQuantity || p.quantityOnHand) && p.reorderLevel && (p.stockQuantity || p.quantityOnHand) <= p.reorderLevel).length,
+    lowStock: products.filter((p: Product) => {
+      const stock = p.stockQuantity || p.quantityOnHand;
+      return stock != null && p.reorderLevel != null && stock <= p.reorderLevel;
+    }).length,
     outOfStock: products.filter((p: Product) => (p.stockQuantity || p.quantityOnHand) === 0).length,
     totalValue: products.reduce((sum: number, p: Product) => sum + (((p.stockQuantity || p.quantityOnHand) || 0) * (p.cost || p.price)), 0),
   };
