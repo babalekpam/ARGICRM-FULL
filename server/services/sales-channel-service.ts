@@ -83,8 +83,8 @@ export class SalesChannelService {
         totalRevenue: 0,
         lastSyncResult: 'success'
       },
-      createdAt: dbChannel.createdAt,
-      updatedAt: dbChannel.updatedAt
+      createdAt: dbChannel.createdAt || new Date(),
+      updatedAt: dbChannel.updatedAt || new Date()
     };
   }
 
@@ -390,32 +390,40 @@ export class SalesChannelService {
 
   // TENANT-ISOLATED: Disconnect channel with validation
   async disconnectChannel(channelId: string, tenantId: string): Promise<boolean> {
-    const channel = this.channels.get(channelId);
-    if (!channel || channel.tenantId !== tenantId) {
+    const channel = await storage.getSalesChannel(channelId, tenantId);
+    if (!channel) {
       return false; // Enforce tenant isolation
     }
 
-    channel.status = 'disconnected';
-    channel.updatedAt = new Date();
+    await storage.deleteSalesChannel(channelId, tenantId);
     return true;
   }
 
   // TENANT-ISOLATED: Update channel settings with validation
   async updateChannelSettings(channelId: string, tenantId: string, settings: Record<string, any>): Promise<SalesChannel | null> {
-    const channel = this.channels.get(channelId);
-    if (!channel || channel.tenantId !== tenantId) {
+    const channel = await storage.getSalesChannel(channelId, tenantId);
+    if (!channel) {
       return null; // Enforce tenant isolation
     }
 
-    channel.config.settings = { ...channel.config.settings, ...settings };
-    channel.updatedAt = new Date();
-    return channel;
+    const updatedConfig = { 
+      ...channel.config as SalesChannelConfig, 
+      settings: { ...(channel.config as SalesChannelConfig).settings, ...settings } 
+    };
+    
+    await storage.updateSalesChannel(channelId, { 
+      config: updatedConfig,
+      updatedAt: new Date()
+    });
+    
+    const updated = await storage.getSalesChannel(channelId, tenantId);
+    return updated ? this.mapDBChannelToService(updated) : null;
   }
 
   // TENANT-ISOLATED: Get channel metrics with validation
   async getChannelMetrics(channelId: string, tenantId: string, period: '24h' | '7d' | '30d' | '90d' = '7d'): Promise<SalesChannelMetrics | null> {
-    const channel = this.channels.get(channelId);
-    if (!channel || channel.tenantId !== tenantId) {
+    const channel = await storage.getSalesChannel(channelId, tenantId);
+    if (!channel) {
       return null; // Enforce tenant isolation
     }
 
@@ -434,20 +442,33 @@ export class SalesChannelService {
 
   // TENANT-ISOLATED: Sync channel data
   async syncChannel(channelId: string, tenantId: string): Promise<boolean> {
-    const channel = this.channels.get(channelId);
-    if (!channel || channel.tenantId !== tenantId) {
+    const channel = await storage.getSalesChannel(channelId, tenantId);
+    if (!channel) {
       return false; // Enforce tenant isolation
     }
 
     try {
       // Implement platform-specific sync logic here
-      channel.lastSync = new Date();
-      channel.syncStats.lastSyncResult = 'success';
-      channel.updatedAt = new Date();
+      const syncStats = channel.syncStats as any;
+      syncStats.lastSyncResult = 'success';
+      
+      await storage.updateSalesChannel(channelId, {
+        lastSync: new Date(),
+        syncStats,
+        updatedAt: new Date()
+      });
+      
       return true;
     } catch (error) {
       console.error(`Sync failed for channel ${channelId}:`, error);
-      channel.syncStats.lastSyncResult = 'error';
+      const syncStats = channel.syncStats as any;
+      syncStats.lastSyncResult = 'error';
+      
+      await storage.updateSalesChannel(channelId, {
+        syncStats,
+        updatedAt: new Date()
+      });
+      
       return false;
     }
   }

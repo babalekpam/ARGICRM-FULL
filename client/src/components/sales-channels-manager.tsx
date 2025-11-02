@@ -248,7 +248,21 @@ function SalesChannelsManager() {
   // Connect platform mutation
   const connectMutation = useMutation({
     mutationFn: async (data: { platform: Platform; connectionData: Record<string, string> }) => {
-      const endpoint = `/api/sales/connect/${data.platform.id.replace('_business', '').replace('_ads', '')}`;
+      // Map platform ID to backend endpoint
+      const endpointMap: Record<string, string> = {
+        'tiktok': 'tiktok',
+        'facebook_business': 'facebook',
+        'instagram_business': 'instagram',
+        'google_ads': 'google-ads',
+        'twitter_business': 'twitter',
+        'linkedin_business': 'linkedin',
+        'snapchat_business': 'snapchat',
+        'pinterest_business': 'pinterest',
+      };
+      
+      const platformEndpoint = endpointMap[data.platform.id] || data.platform.id;
+      const endpoint = `/api/sales/connect/${platformEndpoint}`;
+      
       const response = await fetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(data.connectionData),
