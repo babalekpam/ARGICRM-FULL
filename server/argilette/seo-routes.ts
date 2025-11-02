@@ -812,6 +812,18 @@ export function createSEORouter(): Router {
       
       const { projectId, urls } = validation.data;
 
+      // Ensure project exists - create it if it doesn't
+      let project = await storage.getProject(req.tenantId, projectId);
+      if (!project) {
+        // Create default project
+        project = await storage.createProject(req.tenantId, {
+          id: projectId,
+          name: projectId === "default-project" ? "Default SEO Project" : projectId,
+          domain: urls[0] || "https://example.com",
+          isActive: true
+        });
+      }
+
       // Create audit scan record
       const scan = await storage.createAuditScan(req.tenantId, {
         projectId,
