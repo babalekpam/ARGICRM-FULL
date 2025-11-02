@@ -114,10 +114,11 @@ export default function AICampaignStudio() {
   };
 
   // Fetch contacts for email generation
-  const { data: contacts = [] } = useQuery<Contact[]>({
+  const { data: contactsData } = useQuery<Contact[]>({
     queryKey: ["/api/contacts"],
     enabled: activeTab === "emails",
   });
+  const contacts = contactsData || [];
 
   // Fetch generated content library
   const { data: contentLibrary = [] } = useQuery<GeneratedContent[]>({
