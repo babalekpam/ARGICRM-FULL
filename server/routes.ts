@@ -5708,9 +5708,9 @@ Your ARGILETTE Team
   // Get import template
   app.get("/api/contacts/import-template", (req, res) => {
     const template = {
-      csv: `name,email,phone,company,job title,lead source,status
-John Doe,john@example.com,+1-555-0123,ACME Corp,Sales Manager,Website,active
-Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,Referral,active`,
+      csv: `name,email,phone,company,job title,location,bio,linkedin,company website,number of employees,lead source,status
+John Doe,john@example.com,+1-555-0123,ACME Corp,Sales Manager,"New York, NY","Experienced sales professional",https://linkedin.com/in/johndoe,https://acme.com,500,Website,active
+Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San Francisco, CA","Digital marketing expert",https://linkedin.com/in/janesmith,https://techsolutions.com,150,Referral,active`,
       
       fields: [
         { field: 'name', required: true, description: 'Contact full name' },
@@ -5718,6 +5718,11 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,Referr
         { field: 'phone', required: false, description: 'Phone number' },
         { field: 'company', required: false, description: 'Company name' },
         { field: 'job title', required: false, description: 'Job position' },
+        { field: 'location', required: false, description: 'Location or address' },
+        { field: 'bio', required: false, description: 'Biography or notes' },
+        { field: 'linkedin', required: false, description: 'LinkedIn profile URL' },
+        { field: 'company website', required: false, description: 'Company website URL' },
+        { field: 'number of employees', required: false, description: 'Number of employees' },
         { field: 'lead source', required: false, description: 'How they found you' },
         { field: 'status', required: false, description: 'Contact status (active, inactive)' }
       ],
@@ -5728,6 +5733,11 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,Referr
         'phone, phone number, telephone, mobile, cell',
         'company, organization, business, firm, corp',
         'job title, title, position, role, designation',
+        'location, address, city, region, area',
+        'bio, biography, description, about, notes, summary',
+        'linkedin, linkedin profile, linkedin url, linkedin link',
+        'company website, website, company url, web, site',
+        'number of employees, employees, employee count, staff count, team size',
         'lead source, source, origin, channel',
         'status, lead status, contact status'
       ]

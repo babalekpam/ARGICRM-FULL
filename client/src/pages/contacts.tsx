@@ -207,9 +207,9 @@ export default function ContactsPage() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = `name,email,phone,company,job title,lead source,status
-John Doe,john@example.com,+1-555-0123,ACME Corp,Sales Manager,Website,active
-Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,Referral,active`;
+    const csvContent = `name,email,phone,company,job title,location,bio,linkedin,company website,number of employees,lead source,status
+John Doe,john@example.com,+1-555-0123,ACME Corp,Sales Manager,"New York, NY","Experienced sales professional",https://linkedin.com/in/johndoe,https://acme.com,500,Website,active
+Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San Francisco, CA","Digital marketing expert",https://linkedin.com/in/janesmith,https://techsolutions.com,150,Referral,active`;
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -370,6 +370,11 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,Referr
                         <p><strong>Phone:</strong> phone, phone number, telephone, mobile</p>
                         <p><strong>Company:</strong> company, organization, business, firm</p>
                         <p><strong>Job Title:</strong> job title, title, position, role</p>
+                        <p><strong>Location:</strong> location, address, city, region, area</p>
+                        <p><strong>Bio:</strong> bio, biography, description, about, notes</p>
+                        <p><strong>LinkedIn:</strong> linkedin, linkedin profile, linkedin url</p>
+                        <p><strong>Company Website:</strong> company website, website, company url</p>
+                        <p><strong>Number of Employees:</strong> number of employees, employees, employee count</p>
                         <p><strong>Lead Source:</strong> lead source, source, origin, channel</p>
                         <p><strong>Status:</strong> status, lead status, contact status</p>
                       </div>

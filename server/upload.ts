@@ -40,6 +40,11 @@ interface ParsedContact {
   phone?: string;
   company?: string;
   jobTitle?: string;
+  location?: string;
+  bio?: string;
+  linkedin?: string;
+  companyWebsite?: string;
+  numberOfEmployees?: string;
   leadSource?: string;
   status?: string;
 }
@@ -59,6 +64,11 @@ const fieldMappings: Record<string, string[]> = {
   phone: ['phone', 'phone number', 'telephone', 'mobile', 'cell'],
   company: ['company', 'organization', 'business', 'firm', 'corp'],
   jobTitle: ['job title', 'title', 'position', 'role', 'designation'],
+  location: ['location', 'address', 'city', 'region', 'area'],
+  bio: ['bio', 'biography', 'description', 'about', 'notes', 'summary'],
+  linkedin: ['linkedin', 'linkedin profile', 'linkedin url', 'linkedin link'],
+  companyWebsite: ['company website', 'website', 'company url', 'web', 'site'],
+  numberOfEmployees: ['number of employees', 'employees', 'employee count', 'staff count', 'team size'],
   leadSource: ['lead source', 'source', 'origin', 'channel'],
   status: ['status', 'lead status', 'contact status']
 };
@@ -219,6 +229,11 @@ export async function importContacts(filePath: string, fileType: string): Promis
           phone: contact.phone || null,
           company: contact.company || null,
           jobTitle: contact.jobTitle || null,
+          location: contact.location || null,
+          bio: contact.bio || null,
+          linkedin: contact.linkedin || null,
+          companyWebsite: contact.companyWebsite || null,
+          numberOfEmployees: contact.numberOfEmployees || null,
           leadSource: contact.leadSource || null,
           status: contact.status || 'active'
         };
@@ -285,6 +300,11 @@ export async function parseFileForPreview(filePath: string, fileType: string, us
           phone: contact.phone || '',
           company: contact.company || '',
           jobTitle: contact.jobTitle || '',
+          location: contact.location || '',
+          bio: contact.bio || '',
+          linkedin: contact.linkedin || '',
+          companyWebsite: contact.companyWebsite || '',
+          numberOfEmployees: contact.numberOfEmployees || '',
           leadSource: contact.leadSource || '',
           status: contact.status || 'active'
         },
@@ -377,6 +397,11 @@ export async function processValidatedContacts(validatedContacts: any[]): Promis
           phone: contactData.mappedData.phone || null,
           company: contactData.mappedData.company || null,
           jobTitle: contactData.mappedData.jobTitle || null,
+          location: contactData.mappedData.location || null,
+          bio: contactData.mappedData.bio || null,
+          linkedin: contactData.mappedData.linkedin || null,
+          companyWebsite: contactData.mappedData.companyWebsite || null,
+          numberOfEmployees: contactData.mappedData.numberOfEmployees || null,
           leadSource: contactData.mappedData.leadSource || null,
           status: contactData.mappedData.status || 'active'
         };

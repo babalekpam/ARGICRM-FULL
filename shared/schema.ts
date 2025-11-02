@@ -1896,6 +1896,11 @@ export const contacts = pgTable("contacts", {
   phone: text("phone"),
   company: text("company"),
   jobTitle: text("job_title"),
+  location: text("location"),
+  bio: text("bio"),
+  linkedin: text("linkedin"),
+  companyWebsite: text("company_website"),
+  numberOfEmployees: text("number_of_employees"),
   leadSource: text("lead_source"),
   status: text("status").default("active"), // active, inactive, prospect, customer
   tags: jsonb("tags").$type<string[]>().default([]),
