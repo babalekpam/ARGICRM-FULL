@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import SeoLayout from "@/components/seo-layout";
 
 interface LocalSEOProps {
   projectId?: string;
@@ -128,7 +129,8 @@ export default function LocalSEO({ projectId: propProjectId }: LocalSEOProps = {
   }
 
   return (
-    <div className="p-6 space-y-6" data-testid="local-seo-page">
+    <SeoLayout title="Local SEO">
+      <div className="p-6 space-y-6" data-testid="local-seo-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Local SEO</h1>
@@ -428,5 +430,6 @@ export default function LocalSEO({ projectId: propProjectId }: LocalSEOProps = {
         </DialogContent>
       </Dialog>
     </div>
+    </SeoLayout>
   );
 }

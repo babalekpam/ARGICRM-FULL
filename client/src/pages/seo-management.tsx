@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import SEOHead, { generatePageSEO, generateStructuredData } from "@/components/seo-head";
 import SEODashboard from "@/components/seo-dashboard";
+import SeoLayout from "@/components/seo-layout";
 
 export default function SEOManagement() {
   const { user } = useAuth();
@@ -45,7 +46,7 @@ export default function SEOManagement() {
   }
 
   return (
-    <>
+    <SeoLayout title="SEO Management">
       <SEOHead 
         title="SEO Management - NODE CRM | Search Engine Optimization Dashboard"
         description="Monitor and optimize your NODE CRM platform's search engine performance with comprehensive SEO analytics, keyword tracking, and technical optimization tools."
@@ -161,6 +162,6 @@ export default function SEOManagement() {
           </div>
         </div>
       </div>
-    </>
+    </SeoLayout>
   );
 }

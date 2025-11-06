@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import SeoLayout from "@/components/seo-layout";
 
 interface CompetitorsProps {
   projectId?: string;
@@ -58,7 +59,8 @@ export default function Competitors({ projectId: propProjectId }: CompetitorsPro
   }
 
   return (
-    <div className="p-6 space-y-6" data-testid="competitors-page">
+    <SeoLayout title="Competitor Analysis">
+      <div className="p-6 space-y-6" data-testid="competitors-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Competitor Analysis</h1>
@@ -110,5 +112,6 @@ export default function Competitors({ projectId: propProjectId }: CompetitorsPro
         </CardContent>
       </Card>
     </div>
+    </SeoLayout>
   );
 }

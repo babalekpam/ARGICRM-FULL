@@ -13,6 +13,7 @@ import { Play, Clock, CheckCircle2, AlertCircle, Gauge, Smartphone, Shield, Code
 import type { AuditScan, PageMetric } from "@shared/schema";
 import { useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import SeoLayout from "@/components/seo-layout";
 
 interface TechnicalAuditProps {
   projectId?: string;
@@ -110,7 +111,8 @@ export default function TechnicalAudit({ projectId: propProjectId }: TechnicalAu
   const activeScan = selectedScanId ? scans.find(s => s.id === selectedScanId) : latestScan;
 
   return (
-    <div className="h-full overflow-auto p-6 space-y-6">
+    <SeoLayout title="Technical SEO Audit">
+      <div className="h-full overflow-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold" data-testid="heading-technical-audit">Technical SEO Audit</h1>
@@ -387,5 +389,6 @@ export default function TechnicalAudit({ projectId: propProjectId }: TechnicalAu
         </TabsContent>
       </Tabs>
     </div>
+    </SeoLayout>
   );
 }

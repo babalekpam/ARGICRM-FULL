@@ -37,6 +37,7 @@ import { z } from "zod";
 import { useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+import SeoLayout from "@/components/seo-layout";
 
 interface KeywordsProps {
   projectId?: string;
@@ -157,7 +158,8 @@ export default function Keywords({ projectId: propProjectId }: KeywordsProps = {
   }
 
   return (
-    <div className="p-6 space-y-6" data-testid="keywords-page">
+    <SeoLayout title="Keyword Research">
+      <div className="p-6 space-y-6" data-testid="keywords-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Keyword Research</h1>
@@ -311,5 +313,6 @@ export default function Keywords({ projectId: propProjectId }: KeywordsProps = {
         </CardContent>
       </Card>
     </div>
+    </SeoLayout>
   );
 }

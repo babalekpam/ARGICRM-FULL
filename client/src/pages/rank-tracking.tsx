@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import SeoLayout from "@/components/seo-layout";
 
 interface RankTrackingProps {
   projectId?: string;
@@ -131,7 +132,8 @@ export default function RankTracking({ projectId: propProjectId }: RankTrackingP
   }
 
   return (
-    <div className="p-6 space-y-6" data-testid="rank-tracking-page">
+    <SeoLayout title="Rank Tracking">
+      <div className="p-6 space-y-6" data-testid="rank-tracking-page">
       <div>
         <h1 className="text-3xl font-bold mb-2">Rank Tracking</h1>
         <p className="text-muted-foreground">Monitor your keyword rankings and track position changes over time</p>
@@ -324,5 +326,6 @@ export default function RankTracking({ projectId: propProjectId }: RankTrackingP
         </TabsContent>
       </Tabs>
     </div>
+    </SeoLayout>
   );
 }

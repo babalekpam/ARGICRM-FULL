@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import SEOHead, { generatePageSEO, generateStructuredData } from "@/components/seo-head";
+import SeoLayout from "@/components/seo-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -249,7 +250,8 @@ export default function MultiPlatformSearch() {
         structuredData={structuredData}
       />
       
-      <div className="space-y-6" data-testid="page-multi-platform-search">
+      <SeoLayout title="Multi-Platform Search Optimization">
+        <div className="space-y-6" data-testid="page-multi-platform-search">
         {/* Hero Section */}
         <div className="text-center space-y-6 py-8">
           <div className="space-y-3">
@@ -726,7 +728,8 @@ export default function MultiPlatformSearch() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+        </div>
+      </SeoLayout>
     </>
   );
 }

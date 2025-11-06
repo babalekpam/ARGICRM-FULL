@@ -15,6 +15,7 @@ import { useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import SeoLayout from "@/components/seo-layout";
 
 interface SeoAuditProps {
   projectId?: string;
@@ -177,7 +178,8 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
   };
 
   return (
-    <div className="p-6 space-y-6" data-testid="seo-audit-page">
+    <SeoLayout title="SEO Audit">
+      <div className="p-6 space-y-6" data-testid="seo-audit-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">SEO Audit</h1>
@@ -419,5 +421,6 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
         </DialogContent>
       </Dialog>
     </div>
+    </SeoLayout>
   );
 }
