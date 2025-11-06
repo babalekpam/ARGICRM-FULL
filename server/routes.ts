@@ -549,6 +549,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'sentiment.read', 'sentiment.write', 'communications.read', 'communications.write',
           'forms.read', 'forms.write', 'reputation.read', 'reputation.write',
           'settings.read', 'settings.write',
+          'seo.read', 'seo.write', 'seo.admin',
+          'inventory.read', 'inventory.write',
           'tax.read', 'tax.write', 'tax.admin', 'team.read', 'team.write',
           'platform.admin', 'billing.admin', 'subscribers.admin'
         ] : [
