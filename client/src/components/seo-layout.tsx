@@ -51,23 +51,25 @@ export default function SeoLayout({ children, title }: SeoLayoutProps) {
             const isActive = location === tab.path;
 
             return (
-              <Link
+              <a
                 key={tab.path}
                 href={tab.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.history.pushState({}, '', tab.path);
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap cursor-pointer no-underline",
+                  isActive
+                    ? "border-primary text-primary font-medium"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                )}
+                data-testid={`seo-tab-${tab.path.replace('/', '')}`}
               >
-                <a
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap cursor-pointer no-underline",
-                    isActive
-                      ? "border-primary text-primary font-medium"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                  )}
-                  data-testid={`seo-tab-${tab.path.replace('/', '')}`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm">{tab.label}</span>
-                </a>
-              </Link>
+                <Icon className="w-4 h-4" />
+                <span className="text-sm">{tab.label}</span>
+              </a>
             );
           })}
         </div>
