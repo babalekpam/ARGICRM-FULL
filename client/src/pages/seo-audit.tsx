@@ -91,6 +91,17 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
     }
   ] : [];
   
+  // Create project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: async ({ domain, name }: { domain: string, name: string }) => {
+      const response = await apiRequest("POST", "/api/seo/projects", {
+        domain,
+        name
+      });
+      return await response.json();
+    },
+  });
+  
   // Run audit mutation
   const runAuditMutation = useMutation({
     mutationFn: async ({ projectId, url }: { projectId: string, url: string }) => {
@@ -105,7 +116,7 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
         title: "Audit Completed",
         description: `Successfully analyzed your website with performance score: ${data.performanceScore}/100`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/seo/technical-audit/latest", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/technical-audit/latest"] });
       queryClient.invalidateQueries({ queryKey: ["/api/seo/projects"] });
       setDialogOpen(false);
       setWebsiteUrl("");
@@ -162,7 +173,7 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
     );
   }
 
-  const handleRunAudit = () => {
+  const handleRunAudit = async () => {
     if (!websiteUrl) {
       toast({
         title: "URL Required",
@@ -172,9 +183,49 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
       return;
     }
     
-    // If no project selected and no existing projects, create a default one
-    const targetProjectId = projectId || "default-project";
-    runAuditMutation.mutate({ projectId: targetProjectId, url: websiteUrl });
+    try {
+      // Extract domain from URL
+      let domain = websiteUrl.trim();
+      try {
+        const urlObj = new URL(domain.startsWith('http') ? domain : `https://${domain}`);
+        domain = urlObj.hostname.replace(/^www\./, '');
+      } catch {
+        // If URL parsing fails, use as-is
+        domain = domain.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+      }
+      
+      // Check if project already exists for this domain
+      let targetProjectId = projectId;
+      const existingProject = projects.find((p: any) => p.domain === domain);
+      
+      if (existingProject) {
+        targetProjectId = existingProject.id;
+      } else {
+        // Create new project for this domain
+        toast({
+          title: "Creating Project",
+          description: `Setting up tracking for ${domain}...`,
+        });
+        
+        const newProject = await createProjectMutation.mutateAsync({
+          domain,
+          name: domain
+        });
+        targetProjectId = newProject.id;
+        
+        // Refresh projects list
+        await queryClient.invalidateQueries({ queryKey: ["/api/seo/projects"] });
+      }
+      
+      // Run the audit
+      runAuditMutation.mutate({ projectId: targetProjectId, url: websiteUrl });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create project or run audit",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -183,18 +234,29 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">SEO Audit</h1>
-          <p className="text-muted-foreground">Comprehensive website health analysis</p>
+          <div className="flex items-center gap-2">
+            <p className="text-muted-foreground">Comprehensive website health analysis</p>
+            {projectId && projects.length > 0 && (
+              <Badge variant="secondary" className="font-mono">
+                <Globe className="w-3 h-3 mr-1" />
+                {projects.find((p: any) => p.id === projectId)?.domain || projectId}
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
-          {projects && projects.length > 1 && (
-            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+          {projects && projects.length > 0 && (
+            <Select 
+              value={selectedProjectId || projectId} 
+              onValueChange={setSelectedProjectId}
+            >
               <SelectTrigger className="w-[200px]" data-testid="select-project">
                 <SelectValue placeholder="Select Project" />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((project: any) => (
                   <SelectItem key={project.id} value={String(project.id)}>
-                    {project.name || project.domain}
+                    {project.domain}
                   </SelectItem>
                 ))}
               </SelectContent>
