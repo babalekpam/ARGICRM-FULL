@@ -673,6 +673,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       const trialEndDate = new Date(now.getTime() + (15 * 24 * 60 * 60 * 1000)); // 15 days from now
       
+      // CRITICAL: Detect platform owner during signup
+      const isPlatformOwner = normalizedEmail === 'abel@argilette.com' || normalizedEmail === 'admin@default.com';
+      
       const user = {
         // ✅ Remove custom ID - let database generate UUID
         email: normalizedEmail,
@@ -683,20 +686,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companySize: companySize || 'Unknown',
         phone: phone || '',
         jobTitle: jobTitle || '',
-        role: 'demo_admin',
-        isPlatformOwner: false,
+        role: isPlatformOwner ? 'platform_owner' : 'demo_admin',
+        isPlatformOwner: isPlatformOwner,
         companyVerified: companyVerified || false,
         marketingOptIn: marketingOptIn || false,
         emailVerified: false,
         emailVerificationToken: verificationToken,
         emailVerificationExpiry: verificationExpiry.toISOString(),
         passwordHash: passwordHash, // SECURITY: Only store hashed password
-        selectedPackage: selectedPackage || 'starter',
-        trialStartDate: now.toISOString(),
-        trialEndDate: trialEndDate.toISOString(),
-        subscriptionStatus: 'trial',
-        daysRemaining: 15,
-        permissions: [
+        selectedPackage: isPlatformOwner ? 'enterprise' : (selectedPackage || 'starter'),
+        trialStartDate: isPlatformOwner ? null : now.toISOString(),
+        trialEndDate: isPlatformOwner ? null : trialEndDate.toISOString(),
+        subscriptionStatus: isPlatformOwner ? 'active' : 'trial',
+        daysRemaining: isPlatformOwner ? null : 15,
+        permissions: isPlatformOwner ? [
+          // Platform owner gets ALL permissions including platform.* permissions
+          'contacts.read', 'contacts.write', 'accounts.read', 'accounts.write',
+          'leads.read', 'leads.write', 'deals.read', 'deals.write',
+          'tasks.read', 'tasks.write', 'campaigns.read', 'campaigns.write',
+          'marketing.read', 'marketing.write', 'analytics.read', 'analytics.write',
+          'reports.read', 'reports.write', 'scheduling.read', 'scheduling.write',
+          'support.read', 'support.write', 'projects.read', 'projects.write',
+          'collaboration.read', 'collaboration.write', 'invoices.read', 'invoices.write',
+          'bookkeeping.read', 'bookkeeping.write', 'hr.read', 'hr.write',
+          'sentiment.read', 'sentiment.write', 'communications.read', 'communications.write',
+          'forms.read', 'forms.write', 'reputation.read', 'reputation.write',
+          'settings.read', 'settings.write',
+          'platform.read', 'platform.write', 'platform.admin'
+        ] : [
           // Full admin permissions for subscriber admin (everything except platform.* permissions)
           'contacts.read', 'contacts.write', 'accounts.read', 'accounts.write',
           'leads.read', 'leads.write', 'deals.read', 'deals.write',
@@ -709,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'sentiment.read', 'sentiment.write', 'communications.read', 'communications.write',
           'forms.read', 'forms.write', 'reputation.read', 'reputation.write',
           'settings.read', 'settings.write'
-          // NOTE: NO platform.* permissions - those are exclusive to admin@default.com
+          // NOTE: NO platform.* permissions - those are exclusive to platform owners
         ]
       };
 
@@ -725,14 +742,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { DatabaseStorage } = await import('./database-storage.js');
         const platformStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
         
-        // Step 1: Create tenant with UUID (let database generate)
-        console.log('🔄 Creating tenant in database:', company);
-        const createdTenant = await platformStorage.createTenant({
-          name: company,
-          domain: `tenant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          settings: {}
-        });
-        console.log('✅ Tenant created with UUID:', createdTenant.id);
+        // Step 1: Create or use existing tenant
+        let createdTenant;
+        if (isPlatformOwner) {
+          // Platform owner uses the platform tenant
+          console.log('✅ Using platform tenant for platform owner:', normalizedEmail);
+          createdTenant = {
+            id: '00000000-0000-0000-0000-000000000001',
+            name: 'ARGILETTE Platform',
+            domain: 'platform',
+            settings: {}
+          };
+        } else {
+          // Regular users get their own tenant
+          console.log('🔄 Creating tenant in database:', company);
+          createdTenant = await platformStorage.createTenant({
+            name: company,
+            domain: `tenant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            settings: {}
+          });
+          console.log('✅ Tenant created with UUID:', createdTenant.id);
+        }
         
         // Step 2: Create user with tenant-scoped storage (CRITICAL FIX)
         const tenantStorage = new DatabaseStorage('abel@argilette.com', createdTenant.id, true);
@@ -741,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName,
           lastName, 
           passwordHash,
-          role: 'admin',
+          role: isPlatformOwner ? 'platform_owner' : 'admin',
           createdAt: now,
           updatedAt: now
         };
@@ -752,7 +782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName,
           lastName, 
           passwordHash,
-          role: 'admin',
+          role: isPlatformOwner ? 'platform_owner' : 'admin',
           createdAt: now,
           updatedAt: now
         }); // Let tenant-scoped storage handle tenantId automatically
