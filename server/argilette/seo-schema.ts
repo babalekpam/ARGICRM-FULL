@@ -117,10 +117,13 @@ export const seoIssues = pgTable("seo_issues", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
   projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
-  severity: text("severity").notNull(), // critical, warning, info
+  severity: text("severity").notNull(), // critical, high, medium, low
+  category: text("category").notNull(), // on-page, technical, content
   title: text("title").notNull(),
   description: text("description").notNull(),
+  affectedUrl: text("affected_url"),
   affectedPages: integer("affected_pages").notNull().default(1),
+  recommendation: text("recommendation").notNull(),
 });
 
 // Backlink Growth History

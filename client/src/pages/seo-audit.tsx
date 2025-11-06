@@ -235,7 +235,7 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
         <div className="flex gap-2">
           {projects && projects.length > 0 && (
             <Select 
-              value={selectedProjectId || projectId} 
+              value={selectedProjectId || projectId || undefined} 
               onValueChange={setSelectedProjectId}
             >
               <SelectTrigger className="w-[200px]" data-testid="select-project">
@@ -430,18 +430,16 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
                   <Info className="h-4 w-4" />
                   Recommended Action
                 </h5>
-                <p className="text-sm">{selectedIssue.recommendedAction}</p>
+                <p className="text-sm">{(selectedIssue as any).recommendation}</p>
               </div>
 
-              {selectedIssue.affectedUrls && selectedIssue.affectedUrls.length > 0 && (
+              {(selectedIssue as any).affectedUrl && (
                 <div>
-                  <h5 className="font-semibold mb-2">Affected URLs</h5>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {selectedIssue.affectedUrls.map((url, idx) => (
-                      <div key={idx} className="text-xs bg-muted/30 p-2 rounded border border-border">
-                        {url}
-                      </div>
-                    ))}
+                  <h5 className="font-semibold mb-2">Affected URL</h5>
+                  <div className="space-y-2">
+                    <div className="text-xs bg-muted/30 p-2 rounded border border-border">
+                      {(selectedIssue as any).affectedUrl}
+                    </div>
                   </div>
                 </div>
               )}

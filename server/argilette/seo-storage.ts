@@ -93,6 +93,7 @@ export interface IStorage {
   
   // SEO Issues - tenant-scoped
   getSeoIssuesByProject(tenantId: string, projectId: string): Promise<SeoIssue[]>;
+  createSeoIssue(tenantId: string, issue: InsertSeoIssue): Promise<SeoIssue>;
   
   // Backlink Opportunities - tenant-scoped
   getOpportunitiesByProject(tenantId: string, projectId: string): Promise<BacklinkOpportunity[]>;
@@ -384,6 +385,11 @@ export class DbStorage implements IStorage {
       const severityOrder = { critical: 0, warning: 1, info: 2 };
       return severityOrder[a.severity as keyof typeof severityOrder] - severityOrder[b.severity as keyof typeof severityOrder];
     });
+  }
+
+  async createSeoIssue(tenantId: string, insertIssue: InsertSeoIssue): Promise<SeoIssue> {
+    const [issue] = await this.db.insert(seoIssues).values({ ...insertIssue, tenantId }).returning();
+    return issue;
   }
 
   // Backlink Opportunities
