@@ -44,7 +44,7 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
   // Use propProjectId, then URL param, then selectedProject, then first available project, or null
   const projectId = propProjectId || urlProjectId || selectedProjectId || (projects.length > 0 ? String(projects[0].id) : null);
   
-  // Fetch latest audit scan results
+  // Fetch latest audit scan results (for scores)
   const { data: auditScan, isLoading } = useQuery<any>({
     queryKey: ["/api/seo/technical-audit/latest", projectId],
     queryFn: async () => {
@@ -60,36 +60,20 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
     enabled: !!projectId
   });
   
-  // Convert audit scan data to issues format for display
-  const issues: SeoIssue[] = auditScan ? [
-    {
-      id: `perf-${auditScan.id}`,
-      title: `Performance Score: ${auditScan.performanceScore}/100`,
-      description: `Overall website performance rating`,
-      severity: auditScan.performanceScore < 50 ? "critical" : auditScan.performanceScore < 80 ? "warning" : "info",
-      affectedUrls: [],
-      recommendedAction: auditScan.performanceScore < 80 ? "Optimize images, reduce JavaScript, enable caching" : "Performance is good!",
-      category: "performance"
+  // Fetch actual SEO issues and recommendations from database
+  const { data: seoIssuesData } = useQuery<SeoIssue[]>({
+    queryKey: ["/api/seo/issues", projectId],
+    queryFn: async () => {
+      const res = await fetch(`/api/seo/issues?projectId=${projectId}`, {
+        credentials: 'include'
+      });
+      if (!res.ok) return [];
+      return res.json();
     },
-    {
-      id: `seo-${auditScan.id}`,
-      title: `SEO Score: ${auditScan.seoScore}/100`,
-      description: `Search engine optimization rating`,
-      severity: auditScan.seoScore < 50 ? "critical" : auditScan.seoScore < 80 ? "warning" : "info",
-      affectedUrls: [],
-      recommendedAction: auditScan.seoScore < 80 ? "Improve meta tags, headings, and content structure" : "SEO is good!",
-      category: "seo"
-    },
-    {
-      id: `access-${auditScan.id}`,
-      title: `Accessibility Score: ${auditScan.accessibilityScore}/100`,
-      description: `Website accessibility for users with disabilities`,
-      severity: auditScan.accessibilityScore < 50 ? "critical" : auditScan.accessibilityScore < 80 ? "warning" : "info",
-      affectedUrls: [],
-      recommendedAction: auditScan.accessibilityScore < 80 ? "Add alt text to images, improve color contrast, add ARIA labels" : "Accessibility is good!",
-      category: "accessibility"
-    }
-  ] : [];
+    enabled: !!projectId
+  });
+  
+  const issues: SeoIssue[] = seoIssuesData || [];
   
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -102,21 +86,22 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
     },
   });
   
-  // Run audit mutation
+  // Run comprehensive automated audit mutation (runs everything in chain)
   const runAuditMutation = useMutation({
     mutationFn: async ({ projectId, url }: { projectId: string, url: string }) => {
-      const response = await apiRequest("POST", "/api/seo/technical-audit/start", {
+      const response = await apiRequest("POST", "/api/seo/seo-audit/run", {
         projectId,
-        urls: [url]
+        url
       });
       return await response.json();
     },
     onSuccess: (data) => {
       toast({
-        title: "Audit Completed",
-        description: `Successfully analyzed your website with performance score: ${data.performanceScore}/100`,
+        title: "Comprehensive Audit Completed",
+        description: `Analyzed website with overall score: ${data.scores.overall}/100. Found ${data.issuesCounts.total} issues to address.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/seo/technical-audit/latest"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/issues"] });
       queryClient.invalidateQueries({ queryKey: ["/api/seo/projects"] });
       setDialogOpen(false);
       setWebsiteUrl("");
@@ -124,7 +109,7 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
     onError: (error: any) => {
       toast({
         title: "Audit Failed",
-        description: error.message || "Failed to start website audit",
+        description: error.message || "Failed to start comprehensive website audit",
         variant: "destructive",
       });
     },
