@@ -26,19 +26,21 @@ export default function TechnicalAudit({ projectId: propProjectId }: TechnicalAu
   const urlProjectId = params.get('projectId');
   
   const { data: projects } = useQuery({
-    queryKey: ['/api/projects'],
+    queryKey: ['/api/seo/projects'],
     enabled: !!user && !propProjectId && !urlProjectId
   });
   
-  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : null);
+  const projectId = propProjectId || urlProjectId || (Array.isArray(projects) && projects.length > 0 ? String(projects[0].id) : 'default-project');
   const { toast } = useToast();
   const [urls, setUrls] = useState("");
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
 
   const { data: scans = [], isLoading: scansLoading } = useQuery<AuditScan[]>({
-    queryKey: ["/api/technical-audit/scans", projectId],
+    queryKey: ["/api/seo/technical-audit/scans", projectId],
     queryFn: async () => {
-      const res = await fetch(`/api/technical-audit/scans/${projectId}`);
+      const res = await fetch(`/api/seo/technical-audit/scans/${projectId}`, {
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to fetch audit scans');
       return res.json();
     },
@@ -46,19 +48,26 @@ export default function TechnicalAudit({ projectId: propProjectId }: TechnicalAu
   });
 
   const { data: latestScan } = useQuery<AuditScan | null>({
-    queryKey: ["/api/technical-audit/latest", projectId],
+    queryKey: ["/api/seo/technical-audit/latest", projectId],
     queryFn: async () => {
-      const res = await fetch(`/api/technical-audit/latest/${projectId}`);
-      if (!res.ok) throw new Error('Failed to fetch latest audit scan');
+      const res = await fetch(`/api/seo/technical-audit/latest/${projectId}`, {
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        throw new Error('Failed to fetch latest audit scan');
+      }
       return res.json();
     },
     enabled: !!projectId,
   });
 
   const { data: pageMetrics = [], isLoading: metricsLoading } = useQuery<PageMetric[]>({
-    queryKey: ["/api/technical-audit/metrics", selectedScanId],
+    queryKey: ["/api/seo/technical-audit/metrics", selectedScanId],
     queryFn: async () => {
-      const res = await fetch(`/api/technical-audit/metrics/${selectedScanId}`);
+      const res = await fetch(`/api/seo/technical-audit/metrics/${selectedScanId}`, {
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to fetch page metrics');
       return res.json();
     },
@@ -67,13 +76,13 @@ export default function TechnicalAudit({ projectId: propProjectId }: TechnicalAu
 
   const startAuditMutation = useMutation({
     mutationFn: async (urlList: string[]) => {
-      const res = await apiRequest("POST", "/api/technical-audit/start", { projectId, urls: urlList });
+      const res = await apiRequest("POST", "/api/seo/technical-audit/start", { projectId, urls: urlList });
       return res.json();
     },
     onSuccess: (data: AuditScan) => {
       toast({ title: "Audit completed", description: "Technical SEO audit has finished successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/technical-audit/scans", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/technical-audit/latest", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/technical-audit/scans", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/technical-audit/latest", projectId] });
       setUrls("");
       setSelectedScanId(data.id); // Automatically select the new scan
     },
