@@ -36,6 +36,7 @@ export default function MultiPlatformSearch() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [isTracking, setIsTracking] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const pageSEO = generatePageSEO('analytics');
   const structuredData = generateStructuredData('organization');
@@ -79,6 +80,61 @@ export default function MultiPlatformSearch() {
     enabled: !!user && !!selectedProjectId
   });
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      toast({
+        title: "Search Query Required",
+        description: "Please enter a search query to track.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedProjectId) {
+      toast({
+        title: "No Project Available",
+        description: "Please create a project first to start tracking.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTracking(true);
+    try {
+      // Step 1: Initialize multi-platform tracking
+      await apiRequest('POST', `/api/argilette/multi-platform/${selectedProjectId}/initialize`, {});
+      
+      // Step 2: Start tracking brand mentions with user's custom query
+      await apiRequest('POST', `/api/argilette/multi-platform/${selectedProjectId}/track-mentions`, {
+        brandName: "ARGILETTE",
+        queries: [searchQuery.trim()]
+      });
+      
+      // Step 3: Invalidate queries to fetch new data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/ai-mentions`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/mention-stats`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/argilette/multi-platform/${selectedProjectId}/dashboard`] })
+      ]);
+      
+      toast({
+        title: "Search Started",
+        description: `Tracking "${searchQuery}" across all platforms. Results will appear shortly.`,
+      });
+      
+      setSearchQuery("");
+    } catch (error) {
+      console.error("Search error:", error);
+      toast({
+        title: "Search Failed",
+        description: "Unable to start tracking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTracking(false);
+    }
+  };
+
   const handleStartTracking = async () => {
     if (!selectedProjectId) {
       toast({
@@ -96,11 +152,11 @@ export default function MultiPlatformSearch() {
       
       // Step 2: Start tracking brand mentions (example queries)
       await apiRequest('POST', `/api/argilette/multi-platform/${selectedProjectId}/track-mentions`, {
-        brandName: "NODE CRM",
+        brandName: "ARGILETTE",
         queries: [
-          "best CRM software",
-          "AI-powered CRM",
-          "customer relationship management tools"
+          "best all-in-one business platform",
+          "CRM with SEO tools",
+          "comprehensive business management software"
         ]
       });
       
@@ -211,9 +267,31 @@ export default function MultiPlatformSearch() {
           {/* Search Everywhere Visualization */}
           <div className="max-w-4xl mx-auto space-y-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-              <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg px-4 py-3">
-                <Search className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-400 flex-1">Search Everywhere Optimization...</span>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg px-4 py-3">
+                  <Search className="w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !isTracking) {
+                        handleSearch();
+                      }
+                    }}
+                    placeholder="Search for your brand across all platforms..."
+                    className="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                    disabled={isTracking || !selectedProjectId}
+                    data-testid="input-search-query"
+                  />
+                </div>
+                <Button
+                  onClick={handleSearch}
+                  disabled={isTracking || !selectedProjectId || !searchQuery.trim()}
+                  data-testid="button-search"
+                >
+                  {isTracking ? 'Searching...' : 'Search'}
+                </Button>
               </div>
             </div>
             
