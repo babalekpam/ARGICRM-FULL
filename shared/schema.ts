@@ -1947,10 +1947,11 @@ export const leads = pgTable("leads", {
   leadSource: text("lead_source"),
   status: text("status").default("new"), // new, contacted, qualified, unqualified
   score: integer("score").default(0),
-  convertedContactId: integer("converted_contact_id"),
-  convertedAccountId: integer("converted_account_id"),
-  convertedDealId: integer("converted_deal_id"),
-  assignedTo: integer("assigned_to"),
+  convertedToContactId: text("converted_to_contact_id"), // FIXED: Match actual database column name
+  convertedAt: timestamp("converted_at"),
+  source: text("source"),
+  notes: text("notes"),
+  createdBy: text("created_by"),
   tenantId: text("tenant_id"), // Multi-tenant support
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -1959,16 +1960,18 @@ export const leads = pgTable("leads", {
 export const deals = pgTable("deals", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  accountId: integer("account_id"),
-  contactId: integer("contact_id"),
+  title: text("title"), // Added to match database
+  value: decimal("value"), // Added to match database
+  accountId: text("account_id"),
+  contactId: text("contact_id"),
   amount: decimal("amount"),
   stage: text("stage").default("qualification"), // qualification, proposal, negotiation, closed-won, closed-lost
   probability: integer("probability").default(0),
-  closeDate: date("close_date"),
-  nextStep: text("next_step"),
-  description: text("description"),
-  source: text("source"),
-  ownerId: integer("owner_id"),
+  expectedCloseDate: timestamp("expected_close_date"), // FIXED: Match actual database column name
+  currency: text("currency"),
+  status: text("status"),
+  notes: text("notes"),
+  createdBy: text("created_by"),
   tenantId: text("tenant_id"), // Multi-tenant support
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -1982,9 +1985,12 @@ export const tasks = pgTable("tasks", {
   priority: text("priority").default("medium"), // low, medium, high, urgent
   status: text("status").default("pending"), // pending, in-progress, completed, cancelled
   dueDate: text("due_date"),
-  assignedTo: integer("assigned_to"),
-  relatedTo: text("related_to"), // contact, lead, deal, account
-  relatedId: integer("related_id"),
+  assignedTo: text("assigned_to"),
+  userId: text("user_id"),
+  contactId: text("contact_id"),
+  dealId: text("deal_id"),
+  completedAt: timestamp("completed_at"),
+  createdBy: text("created_by"),
   tenantId: text("tenant_id"), // Multi-tenant support
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -2015,12 +2021,9 @@ export const tickets = pgTable("tickets", {
   priority: text("priority").default("medium"), // low, medium, high, urgent
   status: text("status").default("open"), // open, in-progress, resolved, closed
   category: text("category"),
-  subCategory: text("sub_category"),
   contactId: text("contact_id"),
-  accountId: integer("account_id"),
-  assignedTo: integer("assigned_to"),
-  dueDate: timestamp("due_date"),
-  resolvedAt: timestamp("resolved_at"),
+  assignedTo: text("assigned_to"),
+  createdBy: text("created_by"),
   tenantId: text("tenant_id"), // Multi-tenant support
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
