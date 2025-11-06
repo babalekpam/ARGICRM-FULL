@@ -30,7 +30,7 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState("");
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [fixIssueDialogOpen, setFixIssueDialogOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<SeoIssue | null>(null);
   
@@ -195,7 +195,7 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
       }
       
       // Check if project already exists for this domain
-      let targetProjectId = projectId;
+      let targetProjectId: string;
       const existingProject = projects.find((p: any) => p.domain === domain);
       
       if (existingProject) {
@@ -213,11 +213,14 @@ export default function SeoAudit({ projectId: propProjectId }: SeoAuditProps = {
         });
         targetProjectId = newProject.id;
         
+        // Switch to the new project immediately
+        setSelectedProjectId(targetProjectId);
+        
         // Refresh projects list
         await queryClient.invalidateQueries({ queryKey: ["/api/seo/projects"] });
       }
       
-      // Run the audit
+      // Run the audit for the target project
       runAuditMutation.mutate({ projectId: targetProjectId, url: websiteUrl });
     } catch (error: any) {
       toast({
