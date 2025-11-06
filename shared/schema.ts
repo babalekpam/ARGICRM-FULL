@@ -669,8 +669,8 @@ export const ecommerceProducts = pgTable("ecommerce_products", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
-  index("idx_products_store_id").on(table.storeId),
-  index("idx_products_category").on(table.category),
+  index("idx_ecommerce_products_store_id").on(table.storeId),
+  index("idx_ecommerce_products_category").on(table.category),
 ]);
 
 // Product variants (size, color, etc.)
@@ -4308,6 +4308,30 @@ export {
   localCitations,
   insertLocalCitationSchema,
   type LocalCitation,
-  type InsertLocalCitation
+  type InsertLocalCitation,
+  aiSearchPlatforms,
+  insertAiSearchPlatformSchema,
+  type AiSearchPlatform,
+  type InsertAiSearchPlatform,
+  aiBrandMentions,
+  insertAiBrandMentionSchema,
+  type AiBrandMention,
+  type InsertAiBrandMention,
+  aiCitations,
+  insertAiCitationSchema,
+  type AiCitation,
+  type InsertAiCitation,
+  aiSentimentAnalysis,
+  insertAiSentimentAnalysisSchema,
+  type AiSentimentAnalysis,
+  type InsertAiSentimentAnalysis,
+  socialSearchMetrics,
+  insertSocialSearchMetricSchema,
+  type SocialSearchMetric,
+  type InsertSocialSearchMetric,
+  multiPlatformPerformance,
+  insertMultiPlatformPerformanceSchema,
+  type MultiPlatformPerformance,
+  type InsertMultiPlatformPerformance
 } from "../server/argilette/seo-schema";
 
