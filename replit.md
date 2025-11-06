@@ -19,6 +19,7 @@ Feature Removal: Completely removed Sentiment Analysis feature - Deleted all fro
 The application features a monorepo structure with a React 18 frontend (Vite, TypeScript, Shadcn/ui, TanStack Query, Wouter, React Hook Form with Zod) and an Express.js backend (TypeScript). PostgreSQL with Drizzle ORM is used for data persistence.
 
 ### Recent Fixes
+- **Platform Owner Visual Indicator Fix (2025-11-06)**: Corrected platform owner detection across all frontend components. Fixed email check from `abel@argilette.org` to `abel@argilette.com` in Header, Navigation, Dashboard Redirect, and Protected Route components. Crown icon and "Platform Owner" badge now display correctly for super admin account, with automatic redirect to Super Admin Dashboard.
 - **SEO Audit API Fix (2025-11-02)**: Fixed critical routing issue where SEO audit endpoints were mounted at `/api/argilette` but frontend was calling `/api/seo`. Added proper `/api/seo` mount point with authentication middleware while maintaining `/api/argilette` for backward compatibility.
 
 ### UI/UX Decisions
