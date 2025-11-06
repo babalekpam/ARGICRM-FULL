@@ -40,9 +40,9 @@ export default function MultiPlatformSearch() {
   const pageSEO = generatePageSEO('analytics');
   const structuredData = generateStructuredData('organization');
 
-  // Load user's available projects
+  // Load user's available SEO projects
   const { data: projects, isLoading: projectsLoading } = useQuery({
-    queryKey: ['/api/projects'],
+    queryKey: ['/api/argilette/projects'],
     enabled: !!user
   });
 
