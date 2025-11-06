@@ -85,41 +85,41 @@ export default function LinkBuildingPage({ selectedProjectId: propProjectId }: L
 
   // Fetch data only when we have a valid projectId
   const { data: opportunities = [], isLoading: loadingOpportunities } = useQuery<BacklinkOpportunity[]>({
-    queryKey: ['/api/link-building/opportunities', selectedProjectId],
+    queryKey: ['/api/seo/link-building/opportunities', selectedProjectId],
     enabled: !!selectedProjectId,
   });
 
   const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery<OutreachCampaign[]>({
-    queryKey: ['/api/link-building/campaigns', selectedProjectId],
+    queryKey: ['/api/seo/link-building/campaigns', selectedProjectId],
     enabled: !!selectedProjectId,
   });
 
   const { data: gaps = [], isLoading: loadingGaps } = useQuery<BacklinkGap[]>({
-    queryKey: ['/api/link-building/gaps', selectedProjectId],
+    queryKey: ['/api/seo/link-building/gaps', selectedProjectId],
     enabled: !!selectedProjectId,
   });
 
   const { data: contacts = [] } = useQuery<OutreachContact[]>({
-    queryKey: ['/api/link-building/contacts', selectedCampaignId],
+    queryKey: ['/api/seo/link-building/contacts', selectedCampaignId],
     enabled: !!selectedCampaignId,
   });
 
   // Mutations
   const updateOpportunityMutation = useMutation({
     mutationFn: (data: { id: string; status: string }) =>
-      apiRequest("PATCH", `/api/link-building/opportunities/${data.id}`, { status: data.status }),
+      apiRequest("PATCH", `/api/seo/link-building/opportunities/${data.id}`, { status: data.status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/link-building/opportunities', selectedProjectId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/link-building/opportunities', selectedProjectId] });
       toast({ title: "Opportunity updated successfully" });
     },
   });
 
   const updateContactMutation = useMutation({
     mutationFn: (data: { id: string; status: string }) =>
-      apiRequest("PATCH", `/api/link-building/contacts/${data.id}`, { status: data.status }),
+      apiRequest("PATCH", `/api/seo/link-building/contacts/${data.id}`, { status: data.status }),
     onSuccess: () => {
       if (selectedCampaignId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/link-building/contacts', selectedCampaignId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/seo/link-building/contacts', selectedCampaignId] });
       }
       toast({ title: "Contact updated successfully" });
     },
@@ -611,7 +611,7 @@ function CreateOpportunityDialog({ projectId }: { projectId: string }) {
 
   const createMutation = useMutation({
     mutationFn: (data: any) =>
-      apiRequest("POST", "/api/link-building/opportunities", { 
+      apiRequest("POST", "/api/seo/link-building/opportunities", { 
         ...data, 
         projectId, 
         status: 'discovered',
@@ -619,7 +619,7 @@ function CreateOpportunityDialog({ projectId }: { projectId: string }) {
         discoveredDate: new Date().toISOString().split('T')[0]
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/link-building/opportunities', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/link-building/opportunities', projectId] });
       toast({ title: "Opportunity created successfully" });
       setOpen(false);
       setFormData({
@@ -728,7 +728,7 @@ function CreateCampaignDialog({ projectId }: { projectId: string }) {
 
   const createMutation = useMutation({
     mutationFn: (data: any) =>
-      apiRequest("POST", "/api/link-building/campaigns", {
+      apiRequest("POST", "/api/seo/link-building/campaigns", {
         name: data.name,
         subject: data.name, // Use name as subject for simplicity
         emailTemplate: data.emailTemplate,
@@ -739,7 +739,7 @@ function CreateCampaignDialog({ projectId }: { projectId: string }) {
         successfulLinks: 0,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/link-building/campaigns', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/link-building/campaigns', projectId] });
       toast({ title: "Campaign created successfully" });
       setOpen(false);
       setFormData({ name: "", description: "", emailTemplate: "" });
