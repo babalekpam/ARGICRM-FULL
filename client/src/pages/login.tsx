@@ -22,6 +22,8 @@ export default function FinalLoginPage() {
     setError("");
   }, []);
 
+  const [, navigate] = useLocation();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -30,8 +32,8 @@ export default function FinalLoginPage() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        // Clear any redirect loops by using window.location instead of navigate
-        window.location.href = '/dashboard';
+        // Use wouter navigation to preserve auth context
+        navigate('/dashboard');
       } else {
         setError(result.error || 'Login failed');
       }
