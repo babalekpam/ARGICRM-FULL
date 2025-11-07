@@ -97,6 +97,33 @@ router.put('/users/:userId', requireRole('super_admin'), async (req: TenantReque
     const { userId } = req.params;
     const { firstName, lastName, role, isActive } = req.body;
 
+    // CRITICAL: Get the target user first to check if they are protected
+    const targetUser = await storage.getUserById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // ACCOUNT PROTECTION: Use email-based protection (immutable identifier)
+    // Protected emails cannot be deactivated OR have their role changed
+    const protectedEmails = ['abel@argilette.com', 'admin@default.com'];
+    const isProtectedAccount = protectedEmails.includes(targetUser.email);
+
+    if (isProtectedAccount) {
+      // Block deactivation attempts (strict check to prevent type coercion bypass)
+      if (isActive !== undefined && isActive !== true) {
+        return res.status(403).json({ 
+          error: 'Platform owner accounts cannot be deactivated for security reasons'
+        });
+      }
+      
+      // Block role changes (strict check prevents null/empty string bypass)
+      if (role !== undefined && role !== targetUser.role) {
+        return res.status(403).json({ 
+          error: 'Platform owner account roles cannot be changed for security reasons'
+        });
+      }
+    }
+
     const user = await storage.updateUser(userId, {
       firstName,
       lastName,
@@ -109,8 +136,12 @@ router.put('/users/:userId', requireRole('super_admin'), async (req: TenantReque
     }
 
     res.json(user);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update user error:', error);
+    // Return proper error codes from storage layer
+    if (error.message && error.message.includes('cannot be deactivated')) {
+      return res.status(403).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Failed to update user' });
   }
 });

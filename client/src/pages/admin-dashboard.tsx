@@ -260,8 +260,17 @@ export default function AdminDashboard() {
             )}
 
             <div>
-              <Label htmlFor="role">Role</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+              <Label htmlFor="role">
+                Role
+                {user && (user.email === 'abel@argilette.com' || user.email === 'admin@default.com') && (
+                  <span className="ml-2 text-xs text-muted-foreground">(Protected - cannot be changed)</span>
+                )}
+              </Label>
+              <Select 
+                value={formData.role} 
+                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                disabled={user && (user.email === 'abel@argilette.com' || user.email === 'admin@default.com')}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -283,8 +292,14 @@ export default function AdminDashboard() {
                 id="isActive"
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: !!checked })}
+                disabled={user && (user.email === 'abel@argilette.com' || user.email === 'admin@default.com')}
               />
-              <Label htmlFor="isActive">Active</Label>
+              <Label htmlFor="isActive">
+                Active
+                {user && (user.email === 'abel@argilette.com' || user.email === 'admin@default.com') && (
+                  <span className="ml-2 text-xs text-muted-foreground">(Protected account - cannot be deactivated)</span>
+                )}
+              </Label>
             </div>
 
             <div className="flex space-x-2">

@@ -1073,7 +1073,42 @@ export class DatabaseStorage implements IStorage {
   // Keep only stubs that don't override real implementations
   
   async updateUser(id: string, user: any): Promise<any> {
-    throw new Error("Not implemented yet");
+    // CRITICAL: Get the target user first to check if they are protected
+    const targetUser = await this.getUserById(id);
+    if (!targetUser) {
+      return null;
+    }
+
+    // ACCOUNT PROTECTION: Use email-based protection (immutable identifier)
+    // Protected emails cannot be deactivated OR have their role changed
+    const protectedEmails = ['abel@argilette.com', 'admin@default.com'];
+    const isProtectedAccount = protectedEmails.includes(targetUser.email);
+
+    if (isProtectedAccount) {
+      // Block deactivation attempts (strict check to prevent type coercion bypass)
+      if (user.isActive !== undefined && user.isActive !== true) {
+        throw new Error('Platform owner accounts cannot be deactivated for security reasons');
+      }
+      
+      // Block role changes (strict check prevents null/empty string bypass)
+      if (user.role !== undefined && user.role !== targetUser.role) {
+        throw new Error('Platform owner account roles cannot be changed for security reasons');
+      }
+    }
+
+    // Perform the update
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isActive: user.isActive !== undefined ? user.isActive : targetUser.isActive
+      })
+      .where(eq(users.id, id))
+      .returning();
+
+    return updatedUser;
   }
   
   async updateUserLastLogin(id: string): Promise<void> {
