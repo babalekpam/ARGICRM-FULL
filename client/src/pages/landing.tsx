@@ -55,10 +55,11 @@ export default function SimpleLanding() {
   // If user is already authenticated, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
-      console.log('User already authenticated, redirecting to dashboard:', user.email);
-      setLocation('/dashboard', { replace: true });
+      console.log('✅ User already authenticated, redirecting to dashboard:', user.email);
+      // Use window.location for reliable redirect
+      window.location.href = '/dashboard';
     }
-  }, [isAuthenticated, user, setLocation]);
+  }, [isAuthenticated, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +89,11 @@ export default function SimpleLanding() {
           title: "Login Successful!",
           description: "Welcome back! Redirecting to dashboard...",
         });
-        setLocation('/dashboard', { replace: true });
+        
+        // Use window.location for more reliable redirect
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 500);
       } else {
         console.log('❌ Login failed:', result.error);
         toast({
