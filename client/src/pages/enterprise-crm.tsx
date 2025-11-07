@@ -35,10 +35,10 @@ export default function EnterpriseCrmPage() {
               <span className="text-xl font-bold text-gray-900">NODE CRM</span>
             </div>
             <div className="hidden md:flex space-x-8">
-              <Link to="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
-              <Link to="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
-              <Link to="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link>
-              <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
+              <Link href="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
+              <Link href="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
+              <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link>
+              <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
             </div>
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function EnterpriseCrmPage() {
                 Contact Sales Team
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Link to="/pricing">
+              <Link href="/pricing">
                 <Button size="lg" variant="outline" className="border-purple-600 text-purple-600 hover:bg-purple-50">
                   View Enterprise Pricing
                 </Button>

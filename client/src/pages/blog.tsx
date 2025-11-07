@@ -63,10 +63,10 @@ export default function BlogPage() {
               <span className="text-xl font-bold text-gray-900">NODE CRM</span>
             </div>
             <div className="hidden md:flex space-x-8">
-              <Link to="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
-              <Link to="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
-              <Link to="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link>
-              <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
+              <Link href="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
+              <Link href="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
+              <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link>
+              <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
             </div>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function BlogPage() {
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                   Subscribe to Newsletter
                 </Button>
-                <Link to="/signup">
+                <Link href="/signup">
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900 w-full sm:w-auto">
                     Start Free Trial
                   </Button>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link } from "wouter";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,7 +113,7 @@ export default function ResetPasswordPage() {
               </AlertDescription>
             </Alert>
             <div className="pt-4 text-center">
-              <Link to="/">
+              <Link href="/">
                 <Button className="w-full" data-testid="button-go-to-login">
                   Go to Login
                 </Button>
@@ -143,12 +144,12 @@ export default function ResetPasswordPage() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
             <div className="pt-4 space-y-2">
-              <Link to="/forgot-password">
+              <Link href="/forgot-password">
                 <Button className="w-full" data-testid="button-request-new-link">
                   Request New Reset Link
                 </Button>
               </Link>
-              <Link to="/">
+              <Link href="/">
                 <Button variant="outline" className="w-full" data-testid="button-back-to-login">
                   Back to Login
                 </Button>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -353,7 +354,7 @@ export default function SimpleLanding() {
               <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Features
               </a>
-              <Link to="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Pricing
               </Link>
               <a href="#benefits" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -361,7 +362,7 @@ export default function SimpleLanding() {
               </a>
               <LanguageSelector />
               <Button asChild size="sm" className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" data-testid="button-get-started">
-                <Link to="/signup">Get Started</Link>
+                <Link href="/signup">Get Started</Link>
               </Button>
             </div>
           </div>
@@ -410,7 +411,7 @@ export default function SimpleLanding() {
                   className="text-base bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" 
                   data-testid="button-start-free-trial"
                 >
-                  <Link to="/signup">
+                  <Link href="/signup">
                     Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -464,7 +465,7 @@ export default function SimpleLanding() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
-                      <Link to="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
+                      <Link href="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
                         Forgot password?
                       </Link>
                     </div>
@@ -489,7 +490,7 @@ export default function SimpleLanding() {
                   </Button>
                   <div className="text-center text-sm text-muted-foreground">
                     Don't have an account?{" "}
-                    <Link to="/signup" className="text-primary hover:underline font-medium" data-testid="link-signup">
+                    <Link href="/signup" className="text-primary hover:underline font-medium" data-testid="link-signup">
                       Create one now
                     </Link>
                   </div>
@@ -655,12 +656,12 @@ export default function SimpleLanding() {
                     className="text-base bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg" 
                     data-testid="button-cta-start"
                   >
-                    <Link to="/signup">
+                    <Link href="/signup">
                       Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
                   <Button asChild size="lg" variant="outline" className="text-base" data-testid="button-cta-pricing">
-                    <Link to="/pricing">
+                    <Link href="/pricing">
                       View Pricing Plans
                     </Link>
                   </Button>
@@ -766,7 +767,7 @@ export default function SimpleLanding() {
                 Have more questions?
               </p>
               <Button asChild variant="outline" data-testid="button-contact-support">
-                <Link to="/contact">
+                <Link href="/contact">
                   Contact Our Support Team
                 </Link>
               </Button>
@@ -794,14 +795,14 @@ export default function SimpleLanding() {
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
-                <li><Link to="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
+                <li><Link href="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Integrations</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
+                <li><Link href="/about" className="hover:text-primary transition-colors">About</Link></li>
                 <li><a href="#contact" className="hover:text-primary transition-colors">Contact</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
               </ul>
@@ -809,8 +810,8 @@ export default function SimpleLanding() {
             <div>
               <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link></li>
-                <li><Link to="/terms" className="hover:text-primary transition-colors">Terms</Link></li>
+                <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link></li>
+                <li><Link href="/terms" className="hover:text-primary transition-colors">Terms</Link></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Security</a></li>
               </ul>
             </div>

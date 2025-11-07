@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import LandingLayout from "@/components/landing-layout";
@@ -19,12 +19,12 @@ export default function SimpleLanding() {
               NODE CRM combines emotional intelligence with advanced CRM capabilities to help you build stronger customer relationships and drive revenue growth.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/login">
+              <Link href="/login">
                 <Button size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-3">
                   Get Started Free
                 </Button>
               </Link>
-              <Link to="/request-demo">
+              <Link href="/request-demo">
                 <Button variant="outline" size="lg" className="px-8 py-3">
                   Schedule Demo
                 </Button>
