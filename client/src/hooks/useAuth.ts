@@ -97,6 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await response.json();
+      
+      // DEBUG: Log full response to see what we're getting
+      console.log('🔍 LOGIN RESPONSE:', { 
+        ok: response.ok, 
+        status: response.status,
+        data: data 
+      });
 
       // Only proceed if server authentication succeeds (JWT token is in secure httpOnly cookie)
       if (response.ok && data.success && data.user) {
