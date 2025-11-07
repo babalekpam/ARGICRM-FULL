@@ -454,6 +454,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // SECURITY FIX: Return successful login response without token (only in secure cookie)
+        // CRITICAL: Include isPlatformOwner flag for platform owners
+        const isPlatformOwner = user.email === 'abel@argilette.com' || user.email === 'admin@default.com' || user.role === 'platform_owner';
+        
         res.json({
           success: true,
           message: 'Login successful',
@@ -463,7 +466,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
-            permissions: userWithPermissions.permissions
+            permissions: userWithPermissions.permissions,
+            isPlatformOwner: isPlatformOwner
           },
           tenant: {
             id: tenant.id,
