@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   Building2, 
   Users, 
@@ -27,10 +28,13 @@ import {
   Eye,
   BarChart3,
   PieChart,
-  LineChart
+  LineChart,
+  Crown,
+  User
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import Layout from '@/components/layout';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TenantOverview {
   id: string;
@@ -132,6 +136,7 @@ interface RegistrationStats {
 }
 
 export default function SuperAdminDashboard() {
+  const { user } = useAuth();
   const [selectedTenant, setSelectedTenant] = useState<string>('all');
   const [reportType, setReportType] = useState<string>('summary');
   const [dateRange, setDateRange] = useState({
@@ -146,6 +151,10 @@ export default function SuperAdminDashboard() {
   });
 
   const queryClient = useQueryClient();
+  
+  // Check if user is a platform owner
+  const isPlatformOwner = user?.email === 'abel@argilette.com' || user?.email === 'admin@default.com';
+  const currentUserEmail = user?.email || 'Not logged in';
 
   // Tenant management functions
   const handleManualActivation = async (userId: string, email: string) => {
@@ -319,6 +328,50 @@ export default function SuperAdminDashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Current User Identification Card - Shows which account is logged in */}
+      <Alert className={isPlatformOwner ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-yellow-500 bg-yellow-50 dark:bg-yellow-950"} data-testid="alert-current-user">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3">
+            {isPlatformOwner ? (
+              <Crown className="h-5 w-5 text-green-600 dark:text-green-400" />
+            ) : (
+              <User className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            )}
+            <div>
+              <AlertTitle className="text-base font-semibold" data-testid="text-current-user-title">
+                {isPlatformOwner ? 'Platform Owner Access' : 'Limited Access'}
+              </AlertTitle>
+              <AlertDescription data-testid="text-current-user-email">
+                Logged in as: <strong>{currentUserEmail}</strong>
+                {user?.firstName && ` (${user.firstName} ${user.lastName})`}
+              </AlertDescription>
+            </div>
+          </div>
+          {isPlatformOwner && (
+            <Badge variant="default" className="bg-green-600 hover:bg-green-700" data-testid="badge-platform-owner">
+              Super Admin
+            </Badge>
+          )}
+          {!isPlatformOwner && (
+            <Badge variant="outline" className="border-yellow-600 text-yellow-600" data-testid="badge-limited-access">
+              Insufficient Permissions
+            </Badge>
+          )}
+        </div>
+      </Alert>
+
+      {/* Warning if not platform owner */}
+      {!isPlatformOwner && (
+        <Alert variant="destructive" data-testid="alert-no-access">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            You must be logged in as a platform owner (abel@argilette.com or admin@default.com) to access this dashboard.
+            Current account: <strong>{currentUserEmail}</strong>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Platform Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
