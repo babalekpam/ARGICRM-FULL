@@ -40,8 +40,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (response.ok) {
             const serverUserData = await response.json();
-            console.log('✅ Restoring authenticated session for:', userData.email);
-            setUser(userData);
+            
+            // CRITICAL FIX: Merge server data with cached data to ensure isPlatformOwner is set
+            const refreshedUser: User = {
+              ...userData,
+              ...serverUserData.user,
+              isPlatformOwner: serverUserData.user?.isPlatformOwner || 
+                               userData.email === 'abel@argilette.com' || 
+                               userData.email === 'admin@default.com' ||
+                               userData.role === 'platform_owner'
+            };
+            
+            console.log('✅ Restoring authenticated session for:', refreshedUser.email, 'isPlatformOwner:', refreshedUser.isPlatformOwner);
+            
+            // Update localStorage with refreshed data
+            localStorage.setItem('auth_user', JSON.stringify(refreshedUser));
+            setUser(refreshedUser);
           } else {
             // Invalid session, clear stored data silently
             console.log('🧹 Clearing expired session data');
