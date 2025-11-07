@@ -79,6 +79,7 @@ import { translationService } from "./services/translation-service.js";
 import { aiFailoverService } from "./services/ai-failover-service.js";
 import { leadGenerationService } from "./services/lead-generation-service.js";
 import { cloeAgent, OnboardingRequestSchema, SEOAnalysisSchema, EcommerceAutomationSchema, EmailRecoverySchema, AdCampaignSchema } from "./services/cloe-ai-agent.js";
+import { analyticsService } from "./services/analytics-service.js";
 import { 
   insertContactSchema, 
   insertAccountSchema,
@@ -6526,6 +6527,40 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
     } catch (error) {
       console.error('Error fetching analytics:', error);
       res.status(500).json({ error: 'Failed to fetch analytics data' });
+    }
+  });
+
+  // Unified Analytics endpoint - combines CRM, E-commerce, and SEO metrics
+  app.get('/api/analytics/unified', authenticate, async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const tenantId = req.user?.tenantId;
+
+      if (!tenantId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Parse and validate dates
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Default: 30 days ago
+      const end = endDate ? new Date(endDate as string) : new Date(); // Default: today
+
+      // Fetch unified analytics data
+      const analyticsData = await analyticsService.getUnifiedAnalytics(tenantId, start, end);
+
+      res.json({
+        success: true,
+        data: analyticsData,
+        dateRange: {
+          startDate: start.toISOString(),
+          endDate: end.toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching unified analytics:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to fetch unified analytics data' 
+      });
     }
   });
 

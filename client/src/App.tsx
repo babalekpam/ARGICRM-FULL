@@ -49,6 +49,7 @@ import UnsubscribePage from "@/pages/unsubscribe";
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics"));
 const AdvancedAnalyticsPage = lazy(() => import("@/pages/advanced-analytics"));
+const UnifiedAnalyticsPage = lazy(() => import("@/pages/unified-analytics"));
 const AbTestingPage = lazy(() => import("@/pages/ab-testing"));
 const AbTestingCreatePage = lazy(() => import("@/pages/ab-testing-create"));
 const AbTestingDetailsPage = lazy(() => import("@/pages/ab-testing-details"));
@@ -272,6 +273,11 @@ function App() {
                           <Route path="/advanced-analytics" element={
                             <ProtectedRoute requiredPermission="analytics.read">
                               <PageTranslator><AdvancedAnalyticsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/unified-analytics" element={
+                            <ProtectedRoute requiredPermission="analytics.read">
+                              <PageTranslator><UnifiedAnalyticsPage /></PageTranslator>
                             </ProtectedRoute>
                           } />
                           <Route path="/reports" element={

@@ -138,6 +138,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
       modules: [
         { path: "/analytics", label: "Analytics & Reports", icon: BarChart3, permission: "analytics.read" },
         { path: "/advanced-analytics", label: "Advanced Analytics", icon: TrendingUp, permission: "analytics.read" },
+        { path: "/unified-analytics", label: "Unified Analytics", icon: Activity, permission: "analytics.read" },
       ]
     },
     {
