@@ -63,7 +63,10 @@ export default function SimpleLanding() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔍 LOGIN ATTEMPT:', { email: loginEmail, hasPassword: !!loginPassword });
+    
     if (!loginEmail || !loginPassword) {
+      console.log('❌ Missing email or password');
       toast({
         title: "Missing Information",
         description: "Please enter both email and password",
@@ -74,15 +77,23 @@ export default function SimpleLanding() {
 
     setIsLoginLoading(true);
     try {
+      console.log('📡 Calling login function...');
       const result = await login(loginEmail, loginPassword);
+      
+      console.log('🔍 LOGIN RESULT:', result);
       
       if (result.success) {
         console.log('✅ Landing page login successful, redirecting to dashboard');
+        toast({
+          title: "Login Successful!",
+          description: "Welcome back! Redirecting to dashboard...",
+        });
         setLocation('/dashboard', { replace: true });
       } else {
+        console.log('❌ Login failed:', result.error);
         toast({
           title: "Login Failed",
-          description: result.error || "Invalid credentials",
+          description: result.error || "Invalid credentials. Try the Quick Login button instead.",
           variant: "destructive",
         });
       }
@@ -90,7 +101,7 @@ export default function SimpleLanding() {
       console.error('❌ Landing page login error:', error);
       toast({
         title: "Login Failed",
-        description: "Login failed. Please check your connection and try again.",
+        description: "Login failed. Try the green Quick Login button instead.",
         variant: "destructive",
       });
     } finally {
