@@ -612,6 +612,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // EMERGENCY AUTO-LOGIN for abel@argilette.com
+  app.get("/api/quick-login-platform-owner", async (req, res) => {
+    try {
+      const email = 'abel@argilette.com';
+      
+      // Create platform owner storage
+      const authStorage = new DatabaseStorage(email, '00000000-0000-0000-0000-000000000001', true);
+      
+      // Find user
+      const user = await authStorage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Generate JWT token
+      const jwt = await import('jsonwebtoken');
+      const token = jwt.default.sign({
+        id: user.id,
+        tenantId: user.tenantId || 'default-tenant',
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        permissions: ['contacts.read', 'contacts.write', 'accounts.read', 'accounts.write',
+          'leads.read', 'leads.write', 'deals.read', 'deals.write',
+          'tasks.read', 'tasks.write', 'campaigns.read', 'campaigns.write',
+          'platform.admin', 'billing.admin']
+      }, process.env.JWT_SECRET || 'default-secret-key', { expiresIn: '7d' });
+      
+      // Set secure httpOnly cookie
+      res.cookie('auth-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+      
+      // Return HTML that auto-sets localStorage and redirects
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Quick Login</title></head>
+        <body>
+          <h1>Logging you in...</h1>
+          <script>
+            const userData = {
+              id: "${user.id}",
+              email: "${user.email}",
+              firstName: "${user.firstName || 'Platform'}",
+              lastName: "${user.lastName || 'Owner'}",
+              tenantId: "${user.tenantId || 'platform-tenant'}",
+              role: "platform_owner",
+              permissions: ["contacts.read", "contacts.write", "accounts.read", "accounts.write",
+                "leads.read", "leads.write", "deals.read", "deals.write",
+                "tasks.read", "tasks.write", "campaigns.read", "campaigns.write",
+                "platform.admin", "billing.admin"],
+              isPlatformOwner: true
+            };
+            
+            localStorage.setItem('auth_user', JSON.stringify(userData));
+            localStorage.setItem('user_email', '${user.email}');
+            localStorage.setItem('userEmail', '${user.email}');
+            
+            console.log('✅ Quick login successful, redirecting to dashboard...');
+            window.location.href = '/dashboard';
+          </script>
+        </body>
+        </html>
+      `);
+      
+    } catch (error) {
+      console.error('Quick login error:', error);
+      res.status(500).json({ error: 'Quick login failed' });
+    }
+  });
+
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const { 
