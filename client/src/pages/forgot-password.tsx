@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
               </AlertDescription>
             </Alert>
             <div className="pt-4 text-center">
-              <Link href="/">
+              <Link to="/">
                 <Button variant="outline" className="w-full" data-testid="button-back-to-login">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Login

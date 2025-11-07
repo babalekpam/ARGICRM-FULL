@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,13 +16,12 @@ export default function FinalLoginPage() {
   const [error, setError] = useState("");
   
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   // Clear any previous errors on mount
   useEffect(() => {
     setError("");
   }, []);
-
-  const [, navigate] = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +31,8 @@ export default function FinalLoginPage() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        // Use wouter navigation to preserve auth context
-        navigate('/dashboard');
+        // Clear any redirect loops by using window.location instead of navigate
+        window.location.href = '/dashboard';
       } else {
         setError(result.error || 'Login failed');
       }

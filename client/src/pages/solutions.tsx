@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -142,7 +142,7 @@ export default function SolutionsPage() {
                 className="border-white text-white hover:bg-white hover:text-blue-600"
                 asChild
               >
-                <Link href="/request-demo">
+                <Link to="/request-demo">
                   Request Demo
                 </Link>
               </Button>

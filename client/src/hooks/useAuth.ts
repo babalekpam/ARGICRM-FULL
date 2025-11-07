@@ -1,4 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
 interface User {
@@ -29,74 +30,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const restoreStoredAuth = async () => {
       const storedAuth = localStorage.getItem('auth_user');
-      const storedToken = localStorage.getItem('auth_token') || localStorage.getItem('token');
       
       if (storedAuth) {
         try {
           const userData = JSON.parse(storedAuth);
-          
-          // Try to verify with server - send bearer token if available
-          const headers: Record<string, string> = {};
-          if (storedToken) {
-            headers['Authorization'] = `Bearer ${storedToken}`;
-          }
-          
+          // Verify authentication with server using httpOnly cookie
           const response = await fetch('/api/auth/me', {
-            credentials: 'include',
-            headers
+            credentials: 'include' // Include cookies in request
           });
           
           if (response.ok) {
             const serverUserData = await response.json();
-            
-            // Merge server data with cached data to ensure isPlatformOwner is set
-            const refreshedUser: User = {
-              ...userData,
-              ...serverUserData.user,
-              isPlatformOwner: serverUserData.user?.isPlatformOwner || 
-                               userData.email === 'abel@argilette.com' || 
-                               userData.email === 'admin@default.com' ||
-                               userData.role === 'platform_owner'
-            };
-            
-            console.log('✅ Restoring authenticated session for:', refreshedUser.email, 'isPlatformOwner:', refreshedUser.isPlatformOwner);
-            
-            // Update localStorage with refreshed data
-            localStorage.setItem('auth_user', JSON.stringify(refreshedUser));
-            setUser(refreshedUser);
+            console.log('✅ Restoring authenticated session for:', userData.email);
+            setUser(userData);
           } else {
-            // If server validation fails but we have stored user data, trust it for now
-            // This prevents clearing auth on temporary network issues
-            console.log('⚠️ Server validation failed, using cached session');
-            const cachedUser: User = {
-              ...userData,
-              isPlatformOwner: userData.isPlatformOwner || 
-                              userData.email === 'abel@argilette.com' || 
-                              userData.email === 'admin@default.com' ||
-                              userData.role === 'platform_owner'
-            };
-            setUser(cachedUser);
-          }
-        } catch (error) {
-          // On error, still try to use cached data
-          console.log('⚠️ Auth restore error, using cached session');
-          try {
-            const userData = JSON.parse(storedAuth);
-            const cachedUser: User = {
-              ...userData,
-              isPlatformOwner: userData.isPlatformOwner || 
-                              userData.email === 'abel@argilette.com' || 
-                              userData.email === 'admin@default.com' ||
-                              userData.role === 'platform_owner'
-            };
-            setUser(cachedUser);
-          } catch {
-            // If we can't even parse stored data, clear it
+            // Invalid session, clear stored data silently
+            console.log('🧹 Clearing expired session data');
             localStorage.removeItem('auth_user');
             localStorage.removeItem('user_email');
             localStorage.removeItem('userEmail');
-            setUser(null);
+            setUser(null); // Ensure user state is cleared
           }
+        } catch (error) {
+          console.log('🧹 Clearing invalid session data');
+          localStorage.removeItem('auth_user');
+          localStorage.removeItem('user_email');
+          localStorage.removeItem('userEmail');
+          setUser(null); // Ensure user state is cleared
         }
       }
       
@@ -124,13 +84,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await response.json();
-      
-      // DEBUG: Log full response to see what we're getting
-      console.log('🔍 LOGIN RESPONSE:', { 
-        ok: response.ok, 
-        status: response.status,
-        data: data 
-      });
 
       // Only proceed if server authentication succeeds (JWT token is in secure httpOnly cookie)
       if (response.ok && data.success && data.user) {

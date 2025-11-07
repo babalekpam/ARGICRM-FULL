@@ -1,6 +1,6 @@
 import Layout from "@/components/layout";
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,6 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Link } from "react-router-dom";
 
 const testFormSchema = z.object({
   name: z.string().min(1, "Test name is required"),
@@ -50,7 +51,7 @@ type TestFormValues = z.infer<typeof testFormSchema>;
 type VariantFormValues = z.infer<typeof variantSchema>;
 
 export default function AbTestingCreatePage() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [variants, setVariants] = useState<VariantFormValues[]>([
@@ -169,18 +170,22 @@ export default function AbTestingCreatePage() {
         status: "draft",
       };
 
-      const testResponse = await apiRequest("POST", "/api/ab-testing/tests", testData);
-      const test = await testResponse.json();
+      const test = await apiRequest("/api/ab-testing/tests", {
+        method: "POST",
+        body: JSON.stringify(testData),
+      });
 
       // Create variants
       await Promise.all(
-        variants.map(async (variant) => {
-          const response = await apiRequest("POST", `/api/ab-testing/tests/${test.id}/variants`, {
-            ...variant,
-            content: variant.content || {},
-          });
-          return response.json();
-        })
+        variants.map((variant) =>
+          apiRequest(`/api/ab-testing/tests/${test.id}/variants`, {
+            method: "POST",
+            body: JSON.stringify({
+              ...variant,
+              content: variant.content || {},
+            }),
+          })
+        )
       );
 
       toast({
@@ -188,7 +193,7 @@ export default function AbTestingCreatePage() {
         description: "Your A/B test has been created successfully",
       });
 
-      setLocation(`/ab-testing/${test.id}`);
+      navigate(`/ab-testing/${test.id}`);
     } catch (error: any) {
       toast({
         title: "Error",

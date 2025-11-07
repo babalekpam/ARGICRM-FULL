@@ -1,6 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { Switch, Route, Redirect } from "wouter";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { WhiteLabelProvider } from "@/components/white-label-provider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -14,8 +14,7 @@ import { PerformanceProvider } from "@/components/PerformanceProvider";
 import React, { lazy, Suspense, useEffect } from 'react';
 
 // OPTIMIZED: Core pages loaded immediately - no lazy loading for nav items
-import SimpleLanding from "@/pages/landing";
-import LoginPage from "@/pages/login";
+import SimpleLanding from "@/pages/simple-landing-new";
 import SignupPage from "@/pages/signup";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
@@ -144,389 +143,389 @@ function App() {
             <LanguageProvider>
               <WhiteLabelProvider>
                 <AuthProvider>
-                  <TrackingScripts />
-                  <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                    <Suspense fallback={<LoadingSpinner />}>
-                      <Switch>
-                        {/* Public Routes - IMPORTANT: "/" must be at the END to avoid matching all paths */}
-                        <Route path="/landing">{() => <PageTranslator><SimpleLanding /></PageTranslator>}</Route>
-                        <Route path="/login">{() => <PageTranslator><LoginPage /></PageTranslator>}</Route>
-                        <Route path="/signup">{() => <PageTranslator><SignupPage /></PageTranslator>}</Route>
-                          <Route path="/forgot-password">{() => <PageTranslator><ForgotPasswordPage /></PageTranslator>}</Route>
-                          <Route path="/reset-password">{() => <PageTranslator><ResetPasswordPage /></PageTranslator>}</Route>
-                          <Route path="/help-center">{() => <PageTranslator><HelpCenterPage /></PageTranslator>}</Route>
-                          <Route path="/help">{() => <PageTranslator><HelpCenterPage /></PageTranslator>}</Route>
-                          <Route path="/unsubscribe">{() => <UnsubscribePage />}</Route>
-                          <Route path="/features">{() => <PageTranslator><FeaturesPage /></PageTranslator>}</Route>
-                          <Route path="/pricing">{() => <PageTranslator><PricingPage /></PageTranslator>}</Route>
-                          <Route path="/about">{() => <PageTranslator><AboutPage /></PageTranslator>}</Route>
-                          <Route path="/privacy">{() => <PageTranslator><PrivacyPage /></PageTranslator>}</Route>
-                          <Route path="/blog">{() => <PageTranslator><BlogPage /></PageTranslator>}</Route>
-                          <Route path="/terms">{() => <PageTranslator><TermsPage /></PageTranslator>}</Route>
-                          <Route path="/crm-for-small-business">{() => <PageTranslator><CrmForSmallBusinessPage /></PageTranslator>}</Route>
-                          <Route path="/enterprise-crm">{() => <PageTranslator><EnterpriseCrmPage /></PageTranslator>}</Route>
-                          <Route path="/ai-powered-crm">{() => <PageTranslator><AiPoweredCrmPage /></PageTranslator>}</Route>
-                          <Route path="/overview">{() => <PageTranslator><OverviewPage /></PageTranslator>}</Route>
+                  <BrowserRouter>
+                    <TrackingScripts />
+                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Routes>
+                          {/* Public Routes */}
+                          <Route path="/landing" element={<PageTranslator><SimpleLanding /></PageTranslator>} />
+                          <Route path="/" element={<PageTranslator><SimpleLanding /></PageTranslator>} />
+                          <Route path="/login" element={<Navigate to="/" replace />} />
+                          <Route path="/signup" element={<PageTranslator><SignupPage /></PageTranslator>} />
+                          <Route path="/forgot-password" element={<PageTranslator><ForgotPasswordPage /></PageTranslator>} />
+                          <Route path="/reset-password" element={<PageTranslator><ResetPasswordPage /></PageTranslator>} />
+                          <Route path="/help-center" element={<PageTranslator><HelpCenterPage /></PageTranslator>} />
+                          <Route path="/help" element={<PageTranslator><HelpCenterPage /></PageTranslator>} />
+                          <Route path="/unsubscribe" element={<UnsubscribePage />} />
+                          <Route path="/features" element={<PageTranslator><FeaturesPage /></PageTranslator>} />
+                          <Route path="/pricing" element={<PageTranslator><PricingPage /></PageTranslator>} />
+                          <Route path="/about" element={<PageTranslator><AboutPage /></PageTranslator>} />
+                          <Route path="/privacy" element={<PageTranslator><PrivacyPage /></PageTranslator>} />
+                          <Route path="/blog" element={<PageTranslator><BlogPage /></PageTranslator>} />
+                          <Route path="/terms" element={<PageTranslator><TermsPage /></PageTranslator>} />
+                          <Route path="/crm-for-small-business" element={<PageTranslator><CrmForSmallBusinessPage /></PageTranslator>} />
+                          <Route path="/enterprise-crm" element={<PageTranslator><EnterpriseCrmPage /></PageTranslator>} />
+                          <Route path="/ai-powered-crm" element={<PageTranslator><AiPoweredCrmPage /></PageTranslator>} />
+                          <Route path="/overview" element={<PageTranslator><OverviewPage /></PageTranslator>} />
                           
                           {/* Protected Core Routes */}
-                          <Route path="/dashboard">{() => (
+                          <Route path="/dashboard" element={
                             <ProtectedRoute requiredPermission="dashboard.read">
                               <PageTranslator><DashboardRedirect /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/user-dashboard">{() => (
+                          } />
+                          <Route path="/user-dashboard" element={
                             <ProtectedRoute requiredPermission="dashboard.read">
                               <PageTranslator><UserDashboard /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/contacts">{() => (
+                          } />
+                          <Route path="/contacts" element={
                             <ProtectedRoute requiredPermission="contacts.read">
                               <PageTranslator><ContactsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/accounts">{() => (
+                          } />
+                          <Route path="/accounts" element={
                             <ProtectedRoute requiredPermission="accounts.read">
                               <PageTranslator><AccountsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/leads">{() => (
+                          } />
+                          <Route path="/leads" element={
                             <ProtectedRoute requiredPermission="leads.read">
                               <PageTranslator><LeadsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/deals">{() => (
+                          } />
+                          <Route path="/deals" element={
                             <ProtectedRoute requiredPermission="deals.read">
                               <PageTranslator><DealsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/tasks">{() => (
+                          } />
+                          <Route path="/tasks" element={
                             <ProtectedRoute requiredPermission="tasks.read">
                               <PageTranslator><TasksPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/campaigns">{() => (
+                          } />
+                          <Route path="/campaigns" element={
                             <ProtectedRoute requiredPermission="campaigns.read">
                               <PageTranslator><CampaignsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/scheduling">{() => (
+                          } />
+                          <Route path="/scheduling" element={
                             <ProtectedRoute requiredPermission="scheduling.read">
                               <PageTranslator><SchedulingPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/simple-messaging">{() => (
+                          } />
+                          <Route path="/simple-messaging" element={
                             <ProtectedRoute requiredPermission="campaigns.read">
                               <PageTranslator><SimpleMessagingPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/funnel-builder">{() => (
+                          } />
+                          <Route path="/funnel-builder" element={
                             <ProtectedRoute requiredPermission="marketing.read">
                               <PageTranslator><FunnelBuilderPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/sales-channels">{() => (
+                          } />
+                          <Route path="/sales-channels" element={
                             <ProtectedRoute requiredPermission="marketing.read">
                               <Suspense fallback={<div>Loading...</div>}>
                                 <PageTranslator><SalesChannelsPage /></PageTranslator>
                               </Suspense>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/e-commerce-dashboard">{() => (
+                          } />
+                          <Route path="/e-commerce-dashboard" element={
                             <ProtectedRoute requiredPermission="inventory.read">
                               <PageTranslator><EcommerceDashboardPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/store-preview/:id">{() => (
+                          } />
+                          <Route path="/store-preview/:id" element={
                             <ProtectedRoute requiredPermission="inventory.read">
                               <StorePreview />
                             </ProtectedRoute>
-                          )}</Route>
+                          } />
                           
                           {/* A/B Testing Routes */}
-                          <Route path="/ab-testing">{() => (
+                          <Route path="/ab-testing" element={
                             <ProtectedRoute requiredPermission="marketing.read">
                               <PageTranslator><AbTestingPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/ab-testing/create">{() => (
+                          } />
+                          <Route path="/ab-testing/create" element={
                             <ProtectedRoute requiredPermission="marketing.read">
                               <PageTranslator><AbTestingCreatePage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/ab-testing/:id">{() => (
+                          } />
+                          <Route path="/ab-testing/:id" element={
                             <ProtectedRoute requiredPermission="marketing.read">
                               <PageTranslator><AbTestingDetailsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
+                          } />
                           
                           {/* Optional Lazy-Loaded Routes */}
-                          <Route path="/settings">{() => (
+                          <Route path="/settings" element={
                             <ProtectedRoute requiredPermission="settings.read">
                               <PageTranslator><SettingsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/analytics">{() => (
+                          } />
+                          <Route path="/analytics" element={
                             <ProtectedRoute requiredPermission="analytics.read">
                               <PageTranslator><AnalyticsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/advanced-analytics">{() => (
+                          } />
+                          <Route path="/advanced-analytics" element={
                             <ProtectedRoute requiredPermission="analytics.read">
                               <PageTranslator><AdvancedAnalyticsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/unified-analytics">{() => (
+                          } />
+                          <Route path="/unified-analytics" element={
                             <ProtectedRoute requiredPermission="analytics.read">
                               <PageTranslator><UnifiedAnalyticsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/reports">{() => (
+                          } />
+                          <Route path="/reports" element={
                             <ProtectedRoute requiredPermission="reports.read">
                               <PageTranslator><ReportsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/projects">{() => (
+                          } />
+                          <Route path="/projects" element={
                             <ProtectedRoute requiredPermission="projects.read">
                               <PageTranslator><ProjectsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/tickets">{() => (
+                          } />
+                          <Route path="/tickets" element={
                             <ProtectedRoute requiredPermission="support.read">
                               <PageTranslator><TicketsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/team-collaboration">{() => (
+                          } />
+                          <Route path="/team-collaboration" element={
                             <ProtectedRoute requiredPermission="collaboration.read">
                               <PageTranslator><TeamCollaborationPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/inventory-management">{() => (
+                          } />
+                          <Route path="/inventory-management" element={
                             <ProtectedRoute requiredPermission="inventory.read">
                               <PageTranslator><InventoryManagementPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/document-management">{() => (
+                          } />
+                          <Route path="/document-management" element={
                             <ProtectedRoute requiredPermission="documents.read">
                               <PageTranslator><DocumentManagementPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/invoices">{() => (
+                          } />
+                          <Route path="/invoices" element={
                             <ProtectedRoute requiredPermission="invoices.read">
                               <PageTranslator><InvoicesPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/bookkeeping">{() => (
+                          } />
+                          <Route path="/bookkeeping" element={
                             <ProtectedRoute requiredPermission="bookkeeping.read">
                               <PageTranslator><BookkeepingPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/tax-settings">{() => (
+                          } />
+                          <Route path="/tax-settings" element={
                             <ProtectedRoute requiredPermission="tax.read">
                               <PageTranslator><TaxSettingsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
+                          } />
                           
                           {/* Team & Administration Routes */}
-                          <Route path="/employees">{() => (
+                          <Route path="/employees" element={
                             <ProtectedRoute requiredPermission="hr.read">
                               <PageTranslator><EmployeesPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/roles">{() => (
+                          } />
+                          <Route path="/roles" element={
                             <ProtectedRoute requiredPermission="admin.read">
                               <PageTranslator><RolesPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/resource-management">{() => (
+                          } />
+                          <Route path="/resource-management" element={
                             <ProtectedRoute requiredPermission="hr.read">
                               <PageTranslator><ResourceManagement /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
+                          } />
                           
                           {/* AI & Intelligence Routes */}
-                          <Route path="/ai-campaign-studio">{() => (
+                          <Route path="/ai-campaign-studio" element={
                             <ProtectedRoute requiredPermission="ai.read">
                               <PageTranslator><AICampaignStudioPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/cloe-ai-agent">{() => (
+                          } />
+                          <Route path="/cloe-ai-agent" element={
                             <ProtectedRoute requiredPermission="ai.read">
                               <PageTranslator><CloeAIAgentPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/ai-autonomous">{() => (
+                          } />
+                          <Route path="/ai-autonomous" element={
                             <ProtectedRoute requiredPermission="ai.read">
                               <PageTranslator><AIAutonomousPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/unified-inbox">{() => (
+                          } />
+                          <Route path="/unified-inbox" element={
                             <ProtectedRoute requiredPermission="communications.read">
                               <PageTranslator><UnifiedInboxPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/forms-surveys">{() => (
+                          } />
+                          <Route path="/forms-surveys" element={
                             <ProtectedRoute requiredPermission="forms.read">
                               <PageTranslator><FormsSurveysPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
+                          } />
                           
                           {/* ARGILETTE SEO Platform Routes - Full Ubersuggest Clone */}
-                          <Route path="/seo-audit">{() => (
+                          <Route path="/seo-audit" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><SeoAuditPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/seo-management">{() => (
+                          } />
+                          <Route path="/seo-management" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><SeoManagementPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/backlinks">{() => (
+                          } />
+                          <Route path="/backlinks" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><BacklinksPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/keywords">{() => (
+                          } />
+                          <Route path="/keywords" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><KeywordsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/rank-tracking">{() => (
+                          } />
+                          <Route path="/rank-tracking" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><RankTrackingPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/technical-audit">{() => (
+                          } />
+                          <Route path="/technical-audit" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><TechnicalAuditPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/competitors">{() => (
+                          } />
+                          <Route path="/competitors" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><CompetitorsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/local-seo">{() => (
+                          } />
+                          <Route path="/local-seo" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><LocalSeoPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/link-building">{() => (
+                          } />
+                          <Route path="/link-building" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><LinkBuildingPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/multi-platform-search">{() => (
+                          } />
+                          <Route path="/multi-platform-search" element={
                             <ProtectedRoute requiredPermission="seo.read">
                               <PageTranslator><MultiPlatformSearchPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
+                          } />
                           
                           {/* Platform Administration Routes */}
-                          <Route path="/integrity-dashboard">{() => (
+                          <Route path="/integrity-dashboard" element={
                             <ProtectedRoute requiredPermission="platform.read">
                               <PageTranslator><IntegrityDashboardPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/performance-dashboard">{() => (
+                          } />
+                          <Route path="/performance-dashboard" element={
                             <ProtectedRoute requiredPermission="platform.read">
                               <PageTranslator><PerformanceDashboardPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/testing-deployment-dashboard">{() => (
+                          } />
+                          <Route path="/testing-deployment-dashboard" element={
                             <ProtectedRoute requiredPermission="platform.read">
                               <PageTranslator><TestingDeploymentPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/bug-resolution-dashboard">{() => (
+                          } />
+                          <Route path="/bug-resolution-dashboard" element={
                             <ProtectedRoute requiredPermission="platform.read">
                               <PageTranslator><BugResolutionPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/feature-toggles">{() => (
+                          } />
+                          <Route path="/feature-toggles" element={
                             <ProtectedRoute requiredPermission="platform.read">
                               <PageTranslator><FeatureTogglesPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/white-label-settings">{() => (
+                          } />
+                          <Route path="/white-label-settings" element={
                             <ProtectedRoute requiredPermission="platform.read">
                               <PageTranslator><WhiteLabelSettingsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/terms-of-service">{() => (
+                          } />
+                          <Route path="/terms-of-service" element={
                             <ProtectedRoute requiredPermission="legal.read">
                               <PageTranslator><TermsOfServicePage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/account-settings">{() => (
+                          } />
+                          <Route path="/account-settings" element={
                             <ProtectedRoute requiredPermission="settings.read">
                               <PageTranslator><AccountSettingsPage /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
+                          } />
                           
                           {/* Admin Dashboard Routes - Platform Owner Only */}
-                          <Route path="/admin-dashboard">{() => (
+                          <Route path="/admin-dashboard" element={
                             <ProtectedRoute requiredPermission="admin.read">
                               <PageTranslator><AdminDashboard /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
-                          <Route path="/super-admin-dashboard">{() => (
+                          } />
+                          <Route path="/super-admin-dashboard" element={
                             <ProtectedRoute requiredPermission="platform.read">
                               <PageTranslator><SuperAdminDashboard /></PageTranslator>
                             </ProtectedRoute>
-                          )}</Route>
+                          } />
                           
                           {/* Client Portal Routes - Separate authentication system */}
-                          <Route path="/client-portal/login">{() => (
+                          <Route path="/client-portal/login" element={
                             <ClientPortalProvider>
                               <ClientPortalLogin />
                             </ClientPortalProvider>
-                          )}</Route>
-                          <Route path="/client-portal/dashboard">{() => (
+                          } />
+                          <Route path="/client-portal/dashboard" element={
                             <ClientPortalProvider>
                               <ClientPortalLayout>
                                 <ClientPortalDashboard />
                               </ClientPortalLayout>
                             </ClientPortalProvider>
-                          )}</Route>
-                          <Route path="/client-portal/projects">{() => (
+                          } />
+                          <Route path="/client-portal/projects" element={
                             <ClientPortalProvider>
                               <ClientPortalLayout>
                                 <ClientPortalProjects />
                               </ClientPortalLayout>
                             </ClientPortalProvider>
-                          )}</Route>
-                          <Route path="/client-portal/deliverables">{() => (
+                          } />
+                          <Route path="/client-portal/deliverables" element={
                             <ClientPortalProvider>
                               <ClientPortalLayout>
                                 <ClientPortalDeliverables />
                               </ClientPortalLayout>
                             </ClientPortalProvider>
-                          )}</Route>
-                          <Route path="/client-portal/invoices">{() => (
+                          } />
+                          <Route path="/client-portal/invoices" element={
                             <ClientPortalProvider>
                               <ClientPortalLayout>
                                 <ClientPortalInvoices />
                               </ClientPortalLayout>
                             </ClientPortalProvider>
-                          )}</Route>
-                          <Route path="/client-portal/messages">{() => (
+                          } />
+                          <Route path="/client-portal/messages" element={
                             <ClientPortalProvider>
                               <ClientPortalLayout>
                                 <ClientPortalMessages />
                               </ClientPortalLayout>
                             </ClientPortalProvider>
-                          )}</Route>
-                          
-                          {/* Home route - MUST be at the end to avoid prefix matching all paths */}
-                          <Route path="/">{() => <PageTranslator><SimpleLanding /></PageTranslator>}</Route>
+                          } />
                           
                           {/* Fallback */}
-                          <Route path="*">{() => <Redirect to="/landing" />}</Route>
-                        </Switch>
+                          <Route path="*" element={<Navigate to="/landing" replace />} />
+                        </Routes>
                       </Suspense>
                       <Toaster />
                     </div>
+                  </BrowserRouter>
                 </AuthProvider>
               </WhiteLabelProvider>
             </LanguageProvider>

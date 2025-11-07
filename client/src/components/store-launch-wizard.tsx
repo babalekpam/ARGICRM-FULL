@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,7 +121,7 @@ export function StoreLaunchWizard({ onClose }: { onClose: () => void }) {
   const [createdStore, setCreatedStore] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const [storeData, setStoreData] = useState<StoreData>({
     name: '',
@@ -329,7 +329,7 @@ export function StoreLaunchWizard({ onClose }: { onClose: () => void }) {
               <Button
                 className="flex-1"
                 size="lg"
-                onClick={() => setLocation(`/store-preview/${createdStore.id}`)}
+                onClick={() => navigate(`/store-preview/${createdStore.id}`)}
                 data-testid="button-preview-your-store"
               >
                 <Eye className="h-5 w-5 mr-2" />

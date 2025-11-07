@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { PlayCircle, BookOpen, CheckCircle, Clock, Users, Award, ArrowLeft, Download, Volume2 } from "lucide-react";
 import { useState } from "react";
-import { useParams } from "wouter";
+import { useParams } from "react-router-dom";
 
 export default function CourseViewerPage() {
   const { courseId } = useParams();

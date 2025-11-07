@@ -137,7 +137,7 @@ app.use((req, res, next) => {
   // Add SEO-friendly headers
   res.set({
     'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': process.env.NODE_ENV === 'development' ? 'SAMEORIGIN' : 'DENY', // Allow iframe in development for Replit webview
+    'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin'
   });

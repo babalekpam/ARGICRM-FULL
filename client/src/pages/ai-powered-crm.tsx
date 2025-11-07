@@ -33,10 +33,10 @@ export default function AiPoweredCrmPage() {
               <span className="text-xl font-bold text-gray-900">NODE CRM</span>
             </div>
             <div className="hidden md:flex space-x-8">
-              <Link href="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
-              <Link href="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
-              <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link>
-              <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
+              <Link to="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
+              <Link to="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
+              <Link to="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link>
+              <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
             </div>
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function AiPoweredCrmPage() {
               NODE CRM's AI doesn't just manage data—it understands behavior patterns.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link href="/signup">
+              <Link to="/signup">
                 <Button size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
                   Experience AI CRM Free
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -254,7 +254,7 @@ export default function AiPoweredCrmPage() {
                 Join the AI revolution in customer relationship management. See how AI-powered insights transform your business.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Link href="/signup">
+                <Link to="/signup">
                   <Button size="lg" variant="secondary" className="bg-white text-purple-600 hover:bg-gray-100">
                     Start AI-Powered Free Trial
                     <ArrowRight className="ml-2 h-4 w-4" />

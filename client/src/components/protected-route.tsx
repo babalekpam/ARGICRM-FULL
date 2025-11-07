@@ -1,5 +1,5 @@
 import React from 'react';
-import { Redirect } from 'wouter';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, AlertTriangle } from 'lucide-react';
@@ -25,7 +25,7 @@ export default function ProtectedRoute({
   // If user is not authenticated, redirect to landing page with login form
   if (!isAuthenticated || !user) {
     console.log('User not authenticated, redirecting to landing page');
-    return <Redirect to="/" />;
+    return <Navigate to="/" replace />;
   }
 
   // Enhanced platform owner check with multiple validation methods

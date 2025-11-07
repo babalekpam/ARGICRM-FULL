@@ -1,7 +1,7 @@
 import Layout from "@/components/layout";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +62,9 @@ export default function AbTestingPage() {
 
   const handleStartTest = async (testId: string) => {
     try {
-      await apiRequest("POST", `/api/ab-testing/tests/${testId}/start`, {});
+      await apiRequest(`/api/ab-testing/tests/${testId}/start`, {
+        method: "POST",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/ab-testing/tests"] });
       toast({
         title: "Test Started",
@@ -79,7 +81,9 @@ export default function AbTestingPage() {
 
   const handlePauseTest = async (testId: string) => {
     try {
-      await apiRequest("POST", `/api/ab-testing/tests/${testId}/pause`, {});
+      await apiRequest(`/api/ab-testing/tests/${testId}/pause`, {
+        method: "POST",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/ab-testing/tests"] });
       toast({
         title: "Test Paused",
@@ -100,7 +104,9 @@ export default function AbTestingPage() {
     }
 
     try {
-      await apiRequest("DELETE", `/api/ab-testing/tests/${testId}`, {});
+      await apiRequest(`/api/ab-testing/tests/${testId}`, {
+        method: "DELETE",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/ab-testing/tests"] });
       toast({
         title: "Test Deleted",

@@ -1,73 +1,43 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   Brain, 
-  Heart, 
-  TrendingUp, 
   Users, 
-  MessageSquare, 
-  BarChart3, 
-  Shield, 
-  Zap, 
-  CheckCircle, 
+  TrendingUp, 
+  ShoppingCart, 
+  Mail, 
+  Search, 
+  BarChart3,
   Globe,
+  Sparkles,
+  Shield,
+  Zap,
+  CheckCircle2,
   ArrowRight,
-  Star,
-  Building2,
-  CreditCard,
-  Smartphone,
-  Lock,
-  ShoppingCart,
-  Sparkles
+  Menu,
+  X
 } from "lucide-react";
+import { Link } from "wouter";
 import Logo from "@/components/logo";
-import { SEO } from "@/components/SEO";
-import { useConversionTracking } from "@/components/conversion-tracking";
-import { PageTranslator } from "@/components/PageTranslator";
-import { useLanguage } from "@/contexts/LanguageContext";
-import LanguageSelector from "@/components/LanguageSelector";
+import { redirectToDashboard } from "@/lib/dashboard-routing";
 
-// Import professional stock images
-import heroImage from "@assets/stock_images/modern_business_team_a855356a.jpg";
-import analyticsImage from "@assets/stock_images/data_analytics_dashb_4a2c4bbb.jpg";
-import ecommerceImage from "@assets/stock_images/e-commerce_online_sh_f06b020e.jpg";
-import aiImage from "@assets/stock_images/ai_artificial_intell_a05896a2.jpg";
-
-export default function SimpleLanding() {
-  const { toast } = useToast();
-  const { trackConversion } = useConversionTracking();
-  const { login, user, isAuthenticated } = useAuth();
-  const [, setLocation] = useLocation();
-  const { currentLanguage, isRTL } = useLanguage();
-
-  // Login state
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+export default function Landing() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoginLoading, setIsLoginLoading] = useState(false);
-
-  // If user is already authenticated, redirect to dashboard
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log('✅ User already authenticated, redirecting to dashboard:', user.email);
-      // Use window.location for reliable redirect
-      window.location.href = '/dashboard';
-    }
-  }, [isAuthenticated, user]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { toast } = useToast();
+  const { isAuthenticated, loading: authLoading, user: authData } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔍 LOGIN ATTEMPT:', { email: loginEmail, hasPassword: !!loginPassword });
-    
-    if (!loginEmail || !loginPassword) {
-      console.log('❌ Missing email or password');
+    if (!email || !password) {
       toast({
         title: "Missing Information",
         description: "Please enter both email and password",
@@ -78,35 +48,30 @@ export default function SimpleLanding() {
 
     setIsLoginLoading(true);
     try {
-      console.log('📡 Calling login function...');
-      const result = await login(loginEmail, loginPassword);
-      
-      console.log('🔍 LOGIN RESULT:', result);
-      
-      if (result.success) {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.token) {
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('user_email', email);
+        console.log('✅ Secure authentication successful for:', email);
         console.log('✅ Landing page login successful, redirecting to dashboard');
-        toast({
-          title: "Login Successful!",
-          description: "Welcome back! Redirecting to dashboard...",
-        });
-        
-        // Use window.location for more reliable redirect
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 500);
+        redirectToDashboard(email);
       } else {
-        console.log('❌ Login failed:', result.error);
-        toast({
-          title: "Login Failed",
-          description: result.error || "Invalid credentials. Try the Quick Login button instead.",
-          variant: "destructive",
-        });
+        throw new Error(data.message || 'Login failed');
       }
     } catch (error: any) {
-      console.error('❌ Landing page login error:', error);
+      console.error('❌ Authentication failed:', error.message);
       toast({
         title: "Login Failed",
-        description: "Login failed. Try the green Quick Login button instead.",
+        description: error.message || "Invalid credentials",
         variant: "destructive",
       });
     } finally {
@@ -114,468 +79,276 @@ export default function SimpleLanding() {
     }
   };
 
-  const comprehensiveFeatures = [
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    
+    if (token && !authLoading && isAuthenticated && authData) {
+      const userEmail = localStorage.getItem('user_email') || authData.email;
+      setTimeout(() => {
+        redirectToDashboard(userEmail);
+      }, 100);
+    }
+  }, [isAuthenticated, authLoading, authData]);
+
+  if (localStorage.getItem('auth_token') && authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated && authData) {
+    setTimeout(() => {
+      const userEmail = localStorage.getItem('user_email') || authData.email;
+      redirectToDashboard(userEmail);
+    }, 100);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const platformFeatures = [
+    { name: "CRM", icon: Users, path: "/contacts" },
+    { name: "Marketing", icon: Mail, path: "/simple-messaging" },
+    { name: "E-commerce", icon: ShoppingCart, path: "/e-commerce-dashboard" },
+    { name: "SEO", icon: Search, path: "/argilette-seo/audit" },
+    { name: "AI Tools", icon: Brain, path: "/ai-campaign-studio" },
+    { name: "Analytics", icon: BarChart3, path: "/dashboard" },
+    { name: "Multi-Platform", icon: Globe, path: "/multi-platform-search" },
+  ];
+
+  const keyFeatures = [
     {
       icon: Brain,
-      title: "AI-Powered CRM",
-      description: "Advanced AI insights and automated customer interactions with intelligent predictions",
-      color: "from-purple-500 to-pink-500",
-      image: aiImage,
-      altText: "AI-powered CRM software with artificial intelligence automation and customer relationship management features"
-    },
-    {
-      icon: ShoppingCart,
-      title: "E-commerce Builder", 
-      description: "Complete online store with inventory, payments, and stunning themes",
-      color: "from-blue-500 to-cyan-500",
-      image: ecommerceImage,
-      altText: "E-commerce online store builder platform with shopping cart and product management system"
-    },
-    {
-      icon: BarChart3,
-      title: "Advanced Analytics",
-      description: "Real-time insights and powerful reporting across all your business operations",
-      color: "from-green-500 to-emerald-500",
-      image: analyticsImage,
-      altText: "Business analytics dashboard showing real-time data insights and reporting metrics"
-    },
-    {
-      icon: MessageSquare,
-      title: "Email Marketing",
-      description: "Professional campaigns with automation, segmentation, and detailed analytics",
-      color: "from-orange-500 to-red-500"
-    },
-    {
-      icon: CreditCard,
-      title: "Financial Operations",
-      description: "Multi-currency invoicing, expense tracking, and automated bookkeeping",
-      color: "from-indigo-500 to-purple-500"
+      title: "AI-Powered Intelligence",
+      description: "Advanced AI tools for campaigns, SEO insights, and sentiment analysis"
     },
     {
       icon: Users,
-      title: "Project Management",
-      description: "Team collaboration, task tracking, and comprehensive project oversight",
-      color: "from-pink-500 to-rose-500"
-    }
-  ];
-
-  const stats = [
-    { value: "195+", label: "Countries Supported", icon: Globe },
-    { value: "20+", label: "Languages", icon: MessageSquare },
-    { value: "99.9%", label: "Uptime SLA", icon: CheckCircle },
-    { value: "24/7", label: "Support", icon: Shield }
-  ];
-
-  const benefits = [
+      title: "Complete CRM Suite",
+      description: "Manage contacts, leads, deals, and accounts in one unified platform"
+    },
     {
-      icon: Zap,
-      title: "Lightning Fast",
-      description: "Built for speed with modern technology stack"
+      icon: ShoppingCart,
+      title: "E-commerce Ready",
+      description: "Full-featured online store with global currency support"
+    },
+    {
+      icon: Search,
+      title: "SEO Optimization",
+      description: "Comprehensive SEO tools including audits, keywords, and rank tracking"
+    },
+    {
+      icon: Globe,
+      title: "Multi-Platform Search",
+      description: "Track brand visibility across AI platforms and social search"
+    },
+    {
+      icon: Mail,
+      title: "Marketing Automation",
+      description: "Email, SMS, and multi-channel campaign management"
+    },
+    {
+      icon: TrendingUp,
+      title: "Advanced Analytics",
+      description: "Real-time insights and predictive analytics for data-driven decisions"
     },
     {
       icon: Shield,
       title: "Enterprise Security",
-      description: "Bank-level encryption and GDPR compliance"
-    },
-    {
-      icon: Sparkles,
-      title: "AI Automation",
-      description: "Intelligent workflows that work while you sleep"
-    },
-    {
-      icon: Globe,
-      title: "Global Ready",
-      description: "Multi-language and multi-currency support"
+      description: "Bank-level security with role-based access and data encryption"
     }
   ];
 
-  // Comprehensive SEO structured data - memoized for performance
-  const structuredData = useMemo(() => ({
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "name": "ARGILETTE",
-        "alternateName": "Argilette Business Platform",
-        "url": "https://argilette.org",
-        "logo": "https://argilette.org/assets/colored-logo.png",
-        "description": "All-in-one AI-powered business management platform with CRM, e-commerce, SEO tools, and marketing automation for global businesses.",
-        "foundingDate": "2024",
-        "sameAs": [
-          "https://www.linkedin.com/company/argilette",
-          "https://twitter.com/argilette",
-          "https://www.facebook.com/argilette"
-        ],
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "contactType": "Customer Service",
-          "availableLanguage": ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Chinese", "Japanese", "Arabic", "Hindi"],
-          "areaServed": "Worldwide"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "name": "ARGILETTE Business Platform",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web, Cloud-based",
-        "offers": {
-          "@type": "AggregateOffer",
-          "priceCurrency": "USD",
-          "lowPrice": "49.99",
-          "highPrice": "799.99",
-          "offerCount": "4",
-          "offers": [
-            {
-              "@type": "Offer",
-              "name": "Starter Plan",
-              "price": "49.99",
-              "priceCurrency": "USD",
-              "priceValidUntil": "2025-12-31",
-              "description": "Monthly subscription - Perfect for startups and small businesses"
-            },
-            {
-              "@type": "Offer",
-              "name": "Professional Plan",
-              "price": "149.99",
-              "priceCurrency": "USD",
-              "priceValidUntil": "2025-12-31",
-              "description": "Monthly subscription - Advanced features for growing businesses"
-            },
-            {
-              "@type": "Offer",
-              "name": "Business Plan",
-              "price": "299.99",
-              "priceCurrency": "USD",
-              "priceValidUntil": "2025-12-31",
-              "description": "Monthly subscription - Complete solution for established companies"
-            },
-            {
-              "@type": "Offer",
-              "name": "Enterprise Plan",
-              "price": "799.99",
-              "priceCurrency": "USD",
-              "priceValidUntil": "2025-12-31",
-              "description": "Monthly subscription - Ultimate platform for large enterprises"
-            }
-          ]
-        },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.9",
-          "reviewCount": "1247",
-          "bestRating": "5",
-          "worstRating": "1"
-        },
-        "featureList": [
-          "AI-Powered CRM with Sentiment Analysis",
-          "Complete E-commerce Store Builder",
-          "SEO Tools - Keyword Research & Site Audit",
-          "Multi-Platform Search Optimization (11 Platforms)",
-          "Email & SMS Marketing Automation",
-          "Financial Management & Bookkeeping",
-          "Multi-Language Support (20+ Languages)",
-          "Multi-Currency Support (54+ African Currencies)",
-          "AI Campaign Generation",
-          "Real-Time Analytics Dashboard",
-          "Team Collaboration Tools",
-          "White-Label Branding Options"
-        ]
-      },
-      {
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "What is ARGILETTE?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "ARGILETTE is a comprehensive all-in-one business platform that combines CRM, e-commerce, SEO tools, marketing automation, and financial management. It uses AI to help businesses optimize their operations across 11 different search and social platforms."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "How many languages does ARGILETTE support?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "ARGILETTE supports 20+ languages including English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Hindi, and more. The platform includes automatic translation for global reach."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "What platforms does Search Everywhere Optimization track?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "ARGILETTE tracks your brand visibility across 11 platforms: Google, YouTube, Instagram, TikTok, Pinterest, Amazon, ChatGPT, Perplexity AI, Google Gemini, Microsoft Copilot, and Claude AI."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Does ARGILETTE offer lifetime pricing?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes! ARGILETTE offers flexible monthly subscription plans starting at just $49.99/month for the Starter tier up to $799.99/month for Enterprise. All plans include CRM, SEO, E-commerce, Link Building, and 11-platform tracking. Much more affordable than buying Semrush + HubSpot + Shopify separately!"
-            }
-          }
-        ]
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://argilette.org"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Features",
-            "item": "https://argilette.org/#features"
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "name": "Pricing",
-            "item": "https://argilette.org/pricing"
-          }
-        ]
-      }
-    ]
-  }), []); // Empty dependency array - structured data is static
+  const benefits = [
+    "Multi-tenant architecture for enterprise scalability",
+    "54 African currencies + global currency support",
+    "AI-powered campaign generation and optimization",
+    "Comprehensive SEO analytics and tracking",
+    "Real-time collaboration and team management",
+    "Offline-first capabilities for unstable connections"
+  ];
 
   return (
-    <PageTranslator context="landing-page">
-      <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-        <SEO
-          title="ARGILETTE - AI Business Platform | CRM + E-commerce + SEO Tools"
-          description="All-in-one AI-powered business platform with CRM, e-commerce builder, SEO tools, Link Building, and marketing automation. Track your brand across 11 platforms. Monthly subscription from $49.99. 20+ languages, 195+ countries."
-          keywords="AI business platform, CRM software, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software, lifetime deal CRM"
-          canonical="https://argilette.org/"
-          structuredData={structuredData}
-        />
-      
-      {/* Modern Navigation with Glass Effect */}
-      <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Logo size="sm" />
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                ARGILETTE
-              </span>
+    <div className="min-h-screen bg-background">
+      {/* Top Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-3">
+              <Logo size="sm" variant="colored" />
+              <span className="text-lg font-bold text-foreground">NODE CRM</span>
             </div>
-            <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-              <Link href="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
+
+            {/* Desktop Navigation - Features */}
+            <div className="hidden lg:flex items-center space-x-1">
+              {platformFeatures.map((feature) => {
+                const Icon = feature.icon;
+                return (
+                  <Link 
+                    key={feature.name} 
+                    href={feature.path}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth cursor-pointer"
+                    data-testid={`nav-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{feature.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Desktop Actions */}
+            <div className="hidden lg:flex items-center space-x-3">
+              <Link href="/demo-signup">
+                <Button variant="outline" size="sm" data-testid="button-signup">
+                  Get Started
+                </Button>
               </Link>
-              <a href="#benefits" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Benefits
-              </a>
-              <LanguageSelector />
-              <Button asChild size="sm" className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" data-testid="button-get-started">
-                <Link href="/signup">Get Started</Link>
+              <Button size="sm" onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })} data-testid="button-login">
+                Sign In
               </Button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="lg:hidden p-2 rounded-md text-foreground hover:bg-accent"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden py-4 space-y-2 border-t border-border">
+              {platformFeatures.map((feature) => {
+                const Icon = feature.icon;
+                return (
+                  <Link 
+                    key={feature.name} 
+                    href={feature.path}
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all-smooth cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                    data-testid={`mobile-nav-${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{feature.name}</span>
+                  </Link>
+                );
+              })}
+              <div className="flex flex-col gap-2 pt-4 border-t border-border">
+                <Link href="/demo-signup">
+                  <Button variant="outline" className="w-full" data-testid="mobile-button-signup">
+                    Get Started
+                  </Button>
+                </Link>
+                <Button 
+                  className="w-full" 
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  data-testid="mobile-button-login"
+                >
+                  Sign In
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
-      {/* Hero Section with Background Image */}
-      <section className="relative overflow-hidden">
-        {/* Background Image with Overlay */}
-        <div className="absolute inset-0">
-          <img 
-            src={heroImage} 
-            alt="Professional business team using ARGILETTE AI-powered CRM and business management platform for collaboration and growth" 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/80" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
-        </div>
-
-        <div className="container relative mx-auto px-4 lg:px-8 py-24 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Content */}
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 px-4 py-2">
-                <Sparkles className="h-4 w-4 text-purple-500" />
-                <span className="text-sm font-medium bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  AI-Powered Business Platform
-                </span>
-              </div>
-              
-              <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  AI Business Platform:
-                </span>{" "}
-                CRM Software + SEO Tools + Link Building
-              </h1>
-              
-              <p className="text-xl text-muted-foreground max-w-lg">
-                All-in-one CRM software + E-commerce builder + SEO tools + Link Building + Marketing automation. Track your brand across 11 platforms. Monthly subscription starting at $49.99.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  asChild 
-                  size="lg" 
-                  className="text-base bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" 
-                  data-testid="button-start-free-trial"
-                >
-                  <Link href="/signup">
-                    Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-4 bg-gradient-subtle">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-16">
+            <Badge className="mb-6 bg-primary/10 text-primary hover:bg-primary/20" data-testid="badge-ai-powered">
+              <Sparkles className="h-3 w-3 mr-1" />
+              AI-Powered Platform
+            </Badge>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
+              The Complete Business
+              <br />
+              <span className="text-primary">Management Platform</span>
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+              CRM, Marketing, E-commerce, SEO, and AI tools in one unified platform. 
+              Built for global markets with multi-currency support and offline capabilities.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/demo-signup">
+                <Button size="lg" className="shadow-card hover:shadow-card-hover" data-testid="button-hero-start">
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-                <Button asChild size="lg" variant="outline" className="text-base backdrop-blur-sm" data-testid="button-watch-demo">
-                  <a href="#features">
-                    Explore Features
-                  </a>
-                </Button>
-              </div>
-
-              {/* Stats with Icons */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8">
-                {stats.map((stat, index) => {
-                  const Icon = stat.icon;
-                  return (
-                    <div key={index} className="space-y-2 text-center sm:text-left">
-                      <Icon className="h-5 w-5 text-primary mb-1" />
-                      <div className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                        {stat.value}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{stat.label}</div>
-                    </div>
-                  );
-                })}
-              </div>
+              </Link>
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}
+                data-testid="button-hero-login"
+              >
+                Sign In to Dashboard
+              </Button>
             </div>
+          </div>
 
-            {/* Login Card with Modern Design */}
-            <Card className="max-w-md mx-auto w-full shadow-2xl border-2 backdrop-blur-sm bg-background/95" data-testid="card-login">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-                <CardDescription>
-                  Sign in to access your intelligent CRM dashboard
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      disabled={isLoginLoading}
-                      data-testid="input-login-email"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Password</Label>
-                      <Link href="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
-                        Forgot password?
-                      </Link>
-                    </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      disabled={isLoginLoading}
-                      data-testid="input-login-password"
-                      required
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" 
-                    disabled={isLoginLoading}
-                    data-testid="button-login-submit"
-                  >
-                    {isLoginLoading ? "Signing in..." : "Sign In"}
-                  </Button>
-                  
-                  {/* EMERGENCY QUICK LOGIN FOR PLATFORM OWNER */}
-                  <Button 
-                    type="button"
-                    onClick={() => window.location.href = '/api/quick-login-platform-owner'}
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700" 
-                    data-testid="button-quick-login"
-                  >
-                    🚀 QUICK LOGIN (Platform Owner)
-                  </Button>
-                  
-                  <div className="text-center text-sm text-muted-foreground">
-                    Don't have an account?{" "}
-                    <Link href="/signup" className="text-primary hover:underline font-medium" data-testid="link-signup">
-                      Create one now
-                    </Link>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary mb-2">195+</div>
+              <div className="text-sm text-muted-foreground">Countries Supported</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary mb-2">54</div>
+              <div className="text-sm text-muted-foreground">African Currencies</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary mb-2">99.9%</div>
+              <div className="text-sm text-muted-foreground">Uptime</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary mb-2">24/7</div>
+              <div className="text-sm text-muted-foreground">AI Support</div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section with Images and Gradients */}
-      <section id="features" className="py-24 lg:py-32 bg-gradient-to-b from-background to-muted/20" aria-label="Platform features">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge className="mb-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20 text-purple-600">
-              Platform Features
-            </Badge>
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4">
-              Complete Business Management:{" "}
-              <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                CRM, E-commerce & SEO Tools
-              </span>
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              AI-powered features combining customer relationship management, online store builder, SEO analytics, and marketing automation in one platform
+      {/* Features Grid */}
+      <section className="py-20 px-4 bg-background">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">Everything You Need</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              A comprehensive suite of tools to manage and grow your business
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {comprehensiveFeatures.map((feature, index) => {
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {keyFeatures.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <Card 
-                  key={index} 
-                  className="group border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl overflow-hidden" 
-                  data-testid={`card-feature-${index}`}
-                >
-                  {feature.image && (
-                    <div className="relative h-48 overflow-hidden">
-                      <img 
-                        src={feature.image} 
-                        alt={feature.altText || feature.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                      <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-60`} />
+                <Card key={index} className="hover-lift shadow-card hover:shadow-card-hover transition-all-smooth" data-testid={`feature-card-${index}`}>
+                  <CardContent className="p-6">
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                      <Icon className="h-6 w-6 text-primary" />
                     </div>
-                  )}
-                  <CardHeader>
-                    <div className={`h-12 w-12 rounded-lg bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 shadow-lg`}>
-                      <Icon className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                      {feature.title}
-                    </CardTitle>
-                    <CardDescription className="text-base">
-                      {feature.description}
-                    </CardDescription>
-                  </CardHeader>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                  </CardContent>
                 </Card>
               );
             })}
@@ -583,273 +356,199 @@ export default function SimpleLanding() {
         </div>
       </section>
 
-      {/* Benefits Section with Colorful Cards */}
-      <section id="benefits" className="py-24 lg:py-32">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-              Why Choose ARGILETTE?
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Built with modern technology and designed for the future
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {benefits.map((benefit, index) => {
-              const Icon = benefit.icon;
-              const gradients = [
-                "from-blue-500 to-cyan-500",
-                "from-purple-500 to-pink-500",
-                "from-green-500 to-emerald-500",
-                "from-orange-500 to-red-500"
-              ];
-              return (
-                <Card key={index} className="text-center border-2 hover:border-primary/50 transition-all hover:shadow-xl">
-                  <CardHeader>
-                    <div className={`h-16 w-16 rounded-full bg-gradient-to-br ${gradients[index]} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                      <Icon className="h-8 w-8 text-white" />
-                    </div>
-                    <CardTitle className="text-lg">{benefit.title}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {benefit.description}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Section with Modern Design */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5" />
-        <div className="container relative mx-auto px-4 lg:px-8">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center space-y-3 p-6 rounded-lg bg-background/50 backdrop-blur-sm border">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto">
-                <Shield className="h-6 w-6 text-white" />
+      {/* Benefits Section */}
+      <section className="py-20 px-4 bg-accent/30">
+        <div className="container mx-auto max-w-7xl">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl font-bold text-foreground mb-6">
+                Built for Global Business
+              </h2>
+              <p className="text-lg text-muted-foreground mb-8">
+                NODE CRM is designed from the ground up to support businesses operating across borders, 
+                with comprehensive multi-currency support, offline capabilities, and AI-powered insights.
+              </p>
+              <div className="space-y-4">
+                {benefits.map((benefit, index) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <CheckCircle2 className="h-6 w-6 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-foreground">{benefit}</span>
+                  </div>
+                ))}
               </div>
-              <h3 className="font-semibold text-lg">Enterprise Security</h3>
-              <p className="text-sm text-muted-foreground">Bank-level encryption & protection</p>
             </div>
-            <div className="text-center space-y-3 p-6 rounded-lg bg-background/50 backdrop-blur-sm border">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto">
-                <CheckCircle className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-lg">99.9% Uptime</h3>
-              <p className="text-sm text-muted-foreground">Guaranteed availability SLA</p>
-            </div>
-            <div className="text-center space-y-3 p-6 rounded-lg bg-background/50 backdrop-blur-sm border">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
-                <Lock className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-lg">GDPR Compliant</h3>
-              <p className="text-sm text-muted-foreground">Full data protection compliance</p>
-            </div>
-            <div className="text-center space-y-3 p-6 rounded-lg bg-background/50 backdrop-blur-sm border">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center mx-auto">
-                <Smartphone className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-lg">Mobile Ready</h3>
-              <p className="text-sm text-muted-foreground">Access from anywhere, anytime</p>
+            <div className="space-y-4">
+              <Card className="shadow-card">
+                <CardContent className="p-6">
+                  <Zap className="h-8 w-8 text-primary mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Lightning Fast</h3>
+                  <p className="text-muted-foreground">
+                    Optimized performance with offline-first architecture for seamless work anywhere
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-card">
+                <CardContent className="p-6">
+                  <Shield className="h-8 w-8 text-primary mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Enterprise Security</h3>
+                  <p className="text-muted-foreground">
+                    Bank-level encryption, role-based access, and comprehensive audit logging
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-card">
+                <CardContent className="p-6">
+                  <Brain className="h-8 w-8 text-primary mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">AI-Powered</h3>
+                  <p className="text-muted-foreground">
+                    Intelligent automation, sentiment analysis, and predictive insights
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section with Vibrant Gradient */}
-      <section className="py-24 lg:py-32">
-        <div className="container mx-auto px-4 lg:px-8">
-          <Card className="border-2 overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-purple-500/20 to-pink-500/20" />
-            <CardContent className="relative p-12 lg:p-16 text-center">
-              <div className="max-w-3xl mx-auto space-y-6">
-                <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30 text-purple-700 dark:text-purple-300">
-                  Limited Time Offer
-                </Badge>
-                <h2 className="text-3xl lg:text-5xl font-bold">
-                  Ready to Transform Your Business?
-                </h2>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  Join thousands of businesses using ARGILETTE to streamline operations, boost productivity, and accelerate growth
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                  <Button 
-                    asChild 
-                    size="lg" 
-                    className="text-base bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg" 
-                    data-testid="button-cta-start"
-                  >
-                    <Link href="/signup">
-                      Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="text-base" data-testid="button-cta-pricing">
-                    <Link href="/pricing">
-                      View Pricing Plans
-                    </Link>
-                  </Button>
+      {/* Login Section */}
+      <section id="login-section" className="py-20 px-4 bg-background">
+        <div className="container mx-auto max-w-md">
+          <Card className="shadow-card">
+            <CardContent className="p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Welcome Back</h2>
+                <p className="text-muted-foreground">Sign in to access your dashboard</p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium text-foreground">
+                    Email Address
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    data-testid="input-email"
+                  />
                 </div>
-                <p className="text-sm text-muted-foreground pt-4">
-                  <CheckCircle className="inline h-4 w-4 text-green-500 mr-1" />
-                  No credit card required •{" "}
-                  <CheckCircle className="inline h-4 w-4 text-green-500 mr-1" />
-                  14-day free trial •{" "}
-                  <CheckCircle className="inline h-4 w-4 text-green-500 mr-1" />
-                  Cancel anytime
-                </p>
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-sm font-medium text-foreground">
+                    Password
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    data-testid="input-password"
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full shadow-card hover:shadow-card-hover"
+                  disabled={isLoginLoading}
+                  data-testid="button-submit-login"
+                >
+                  {isLoginLoading ? "Signing In..." : "Sign In"}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-muted-foreground mb-3">Don't have an account?</p>
+                <Link href="/demo-signup">
+                  <Button variant="outline" className="w-full" data-testid="button-create-account">
+                    Create Company Account
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
         </div>
       </section>
 
-      {/* FAQ Section - Optimized for SEO Featured Snippets */}
-      <section className="py-24 lg:py-32 bg-muted/30">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-12">
-              <Badge className="mb-4">Frequently Asked Questions</Badge>
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-                Everything You Need to Know About ARGILETTE
-              </h2>
-              <p className="text-muted-foreground text-lg">
-                Get instant answers to common questions about our all-in-one business platform
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">What is ARGILETTE?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    ARGILETTE is a comprehensive all-in-one business platform that combines CRM, e-commerce, SEO tools, marketing automation, and financial management. It uses AI to help businesses optimize their operations across 11 different search and social platforms.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">How much does ARGILETTE cost?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    ARGILETTE offers flexible monthly subscription plans starting at just $49.99/month for the Starter tier up to $799.99/month for Enterprise. All plans include CRM, SEO, E-commerce, Link Building, and 11-platform tracking. Much more affordable than buying Semrush + HubSpot + Shopify separately!
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">What platforms does ARGILETTE track?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    ARGILETTE tracks your brand visibility across 11 platforms: Google, YouTube, Instagram, TikTok, Pinterest, Amazon, ChatGPT, Perplexity AI, Google Gemini, Microsoft Copilot, and Claude AI. This gives you complete visibility into where your brand appears online.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">How many languages does ARGILETTE support?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    ARGILETTE supports 20+ languages including English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Hindi, and more. The platform includes automatic translation for global reach.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">What makes ARGILETTE better than competitors like Semrush or HubSpot?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Unlike competitors that only focus on one area (SEO, CRM, or e-commerce), ARGILETTE combines everything in one platform. You get Semrush-level SEO tools, HubSpot-level CRM, Shopify-level e-commerce, PLUS link building and AI-powered insights - all at a fraction of the cost of buying these tools separately.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Does ARGILETTE include link building tools?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Yes! ARGILETTE includes comprehensive link building features with AI-powered opportunity discovery, competitor backlink analysis, broken link detection, automated outreach campaigns with AI-generated personalized emails, and link health monitoring. This feature alone is worth hundreds of dollars per month from competitors like Ahrefs.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="text-center mt-12">
-              <p className="text-muted-foreground mb-4">
-                Have more questions?
-              </p>
-              <Button asChild variant="outline" data-testid="button-contact-support">
-                <Link href="/contact">
-                  Contact Our Support Team
-                </Link>
+      {/* CTA Section */}
+      <section className="py-20 px-4 bg-primary text-primary-foreground">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="text-4xl font-bold mb-6">
+            Ready to Transform Your Business?
+          </h2>
+          <p className="text-xl mb-8 opacity-90">
+            Join thousands of businesses worldwide using NODE CRM to streamline operations and drive growth
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/demo-signup">
+              <Button size="lg" variant="secondary" className="shadow-card hover:shadow-card-hover" data-testid="button-cta-trial">
+                Start Free Trial
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </div>
+            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+              onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}
+              data-testid="button-cta-signin"
+            >
+              Sign In Now
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Footer with Gradient Accent */}
-      <footer className="border-t bg-gradient-to-b from-background to-muted/30">
-        <div className="container mx-auto px-4 lg:px-8 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Logo size="sm" />
-                <span className="font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                  ARGILETTE
-                </span>
+      {/* Footer */}
+      <footer className="bg-card border-t border-border py-12 px-4">
+        <div className="container mx-auto max-w-7xl">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <Logo size="sm" variant="colored" />
+                <span className="font-bold text-foreground">NODE CRM</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Complete AI Business Management Platform for the modern enterprise
+                The complete business management platform for global enterprises
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
+              <h3 className="font-semibold text-foreground mb-3">Platform</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
-                <li><Link href="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Integrations</a></li>
+                <li>CRM</li>
+                <li>Marketing</li>
+                <li>E-commerce</li>
+                <li>SEO Tools</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
+              <h3 className="font-semibold text-foreground mb-3">Company</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/about" className="hover:text-primary transition-colors">About</Link></li>
-                <li><a href="#contact" className="hover:text-primary transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
+                <li>About Us</li>
+                <li>Pricing</li>
+                <li>Contact</li>
+                <li>Support</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
+              <h3 className="font-semibold text-foreground mb-3">Legal</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link></li>
-                <li><Link href="/terms" className="hover:text-primary transition-colors">Terms</Link></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Security</a></li>
+                <li>Privacy Policy</li>
+                <li>Terms of Service</li>
+                <li>Security</li>
+                <li>Compliance</li>
               </ul>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t text-center">
+          <div className="border-t border-border pt-8 text-center">
             <p className="text-sm text-muted-foreground">
-              © 2025 ARGILETTE by Argilette.org. All rights reserved.
+              © {new Date().getFullYear()} NODE CRM by Argilette. All rights reserved.
             </p>
           </div>
         </div>
       </footer>
-      </div>
-    </PageTranslator>
+    </div>
   );
 }

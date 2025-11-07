@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 
 export default function LandingPages() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'templates' | 'builder'>('templates');
@@ -293,7 +293,7 @@ export default function LandingPages() {
                     Let our AI create a custom landing page based on your business profile and goals.
                   </p>
                   <Button 
-                    onClick={() => setLocation('/ai-generator')}
+                    onClick={() => navigate('/ai-generator')}
                     className="bg-purple-600 hover:bg-purple-700 text-white"
                   >
                     <Brush className="h-4 w-4 mr-2" />

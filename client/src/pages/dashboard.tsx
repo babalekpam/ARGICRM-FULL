@@ -224,7 +224,7 @@ export default function Dashboard() {
           <div className="flex space-x-2">
             {/* ONLY Platform Owner gets access to Super Admin Dashboard */}
             {isPlatformOwner && (
-              <Link href="/super-admin">
+              <Link to="/super-admin">
                 <Button 
                   variant="outline" 
                   className="bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100"
@@ -236,7 +236,7 @@ export default function Dashboard() {
             )}
             
             {/* Regular Schedule Meeting for both types */}
-            <Link href="/scheduling">
+            <Link to="/scheduling">
               <Button>
                 <Calendar className="mr-2 h-4 w-4" />
                 Schedule Meeting
@@ -744,7 +744,7 @@ export default function Dashboard() {
                       <span className="text-sm">Failed Login Attempts</span>
                       <span className="text-lg font-semibold text-purple-800">2</span>
                     </div>
-                    <Link href="/super-admin-dashboard">
+                    <Link to="/super-admin-dashboard">
                       <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700">
                         Manage Security
                       </Button>
@@ -770,7 +770,7 @@ export default function Dashboard() {
                       <span className="text-sm">Active Today</span>
                       <span className="text-lg font-semibold text-indigo-800">3</span>
                     </div>
-                    <Link href="/super-admin-dashboard">
+                    <Link to="/super-admin-dashboard">
                       <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-700">
                         Manage Users
                       </Button>
@@ -796,7 +796,7 @@ export default function Dashboard() {
                       <span className="text-sm">Subscriptions</span>
                       <span className="text-lg font-semibold text-orange-800">4</span>
                     </div>
-                    <Link href="/super-admin-dashboard">
+                    <Link to="/super-admin-dashboard">
                       <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700">
                         Financial Reports
                       </Button>
@@ -835,19 +835,19 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <h3 className="font-semibold text-gray-900">Quick Actions</h3>
                     <div className="space-y-3">
-                      <Link href="/super-admin">
+                      <Link to="/super-admin">
                         <Button className="w-full justify-start" variant="outline">
                           <Shield className="mr-2 h-4 w-4" />
                           Security Dashboard
                         </Button>
                       </Link>
-                      <Link href="/super-admin">
+                      <Link to="/super-admin">
                         <Button className="w-full justify-start" variant="outline">
                           <BarChart3 className="mr-2 h-4 w-4" />
                           Analytics Dashboard
                         </Button>
                       </Link>
-                      <Link href="/super-admin">
+                      <Link to="/super-admin">
                         <Button className="w-full justify-start" variant="outline">
                           <Users className="mr-2 h-4 w-4" />
                           User Management

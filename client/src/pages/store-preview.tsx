@@ -1,4 +1,4 @@
-import { useParams, useLocation } from 'wouter';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,7 +49,7 @@ interface Product {
 
 export default function StorePreview() {
   const { id } = useParams<{ id: string }>();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   // Fetch store data
@@ -144,7 +144,7 @@ export default function StorePreview() {
               The store you're looking for doesn't exist or has been removed.
             </p>
             <Button 
-              onClick={() => setLocation('/ecommerce-dashboard')} 
+              onClick={() => navigate('/ecommerce-dashboard')} 
               className="w-full"
               data-testid="button-back-to-dashboard"
             >
@@ -193,7 +193,7 @@ export default function StorePreview() {
             <Button 
               size="sm" 
               variant="secondary"
-              onClick={() => setLocation('/ecommerce-dashboard')}
+              onClick={() => navigate('/ecommerce-dashboard')}
               data-testid="button-back-to-dashboard"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
@@ -299,7 +299,7 @@ export default function StorePreview() {
                   Add products to your store to see them displayed here
                 </p>
                 <Button 
-                  onClick={() => setLocation('/ecommerce-dashboard')}
+                  onClick={() => navigate('/ecommerce-dashboard')}
                   data-testid="button-add-products"
                 >
                   Go to Dashboard

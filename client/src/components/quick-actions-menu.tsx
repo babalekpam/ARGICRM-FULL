@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -112,10 +112,10 @@ const quickActions: QuickAction[] = [
 export default function QuickActionsMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const handleActionClick = (action: QuickAction) => {
-    setLocation(action.path);
+    navigate(action.path);
     setIsOpen(false);
     setSelectedCategory(null);
   };

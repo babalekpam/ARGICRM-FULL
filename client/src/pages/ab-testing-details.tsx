@@ -1,7 +1,7 @@
 import Layout from "@/components/layout";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, useLocation, Link } from "wouter";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { ArrowLeft, Play, Pause, CheckCircle, Trophy, TrendingUp, TrendingDown }
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
+import { Link } from "react-router-dom";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface Variant {
@@ -68,9 +69,8 @@ interface TestMetrics {
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function AbTestingDetailsPage() {
-  const [match, params] = useRoute("/ab-testing/:id");
-  const testId = params?.id;
-  const [, setLocation] = useLocation();
+  const { id: testId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedWinner, setSelectedWinner] = useState<string>("");
 
@@ -104,7 +104,9 @@ export default function AbTestingDetailsPage() {
 
   const handleStartTest = async () => {
     try {
-      await apiRequest("POST", `/api/ab-testing/tests/${testId}/start`, {});
+      await apiRequest(`/api/ab-testing/tests/${testId}/start`, {
+        method: "POST",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/ab-testing/tests"] });
       toast({
         title: "Test Started",
@@ -121,7 +123,9 @@ export default function AbTestingDetailsPage() {
 
   const handlePauseTest = async () => {
     try {
-      await apiRequest("POST", `/api/ab-testing/tests/${testId}/pause`, {});
+      await apiRequest(`/api/ab-testing/tests/${testId}/pause`, {
+        method: "POST",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/ab-testing/tests"] });
       toast({
         title: "Test Paused",
@@ -147,7 +151,10 @@ export default function AbTestingDetailsPage() {
     }
 
     try {
-      await apiRequest("POST", `/api/ab-testing/tests/${testId}/complete`, { winnerVariantId: selectedWinner });
+      await apiRequest(`/api/ab-testing/tests/${testId}/complete`, {
+        method: "POST",
+        body: JSON.stringify({ winnerVariantId: selectedWinner }),
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/ab-testing/tests"] });
       toast({
         title: "Test Completed",

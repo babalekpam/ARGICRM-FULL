@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -441,7 +441,7 @@ export default function HelpCenterPage() {
 
         {/* Back to Home */}
         <div className="mt-12 text-center">
-          <Link href="/">
+          <Link to="/">
             <Button variant="outline" size="lg" data-testid="button-back-home">
               Back to Home
             </Button>
