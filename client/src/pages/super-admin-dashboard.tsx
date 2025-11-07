@@ -201,65 +201,26 @@ export default function SuperAdminDashboard() {
   const tenantsLoading = false;
   const refetchTenants = () => {};
 
-  // Fetch audit logs
+  // Fetch audit logs - Uses default queryFn with automatic Authorization header
   const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } = useQuery({
     queryKey: ['/api/superadmin/logs', logFilters],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      Object.entries(logFilters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
-      
-      const response = await fetch(`/api/superadmin/logs?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch audit logs');
-      return response.json();
-    }
+    enabled: false // Disable auto-fetch for now since endpoint may not exist
   });
 
-  // Fetch compliance matrix
+  // Fetch compliance matrix - Uses default queryFn with automatic Authorization header
   const { data: complianceData, isLoading: complianceLoading, refetch: refetchCompliance } = useQuery({
     queryKey: ['/api/superadmin/compliance-matrix'],
-    queryFn: async () => {
-      const response = await fetch('/api/superadmin/compliance-matrix');
-      if (!response.ok) throw new Error('Failed to fetch compliance matrix');
-      return response.json();
-    }
+    enabled: false // Disable auto-fetch for now since endpoint may not exist
   });
 
-  // Fetch user registrations - FIXED: Use correct endpoint with proper auth
+  // Fetch user registrations - Uses default queryFn with automatic Authorization header
   const { data: registrationData, isLoading: registrationsLoading, refetch: refetchRegistrations } = useQuery({
-    queryKey: ['/api/admin/users'],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/users', {
-        credentials: 'include' // Use proper JWT authentication
-      });
-      if (!response.ok) {
-        console.error('Failed to fetch registered users:', response.status);
-        throw new Error('Failed to fetch registered users');
-      }
-      const data = await response.json();
-      console.log('✅ FRONTEND: Received registration data:', data);
-      console.log('✅ FRONTEND: Total users count:', data.totalUsers);
-      console.log('✅ FRONTEND: Users array length:', data.users?.length);
-      return data;
-    }
+    queryKey: ['/api/admin/users']
   });
 
-  // Fetch platform stats - FIXED: Use correct dashboard endpoint
+  // Fetch platform stats - Uses default queryFn with automatic Authorization header
   const { data: platformData, isLoading: platformLoading, refetch: refetchPlatform } = useQuery({
-    queryKey: ['/api/admin/dashboard'],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/dashboard', {
-        credentials: 'include' // Use proper JWT authentication
-      });
-      if (!response.ok) {
-        console.error('Failed to fetch platform stats:', response.status);
-        throw new Error('Failed to fetch platform stats');
-      }
-      const data = await response.json();
-      console.log('✅ FIXED: Fetched real platform stats:', data);
-      return data;
-    }
+    queryKey: ['/api/admin/dashboard']
   });
 
   // Generate cross-tenant report

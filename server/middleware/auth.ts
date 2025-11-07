@@ -65,8 +65,20 @@ export async function authenticate(req: TenantRequest, res: Response, next: Next
     console.log('Auth middleware - decoded JWT:', { id: decoded.id, email: decoded.email });
 
     // Get user details with permissions  
-    const user = await storage.getUserWithPermissions(decoded.id);
+    let user = await storage.getUserWithPermissions(decoded.id);
     console.log('Auth middleware - getUserWithPermissions result:', user ? { id: user.id, email: user.email, isActive: user.isActive } : 'null');
+    
+    // FALLBACK for platform owners: If user not found by ID (outdated token), try by email
+    if (!user && decoded.email) {
+      const platformOwnerEmails = ['abel@argilette.com', 'admin@default.com'];
+      if (platformOwnerEmails.includes(decoded.email)) {
+        console.log('Auth middleware - Platform owner with outdated token, trying email lookup:', decoded.email);
+        user = await storage.getUserByEmail(decoded.email);
+        if (user) {
+          console.log('Auth middleware - Found platform owner by email:', { id: user.id, email: user.email });
+        }
+      }
+    }
     
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'User not found or inactive' });
