@@ -15,6 +15,7 @@ import React, { lazy, Suspense, useEffect } from 'react';
 
 // OPTIMIZED: Core pages loaded immediately - no lazy loading for nav items
 import SimpleLanding from "@/pages/landing";
+import LoginPage from "@/pages/login";
 import SignupPage from "@/pages/signup";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
@@ -149,7 +150,7 @@ function App() {
                       <Switch>
                         {/* Public Routes - IMPORTANT: "/" must be at the END to avoid matching all paths */}
                         <Route path="/landing">{() => <PageTranslator><SimpleLanding /></PageTranslator>}</Route>
-                        <Route path="/login">{() => <Redirect to="/" />}</Route>
+                        <Route path="/login">{() => <PageTranslator><LoginPage /></PageTranslator>}</Route>
                         <Route path="/signup">{() => <PageTranslator><SignupPage /></PageTranslator>}</Route>
                           <Route path="/forgot-password">{() => <PageTranslator><ForgotPasswordPage /></PageTranslator>}</Route>
                           <Route path="/reset-password">{() => <PageTranslator><ResetPasswordPage /></PageTranslator>}</Route>
