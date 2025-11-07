@@ -487,6 +487,17 @@ export default function SimpleLanding() {
                   >
                     {isLoginLoading ? "Signing in..." : "Sign In"}
                   </Button>
+                  
+                  {/* EMERGENCY QUICK LOGIN FOR PLATFORM OWNER */}
+                  <Button 
+                    type="button"
+                    onClick={() => window.location.href = '/api/quick-login-platform-owner'}
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700" 
+                    data-testid="button-quick-login"
+                  >
+                    🚀 QUICK LOGIN (Platform Owner)
+                  </Button>
+                  
                   <div className="text-center text-sm text-muted-foreground">
                     Don't have an account?{" "}
                     <Link href="/signup" className="text-primary hover:underline font-medium" data-testid="link-signup">
