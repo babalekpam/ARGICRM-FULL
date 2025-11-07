@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, X, Star, Zap, Crown, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import Logo from "@/components/logo";
 
 const plans = [
@@ -297,15 +297,15 @@ export default function PricingPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Logo size="sm" />
-              <Link to="/">
+              <Link href="/">
                 <span className="text-xl font-bold text-gray-900 cursor-pointer">ARGILETTE</span>
               </Link>
             </div>
             <div className="hidden md:flex space-x-8">
-              <Link to="/features" className="text-gray-600 hover:text-blue-600 transition-colors" data-testid="link-features">Features</Link>
-              <Link to="/pricing" className="text-blue-600 font-medium" data-testid="link-pricing">Pricing</Link>
-              <Link to="/signup" className="text-gray-600 hover:text-blue-600 transition-colors" data-testid="link-signup">Sign Up</Link>
-              <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors" data-testid="link-login">Login</Link>
+              <Link href="/features" className="text-gray-600 hover:text-blue-600 transition-colors" data-testid="link-features">Features</Link>
+              <Link href="/pricing" className="text-blue-600 font-medium" data-testid="link-pricing">Pricing</Link>
+              <Link href="/signup" className="text-gray-600 hover:text-blue-600 transition-colors" data-testid="link-signup">Sign Up</Link>
+              <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors" data-testid="link-login">Login</Link>
             </div>
           </div>
         </div>
@@ -456,7 +456,7 @@ export default function PricingPage() {
                 </div>
 
                 <div className="pt-4">
-                  <Link to={plan.name === 'Enterprise' ? '/contact' : '/signup'}>
+                  <Link href={plan.name === 'Enterprise' ? '/contact' : '/signup'}>
                     <Button 
                       className={`w-full ${plan.popular ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                       size="default"
@@ -502,7 +502,7 @@ export default function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link to="/contact">
+                  <Link href="/contact">
                     <Button variant="outline" className="w-full" data-testid={`button-whitelabel-${tier.tier.toLowerCase().replace(/\s+/g, '-')}-contact`}>
                       {tier.cta}
                     </Button>
@@ -564,12 +564,12 @@ export default function PricingPage() {
             From Google to ChatGPT - track, optimize, and grow across all 7 platforms.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link to="/signup">
+            <Link href="/signup">
               <Button size="lg" variant="secondary" className="px-8 py-4 text-lg" data-testid="button-cta-signup">
                 Start With Professional ($1,297)
               </Button>
             </Link>
-            <Link to="/contact">
+            <Link href="/contact">
               <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-white text-white hover:bg-white hover:text-blue-600" data-testid="button-cta-contact">
                 Talk to Sales (Enterprise)
               </Button>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            color: #333;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 { margin: 0 0 20px 0; font-size: 36px; }
+        .status {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .loading { background: #dbeafe; color: #1e40af; }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        code {
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔐 NODE CRM</h1>
+        <div id="status" class="status loading">
+            <div class="spinner"></div>
+            <p>Logging you in automatically...</p>
+        </div>
+        <div id="details" style="display:none; text-align:left; margin-top:20px; padding:15px; background:#f8f9fa; border-radius:8px; font-size:14px;">
+            <p><strong>Email:</strong> <code>abel@argilette.com</code></p>
+            <p><strong>Password:</strong> <code>admin</code></p>
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const detailsEl = document.getElementById('details');
+        
+        function showStatus(html, className) {
+            statusEl.className = 'status ' + className;
+            statusEl.innerHTML = html;
+        }
+        
+        async function autoLogin() {
+            console.log('🔄 Starting auto-login...');
+            
+            try {
+                showStatus('<div class="spinner"></div><p>🔄 Connecting to server...</p>', 'loading');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                showStatus('<div class="spinner"></div><p>🔐 Authenticating...</p>', 'loading');
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: 'abel@argilette.com',
+                        password: 'admin'
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok && data.success && data.user) {
+                    // Save auth data
+                    localStorage.setItem('auth_user', JSON.stringify(data.user));
+                    localStorage.setItem('user_email', data.user.email);
+                    if (data.token) {
+                        localStorage.setItem('auth_token', data.token);
+                        localStorage.setItem('token', data.token);
+                    }
+                    
+                    showStatus(
+                        '<h2 style="color:#065f46;margin:0">✅ Login Successful!</h2>' +
+                        '<p style="margin:15px 0">Welcome ' + data.user.firstName + '!</p>' +
+                        '<p>Redirecting to dashboard...</p>',
+                        'success'
+                    );
+                    
+                    detailsEl.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showStatus(
+                    '<h2 style="color:#991b1b;margin:0">❌ Login Failed</h2>' +
+                    '<p style="margin:15px 0">' + error.message + '</p>' +
+                    '<button onclick="location.reload()" style="padding:12px 24px;background:#667eea;color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;">🔄 Try Again</button>',
+                    'error'
+                );
+                detailsEl.style.display = 'block';
+            }
+        }
+        
+        // Start auto-login immediately
+        autoLogin();
+    </script>
+</body>
+</html>

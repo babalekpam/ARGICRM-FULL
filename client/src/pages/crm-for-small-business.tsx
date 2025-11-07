@@ -35,10 +35,10 @@ export default function CrmForSmallBusinessPage() {
               <span className="text-xl font-bold text-gray-900">NODE CRM</span>
             </div>
             <div className="hidden md:flex space-x-8">
-              <Link to="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
-              <Link to="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
-              <Link to="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link>
-              <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
+              <Link href="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
+              <Link href="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
+              <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link>
+              <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
             </div>
           </div>
         </div>
@@ -60,13 +60,13 @@ export default function CrmForSmallBusinessPage() {
               and grow revenue without the complexity of enterprise software.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link to="/signup">
+              <Link href="/signup">
                 <Button size="lg" className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
                   Start Free 14-Day Trial
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link to="/pricing">
+              <Link href="/pricing">
                 <Button size="lg" variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
                   View Pricing
                 </Button>
@@ -152,7 +152,7 @@ export default function CrmForSmallBusinessPage() {
                   ))}
                 </div>
                 <div className="mt-8 text-center">
-                  <Link to="/signup">
+                  <Link href="/signup">
                     <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white">
                       Start Your Free Trial
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -215,13 +215,13 @@ export default function CrmForSmallBusinessPage() {
                 Join thousands of small businesses using NODE CRM to organize customers, increase sales, and build lasting relationships.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Link to="/signup">
+                <Link href="/signup">
                   <Button size="lg" variant="secondary" className="bg-white text-green-600 hover:bg-gray-100">
                     Start Free 14-Day Trial
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                <Link to="/features">
+                <Link href="/features">
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-green-600">
                     See All Features
                   </Button>

@@ -7,7 +7,7 @@ import {
   Shield, Zap, Globe, Calendar, DollarSign, FileText,
   Target, Workflow, Database, Phone, Mail, VideoIcon
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import Logo from "@/components/logo";
 
 const features = [
@@ -173,15 +173,15 @@ export default function FeaturesPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Logo size="sm" />
-              <Link to="/">
+              <Link href="/">
                 <span className="text-xl font-bold text-gray-900 cursor-pointer">NODE CRM</span>
               </Link>
             </div>
             <div className="hidden md:flex space-x-8">
-              <Link to="/features" className="text-blue-600 font-medium">Features</Link>
-              <Link to="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
-              <Link to="/signup" className="text-gray-600 hover:text-blue-600 transition-colors">Sign Up</Link>
-              <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Login</Link>
+              <Link href="/features" className="text-blue-600 font-medium">Features</Link>
+              <Link href="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
+              <Link href="/signup" className="text-gray-600 hover:text-blue-600 transition-colors">Sign Up</Link>
+              <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">Login</Link>
             </div>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function FeaturesPage() {
             NODE CRM combines cutting-edge AI technology with intuitive design to deliver 
             a comprehensive customer relationship management solution.
           </p>
-          <Link to="/signup">
+          <Link href="/signup">
             <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg">
               Start Free Trial
             </Button>
@@ -249,12 +249,12 @@ export default function FeaturesPage() {
             Join thousands of businesses already using NODE CRM to build better customer relationships.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link to="/signup">
+            <Link href="/signup">
               <Button size="lg" variant="secondary" className="px-8 py-4 text-lg">
                 Start 14-Day Free Trial
               </Button>
             </Link>
-            <Link to="/pricing">
+            <Link href="/pricing">
               <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-white text-white hover:bg-white hover:text-blue-600">
                 View Pricing Plans
               </Button>

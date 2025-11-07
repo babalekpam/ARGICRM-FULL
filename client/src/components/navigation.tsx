@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { saasFeatures } from "@/services/saas-features";
 import { useAuth } from "@/hooks/useAuth";
@@ -70,7 +70,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ onLogout }: NavigationProps) {
-  const location = useLocation();
+  const [location] = useLocation();
   const { user, logout } = useAuth();
   const { status, downloadForOffline } = useOffline();
   const { toast } = useToast();
@@ -78,7 +78,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
   // State for managing collapsed/expanded sections
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location === path;
   
   const toggleSection = (sectionKey: string) => {
     const newCollapsed = new Set(collapsedSections);
@@ -220,8 +220,8 @@ export default function Navigation({ onLogout }: NavigationProps) {
         { path: "/super-admin-dashboard", label: "Super Admin Dashboard", icon: Crown, permission: "platform.read" },
         { path: "/integrity-dashboard", label: "Platform Integrity", icon: CheckCircle, permission: "platform.read" },
         { path: "/performance-dashboard", label: "Performance Dashboard", icon: TrendingUp, permission: "platform.read" },
-        { path: "/testing-deployment", label: "Testing & Deployment", icon: TestTube, permission: "platform.read" },
-        { path: "/bug-resolution", label: "Bug Resolution", icon: Bug, permission: "platform.read" },
+        { path: "/testing-deployment-dashboard", label: "Testing & Deployment", icon: TestTube, permission: "platform.read" },
+        { path: "/bug-resolution-dashboard", label: "Bug Resolution", icon: Bug, permission: "platform.read" },
         { path: "/feature-toggles", label: "Feature Toggles", icon: Zap, permission: "admin.read" },
         { path: "/white-label-settings", label: "White Label Settings", icon: Crown, permission: "platform.read" },
         { path: "/settings", label: "Platform Settings", icon: Settings, permission: "platform.*" },
@@ -306,7 +306,8 @@ export default function Navigation({ onLogout }: NavigationProps) {
               const platformFeatures = ['/admin-dashboard', '/super-admin-dashboard', '/integrity-dashboard', '/performance-dashboard'];
               const isCore = coreFeatures.includes(item.path) || platformFeatures.includes(item.path);
               
-              if (!canAccess && !isCore) {
+              // PLATFORM OWNER PRIVILEGE: Platform owners get full unrestricted access to ALL features forever
+              if (!canAccess && !isCore && !isPlatformOwner) {
                 return (
                   <div
                     key={item.path}
@@ -328,7 +329,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
               return (
                 <Link 
                   key={item.path} 
-                  to={item.path}
+                  href={item.path}
+                  onClick={() => {
+                    console.log('Navigation link clicked:', item.path, 'Current location:', location);
+                  }}
                   className={cn(
                     "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all-smooth cursor-pointer focus-ring relative",
                     isActive(item.path)

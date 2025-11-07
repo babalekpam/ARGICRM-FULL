@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,7 +54,7 @@ import { StoreLaunchWizard } from '@/components/store-launch-wizard';
 export default function EcommerceDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [showLaunchWizard, setShowLaunchWizard] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -1042,7 +1042,7 @@ export default function EcommerceDashboard() {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => navigate(`/store-preview/${store.id}`)}
+                        onClick={() => setLocation(`/store-preview/${store.id}`)}
                         data-testid={`button-preview-store-${store.id}`}
                       >
                         <Eye className="h-4 w-4 mr-1" />

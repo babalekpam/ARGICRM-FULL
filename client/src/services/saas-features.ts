@@ -350,7 +350,7 @@ export class SaaSFeatureService {
   public hasFeature(featureName: string): boolean {
     // Check if user is platform owner first
     const user = this.getCurrentUser();
-    if (user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org' || user?.role === 'platform_owner') {
+    if (user?.email === 'admin@default.com' || user?.email === 'abel@argilette.com' || user?.role === 'platform_owner') {
       return true; // Platform owners have access to all features
     }
     
@@ -372,7 +372,7 @@ export class SaaSFeatureService {
       // Also check for email in localStorage as fallback
       const email = localStorage.getItem('user_email') || localStorage.getItem('userEmail');
       if (email) {
-        return { email, role: email.includes('abel@argilette.org') ? 'platform_owner' : 'user' };
+        return { email, role: email.includes('abel@argilette.com') ? 'platform_owner' : 'user' };
       }
       
       return null;
@@ -534,7 +534,7 @@ export class SaaSFeatureService {
       });
     }
     
-    if (user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org' || user?.role === 'platform_owner') {
+    if (user?.email === 'admin@default.com' || user?.email === 'abel@argilette.com' || user?.role === 'platform_owner') {
       return true;
     }
     

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -56,7 +56,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 
 export default function MobileNavigation() {
   const [open, setOpen] = useState(false);
-  const location = useLocation();
+  const [location] = useLocation();
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   
@@ -193,10 +193,10 @@ export default function MobileNavigation() {
                     <div className="space-y-1">
                       {category.items.map((item) => {
                         const Icon = item.icon;
-                        const isActive = location.pathname === item.href;
+                        const isActive = location === item.href;
                         
                         return (
-                          <Link key={item.href} to={item.href}>
+                          <Link key={item.href} href={item.href}>
                             <div
                               className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                                 isActive
