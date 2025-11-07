@@ -27,7 +27,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const testFormSchema = z.object({
   name: z.string().min(1, "Test name is required"),
@@ -183,6 +183,9 @@ export default function AbTestingCreatePage() {
         })
       );
 
+      // Invalidate all AB testing queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/ab-testing/tests"] });
+      
       toast({
         title: "Test Created",
         description: "Your A/B test has been created successfully",

@@ -28,10 +28,11 @@ import {
   type EmployeeSkill, type InsertEmployeeSkill,
   type ResourceForecast, type InsertResourceForecast,
   type WorkloadSnapshot, type InsertWorkloadSnapshot,
+  type ResourceAllocation, type InsertResourceAllocation,
   leads, contacts, accounts, deals, tasks, employees, appointments, campaigns, tickets, projects, invoices, users, tenants, taxRates, salesChannels,
   aiContents, aiCampaigns, aiUsage,
   abTests, abVariants, abSessions, abEvents, abConversions, abMetricsCache,
-  teamCapacity, employeeSkills, resourceForecasts, workloadSnapshots,
+  teamCapacity, employeeSkills, resourceForecasts, workloadSnapshots, resourceAllocations,
   clientAccounts, clientPortalUsers, clientPortalSessions
 } from "@shared/schema";
 import {
@@ -2976,6 +2977,51 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // ==================== CLIENT INVOICE ACCESS ====================
+  async getClientInvoices(clientAccountId: string, tenantId: string): Promise<any[]> {
+    const { clientInvoiceAccess } = await import("@shared/schema");
+    
+    const invoiceAccessList = await db.select({
+      invoice: invoices,
+      accessLevel: clientInvoiceAccess.accessLevel,
+    })
+      .from(clientInvoiceAccess)
+      .innerJoin(invoices, eq(clientInvoiceAccess.invoiceId, invoices.id))
+      .where(and(
+        eq(clientInvoiceAccess.clientAccountId, clientAccountId),
+        eq(clientInvoiceAccess.tenantId, tenantId)
+      ));
+    
+    return invoiceAccessList.map(item => ({
+      ...item.invoice,
+      accessLevel: item.accessLevel
+    }));
+  }
+
+  async getClientInvoice(invoiceId: string, clientAccountId: string, tenantId: string): Promise<any | null> {
+    const { clientInvoiceAccess } = await import("@shared/schema");
+    
+    const [result] = await db.select({
+      invoice: invoices,
+      accessLevel: clientInvoiceAccess.accessLevel,
+    })
+      .from(clientInvoiceAccess)
+      .innerJoin(invoices, eq(clientInvoiceAccess.invoiceId, invoices.id))
+      .where(and(
+        eq(clientInvoiceAccess.invoiceId, invoiceId),
+        eq(clientInvoiceAccess.clientAccountId, clientAccountId),
+        eq(clientInvoiceAccess.tenantId, tenantId)
+      ))
+      .limit(1);
+    
+    if (!result) return null;
+    
+    return {
+      ...result.invoice,
+      accessLevel: result.accessLevel
+    };
+  }
+
   // ==================== RESOURCE MANAGEMENT - TEAM CAPACITY ====================
   async createTeamCapacity(data: InsertTeamCapacity): Promise<TeamCapacity> {
     const capacityWithTenant = {
@@ -3187,5 +3233,71 @@ export class DatabaseStorage implements IStorage {
         sql`${workloadSnapshots.snapshotDate} >= ${startDate.toISOString().split('T')[0]}`
       ))
       .orderBy(workloadSnapshots.snapshotDate);
+  }
+
+  // ==================== RESOURCE MANAGEMENT - RESOURCE ALLOCATIONS ====================
+  async getResourceAllocations(filters?: { 
+    projectId?: string; 
+    userId?: string; 
+    startDate?: string; 
+    endDate?: string; 
+  }): Promise<ResourceAllocation[]> {
+    const conditions = [eq(resourceAllocations.tenantId, this.tenantId)];
+    
+    if (filters?.projectId) {
+      conditions.push(eq(resourceAllocations.projectId, filters.projectId));
+    }
+    if (filters?.userId) {
+      conditions.push(eq(resourceAllocations.userId, filters.userId));
+    }
+    if (filters?.startDate) {
+      conditions.push(sql`${resourceAllocations.startDate} >= ${filters.startDate}`);
+    }
+    if (filters?.endDate) {
+      conditions.push(sql`${resourceAllocations.endDate} <= ${filters.endDate}`);
+    }
+    
+    return await db.select().from(resourceAllocations)
+      .where(and(...conditions))
+      .orderBy(desc(resourceAllocations.startDate));
+  }
+
+  async createResourceAllocation(data: InsertResourceAllocation): Promise<ResourceAllocation> {
+    const allocationWithTenant = {
+      ...data,
+      tenantId: this.tenantId
+    };
+    
+    const [newAllocation] = await db.insert(resourceAllocations).values(allocationWithTenant).returning();
+    return newAllocation;
+  }
+
+  async updateResourceAllocation(id: string, data: Partial<InsertResourceAllocation>): Promise<ResourceAllocation | undefined> {
+    const [updated] = await db.update(resourceAllocations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(resourceAllocations.id, id),
+        eq(resourceAllocations.tenantId, this.tenantId)
+      ))
+      .returning();
+    
+    return updated;
+  }
+
+  async deleteResourceAllocation(id: string): Promise<boolean> {
+    const result = await db.delete(resourceAllocations)
+      .where(and(
+        eq(resourceAllocations.id, id),
+        eq(resourceAllocations.tenantId, this.tenantId)
+      ));
+    
+    return result.rowCount > 0;
+  }
+
+  // ==================== RESOURCE MANAGEMENT - ALL SKILLS ====================
+  async getAllSkills(): Promise<EmployeeSkill[]> {
+    return await db.select().from(employeeSkills)
+      .where(eq(employeeSkills.tenantId, this.tenantId))
+      .orderBy(employeeSkills.skillName, desc(employeeSkills.proficiencyLevel));
   }
 }

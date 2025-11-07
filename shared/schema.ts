@@ -4436,6 +4436,21 @@ export const clientProjectAccess = pgTable("client_project_access", {
   index("idx_client_project_access_project").on(table.projectId),
 ]);
 
+// Client Invoice Access - Controls which invoices a client can see
+export const clientInvoiceAccess = pgTable("client_invoice_access", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
+  accessLevel: text("access_level").default("read"),
+  grantedAt: timestamp("granted_at").defaultNow(),
+  grantedBy: varchar("granted_by").references(() => users.id),
+}, (table) => [
+  index("idx_client_invoice_access_tenant").on(table.tenantId),
+  index("idx_client_invoice_access_client").on(table.clientAccountId, table.invoiceId),
+  index("idx_client_invoice_access_invoice").on(table.invoiceId),
+]);
+
 // Client Deliverables - Documents/files shared with clients
 export const clientDeliverables = pgTable("client_deliverables", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4506,6 +4521,8 @@ export type ClientPortalSession = typeof clientPortalSessions.$inferSelect;
 export type InsertClientPortalSession = typeof clientPortalSessions.$inferInsert;
 export type ClientProjectAccess = typeof clientProjectAccess.$inferSelect;
 export type InsertClientProjectAccess = typeof clientProjectAccess.$inferInsert;
+export type ClientInvoiceAccess = typeof clientInvoiceAccess.$inferSelect;
+export type InsertClientInvoiceAccess = typeof clientInvoiceAccess.$inferInsert;
 export type ClientDeliverable = typeof clientDeliverables.$inferSelect;
 export type InsertClientDeliverable = typeof clientDeliverables.$inferInsert;
 export type ClientMessage = typeof clientMessages.$inferSelect;
@@ -4531,6 +4548,11 @@ export const insertClientPortalSessionSchema = createInsertSchema(clientPortalSe
 });
 
 export const insertClientProjectAccessSchema = createInsertSchema(clientProjectAccess).omit({
+  id: true,
+  grantedAt: true,
+});
+
+export const insertClientInvoiceAccessSchema = createInsertSchema(clientInvoiceAccess).omit({
   id: true,
   grantedAt: true,
 });

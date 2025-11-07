@@ -12329,6 +12329,63 @@ ${req.body.companyName} Team`;
     }
   });
   
+  // POST /api/ab-testing/tests/:id/conversions - Record conversion for specific test
+  app.post("/api/ab-testing/tests/:id/conversions", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id: testId } = req.params;
+      const { sessionId, variantId, conversionType, conversionValue, metadata } = req.body;
+      
+      if (!sessionId || !variantId || !conversionType) {
+        return res.status(400).json({ 
+          error: "sessionId, variantId, and conversionType are required" 
+        });
+      }
+      
+      // SECURITY FIX: Verify test belongs to tenant
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${testId} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found or access denied" });
+      }
+      
+      // SECURITY FIX: Verify session belongs to this test
+      const [result] = await db.select({ session: abSessions, test: abTests })
+        .from(abSessions)
+        .innerJoin(abTests, eq(abSessions.testId, abTests.id))
+        .where(and(
+          eq(abSessions.sessionId, sessionId),
+          eq(abSessions.testId, testId),
+          eq(abTests.tenantId, tenantId)
+        ))
+        .limit(1);
+      
+      if (!result) {
+        return res.status(404).json({ error: "Session not found or access denied" });
+      }
+      
+      const validatedData = insertAbConversionSchema.parse({
+        sessionId: result.session.id,  // Use the UUID session ID from the table
+        testId,
+        variantId,
+        conversionType,
+        conversionValue: conversionValue || null,
+        metadata: metadata || {}
+      });
+      
+      const [newConversion] = await db.insert(abConversions).values(validatedData).returning();
+      
+      res.json(newConversion);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error recording conversion:", error);
+      res.status(500).json({ error: "Failed to record conversion", details: error.message });
+    }
+  });
+  
   // GET /api/ab-testing/tests/:id/metrics - Get test analytics
   app.get("/api/ab-testing/tests/:id/metrics", authenticate, async (req: any, res) => {
     try {
@@ -13056,29 +13113,26 @@ ${req.body.companyName} Team`;
     }
   });
 
-  // Client Portal - List Invoices
+  // Client Portal - List Invoices (DUAL ISOLATION: tenantId + clientAccountId)
   app.get("/api/client-portal/invoices", authenticateClient, async (req: RequestWithClientContext, res: any) => {
     try {
       const { clientAccountId, tenantId } = req.clientContext!;
-      const invoices = await storage.getInvoices();
-      const clientInvoices = invoices.filter((inv: any) => 
-        inv.tenantId === tenantId && inv.clientId === clientAccountId
-      );
-      res.json(clientInvoices);
+      const invoices = await storage.getClientInvoices(clientAccountId, tenantId);
+      res.json(invoices);
     } catch (error) {
       console.error("Get invoices error:", error);
       res.status(500).json({ error: "Failed to get invoices" });
     }
   });
 
-  // Client Portal - Get Invoice Details
+  // Client Portal - Get Invoice Details (DUAL ISOLATION: tenantId + clientAccountId)
   app.get("/api/client-portal/invoices/:id", authenticateClient, async (req: RequestWithClientContext, res: any) => {
     try {
       const { id } = req.params;
       const { clientAccountId, tenantId } = req.clientContext!;
-      const invoice = await storage.getInvoice(parseInt(id));
+      const invoice = await storage.getClientInvoice(id, clientAccountId, tenantId);
       
-      if (!invoice || invoice.tenantId !== tenantId || invoice.clientId !== clientAccountId) {
+      if (!invoice) {
         return res.status(404).json({ error: "Invoice not found or access denied" });
       }
 
@@ -13089,14 +13143,14 @@ ${req.body.companyName} Team`;
     }
   });
 
-  // Client Portal - Initiate Payment
+  // Client Portal - Initiate Payment (DUAL ISOLATION: tenantId + clientAccountId)
   app.post("/api/client-portal/invoices/:id/pay", authenticateClient, async (req: RequestWithClientContext, res: any) => {
     try {
       const { id } = req.params;
       const { clientAccountId, tenantId } = req.clientContext!;
-      const invoice = await storage.getInvoice(parseInt(id));
+      const invoice = await storage.getClientInvoice(id, clientAccountId, tenantId);
       
-      if (!invoice || invoice.tenantId !== tenantId || invoice.clientId !== clientAccountId) {
+      if (!invoice) {
         return res.status(404).json({ error: "Invoice not found or access denied" });
       }
 
@@ -13381,6 +13435,97 @@ ${req.body.companyName} Team`;
     } catch (error: any) {
       console.error("Error searching skills by category:", error);
       res.status(500).json({ error: "Failed to search skills", details: error.message });
+    }
+  });
+
+  app.get("/api/resources/skills", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { userId } = req.query;
+      
+      const skills = userId 
+        ? await storage.getEmployeeSkills(userId as string)
+        : await storage.getAllSkills();
+      res.json(skills);
+    } catch (error: any) {
+      console.error("Error fetching all skills:", error);
+      res.status(500).json({ error: "Failed to fetch skills", details: error.message });
+    }
+  });
+
+  // Resource Allocations Routes
+  app.get("/api/resources/allocations", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { projectId, userId, startDate, endDate } = req.query;
+      
+      const allocations = await storage.getResourceAllocations({
+        projectId: projectId as string,
+        userId: userId as string,
+        startDate: startDate as string,
+        endDate: endDate as string
+      });
+      res.json(allocations);
+    } catch (error: any) {
+      console.error("Error fetching resource allocations:", error);
+      res.status(500).json({ error: "Failed to fetch resource allocations", details: error.message });
+    }
+  });
+
+  app.post("/api/resources/allocations", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const validatedData = insertResourceAllocationSchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      const newAllocation = await storage.createResourceAllocation(validatedData);
+      res.status(201).json(newAllocation);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error creating resource allocation:", error);
+      res.status(500).json({ error: "Failed to create resource allocation", details: error.message });
+    }
+  });
+
+  app.patch("/api/resources/allocations/:id", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { id } = req.params;
+      const validatedData = insertResourceAllocationSchema.partial().parse(req.body);
+      
+      const updated = await storage.updateResourceAllocation(id, validatedData);
+      if (!updated) {
+        return res.status(404).json({ error: "Resource allocation not found" });
+      }
+      
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error updating resource allocation:", error);
+      res.status(500).json({ error: "Failed to update resource allocation", details: error.message });
+    }
+  });
+
+  app.delete("/api/resources/allocations/:id", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { id } = req.params;
+      
+      const deleted = await storage.deleteResourceAllocation(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Resource allocation not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting resource allocation:", error);
+      res.status(500).json({ error: "Failed to delete resource allocation", details: error.message });
     }
   });
 

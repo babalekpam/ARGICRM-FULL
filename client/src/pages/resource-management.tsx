@@ -29,6 +29,7 @@ export default function ResourceManagement() {
   const { toast } = useToast();
   const [selectedWeek, setSelectedWeek] = useState(getMonday(new Date()).toISOString().split('T')[0]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("capacity");
   
   // Fetch team members
   const { data: teamMembers = [], isLoading: membersLoading } = useQuery<any[]>({
@@ -222,7 +223,7 @@ export default function ResourceManagement() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="capacity" className="space-y-4" data-testid="tabs-resource-management">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4" data-testid="tabs-resource-management">
         <TabsList>
           <TabsTrigger value="capacity" data-testid="tab-capacity">Team Capacity</TabsTrigger>
           <TabsTrigger value="skills" data-testid="tab-skills">Skills Matrix</TabsTrigger>
@@ -271,7 +272,18 @@ export default function ResourceManagement() {
                         const utilization = capacity.utilizationPercent || 0;
                         
                         return (
-                          <TableRow key={capacity.id} data-testid={`row-capacity-${capacity.id}`}>
+                          <TableRow 
+                            key={capacity.id} 
+                            data-testid={`row-capacity-${capacity.id}`}
+                            className="cursor-pointer hover-elevate"
+                            onClick={() => {
+                              if (capacity.userId) {
+                                setSelectedUserId(capacity.userId);
+                                setActiveTab("skills");
+                                toast({ title: "Team member selected", description: `Viewing skills for ${member?.firstName} ${member?.lastName}` });
+                              }
+                            }}
+                          >
                             <TableCell className="font-medium">
                               {member ? `${member.firstName} ${member.lastName}` : 'Unknown'}
                             </TableCell>

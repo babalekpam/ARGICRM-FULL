@@ -356,6 +356,10 @@ export interface IStorage {
   // Client Project Access - TENANT + CLIENT ISOLATED
   getClientProjects(clientAccountId: string, tenantId: string): Promise<any[]>;
   getClientProject(projectId: string, clientAccountId: string, tenantId: string): Promise<any | null>;
+  
+  // Client Invoice Access - TENANT + CLIENT ISOLATED
+  getClientInvoices(clientAccountId: string, tenantId: string): Promise<any[]>;
+  getClientInvoice(invoiceId: string, clientAccountId: string, tenantId: string): Promise<any | null>;
 }
 
 export class MemStorage implements IStorage {
