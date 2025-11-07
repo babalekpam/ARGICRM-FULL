@@ -35,7 +35,7 @@ export const users = pgTable("users", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").default("user"), // platform_owner, super_admin, admin, manager, user, viewer
+  role: text("role").default("user"), // platform_owner (unique super admin), admin, manager, user, viewer
   isActive: boolean("is_active").default(true),
   emailVerified: boolean("email_verified").default(false),
   emailVerificationToken: text("email_verification_token"),

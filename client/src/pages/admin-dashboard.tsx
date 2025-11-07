@@ -262,14 +262,14 @@ export default function AdminDashboard() {
             <div>
               <Label htmlFor="role">
                 Role
-                {user && (user.email === 'abel@argilette.com' || user.email === 'admin@default.com') && (
-                  <span className="ml-2 text-xs text-muted-foreground">(Protected - cannot be changed)</span>
+                {user && user.email === 'abel@argilette.com' && (
+                  <span className="ml-2 text-xs text-muted-foreground">(Platform owner - cannot be changed)</span>
                 )}
               </Label>
               <Select 
                 value={formData.role} 
                 onValueChange={(value) => setFormData({ ...formData, role: value })}
-                disabled={user && (user.email === 'abel@argilette.com' || user.email === 'admin@default.com')}
+                disabled={user && user.email === 'abel@argilette.com'}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -292,12 +292,12 @@ export default function AdminDashboard() {
                 id="isActive"
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: !!checked })}
-                disabled={user && (user.email === 'abel@argilette.com' || user.email === 'admin@default.com')}
+                disabled={user && user.email === 'abel@argilette.com'}
               />
               <Label htmlFor="isActive">
                 Active
-                {user && (user.email === 'abel@argilette.com' || user.email === 'admin@default.com') && (
-                  <span className="ml-2 text-xs text-muted-foreground">(Protected account - cannot be deactivated)</span>
+                {user && user.email === 'abel@argilette.com' && (
+                  <span className="ml-2 text-xs text-muted-foreground">(Platform owner - cannot be deactivated)</span>
                 )}
               </Label>
             </div>

@@ -1079,20 +1079,20 @@ export class DatabaseStorage implements IStorage {
       return null;
     }
 
-    // ACCOUNT PROTECTION: Use email-based protection (immutable identifier)
-    // Protected emails cannot be deactivated OR have their role changed
-    const protectedEmails = ['abel@argilette.com', 'admin@default.com'];
-    const isProtectedAccount = protectedEmails.includes(targetUser.email);
+    // ACCOUNT PROTECTION: Platform owner is the unique super admin account
+    // Use email-based protection (immutable identifier)
+    // Only abel@argilette.com is the platform owner - cannot be deactivated OR have role changed
+    const isPlatformOwner = targetUser.email === 'abel@argilette.com';
 
-    if (isProtectedAccount) {
+    if (isPlatformOwner) {
       // Block deactivation attempts (strict check to prevent type coercion bypass)
       if (user.isActive !== undefined && user.isActive !== true) {
-        throw new Error('Platform owner accounts cannot be deactivated for security reasons');
+        throw new Error('Platform owner account cannot be deactivated for security reasons');
       }
       
       // Block role changes (strict check prevents null/empty string bypass)
       if (user.role !== undefined && user.role !== targetUser.role) {
-        throw new Error('Platform owner account roles cannot be changed for security reasons');
+        throw new Error('Platform owner account role cannot be changed for security reasons');
       }
     }
 

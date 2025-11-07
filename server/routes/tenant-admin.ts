@@ -103,23 +103,23 @@ router.put('/users/:userId', requireRole('super_admin'), async (req: TenantReque
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // ACCOUNT PROTECTION: Use email-based protection (immutable identifier)
-    // Protected emails cannot be deactivated OR have their role changed
-    const protectedEmails = ['abel@argilette.com', 'admin@default.com'];
-    const isProtectedAccount = protectedEmails.includes(targetUser.email);
+    // ACCOUNT PROTECTION: Platform owner is the unique super admin account
+    // Use email-based protection (immutable identifier)
+    // Only abel@argilette.com is the platform owner - cannot be deactivated OR have role changed
+    const isPlatformOwner = targetUser.email === 'abel@argilette.com';
 
-    if (isProtectedAccount) {
+    if (isPlatformOwner) {
       // Block deactivation attempts (strict check to prevent type coercion bypass)
       if (isActive !== undefined && isActive !== true) {
         return res.status(403).json({ 
-          error: 'Platform owner accounts cannot be deactivated for security reasons'
+          error: 'Platform owner account cannot be deactivated for security reasons'
         });
       }
       
       // Block role changes (strict check prevents null/empty string bypass)
       if (role !== undefined && role !== targetUser.role) {
         return res.status(403).json({ 
-          error: 'Platform owner account roles cannot be changed for security reasons'
+          error: 'Platform owner account role cannot be changed for security reasons'
         });
       }
     }
