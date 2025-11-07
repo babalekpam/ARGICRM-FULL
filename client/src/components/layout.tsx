@@ -82,10 +82,8 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Desktop Navigation & Header */}
       <div className="hidden md:block">
-        <PageTranslator context="navigation">
-          <Navigation />
-          <Header />
-        </PageTranslator>
+        <Navigation />
+        <Header />
       </div>
 
       {/* Mobile Header */}
