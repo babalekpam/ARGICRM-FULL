@@ -8,7 +8,7 @@ const router = Router();
 
 // Apply authentication and tenant validation to all routes
 router.use(authenticate);
-router.use(requireRole(['super_admin', 'admin']));
+router.use(requireRole(['platform_owner', 'admin']));
 
 // Get tenant dashboard overview
 router.get('/dashboard', async (req: TenantRequest, res) => {
@@ -43,7 +43,7 @@ router.get('/dashboard', async (req: TenantRequest, res) => {
 });
 
 // User management - Super admin only
-router.get('/users', requireRole('super_admin'), async (req: TenantRequest, res) => {
+router.get('/users', requireRole('platform_owner'), async (req: TenantRequest, res) => {
   try {
     const users = await storage.getUsersByTenant(req.tenant!.id);
     res.json(users);
@@ -53,7 +53,7 @@ router.get('/users', requireRole('super_admin'), async (req: TenantRequest, res)
   }
 });
 
-router.post('/users', requireRole('super_admin'), async (req: TenantRequest, res) => {
+router.post('/users', requireRole('platform_owner'), async (req: TenantRequest, res) => {
   try {
     const { email, firstName, lastName, password, role } = req.body;
     
@@ -92,7 +92,7 @@ router.post('/users', requireRole('super_admin'), async (req: TenantRequest, res
   }
 });
 
-router.put('/users/:userId', requireRole('super_admin'), async (req: TenantRequest, res) => {
+router.put('/users/:userId', requireRole('platform_owner'), async (req: TenantRequest, res) => {
   try {
     const { userId } = req.params;
     const { firstName, lastName, role, isActive } = req.body;
@@ -157,7 +157,7 @@ router.get('/roles', async (req: TenantRequest, res) => {
   }
 });
 
-router.post('/roles', requireRole('super_admin'), async (req: TenantRequest, res) => {
+router.post('/roles', requireRole('platform_owner'), async (req: TenantRequest, res) => {
   try {
     const { name, description, permissions } = req.body;
     
@@ -180,7 +180,7 @@ router.post('/roles', requireRole('super_admin'), async (req: TenantRequest, res
   }
 });
 
-router.put('/roles/:roleId', requireRole('super_admin'), async (req: TenantRequest, res) => {
+router.put('/roles/:roleId', requireRole('platform_owner'), async (req: TenantRequest, res) => {
   try {
     const { roleId } = req.params;
     const { name, description, permissions } = req.body;
@@ -202,7 +202,7 @@ router.put('/roles/:roleId', requireRole('super_admin'), async (req: TenantReque
   }
 });
 
-router.delete('/roles/:roleId', requireRole('super_admin'), async (req: TenantRequest, res) => {
+router.delete('/roles/:roleId', requireRole('platform_owner'), async (req: TenantRequest, res) => {
   try {
     const { roleId } = req.params;
     
@@ -244,7 +244,7 @@ router.get('/settings', async (req: TenantRequest, res) => {
   }
 });
 
-router.put('/settings', requireRole('super_admin'), async (req: TenantRequest, res) => {
+router.put('/settings', requireRole('platform_owner'), async (req: TenantRequest, res) => {
   try {
     const { name, settings } = req.body;
     

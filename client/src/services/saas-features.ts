@@ -350,7 +350,7 @@ export class SaaSFeatureService {
   public hasFeature(featureName: string): boolean {
     // Check if user is platform owner first
     const user = this.getCurrentUser();
-    if (user?.email === 'admin@default.com' || user?.email === 'abel@argilette.com' || user?.role === 'platform_owner') {
+    if (user?.email === 'abel@argilette.com' || user?.role === 'platform_owner') {
       return true; // Platform owners have access to all features
     }
     
@@ -530,11 +530,11 @@ export class SaaSFeatureService {
         user,
         userEmail: user?.email,
         userRole: user?.role,
-        isPlatformOwner: user?.email === 'admin@default.com' || user?.role === 'platform_owner'
+        isPlatformOwner: user?.email === 'abel@argilette.com' || user?.role === 'platform_owner'
       });
     }
     
-    if (user?.email === 'admin@default.com' || user?.email === 'abel@argilette.com' || user?.role === 'platform_owner') {
+    if (user?.email === 'abel@argilette.com' || user?.role === 'platform_owner') {
       return true;
     }
     

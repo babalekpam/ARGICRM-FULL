@@ -177,7 +177,7 @@ export default function InventoryManagementPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-auth-email': 'abel@argilette.org',
+          'x-auth-email': 'abel@argilette.com',
           'authorization': 'Bearer demo-token'
         },
         body: JSON.stringify(data.updates)

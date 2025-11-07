@@ -70,7 +70,7 @@ export async function authenticate(req: TenantRequest, res: Response, next: Next
     
     // FALLBACK for platform owners: If user not found by ID (outdated token), try by email
     if (!user && decoded.email) {
-      const platformOwnerEmails = ['abel@argilette.com', 'admin@default.com'];
+      const platformOwnerEmails = ['abel@argilette.com'];
       if (platformOwnerEmails.includes(decoded.email)) {
         console.log('Auth middleware - Platform owner with outdated token, trying email lookup:', decoded.email);
         user = await storage.getUserByEmail(decoded.email);
@@ -171,7 +171,7 @@ export async function login(req: Request, res: Response) {
         lastName: user.lastName,
         role: user.role,
         permissions: userWithPermissions.permissions,
-        isPlatformOwner: email === 'abel@argilette.com' || email === 'admin@default.com'
+        isPlatformOwner: email === 'abel@argilette.com'
       },
       tenant: {
         id: tenant.id,
@@ -186,7 +186,7 @@ export async function login(req: Request, res: Response) {
   }
 }
 
-// Register new tenant with super admin
+// Register new tenant with admin user
 export async function registerTenant(req: Request, res: Response) {
   try {
     const { 
@@ -224,15 +224,15 @@ export async function registerTenant(req: Request, res: Response) {
       isActive: true
     });
 
-    // Create super admin user
+    // Create admin user for the tenant
     const hashedPassword = await hashPassword(adminPassword);
-    const superAdmin = await storage.createUser({
+    const adminUser = await storage.createUser({
       tenantId: tenant.id,
       email: adminEmail,
       firstName: adminFirstName,
       lastName: adminLastName,
       passwordHash: hashedPassword,
-      role: 'super_admin',
+      role: 'admin',
       isActive: true
     });
 
@@ -240,16 +240,16 @@ export async function registerTenant(req: Request, res: Response) {
     await storage.createDefaultRoles(tenant.id);
 
     res.status(201).json({
-      message: 'Tenant and super admin created successfully',
+      message: 'Tenant and admin created successfully',
       tenant: {
         id: tenant.id,
         name: tenant.name,
         domain: tenant.domain
       },
       adminUser: {
-        id: superAdmin.id,
-        email: superAdmin.email,
-        role: superAdmin.role
+        id: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role
       }
     });
   } catch (error) {

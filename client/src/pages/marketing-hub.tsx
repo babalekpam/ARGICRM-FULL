@@ -93,7 +93,7 @@ export default function MarketingHub() {
   const [connectionsState, setConnectionsState] = useState(integrations.reduce((acc, integration) => {
     // Platform owner gets all integrations as connected
     const userEmail = localStorage.getItem('userEmail') || localStorage.getItem('user_email');
-    const isPlatformOwner = userEmail === 'abel@argilette.org';
+    const isPlatformOwner = userEmail === 'abel@argilette.com';
     
     acc[integration.id] = isPlatformOwner ? 'connected' : integration.status;
     return acc;
@@ -140,7 +140,7 @@ export default function MarketingHub() {
   });
 
   const userEmail = localStorage.getItem('userEmail') || localStorage.getItem('user_email');
-  const isPlatformOwner = userEmail === 'abel@argilette.org';
+  const isPlatformOwner = userEmail === 'abel@argilette.com';
   
   const connectedCount = isPlatformOwner ? integrations.length : integrations.filter(i => i.status === 'connected').length;
   const availableCount = isPlatformOwner ? 0 : integrations.filter(i => i.status === 'available').length;

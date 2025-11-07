@@ -44,7 +44,7 @@ function getUserStorage(req: any) {
   const tenantId = authenticatedUser.tenantId;
   
   // Platform owner detection based on verified data only
-  const isPlatformOwner = userEmail === 'abel@argilette.com' || userEmail === 'admin@default.com';
+  const isPlatformOwner = userEmail === 'abel@argilette.com';
   
   // CRITICAL FIX: Create per-request storage instances with proper tenant isolation
   return new DatabaseStorage(userEmail, tenantId, isPlatformOwner);
@@ -455,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // SECURITY FIX: Return successful login response without token (only in secure cookie)
         // CRITICAL: Include isPlatformOwner flag for platform owners
-        const isPlatformOwner = user.email === 'abel@argilette.com' || user.email === 'admin@default.com' || user.role === 'platform_owner';
+        const isPlatformOwner = user.email === 'abel@argilette.com' || user.role === 'platform_owner';
         
         res.json({
           success: true,
@@ -542,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const jwt = await import('jsonwebtoken');
         const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'default-secret-key') as { email: string };
         const sessionEmail = decoded.email;
-        const isPlatformOwner = sessionEmail === 'abel@argilette.com' || sessionEmail === 'admin@default.com';
+        const isPlatformOwner = sessionEmail === 'abel@argilette.com';
         console.log('GET /api/me called with authenticated email:', sessionEmail);
       
       // Handle specific tenant accounts
@@ -697,7 +697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trialEndDate = new Date(now.getTime() + (15 * 24 * 60 * 60 * 1000)); // 15 days from now
       
       // CRITICAL: Detect platform owner during signup
-      const isPlatformOwner = normalizedEmail === 'abel@argilette.com' || normalizedEmail === 'admin@default.com';
+      const isPlatformOwner = normalizedEmail === 'abel@argilette.com';
       
       const user = {
         // ✅ Remove custom ID - let database generate UUID
@@ -907,7 +907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`ADMIN REQUEST: ${currentUserEmail} requested user list`);
 
         // RBAC: Only platform owners can access user list
-        const adminEmails = ['abel@argilette.com', 'admin@default.com'];
+        const adminEmails = ['abel@argilette.com'];
         if (!adminEmails.includes(currentUserEmail)) {
           return res.status(403).json({ error: 'Platform owner access required' });
         }
@@ -992,7 +992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify the user (this updates isVerified to true and clears verification token)
       // Create tenant-scoped storage for this user's verification
-      const userStorage = new DatabaseStorage(user.email, user.tenantId, user.email === 'abel@argilette.com' || user.email === 'admin@default.com');
+      const userStorage = new DatabaseStorage(user.email, user.tenantId, user.email === 'abel@argilette.com');
       await userStorage.updateUserEmailVerification(user.id, true);
       
       console.log(`✅ Email verification successful for: ${email}`);
@@ -2369,7 +2369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`ADMIN DASHBOARD REQUEST: ${currentUserEmail} requested dashboard stats`);
 
         // RBAC: Only platform owners can access dashboard
-        const adminEmails = ['abel@argilette.com', 'admin@default.com'];
+        const adminEmails = ['abel@argilette.com'];
         if (!adminEmails.includes(currentUserEmail)) {
           return res.status(403).json({ error: 'Platform owner access required' });
         }
@@ -2426,7 +2426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const decoded = verifyToken(token);
         
         // SECURITY: Only platform owners can access roles
-        const adminEmails = ['abel@argilette.com', 'admin@default.com'];
+        const adminEmails = ['abel@argilette.com'];
         if (!adminEmails.includes(decoded.email)) {
           return res.status(403).json({ error: 'Platform owner access required' });
         }
@@ -2472,7 +2472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const decoded = verifyToken(token);
         
         // SECURITY: Only platform owners can access permissions
-        const adminEmails = ['abel@argilette.com', 'admin@default.com'];
+        const adminEmails = ['abel@argilette.com'];
         if (!adminEmails.includes(decoded.email)) {
           return res.status(403).json({ error: 'Platform owner access required' });
         }
@@ -2515,7 +2515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only platform owners can access
-      if (authenticatedUser.email !== 'abel@argilette.com' && authenticatedUser.email !== 'admin@default.com') {
+      if (authenticatedUser.email !== 'abel@argilette.com') {
         return res.status(403).json({ error: 'Platform owner access required' });
       }
 
@@ -2556,7 +2556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only platform owners can access
-      if (authenticatedUser.email !== 'abel@argilette.com' && authenticatedUser.email !== 'admin@default.com') {
+      if (authenticatedUser.email !== 'abel@argilette.com') {
         return res.status(403).json({ error: 'Platform owner access required' });
       }
 
@@ -2590,7 +2590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only platform owners can access
-      if (authenticatedUser.email !== 'abel@argilette.com' && authenticatedUser.email !== 'admin@default.com') {
+      if (authenticatedUser.email !== 'abel@argilette.com') {
         return res.status(403).json({ error: 'Platform owner access required' });
       }
 
@@ -2633,7 +2633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only platform owners can access
-      if (authenticatedUser.email !== 'abel@argilette.com' && authenticatedUser.email !== 'admin@default.com') {
+      if (authenticatedUser.email !== 'abel@argilette.com') {
         return res.status(403).json({ error: 'Platform owner access required' });
       }
 
@@ -2739,7 +2739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Only platform owner can access
       const userEmail = req.headers['x-auth-email'] as string || 'abel@argilette.com';
-      if (userEmail !== 'abel@argilette.com' && userEmail !== 'admin@default.com') {
+      if (userEmail !== 'abel@argilette.com') {
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -5994,7 +5994,7 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
       const userEmail = decoded.email;
     
       // Determine user data based on JWT verified email
-      if (userEmail === 'abel@argilette.com' || userEmail === 'admin@default.com') {
+      if (userEmail === 'abel@argilette.com') {
         req.user = {
           id: 'platform-owner-1',
           email: userEmail,
@@ -6588,7 +6588,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         const sessionEmail = decoded.email;
         console.log('GET /api/me called');
         console.log('Email from JWT:', sessionEmail);
-        const isPlatformOwner = sessionEmail === 'abel@argilette.com' || sessionEmail === 'admin@default.com';
+        const isPlatformOwner = sessionEmail === 'abel@argilette.com';
       
       // Handle specific tenant accounts
       let firstName = 'Demo';
@@ -6600,9 +6600,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       } else if (sessionEmail === 'abel@argilette.com') {
         firstName = 'Abel';
         lastName = 'Argilette';
-      } else if (sessionEmail === 'admin@default.com') {
-        firstName = 'Platform';
-        lastName = 'Admin';
       } else if (sessionEmail === 'sarah.wilson@gmail.com') {
         firstName = 'Sarah';
         lastName = 'Wilson';
@@ -6708,7 +6705,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       const user = req.user;
       
       // For demo purposes, always return true for valid clients
-      const isValidClient = user.role === 'admin' || user.role === 'platform_owner' || user.role === 'super_admin' || user.role === 'demo_admin';
+      const isValidClient = user.role === 'admin' || user.role === 'platform_owner' || user.role === 'demo_admin';
 
       res.json({ 
         isValidClient,
@@ -7653,7 +7650,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
     try {
       // BACKEND GUARD: Platform owners should never get personalized data
       const userEmail = req.user?.email || 'abel@argilette.com';
-      if (['admin@default.com', 'abel@argilette.com'].includes(userEmail.toLowerCase())) {
+      if (['abel@argilette.com'].includes(userEmail.toLowerCase())) {
         console.warn('PersonalizedWelcome API blocked for platform owner:', userEmail);
         return res.status(204).send(); // No content - prevents UI blocking
       }
@@ -7706,7 +7703,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
     try {
       // BACKEND GUARD: Platform owners should never get upcoming events
       const userEmail = req.user?.email || 'abel@argilette.com';
-      if (['admin@default.com', 'abel@argilette.com'].includes(userEmail.toLowerCase())) {
+      if (['abel@argilette.com'].includes(userEmail.toLowerCase())) {
         console.warn('PersonalizedWelcome upcoming-events blocked for platform owner:', userEmail);
         return res.status(204).send(); // No content - prevents UI blocking
       }
@@ -7771,7 +7768,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   app.post('/api/collaboration/user-activity',  async (req: AuthRequest, res) => {
     try {
       const { collaborationService } = await import('./services/collaboration-service.js');
-      const userEmail = req.user?.email || 'admin@default.com';
+      const userEmail = req.user?.email || 'abel@argilette.com';
       const { activity } = req.body;
       
       collaborationService.updateUserActivity(userEmail, activity);
@@ -7792,7 +7789,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   app.post('/api/collaboration/user-status',  async (req: AuthRequest, res) => {
     try {
       const { collaborationService } = await import('./services/collaboration-service.js');
-      const userEmail = req.user?.email || 'admin@default.com';
+      const userEmail = req.user?.email || 'abel@argilette.com';
       const { status } = req.body;
       
       collaborationService.updateUserStatus(userEmail, status);
@@ -7813,7 +7810,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   app.post('/api/collaboration/page-navigation',  async (req: AuthRequest, res) => {
     try {
       const { collaborationService } = await import('./services/collaboration-service.js');
-      const userEmail = req.user?.email || 'admin@default.com';
+      const userEmail = req.user?.email || 'abel@argilette.com';
       const { page, section } = req.body;
       
       collaborationService.updateUserLocation(userEmail, page, section);
@@ -7932,7 +7929,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       description: "Documents related to client projects",
       parentId: null,
       isPrivate: false,
-      createdBy: "admin@default.com",
+      createdBy: "abel@argilette.com",
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -7942,7 +7939,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       description: "Human resources and employee documents",
       parentId: null,
       isPrivate: true,
-      createdBy: "admin@default.com",
+      createdBy: "abel@argilette.com",
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -7970,8 +7967,8 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         version: 1,
         tags: Array.isArray(req.body.tags) ? req.body.tags : (typeof req.body.tags === 'string' ? req.body.tags.split(',').map((t: string) => t.trim()) : []),
         isPrivate: req.body.isPrivate || false,
-        createdBy: req.body.createdBy || "admin@default.com",
-        updatedBy: req.body.createdBy || "admin@default.com",
+        createdBy: req.body.createdBy || "abel@argilette.com",
+        updatedBy: req.body.createdBy || "abel@argilette.com",
         createdAt: new Date(),
         updatedAt: new Date(),
         downloadCount: 0,
@@ -8002,7 +7999,7 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         description: req.body.description || null,
         parentId: req.body.parentId || null,
         isPrivate: req.body.isPrivate || false,
-        createdBy: req.body.createdBy || "admin@default.com",
+        createdBy: req.body.createdBy || "abel@argilette.com",
         createdAt: new Date(),
         updatedAt: new Date()
       };

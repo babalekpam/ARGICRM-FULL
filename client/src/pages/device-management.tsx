@@ -113,7 +113,7 @@ export default function DeviceManagement() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-auth-email': 'abel@argilette.org'
+        'x-auth-email': 'abel@argilette.com'
       },
       body: JSON.stringify(device),
     }).then(res => res.json()),
@@ -141,7 +141,7 @@ export default function DeviceManagement() {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'x-auth-email': 'abel@argilette.org'
+        'x-auth-email': 'abel@argilette.com'
       },
       body: JSON.stringify(device),
     }).then(res => res.json()),
@@ -159,7 +159,7 @@ export default function DeviceManagement() {
     mutationFn: (id: string) => fetch(`/api/device-management/devices/${id}`, {
       method: 'DELETE',
       headers: {
-        'x-auth-email': 'abel@argilette.org'
+        'x-auth-email': 'abel@argilette.com'
       }
     }),
     onSuccess: () => {

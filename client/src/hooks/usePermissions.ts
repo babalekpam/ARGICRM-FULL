@@ -7,7 +7,7 @@ export function usePermissions() {
     if (!user) return false;
     
     // Platform owner has all permissions
-    if (user.email === 'admin@default.com' || user.role === 'platform_owner') {
+    if (user.email === 'abel@argilette.com' || user.role === 'platform_owner') {
       return true;
     }
     

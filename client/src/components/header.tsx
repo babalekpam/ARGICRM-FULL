@@ -15,8 +15,7 @@ import Logo from "./logo";
 export default function Header() {
   const { user, logout } = useAuth();
   const isPlatformOwner = user?.isPlatformOwner === true || 
-                          user?.email === 'abel@argilette.com' || 
-                          user?.email === 'admin@default.com' ||
+                          user?.email === 'abel@argilette.com' ||
                           user?.role === 'platform_owner';
 
   return (

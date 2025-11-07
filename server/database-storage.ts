@@ -71,7 +71,7 @@ export class DatabaseStorage implements IStorage {
 
   // ================== CONTACT OPERATIONS ==================
   async getContacts(): Promise<Contact[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       // Platform owner sees all test data
       return db.select().from(contacts).orderBy(desc(contacts.createdAt));
     } else {
@@ -85,7 +85,7 @@ export class DatabaseStorage implements IStorage {
   async getContact(id: string): Promise<Contact | undefined> {
     let query = db.select().from(contacts).where(eq(contacts.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(contacts.tenantId, this.tenantId));
     }
     
@@ -109,7 +109,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...contactData, updatedAt: new Date() })
       .where(eq(contacts.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(contacts.tenantId, this.tenantId));
     }
     
@@ -120,7 +120,7 @@ export class DatabaseStorage implements IStorage {
   async deleteContact(id: string): Promise<boolean> {
     let deleteQuery = db.delete(contacts).where(eq(contacts.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(contacts.tenantId, this.tenantId));
     }
     
@@ -130,7 +130,7 @@ export class DatabaseStorage implements IStorage {
 
   // ================== ACCOUNT OPERATIONS ==================
   async getAccounts(): Promise<Account[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(accounts).orderBy(desc(accounts.createdAt));
     } else {
       return db.select().from(accounts)
@@ -142,7 +142,7 @@ export class DatabaseStorage implements IStorage {
   async getAccount(id: string): Promise<Account | undefined> {
     let query = db.select().from(accounts).where(eq(accounts.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(accounts.tenantId, this.tenantId));
     }
     
@@ -166,7 +166,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...accountData, updatedAt: new Date() })
       .where(eq(accounts.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(accounts.tenantId, this.tenantId));
     }
     
@@ -177,7 +177,7 @@ export class DatabaseStorage implements IStorage {
   async deleteAccount(id: string): Promise<boolean> {
     let deleteQuery = db.delete(accounts).where(eq(accounts.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(accounts.tenantId, this.tenantId));
     }
     
@@ -187,7 +187,7 @@ export class DatabaseStorage implements IStorage {
 
   // ================== LEAD OPERATIONS ==================
   async getLeads(): Promise<Lead[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(leads).orderBy(desc(leads.createdAt));
     } else {
       return db.select().from(leads)
@@ -199,7 +199,7 @@ export class DatabaseStorage implements IStorage {
   async getLead(id: string): Promise<Lead | undefined> {
     let query = db.select().from(leads).where(eq(leads.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(leads.tenantId, this.tenantId));
     }
     
@@ -223,7 +223,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...leadData, updatedAt: new Date() })
       .where(eq(leads.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(leads.tenantId, this.tenantId));
     }
     
@@ -234,7 +234,7 @@ export class DatabaseStorage implements IStorage {
   async deleteLead(id: string): Promise<boolean> {
     let deleteQuery = db.delete(leads).where(eq(leads.id, parseInt(id)));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(leads.tenantId, this.tenantId));
     }
     
@@ -244,7 +244,7 @@ export class DatabaseStorage implements IStorage {
 
   // ================== DEAL OPERATIONS ==================
   async getDeals(): Promise<Deal[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(deals).orderBy(desc(deals.createdAt));
     } else {
       return db.select().from(deals)
@@ -256,7 +256,7 @@ export class DatabaseStorage implements IStorage {
   async getDeal(id: string): Promise<Deal | undefined> {
     let query = db.select().from(deals).where(eq(deals.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(deals.tenantId, this.tenantId));
     }
     
@@ -280,7 +280,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...dealData, updatedAt: new Date() })
       .where(eq(deals.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(deals.tenantId, this.tenantId));
     }
     
@@ -291,7 +291,7 @@ export class DatabaseStorage implements IStorage {
   async deleteDeal(id: string): Promise<boolean> {
     let deleteQuery = db.delete(deals).where(eq(deals.id, parseInt(id)));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(deals.tenantId, this.tenantId));
     }
     
@@ -301,7 +301,7 @@ export class DatabaseStorage implements IStorage {
 
   // ================== TASK OPERATIONS ==================
   async getTasks(): Promise<Task[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(tasks).orderBy(desc(tasks.createdAt));
     } else {
       return db.select().from(tasks)
@@ -313,7 +313,7 @@ export class DatabaseStorage implements IStorage {
   async getTask(id: string): Promise<Task | undefined> {
     let query = db.select().from(tasks).where(eq(tasks.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(tasks.tenantId, this.tenantId));
     }
     
@@ -337,7 +337,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...taskData, updatedAt: new Date() })
       .where(eq(tasks.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(tasks.tenantId, this.tenantId));
     }
     
@@ -348,7 +348,7 @@ export class DatabaseStorage implements IStorage {
   async deleteTask(id: string): Promise<boolean> {
     let deleteQuery = db.delete(tasks).where(eq(tasks.id, parseInt(id)));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(tasks.tenantId, this.tenantId));
     }
     
@@ -358,7 +358,7 @@ export class DatabaseStorage implements IStorage {
 
   // ================== TICKET OPERATIONS ==================
   async getTickets(): Promise<Ticket[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(tickets).orderBy(desc(tickets.createdAt));
     } else {
       return db.select().from(tickets)
@@ -370,7 +370,7 @@ export class DatabaseStorage implements IStorage {
   async getTicket(id: string): Promise<Ticket | undefined> {
     let query = db.select().from(tickets).where(eq(tickets.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(tickets.tenantId, this.tenantId));
     }
     
@@ -394,7 +394,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...ticketData, updatedAt: new Date() })
       .where(eq(tickets.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(tickets.tenantId, this.tenantId));
     }
     
@@ -405,7 +405,7 @@ export class DatabaseStorage implements IStorage {
   async deleteTicket(id: string): Promise<boolean> {
     let deleteQuery = db.delete(tickets).where(eq(tickets.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(tickets.tenantId, this.tenantId));
     }
     
@@ -466,7 +466,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
     
     // Apply tenant filtering for regular users (not platform owner)
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(users.tenantId, this.tenantId));
     }
     
@@ -480,7 +480,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
     
     // Apply tenant filtering for regular users (not platform owner)
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(users.tenantId, this.tenantId));
     }
     
@@ -543,7 +543,7 @@ export class DatabaseStorage implements IStorage {
 
   // Add other missing methods with basic implementations
   async getCampaigns(): Promise<Campaign[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
     } else {
       return db.select().from(campaigns)
@@ -563,7 +563,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEmployees(): Promise<Employee[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(employees).orderBy(desc(employees.createdAt));
     } else {
       return db.select().from(employees)
@@ -584,7 +584,7 @@ export class DatabaseStorage implements IStorage {
 
   // ================== APPOINTMENT OPERATIONS ==================
   async getAppointments(): Promise<Appointment[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(appointments).orderBy(desc(appointments.createdAt));
     } else {
       return db.select().from(appointments)
@@ -622,7 +622,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjects(): Promise<Project[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(projects).orderBy(desc(projects.createdAt));
     } else {
       return db.select().from(projects)
@@ -642,7 +642,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getInvoices(): Promise<Invoice[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(invoices).orderBy(desc(invoices.createdAt));
     } else {
       return db.select().from(invoices)
@@ -662,7 +662,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSentimentAnalyses(): Promise<SentimentAnalysis[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return [];
     } else {
       return [];
@@ -1273,7 +1273,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAppointments(): Promise<Appointment[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(appointments).orderBy(desc(appointments.createdAt));
     } else {
       return db.select().from(appointments)
@@ -1338,7 +1338,7 @@ export class DatabaseStorage implements IStorage {
   
   // Store operations
   async getAllStores(): Promise<Store[]> {
-    if (this.isPlatformOwner && (this.userEmail === 'admin@default.com' || this.userEmail === 'abel@argilette.com')) {
+    if (this.isPlatformOwner && this.userEmail === 'abel@argilette.com') {
       return db.select().from(stores).orderBy(desc(stores.createdAt));
     } else {
       return db.select().from(stores)
@@ -1354,7 +1354,7 @@ export class DatabaseStorage implements IStorage {
   async getStore(id: string): Promise<Store | undefined> {
     let query = db.select().from(stores).where(eq(stores.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(stores.tenantId, this.tenantId));
     }
     
@@ -1413,7 +1413,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...storeData, updatedAt: new Date() })
       .where(eq(stores.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(stores.tenantId, this.tenantId));
     }
     
@@ -1424,7 +1424,7 @@ export class DatabaseStorage implements IStorage {
   async deleteStore(id: string): Promise<boolean> {
     let deleteQuery = db.delete(stores).where(eq(stores.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(stores.tenantId, this.tenantId));
     }
     
@@ -1436,7 +1436,7 @@ export class DatabaseStorage implements IStorage {
   async getOrders(filters?: { storeId?: string; status?: string; limit?: number }): Promise<EcommerceOrder[]> {
     let query = db.select().from(ecommerceOrders);
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(ecommerceOrders.tenantId, this.tenantId));
     }
 
@@ -1460,7 +1460,7 @@ export class DatabaseStorage implements IStorage {
   async getOrder(id: string): Promise<EcommerceOrder | undefined> {
     let query = db.select().from(ecommerceOrders).where(eq(ecommerceOrders.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(ecommerceOrders.tenantId, this.tenantId));
     }
     
@@ -1484,7 +1484,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...orderData, updatedAt: new Date() })
       .where(eq(ecommerceOrders.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(ecommerceOrders.tenantId, this.tenantId));
     }
     
@@ -1495,7 +1495,7 @@ export class DatabaseStorage implements IStorage {
   async deleteOrder(id: string): Promise<boolean> {
     let deleteQuery = db.delete(ecommerceOrders).where(eq(ecommerceOrders.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(ecommerceOrders.tenantId, this.tenantId));
     }
     
@@ -1507,7 +1507,7 @@ export class DatabaseStorage implements IStorage {
   async getCustomers(storeId?: string): Promise<Customer[]> {
     let query = db.select().from(customers);
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(customers.tenantId, this.tenantId));
     }
 
@@ -1521,7 +1521,7 @@ export class DatabaseStorage implements IStorage {
   async getCustomer(id: string): Promise<Customer | undefined> {
     let query = db.select().from(customers).where(eq(customers.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       query = query.where(eq(customers.tenantId, this.tenantId));
     }
     
@@ -1545,7 +1545,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...customerData, updatedAt: new Date() })
       .where(eq(customers.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       updateQuery = updateQuery.where(eq(customers.tenantId, this.tenantId));
     }
     
@@ -1556,7 +1556,7 @@ export class DatabaseStorage implements IStorage {
   async deleteCustomer(id: string): Promise<boolean> {
     let deleteQuery = db.delete(customers).where(eq(customers.id, id));
     
-    if (!this.isPlatformOwner || (this.userEmail !== 'admin@default.com' && this.userEmail !== 'abel@argilette.com')) {
+    if (!this.isPlatformOwner || this.userEmail !== 'abel@argilette.com') {
       deleteQuery = deleteQuery.where(eq(customers.tenantId, this.tenantId));
     }
     

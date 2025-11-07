@@ -54,8 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ...userData,
               ...serverUserData.user,
               isPlatformOwner: serverUserData.user?.isPlatformOwner || 
-                               userData.email === 'abel@argilette.com' || 
-                               userData.email === 'admin@default.com' ||
+                               userData.email === 'abel@argilette.com' ||
                                userData.role === 'platform_owner'
             };
             
@@ -71,8 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const cachedUser: User = {
               ...userData,
               isPlatformOwner: userData.isPlatformOwner || 
-                              userData.email === 'abel@argilette.com' || 
-                              userData.email === 'admin@default.com' ||
+                              userData.email === 'abel@argilette.com' ||
                               userData.role === 'platform_owner'
             };
             setUser(cachedUser);
@@ -85,8 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const cachedUser: User = {
               ...userData,
               isPlatformOwner: userData.isPlatformOwner || 
-                              userData.email === 'abel@argilette.com' || 
-                              userData.email === 'admin@default.com' ||
+                              userData.email === 'abel@argilette.com' ||
                               userData.role === 'platform_owner'
             };
             setUser(cachedUser);

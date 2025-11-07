@@ -58,9 +58,9 @@ const CollaborationIndicators: React.FC = () => {
     const initializeUsers = () => {
       const sampleUsers: CollaborationUser[] = [
         {
-          id: 'abel@argilette.org',
+          id: 'abel@argilette.com',
           name: 'Platform Administrator',
-          email: 'abel@argilette.org',
+          email: 'abel@argilette.com',
           status: 'online',
           lastActivity: new Date(),
           currentActivity: {
@@ -81,7 +81,7 @@ const CollaborationIndicators: React.FC = () => {
       const sampleActivities: RealtimeActivity[] = [
         {
           id: '1',
-          userId: 'admin@default.com',
+          userId: 'abel@argilette.com',
           userName: 'Platform Admin',
           type: 'view',
           resource: 'Dashboard',
@@ -91,7 +91,7 @@ const CollaborationIndicators: React.FC = () => {
         },
         {
           id: '2',
-          userId: 'admin@default.com',
+          userId: 'abel@argilette.com',
           userName: 'Platform Admin',
           type: 'view',
           resource: 'System Settings',
@@ -101,7 +101,7 @@ const CollaborationIndicators: React.FC = () => {
         },
         {
           id: '3',
-          userId: 'admin@default.com',
+          userId: 'abel@argilette.com',
           userName: 'Platform Admin',
           type: 'view',
           resource: 'User Management',

@@ -55,7 +55,7 @@ export default function FeatureTest() {
 
   const hasPermission = (permission: string | null) => {
     if (!permission) return true;
-    if (user?.role === "super_admin") return true;
+    if (user?.role === "platform_owner") return true;
     return user?.permissions?.includes(permission) || false;
   };
 
@@ -67,7 +67,7 @@ export default function FeatureTest() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Feature Access Test
-          <Badge variant={user?.role === "super_admin" ? "default" : "secondary"}>
+          <Badge variant={user?.role === "platform_owner" ? "default" : "secondary"}>
             {user?.role || "No Role"}
           </Badge>
         </CardTitle>

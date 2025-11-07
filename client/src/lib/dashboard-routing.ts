@@ -4,8 +4,8 @@
  */
 
 export function getDashboardPath(userEmail?: string): string {
-  // Only admin@default.com gets platform owner dashboard
-  const isPlatformOwner = userEmail === 'admin@default.com';
+  // Only abel@argilette.com gets platform owner dashboard
+  const isPlatformOwner = userEmail === 'abel@argilette.com';
   
   return isPlatformOwner ? '/dashboard' : '/user-dashboard';
 }

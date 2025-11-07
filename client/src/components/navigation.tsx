@@ -90,11 +90,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
     setCollapsedSections(newCollapsed);
   };
   
-  // Check if user is platform owner - ONLY abel@argilette.com or admin@default.com
+  // Check if user is platform owner - ONLY abel@argilette.com
   const isPlatformOwner = Boolean(
     user?.isPlatformOwner === true ||
-    user?.email === 'abel@argilette.com' || 
-    user?.email === 'admin@default.com' ||
+    user?.email === 'abel@argilette.com' ||
     user?.role === 'platform_owner'
   );
 

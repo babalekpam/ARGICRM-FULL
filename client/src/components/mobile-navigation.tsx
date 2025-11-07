@@ -60,8 +60,8 @@ export default function MobileNavigation() {
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   
-  // Check if user is platform owner - ONLY abel@argilette.org or admin@default.com
-  const isPlatformOwner = Boolean(user?.email === 'abel@argilette.org' || user?.email === 'admin@default.com');
+  // Check if user is platform owner - ONLY abel@argilette.com
+  const isPlatformOwner = Boolean(user?.email === 'abel@argilette.com');
 
   const navigationItems = [
     {

@@ -157,8 +157,8 @@ export default function LeadsPage() {
   const [activeTab, setActiveTab] = useState('leads');
   const queryClient = useQueryClient();
 
-  // Check if user is platform owner - admin@default.com or abel@argilette.org
-  const isPlatformOwner = user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org';
+  // Check if user is platform owner
+  const isPlatformOwner = user?.email === 'abel@argilette.com';
 
   const calculateLeadScore = (template: LeadTemplate, formData: Record<string, any>) => {
     let score = template.scoring.baseScore;

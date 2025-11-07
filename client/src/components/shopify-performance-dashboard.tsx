@@ -59,7 +59,7 @@ const ShopifyPerformanceDashboard = () => {
     queryKey: ['/api/ecommerce/stores'],
     queryFn: async () => {
       return await apiRequest('GET', '/api/ecommerce/stores', undefined, {
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
     }
@@ -70,7 +70,7 @@ const ShopifyPerformanceDashboard = () => {
     queryKey: ['/api/ecommerce/performance', selectedStore],
     queryFn: async () => {
       const response = await apiRequest('GET', `/api/ecommerce/performance/${selectedStore}`, undefined, {
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
       return response.metrics;
@@ -83,7 +83,7 @@ const ShopifyPerformanceDashboard = () => {
     queryKey: ['/api/ecommerce/optimization', selectedStore],
     queryFn: async () => {
       const response = await apiRequest('GET', `/api/ecommerce/optimization/${selectedStore}`, undefined, {
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
       return response.optimization;
@@ -96,7 +96,7 @@ const ShopifyPerformanceDashboard = () => {
     queryKey: ['/api/ecommerce/features', selectedStore],
     queryFn: async () => {
       const response = await apiRequest('GET', `/api/ecommerce/features/${selectedStore}`, undefined, {
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
       return response.features;
@@ -109,7 +109,7 @@ const ShopifyPerformanceDashboard = () => {
     queryKey: ['/api/ecommerce/benchmarks'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/ecommerce/benchmarks', undefined, {
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
       return response.benchmarks;

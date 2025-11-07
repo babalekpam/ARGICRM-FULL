@@ -49,7 +49,7 @@ export default function ApiExplorerPage() {
   const [requestBody, setRequestBody] = useState<string>('');
   const [headers, setHeaders] = useState<Record<string, string>>({
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer demo-token-admin@default.com'
+    'Authorization': 'Bearer demo-token'
   });
   const [response, setResponse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);

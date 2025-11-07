@@ -22,7 +22,7 @@ export async function resolveTenant(req: TenantRequest, res: Response, next: Nex
   try {
     // PLATFORM OWNER BYPASS: Check if user is platform owner
     const userEmail = (req as any).user?.email;
-    const isPlatformOwner = userEmail === 'abel@argilette.com' || userEmail === 'admin@default.com';
+    const isPlatformOwner = userEmail === 'abel@argilette.com';
     
     if (isPlatformOwner) {
       // Platform owners get a special tenant with full access
@@ -90,7 +90,7 @@ export async function validateUserTenant(req: TenantRequest, res: Response, next
     }
 
     // PLATFORM OWNER BYPASS: Platform owners can access any tenant
-    const isPlatformOwner = req.user.email === 'abel@argilette.com' || req.user.email === 'admin@default.com';
+    const isPlatformOwner = req.user.email === 'abel@argilette.com';
     if (isPlatformOwner) {
       return next();
     }
@@ -114,13 +114,13 @@ export function requirePermission(permission: string) {
     }
 
     // PLATFORM OWNER BYPASS: Platform owners have all permissions
-    const isPlatformOwner = req.user.email === 'abel@argilette.com' || req.user.email === 'admin@default.com';
+    const isPlatformOwner = req.user.email === 'abel@argilette.com';
     if (isPlatformOwner) {
       return next();
     }
 
-    // Super admin has all permissions
-    if (req.user.role === 'super_admin') {
+    // Platform owner has all permissions
+    if (req.user.role === 'platform_owner') {
       return next();
     }
 

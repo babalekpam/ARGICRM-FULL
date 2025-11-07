@@ -126,7 +126,7 @@ export default function Welcome() {
           </div>
 
           <p className="text-sm text-gray-500 mt-4">
-            Demo: admin@default.com / password123 • No signup required
+            Demo: Try the platform with sample data • No signup required
           </p>
         </div>
       </section>

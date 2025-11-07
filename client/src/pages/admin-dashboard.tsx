@@ -549,7 +549,7 @@ export default function AdminDashboard() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge variant={user.role === 'super_admin' ? 'default' : 'secondary'}>
+                            <Badge variant={user.role === 'platform_owner' ? 'default' : 'secondary'}>
                               {user.role}
                             </Badge>
                           </td>

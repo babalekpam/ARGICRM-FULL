@@ -67,8 +67,8 @@ export class WelcomeService {
       const { OnboardingService } = await import('./onboarding-service.js');
       const onboardingService = new OnboardingService(this.storage);
       
-      // Get user ID from email - handle both admin emails
-      const isPlatformOwner = email === 'admin@default.com' || email === 'abel@argilette.com';
+      // Get user ID from email
+      const isPlatformOwner = email === 'abel@argilette.com';
       const userId = isPlatformOwner ? 'platform-owner-1' : 'demo-user-1';
       const tenantId = 'default-tenant';
       

@@ -554,7 +554,7 @@ export default function AdvancedProjectManagement() {
       const projectData = {
         ...data,
         tenantId: "default-tenant",
-        createdBy: "admin@default.com"
+        createdBy: "system"
       };
       
       await apiRequest("POST", "/api/projects", projectData);

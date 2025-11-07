@@ -38,8 +38,7 @@ export default function ProtectedRoute({
 
   // Enhanced platform owner check with multiple validation methods
   const isPlatformOwner = user?.isPlatformOwner === true ||
-                         user?.email === 'abel@argilette.com' || 
-                         user?.email === 'admin@default.com' || 
+                         user?.email === 'abel@argilette.com' ||
                          user?.role === 'platform_owner';
   
   // If permission requires platform access and user is not platform owner

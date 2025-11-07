@@ -90,7 +90,7 @@ class CollaborationService extends EventEmitter {
     // Initialize some activities for platform owner only
     const platformOwnerActivities = [
       {
-        userId: 'admin@default.com',
+        userId: 'abel@argilette.com',
         userName: 'Platform Admin',
         type: 'view' as const,
         resource: 'Dashboard',
@@ -98,7 +98,7 @@ class CollaborationService extends EventEmitter {
         timestamp: new Date(Date.now() - 60000) // 1 minute ago
       },
       {
-        userId: 'admin@default.com',
+        userId: 'abel@argilette.com',
         userName: 'Platform Admin',
         type: 'view' as const,
         resource: 'User Management',
@@ -106,7 +106,7 @@ class CollaborationService extends EventEmitter {
         timestamp: new Date(Date.now() - 180000) // 3 minutes ago
       },
       {
-        userId: 'admin@default.com',
+        userId: 'abel@argilette.com',
         userName: 'Platform Admin',
         type: 'view' as const,
         resource: 'System Settings',

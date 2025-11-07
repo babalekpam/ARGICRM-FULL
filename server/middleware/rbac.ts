@@ -54,7 +54,7 @@ export function requireAdmin(req: AuthenticatedRequest, res: Response, next: Nex
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  const isAdmin = ['platform_owner', 'admin', 'super_admin'].includes(req.user.role);
+  const isAdmin = ['platform_owner', 'admin'].includes(req.user.role);
 
   if (!isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });

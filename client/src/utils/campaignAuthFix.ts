@@ -10,7 +10,7 @@ export function initializeCampaignAuth() {
     console.log('🔧 Setting up platform owner authentication for campaigns');
     
     // Set up platform owner authentication
-    const platformEmail = 'abel@argilette.org';
+    const platformEmail = 'abel@argilette.com';
     const uniqueToken = `demo-auth-token-${Date.now()}`;
     
     localStorage.setItem('user_email', platformEmail);
@@ -28,7 +28,7 @@ export function initializeCampaignAuth() {
 }
 
 export function getAuthHeaders(): Record<string, string> {
-  const userEmail = localStorage.getItem('user_email') || 'abel@argilette.org';
+  const userEmail = localStorage.getItem('user_email') || 'abel@argilette.com';
   const authToken = localStorage.getItem('auth_token') || 'demo-token';
   
   return {

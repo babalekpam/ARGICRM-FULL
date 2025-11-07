@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function FeatureTogglesPage() {
   const { user } = useAuth();
-  const isPlatformOwner = user?.email === 'admin@default.com';
+  const isPlatformOwner = user?.email === 'abel@argilette.com';
   
   const [features, setFeatures] = useState([
     {

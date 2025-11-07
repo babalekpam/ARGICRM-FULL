@@ -9,8 +9,7 @@ export default function DashboardRedirect() {
   // Check if user is platform owner
   const isPlatformOwner = Boolean(
     user?.isPlatformOwner === true ||
-    user?.email === 'abel@argilette.com' || 
-    user?.email === 'admin@default.com' ||
+    user?.email === 'abel@argilette.com' ||
     user?.role === 'platform_owner'
   );
   

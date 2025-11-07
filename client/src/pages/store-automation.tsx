@@ -85,7 +85,7 @@ export default function StoreAutomation() {
     queryKey: ['/api/automation/rules'],
     queryFn: () => apiRequest('GET', '/api/automation/rules', undefined, {
       'x-tenant-id': 'platform-tenant',
-      'x-auth-email': 'abel@argilette.org',
+      'x-auth-email': 'abel@argilette.com',
       'authorization': 'Bearer demo-token'
     }),
     retry: false
@@ -96,7 +96,7 @@ export default function StoreAutomation() {
     queryKey: ['/api/automation/insights'],
     queryFn: () => apiRequest('GET', '/api/automation/insights', undefined, {
       'x-tenant-id': 'platform-tenant',
-      'x-auth-email': 'abel@argilette.org',
+      'x-auth-email': 'abel@argilette.com',
       'authorization': 'Bearer demo-token'
     })
   });
@@ -106,7 +106,7 @@ export default function StoreAutomation() {
     queryKey: ['/api/automation/suggestions'],
     queryFn: () => apiRequest('GET', '/api/automation/suggestions', undefined, {
       'x-tenant-id': 'platform-tenant',
-      'x-auth-email': 'abel@argilette.org',
+      'x-auth-email': 'abel@argilette.com',
       'authorization': 'Bearer demo-token'
     })
   });
@@ -116,7 +116,7 @@ export default function StoreAutomation() {
     queryKey: ['/api/automation/templates'],
     queryFn: () => apiRequest('GET', '/api/automation/templates', undefined, {
       'x-tenant-id': 'platform-tenant',
-      'x-auth-email': 'abel@argilette.org',
+      'x-auth-email': 'abel@argilette.com',
       'authorization': 'Bearer demo-token'
     })
   });
@@ -126,7 +126,7 @@ export default function StoreAutomation() {
     mutationFn: async (ruleData: any) => {
       return await apiRequest('POST', '/api/automation/rules', ruleData, {
         'x-tenant-id': 'platform-tenant',
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
     },
@@ -150,7 +150,7 @@ export default function StoreAutomation() {
     mutationFn: async ({ ruleId, enabled }: { ruleId: string; enabled: boolean }) => {
       return await apiRequest('PATCH', `/api/automation/rules/${ruleId}/toggle`, { enabled }, {
         'x-tenant-id': 'platform-tenant',
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
     },
@@ -168,7 +168,7 @@ export default function StoreAutomation() {
     mutationFn: async (ruleId: string) => {
       return await apiRequest('DELETE', `/api/automation/rules/${ruleId}`, undefined, {
         'x-tenant-id': 'platform-tenant',
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
     },
@@ -184,7 +184,7 @@ export default function StoreAutomation() {
     mutationFn: async ({ ruleId, testData }: { ruleId: string; testData: any }) => {
       return await apiRequest('POST', `/api/automation/rules/${ruleId}/test`, testData, {
         'x-tenant-id': 'platform-tenant',
-        'x-auth-email': 'abel@argilette.org',
+        'x-auth-email': 'abel@argilette.com',
         'authorization': 'Bearer demo-token'
       });
     },

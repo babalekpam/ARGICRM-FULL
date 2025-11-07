@@ -39,13 +39,13 @@ export function registerTenantPaymentRoutes(app: Express) {
     
     if (isValidToken) {
       // Determine user data based on email - STRICT EMAIL CHECK
-      if (userEmail === 'abel@argilette.com' || userEmail === 'admin@default.com') {
+      if (userEmail === 'abel@argilette.com') {
         req.user = {
           id: 'platform-owner-1',
           email: userEmail,
           role: 'platform_owner',
-          firstName: userEmail === 'abel@argilette.com' ? 'Abel' : 'John',
-          lastName: userEmail === 'abel@argilette.com' ? 'Gutierrez' : 'Smith',
+          firstName: 'Abel',
+          lastName: 'Gutierrez',
           tenantId: '00000000-0000-0000-0000-000000000001'
         };
       } else {

@@ -18,8 +18,8 @@ export default function ContactList() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
 
-  // Check if user is platform owner - ONLY abel@argilette.org and admin@default.com
-  const isPlatformOwner = user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org';
+  // Check if user is platform owner - ONLY abel@argilette.com
+  const isPlatformOwner = user?.email === 'abel@argilette.com';
 
   const { data: allContacts = [], isLoading, refetch, error } = useQuery<Contact[]>({
     queryKey: ["/api/contacts"],

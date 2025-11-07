@@ -455,19 +455,7 @@ export class MemStorage implements IStorage {
     this.currentCurrencyId = 1;
     this.currentTaxRateId = 1;
 
-    // Create test users for login functionality
-    this.users.set('admin@default.com', {
-      id: '1',
-      email: 'admin@default.com',
-      password: 'admin',
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'admin',
-      isActive: true,
-      tenantId: 'default-tenant',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
+    // Create test users for login functionality (removed - abel@argilette.com is the platform owner)
 
     this.users.set('user@test.com', {
       id: '2',

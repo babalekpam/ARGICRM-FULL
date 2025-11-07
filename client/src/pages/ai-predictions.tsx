@@ -33,7 +33,7 @@ export default function AIPredictionsPage() {
   const { user } = useAuth();
   const [predictions, setPredictions] = useState<PredictionResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const isPlatformOwner = user?.email === 'admin@default.com' || user?.role === 'platform_owner';
+  const isPlatformOwner = user?.email === 'abel@argilette.com' || user?.role === 'platform_owner';
 
   const runBehaviorPrediction = async () => {
     setIsLoading(true);

@@ -153,7 +153,7 @@ export default function SuperAdminDashboard() {
   const queryClient = useQueryClient();
   
   // Check if user is a platform owner
-  const isPlatformOwner = user?.email === 'abel@argilette.com' || user?.email === 'admin@default.com';
+  const isPlatformOwner = user?.email === 'abel@argilette.com';
   const currentUserEmail = user?.email || 'Not logged in';
 
   // Tenant management functions
@@ -368,7 +368,7 @@ export default function SuperAdminDashboard() {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Access Denied</AlertTitle>
           <AlertDescription>
-            You must be logged in as a platform owner (abel@argilette.com or admin@default.com) to access this dashboard.
+            You must be logged in as a platform owner (abel@argilette.com) to access this dashboard.
             Current account: <strong>{currentUserEmail}</strong>
           </AlertDescription>
         </Alert>
