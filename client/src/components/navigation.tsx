@@ -306,7 +306,8 @@ export default function Navigation({ onLogout }: NavigationProps) {
               const platformFeatures = ['/admin-dashboard', '/super-admin-dashboard', '/integrity-dashboard', '/performance-dashboard'];
               const isCore = coreFeatures.includes(item.path) || platformFeatures.includes(item.path);
               
-              if (!canAccess && !isCore) {
+              // PLATFORM OWNER PRIVILEGE: Platform owners get full unrestricted access to ALL features forever
+              if (!canAccess && !isCore && !isPlatformOwner) {
                 return (
                   <div
                     key={item.path}
