@@ -18,6 +18,10 @@ Feature Removal: Completely removed Sentiment Analysis feature - Deleted all fro
 
 The application features a monorepo structure with a React 18 frontend (Vite, TypeScript, Shadcn/ui, TanStack Query, Wouter, React Hook Form with Zod) and an Express.js backend (TypeScript). PostgreSQL with Drizzle ORM is used for data persistence.
 
+### Recent Fixes (November 2025)
+- **Navigation Component Router Migration (2025-11-07)**: Fixed critical bug in main Navigation component (client/src/components/navigation.tsx) where all sidebar links were broken due to incorrect router usage. Migrated from `react-router-dom` to `wouter` by: (1) updating imports, (2) changing `useLocation()` from object to tuple destructuring, (3) updating `isActive()` function from `location.pathname === path` to `location === path`, (4) changing all Link components from `to=` to `href=` prop. This fix affects ALL navigation links across the platform including Link Building, SEO features, CRM modules, and enterprise features.
+- **A/B Testing Pages Router Migration (2025-11-07)**: Fixed A/B test creation functionality by migrating all 3 pages (ab-testing.tsx, ab-testing-create.tsx, ab-testing-details.tsx) from `react-router-dom` to `wouter`. Fixed apiRequest() calls to use correct signature and updated navigation hooks. Resolved 9 TypeScript errors.
+
 ### UI/UX Decisions
 - Consistent professional styling with gradient headers, animated badges, and modern design patterns inspired by Linear, Notion, and Stripe.
 - Horizontal top tabs for navigation and mobile-first responsive design.

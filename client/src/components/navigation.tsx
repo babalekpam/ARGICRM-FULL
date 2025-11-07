@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { saasFeatures } from "@/services/saas-features";
 import { useAuth } from "@/hooks/useAuth";
@@ -70,7 +70,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ onLogout }: NavigationProps) {
-  const location = useLocation();
+  const [location] = useLocation();
   const { user, logout } = useAuth();
   const { status, downloadForOffline } = useOffline();
   const { toast } = useToast();
@@ -78,7 +78,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
   // State for managing collapsed/expanded sections
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location === path;
   
   const toggleSection = (sectionKey: string) => {
     const newCollapsed = new Set(collapsedSections);
@@ -328,7 +328,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
               return (
                 <Link 
                   key={item.path} 
-                  to={item.path}
+                  href={item.path}
                   className={cn(
                     "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all-smooth cursor-pointer focus-ring relative",
                     isActive(item.path)
