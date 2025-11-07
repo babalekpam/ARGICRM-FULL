@@ -242,9 +242,9 @@ export default function SuperAdminDashboard() {
   });
 
   const tenants: TenantOverview[] = tenantData?.tenants || [];
-  const platformMetrics: PlatformMetrics = platformData?.stats || {};
-  const auditLogs: AuditLog[] = auditData?.logs || [];
-  const complianceMatrix: ComplianceMatrix[] = complianceData?.complianceMatrix || {};
+  const platformMetrics: PlatformMetrics = (platformData as any)?.stats || {} as PlatformMetrics;
+  const auditLogs: AuditLog[] = (auditData as any)?.logs || [];
+  const complianceMatrix: ComplianceMatrix[] = (complianceData as any)?.complianceMatrix || [];
 
   const handleGenerateReport = () => {
     generateReportMutation.mutate({
@@ -341,7 +341,7 @@ export default function SuperAdminDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{registrationData?.totalUsers || 0}</div>
+            <div className="text-2xl font-bold">{(registrationData as any)?.totalUsers || 0}</div>
             <p className="text-xs text-muted-foreground">
               Avg users per tenant
             </p>
@@ -412,7 +412,7 @@ export default function SuperAdminDashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium text-blue-600">Total Registrations</p>
-                            <p className="text-2xl font-bold text-blue-800">{registrationData?.totalUsers || 0}</p>
+                            <p className="text-2xl font-bold text-blue-800">{(registrationData as any)?.totalUsers || 0}</p>
                           </div>
                           <Users className="h-8 w-8 text-blue-500" />
                         </div>
@@ -424,7 +424,7 @@ export default function SuperAdminDashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium text-green-600">Active Users</p>
-                            <p className="text-2xl font-bold text-green-800">{registrationData?.users?.filter((u: any) => u.isVerified).length || 0}</p>
+                            <p className="text-2xl font-bold text-green-800">{(registrationData as any)?.users?.filter((u: any) => u.isVerified).length || 0}</p>
                           </div>
                           <CheckCircle className="h-8 w-8 text-green-500" />
                         </div>
@@ -436,7 +436,7 @@ export default function SuperAdminDashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium text-yellow-600">Trial Users</p>
-                            <p className="text-2xl font-bold text-yellow-800">{registrationData?.users?.filter((u: any) => !u.isVerified).length || 0}</p>
+                            <p className="text-2xl font-bold text-yellow-800">{(registrationData as any)?.users?.filter((u: any) => !u.isVerified).length || 0}</p>
                           </div>
                           <Clock className="h-8 w-8 text-yellow-500" />
                         </div>
@@ -448,7 +448,7 @@ export default function SuperAdminDashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium text-purple-600">Verified</p>
-                            <p className="text-2xl font-bold text-purple-800">{registrationData?.users?.filter((u: any) => u.isVerified).length || 0}</p>
+                            <p className="text-2xl font-bold text-purple-800">{(registrationData as any)?.users?.filter((u: any) => u.isVerified).length || 0}</p>
                           </div>
                           <Shield className="h-8 w-8 text-purple-500" />
                         </div>
@@ -464,7 +464,7 @@ export default function SuperAdminDashboard() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {Object.entries(registrationData?.stats?.planDistribution || {}).map(([plan, count]) => (
+                          {Object.entries((registrationData as any)?.stats?.planDistribution || {}).map(([plan, count]) => (
                             <div key={plan} className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
                                 {getPlanBadge(plan)}
@@ -473,7 +473,7 @@ export default function SuperAdminDashboard() {
                               <div className="flex items-center space-x-2">
                                 <span className="text-sm font-bold">{String(count)}</span>
                                 <Progress 
-                                  value={(Number(count) / (registrationData?.stats?.total || 1)) * 100} 
+                                  value={(Number(count) / ((registrationData as any)?.stats?.total || 1)) * 100} 
                                   className="w-16 h-2"
                                 />
                               </div>
@@ -489,7 +489,7 @@ export default function SuperAdminDashboard() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {Object.entries(registrationData?.stats?.sourceDistribution || {}).map(([source, count]) => (
+                          {Object.entries((registrationData as any)?.stats?.sourceDistribution || {}).map(([source, count]) => (
                             <div key={source} className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
                                 <Badge variant="outline" className="capitalize">
@@ -499,7 +499,7 @@ export default function SuperAdminDashboard() {
                               <div className="flex items-center space-x-2">
                                 <span className="text-sm font-bold">{String(count)}</span>
                                 <Progress 
-                                  value={(Number(count) / (registrationData?.stats?.total || 1)) * 100} 
+                                  value={(Number(count) / ((registrationData as any)?.stats?.total || 1)) * 100} 
                                   className="w-16 h-2"
                                 />
                               </div>
@@ -519,7 +519,7 @@ export default function SuperAdminDashboard() {
                     <CardContent>
                       <div className="max-h-96 overflow-auto">
                         <div className="space-y-3">
-                          {registrationData?.users?.map((registration: any) => (
+                          {(registrationData as any)?.users?.map((registration: any) => (
                             <Card key={registration.id} className="p-4">
                               <div className="flex items-center justify-between">
                                 <div className="space-y-1">
@@ -860,14 +860,14 @@ export default function SuperAdminDashboard() {
               </div>
 
               {/* Audit Statistics */}
-              {auditData?.statistics && (
+              {(auditData as any)?.statistics && (
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm">Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {Object.entries(auditData.statistics.actions).map(([action, count]) => (
+                      {Object.entries((auditData as any).statistics.actions).map(([action, count]) => (
                         <div key={action} className="flex justify-between">
                           <span className="text-sm">{action}</span>
                           <span className="text-sm font-medium">{String(count)}</span>
@@ -881,7 +881,7 @@ export default function SuperAdminDashboard() {
                       <CardTitle className="text-sm">Severity</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {Object.entries(auditData.statistics.severity).map(([severity, count]) => (
+                      {Object.entries((auditData as any).statistics.severity).map(([severity, count]) => (
                         <div key={severity} className="flex justify-between">
                           <span className={`text-sm ${getSeverityColor(severity)}`}>{severity}</span>
                           <span className="text-sm font-medium">{String(count)}</span>
@@ -947,12 +947,12 @@ export default function SuperAdminDashboard() {
             </CardHeader>
             <CardContent>
               {/* Compliance Summary */}
-              {complianceData?.summary && (
+              {(complianceData as any)?.summary && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <Card>
                     <CardContent className="p-4">
                       <div className="text-2xl font-bold text-green-600">
-                        {complianceData.summary.fullyCompliant}
+                        {(complianceData as any).summary.fullyCompliant}
                       </div>
                       <p className="text-sm text-muted-foreground">Fully Compliant</p>
                     </CardContent>
@@ -960,7 +960,7 @@ export default function SuperAdminDashboard() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="text-2xl font-bold text-red-600">
-                        {complianceData.summary.featureViolations}
+                        {(complianceData as any).summary.featureViolations}
                       </div>
                       <p className="text-sm text-muted-foreground">Feature Violations</p>
                     </CardContent>
@@ -968,7 +968,7 @@ export default function SuperAdminDashboard() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="text-2xl font-bold text-yellow-600">
-                        {complianceData.summary.usageViolations}
+                        {(complianceData as any).summary.usageViolations}
                       </div>
                       <p className="text-sm text-muted-foreground">Usage Violations</p>
                     </CardContent>
@@ -976,7 +976,7 @@ export default function SuperAdminDashboard() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="text-2xl font-bold">
-                        {complianceData.summary.averageComplianceScore}%
+                        {(complianceData as any).summary.averageComplianceScore}%
                       </div>
                       <p className="text-sm text-muted-foreground">Avg Compliance</p>
                     </CardContent>
