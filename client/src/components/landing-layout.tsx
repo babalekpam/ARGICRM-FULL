@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import Logo from "./logo";
 
@@ -15,44 +15,44 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
           <div className="flex items-center justify-between h-16 w-full">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <Link to="/" className="flex items-center space-x-2">
+              <Link href="/" className="flex items-center space-x-2">
                 <Logo size="md" variant="colored" />
               </Link>
             </div>
 
             {/* Navigation Links - Center */}
             <div className="hidden lg:flex items-center space-x-6 flex-1 justify-center">
-              <Link to="/products" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
+              <Link href="/products" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
                 Products
               </Link>
-              <Link to="/industries" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
+              <Link href="/industries" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
                 Industries
               </Link>
-              <Link to="/customers" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
+              <Link href="/customers" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
                 Customers
               </Link>
-              <Link to="/learning" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
+              <Link href="/learning" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
                 Learning
               </Link>
-              <Link to="/support" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
+              <Link href="/support" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
                 Support
               </Link>
-              <Link to="/pricing" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
+              <Link href="/pricing" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
                 Pricing
               </Link>
-              <Link to="/services" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
+              <Link href="/services" className="text-gray-700 hover:text-purple-600 transition-colors whitespace-nowrap">
                 Services
               </Link>
             </div>
 
             {/* CTA Buttons */}
             <div className="flex items-center space-x-3 flex-shrink-0">
-              <Link to="/login">
+              <Link href="/login">
                 <Button variant="outline" className="hidden sm:inline-flex">
                   Sign In
                 </Button>
               </Link>
-              <Link to="/login">
+              <Link href="/login">
                 <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                   Get Started
                 </Button>
@@ -83,19 +83,19 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
             <div>
               <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link to="/products" className="hover:text-white transition-colors">Features</Link></li>
-                <li><Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
-                <li><Link to="/industries" className="hover:text-white transition-colors">Industries</Link></li>
-                <li><Link to="/customers" className="hover:text-white transition-colors">Customers</Link></li>
+                <li><Link href="/products" className="hover:text-white transition-colors">Features</Link></li>
+                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/industries" className="hover:text-white transition-colors">Industries</Link></li>
+                <li><Link href="/customers" className="hover:text-white transition-colors">Customers</Link></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link to="/support" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link to="/learning" className="hover:text-white transition-colors">Learning</Link></li>
-                <li><Link to="/services" className="hover:text-white transition-colors">Services</Link></li>
+                <li><Link href="/support" className="hover:text-white transition-colors">Help Center</Link></li>
+                <li><Link href="/learning" className="hover:text-white transition-colors">Learning</Link></li>
+                <li><Link href="/services" className="hover:text-white transition-colors">Services</Link></li>
                 <li><a href="mailto:support@argilette.org" className="hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>

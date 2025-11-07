@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,12 +20,11 @@ export default function ResetPasswordPage() {
   const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     // Parse token and email from URL query parameters
-    const params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(window.location.search);
     const tokenParam = params.get('token');
     const emailParam = params.get('email');
 
@@ -36,7 +34,7 @@ export default function ResetPasswordPage() {
       setToken(tokenParam);
       setEmail(emailParam);
     }
-  }, [location]);
+  }, []);
 
   const validatePassword = () => {
     if (newPassword.length < 8) {
@@ -80,7 +78,7 @@ export default function ResetPasswordPage() {
           description: "You can now login with your new password.",
         });
         setTimeout(() => {
-          navigate('/');
+          setLocation('/');
         }, 3000);
       } else {
         setError(data.error || 'Failed to reset password');

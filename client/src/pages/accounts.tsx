@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ export default function AccountsPage() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   // Check if user is platform owner - platform owners can see all accounts
   const isPlatformOwner = user?.email === 'admin@default.com' || user?.email === 'abel@argilette.org';
@@ -179,7 +179,7 @@ export default function AccountsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/reports?accountId=${account.id}&accountName=${encodeURIComponent(account.name)}`)}
+                      onClick={() => setLocation(`/reports?accountId=${account.id}&accountName=${encodeURIComponent(account.name)}`)}
                       title="Generate Report for this Account"
                     >
                       <BarChart3 className="h-4 w-4 mr-1" />

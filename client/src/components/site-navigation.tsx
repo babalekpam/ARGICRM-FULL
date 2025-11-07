@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/logo";
 
@@ -13,7 +13,7 @@ export default function SiteNavigation({ showAuthButtons = true, className = "" 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
             <Logo size="sm" />
             <span className="text-xl font-bold text-gray-900">ARGILETTE</span>
           </Link>
@@ -22,38 +22,38 @@ export default function SiteNavigation({ showAuthButtons = true, className = "" 
           <div className="hidden lg:flex flex-col items-center justify-center space-y-3 flex-1">
             {/* First Row */}
             <div className="flex items-center justify-center space-x-8">
-              <Link to="/products" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/products" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Products
               </Link>
-              <Link to="/industries" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/industries" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Industries
               </Link>
-              <Link to="/customers" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/customers" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Customers
               </Link>
-              <Link to="/learning" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/learning" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Learning
               </Link>
-              <Link to="/support" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/support" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Support
               </Link>
             </div>
             {/* Second Row */}
             <div className="flex items-center justify-center space-x-8">
-              <Link to="/overview" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/overview" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Overview
               </Link>
-              <Link to="/services" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/services" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Services
               </Link>
 
-              <Link to="/what-is-crm" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/what-is-crm" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 What is CRM
               </Link>
-              <Link to="/solutions" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/solutions" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Solutions
               </Link>
-              <Link to="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/pricing" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Pricing
               </Link>
             </div>
@@ -62,11 +62,11 @@ export default function SiteNavigation({ showAuthButtons = true, className = "" 
           {/* Auth Buttons */}
           {showAuthButtons && (
             <div className="hidden lg:flex flex-col items-center space-y-2">
-              <Link to="/login" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              <Link href="/login" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
                 Login
               </Link>
               <Button asChild className="bg-blue-600 hover:bg-blue-700 text-sm px-4 py-2">
-                <Link to="/adaptive-signup">
+                <Link href="/adaptive-signup">
                   Start Free Trial
                 </Link>
               </Button>

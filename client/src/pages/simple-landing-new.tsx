@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "wouter";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +44,7 @@ export default function SimpleLanding() {
   const { toast } = useToast();
   const { trackConversion } = useConversionTracking();
   const { login, user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { currentLanguage, isRTL } = useLanguage();
 
   // Login state
@@ -57,9 +56,9 @@ export default function SimpleLanding() {
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log('User already authenticated, redirecting to dashboard:', user.email);
-      navigate('/dashboard', { replace: true });
+      setLocation('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, setLocation]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +78,7 @@ export default function SimpleLanding() {
       
       if (result.success) {
         console.log('✅ Landing page login successful, redirecting to dashboard');
-        navigate('/dashboard', { replace: true });
+        setLocation('/dashboard', { replace: true });
       } else {
         toast({
           title: "Login Failed",

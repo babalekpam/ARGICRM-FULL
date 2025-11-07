@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageCircle, Send, Mail, HelpCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function LiveChatWidget() {
@@ -89,7 +89,7 @@ export default function LiveChatWidget() {
           <div className="space-y-4">
             {/* Quick Links */}
             <div className="grid grid-cols-2 gap-2">
-              <Link to="/help-center" onClick={() => setIsOpen(false)}>
+              <Link href="/help-center" onClick={() => setIsOpen(false)}>
                 <Card className="hover-elevate cursor-pointer" data-testid="card-help-center-link">
                   <CardContent className="p-3 flex items-center gap-2">
                     <HelpCircle className="h-4 w-4 text-primary" />

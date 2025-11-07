@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import LandingLayout from "@/components/landing-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -264,7 +264,7 @@ const categories = [
 ];
 
 export default function ServicesComprehensive() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState('All Services');
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
@@ -296,7 +296,7 @@ export default function ServicesComprehensive() {
         <Button 
           variant="outline" 
           className="w-full hover:bg-purple-50 transition-colors"
-          onClick={() => navigate('/consultation-booking')}
+          onClick={() => setLocation('/consultation-booking')}
         >
           <Calendar className="h-4 w-4 mr-2" />
           Schedule Consultation
@@ -306,7 +306,7 @@ export default function ServicesComprehensive() {
       return (
         <Button 
           className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all"
-          onClick={() => navigate('/')}
+          onClick={() => setLocation('/')}
         >
           <ArrowRight className="h-4 w-4 mr-2" />
           Get Started

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -319,7 +319,7 @@ export default function SignupPage() {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [verificationSent, setVerificationSent] = useState(false);
   
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const updateSignupData = (field: keyof SignupFormData, value: string | boolean) => {

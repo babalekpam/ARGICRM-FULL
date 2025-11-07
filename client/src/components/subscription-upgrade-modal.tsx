@@ -14,7 +14,7 @@ import {
   Rocket
 } from "lucide-react";
 import { saasFeatures } from "@/services/saas-features";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 
 interface SubscriptionUpgradeModalProps {
   isOpen: boolean;
@@ -216,7 +216,7 @@ export function SubscriptionUpgradeModal({
               </Button>
               
               <Button asChild variant="outline">
-                <Link to="/pricing">
+                <Link href="/pricing">
                   View All Plans
                 </Link>
               </Button>
