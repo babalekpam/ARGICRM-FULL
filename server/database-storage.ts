@@ -2638,15 +2638,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createClientPortalUser(data: any): Promise<any> {
-    const [user] = await db.insert(clientPortalUsers).values(data).returning();
+    // SECURITY: Check if email already exists globally across all tenants
+    // Client portal emails are globally unique to prevent cross-tenant access
+    const existing = await db.select()
+      .from(clientPortalUsers)
+      .where(eq(clientPortalUsers.email, data.email.toLowerCase()))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      throw new Error('Email already in use by another client');
+    }
+    
+    // Ensure email is stored in lowercase for consistency
+    const [user] = await db.insert(clientPortalUsers).values({
+      ...data,
+      email: data.email.toLowerCase(),
+    }).returning();
     return user;
   }
 
-  async getClientPortalUserByEmail(email: string, tenantId: string): Promise<any | null> {
+  async getClientPortalUserByEmail(email: string): Promise<any | null> {
     const [user] = await db
       .select()
       .from(clientPortalUsers)
-      .where(and(eq(clientPortalUsers.email, email), eq(clientPortalUsers.tenantId, tenantId)))
+      .where(eq(clientPortalUsers.email, email.toLowerCase()))
       .limit(1);
     return user || null;
   }
@@ -2752,5 +2767,207 @@ export class DatabaseStorage implements IStorage {
 
   async deleteClientSession(sessionId: string): Promise<void> {
     await db.delete(clientPortalSessions).where(eq(clientPortalSessions.id, sessionId));
+  }
+
+  // ==================== CLIENT DELIVERABLES ====================
+  async getClientDeliverables(clientAccountId: string, tenantId: string, projectId?: string): Promise<any[]> {
+    const { clientDeliverables } = await import("@shared/schema");
+    
+    let query = db.select().from(clientDeliverables)
+      .where(and(
+        eq(clientDeliverables.clientAccountId, clientAccountId),
+        eq(clientDeliverables.tenantId, tenantId)
+      ))
+      .orderBy(desc(clientDeliverables.createdAt));
+    
+    if (projectId) {
+      query = query.where(eq(clientDeliverables.projectId, projectId));
+    }
+    
+    return await query;
+  }
+
+  async getClientDeliverable(id: string, clientAccountId: string, tenantId: string): Promise<any | null> {
+    const { clientDeliverables } = await import("@shared/schema");
+    
+    const [deliverable] = await db.select().from(clientDeliverables)
+      .where(and(
+        eq(clientDeliverables.id, id),
+        eq(clientDeliverables.clientAccountId, clientAccountId),
+        eq(clientDeliverables.tenantId, tenantId)
+      ))
+      .limit(1);
+    
+    return deliverable || null;
+  }
+
+  async createClientDeliverable(data: any): Promise<any> {
+    const { clientDeliverables } = await import("@shared/schema");
+    
+    const [deliverable] = await db.insert(clientDeliverables)
+      .values(data)
+      .returning();
+    
+    return deliverable;
+  }
+
+  async updateClientDeliverable(id: string, clientAccountId: string, tenantId: string, data: any): Promise<any> {
+    const { clientDeliverables } = await import("@shared/schema");
+    
+    const [updated] = await db.update(clientDeliverables)
+      .set(data)
+      .where(and(
+        eq(clientDeliverables.id, id),
+        eq(clientDeliverables.clientAccountId, clientAccountId),
+        eq(clientDeliverables.tenantId, tenantId)
+      ))
+      .returning();
+    
+    return updated;
+  }
+
+  // ==================== CLIENT MESSAGES ====================
+  async getClientMessages(clientAccountId: string, tenantId: string, threadId?: string): Promise<any[]> {
+    const { clientMessages } = await import("@shared/schema");
+    
+    let query = db.select().from(clientMessages)
+      .where(and(
+        eq(clientMessages.clientAccountId, clientAccountId),
+        eq(clientMessages.tenantId, tenantId)
+      ))
+      .orderBy(desc(clientMessages.createdAt));
+    
+    if (threadId) {
+      query = query.where(eq(clientMessages.threadId, threadId));
+    }
+    
+    return await query;
+  }
+
+  async getClientMessage(id: string, clientAccountId: string, tenantId: string): Promise<any | null> {
+    const { clientMessages } = await import("@shared/schema");
+    
+    const [message] = await db.select().from(clientMessages)
+      .where(and(
+        eq(clientMessages.id, id),
+        eq(clientMessages.clientAccountId, clientAccountId),
+        eq(clientMessages.tenantId, tenantId)
+      ))
+      .limit(1);
+    
+    return message || null;
+  }
+
+  async createClientMessage(data: any): Promise<any> {
+    const { clientMessages } = await import("@shared/schema");
+    
+    const [message] = await db.insert(clientMessages)
+      .values(data)
+      .returning();
+    
+    return message;
+  }
+
+  async markMessageAsRead(id: string, clientAccountId: string, tenantId: string): Promise<void> {
+    const { clientMessages } = await import("@shared/schema");
+    
+    await db.update(clientMessages)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(
+        eq(clientMessages.id, id),
+        eq(clientMessages.clientAccountId, clientAccountId),
+        eq(clientMessages.tenantId, tenantId)
+      ));
+  }
+
+  // ==================== CLIENT NOTIFICATIONS ====================
+  async getClientNotifications(clientUserId: string, tenantId: string): Promise<any[]> {
+    const { clientNotifications } = await import("@shared/schema");
+    
+    return await db.select().from(clientNotifications)
+      .where(and(
+        eq(clientNotifications.clientUserId, clientUserId),
+        eq(clientNotifications.tenantId, tenantId)
+      ))
+      .orderBy(desc(clientNotifications.isRead), desc(clientNotifications.createdAt));
+  }
+
+  async markNotificationAsRead(id: string, clientUserId: string, tenantId: string): Promise<void> {
+    const { clientNotifications } = await import("@shared/schema");
+    
+    await db.update(clientNotifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(
+        eq(clientNotifications.id, id),
+        eq(clientNotifications.clientUserId, clientUserId),
+        eq(clientNotifications.tenantId, tenantId)
+      ));
+  }
+
+  async markAllNotificationsAsRead(clientUserId: string, tenantId: string): Promise<void> {
+    const { clientNotifications } = await import("@shared/schema");
+    
+    await db.update(clientNotifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(and(
+        eq(clientNotifications.clientUserId, clientUserId),
+        eq(clientNotifications.tenantId, tenantId),
+        eq(clientNotifications.isRead, false)
+      ));
+  }
+
+  async createClientNotification(data: any): Promise<any> {
+    const { clientNotifications } = await import("@shared/schema");
+    
+    const [notification] = await db.insert(clientNotifications)
+      .values(data)
+      .returning();
+    
+    return notification;
+  }
+
+  // ==================== CLIENT PROJECT ACCESS ====================
+  async getClientProjects(clientAccountId: string, tenantId: string): Promise<any[]> {
+    const { clientProjectAccess } = await import("@shared/schema");
+    
+    const projectAccessList = await db.select({
+      project: projects,
+      accessLevel: clientProjectAccess.accessLevel,
+    })
+      .from(clientProjectAccess)
+      .innerJoin(projects, eq(clientProjectAccess.projectId, projects.id))
+      .where(and(
+        eq(clientProjectAccess.clientAccountId, clientAccountId),
+        eq(clientProjectAccess.tenantId, tenantId)
+      ));
+    
+    return projectAccessList.map(item => ({
+      ...item.project,
+      accessLevel: item.accessLevel
+    }));
+  }
+
+  async getClientProject(projectId: string, clientAccountId: string, tenantId: string): Promise<any | null> {
+    const { clientProjectAccess } = await import("@shared/schema");
+    
+    const [result] = await db.select({
+      project: projects,
+      accessLevel: clientProjectAccess.accessLevel,
+    })
+      .from(clientProjectAccess)
+      .innerJoin(projects, eq(clientProjectAccess.projectId, projects.id))
+      .where(and(
+        eq(clientProjectAccess.projectId, projectId),
+        eq(clientProjectAccess.clientAccountId, clientAccountId),
+        eq(clientProjectAccess.tenantId, tenantId)
+      ))
+      .limit(1);
+    
+    if (!result) return null;
+    
+    return {
+      ...result.project,
+      accessLevel: result.accessLevel
+    };
   }
 }

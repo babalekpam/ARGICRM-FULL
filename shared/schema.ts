@@ -4392,7 +4392,7 @@ export const clientPortalUsers = pgTable("client_portal_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(), // UNIQUE globally - one client email across all tenants
   firstName: text("first_name"),
   lastName: text("last_name"),
   passwordHash: text("password_hash").notNull(),
@@ -4406,7 +4406,6 @@ export const clientPortalUsers = pgTable("client_portal_users", {
 }, (table) => [
   index("idx_client_portal_users_client_account").on(table.clientAccountId),
   index("idx_client_portal_users_tenant").on(table.tenantId),
-  index("idx_client_portal_users_email").on(table.email),
 ]);
 
 // Client Portal Sessions

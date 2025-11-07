@@ -73,6 +73,7 @@ import aiCampaignRoutes from "./routes/ai-campaigns.js";
 import unsubscribeRoutes from "./routes/unsubscribe.js";
 import { trialLockMiddleware, requireActiveSubscription } from "./middleware/trial-lock-middleware.js";
 import { registerEcommerceRoutes } from "./routes/ecommerce.js";
+import { authenticateClient, type RequestWithClientContext } from "./client-portal-auth.js";
 import { registerInventoryRoutes } from "./routes/inventory.js";
 import { translationService } from "./services/translation-service.js";
 import { aiFailoverService } from "./services/ai-failover-service.js";
@@ -12639,6 +12640,472 @@ ${req.body.companyName} Team`;
     } catch (error) {
       console.error('❌ Emergency password reset error:', error);
       res.status(500).json({ error: 'Password reset failed' });
+    }
+  });
+
+  // ==================== CLIENT PORTAL API ROUTES ====================
+  
+  // Client Portal Authentication - Login with email + password
+  app.post("/api/client-portal/auth/login", async (req: any, res: any) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      // SECURITY: Client portal emails are globally unique, so we can safely look up by email alone
+      // without risking cross-tenant access. Database enforces uniqueness via unique index.
+      // This prevents cross-tenant account takeover that would occur if same email existed in multiple tenants.
+      const clientUser = await storage.getClientPortalUserByEmail(email.toLowerCase());
+      
+      if (!clientUser) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Verify user is active
+      if (!clientUser.isActive) {
+        return res.status(403).json({ message: "Account is inactive" });
+      }
+
+      // Verify password
+      const bcrypt = await import('bcrypt');
+      const isPasswordValid = await bcrypt.compare(password, clientUser.passwordHash);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Create session with user's tenantId and clientAccountId
+      const { sessionId, expiresAt } = await storage.createClientSession({
+        clientUserId: clientUser.id,
+        clientAccountId: clientUser.clientAccountId,
+        tenantId: clientUser.tenantId
+      });
+
+      res.cookie('clientSessionId', sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        expires: expiresAt
+      });
+
+      // Update last login
+      await storage.updateClientPortalUser(clientUser.id, clientUser.tenantId, clientUser.clientAccountId, {
+        lastLoginAt: new Date()
+      });
+
+      res.json({
+        message: "Login successful",
+        user: {
+          id: clientUser.id,
+          email: clientUser.email,
+          firstName: clientUser.firstName,
+          lastName: clientUser.lastName
+        }
+      });
+    } catch (error: any) {
+      console.error("Client portal login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Client Portal - Request Magic Link
+  app.post("/api/client-portal/auth/magic-link", async (req: any, res: any) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email required" });
+      }
+
+      // Find user by email (no tenantId needed)
+      const clientUser = await storage.getClientPortalUserByEmail(email.toLowerCase());
+      
+      if (!clientUser) {
+        // Don't reveal if email exists
+        return res.json({ message: "If an account exists, a magic link has been sent" });
+      }
+
+      // Generate magic link token
+      const magicToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      // Update user with magic link token
+      await storage.updateClientPortalUser(clientUser.id, clientUser.tenantId, clientUser.clientAccountId, {
+        magicLinkToken: magicToken,
+        magicLinkExpires: expiresAt
+      });
+
+      // TODO: Send email with magic link
+      // For now, just return success
+      console.log(`Magic link for ${email}: /client-portal/auth/verify?token=${magicToken}`);
+
+      res.json({ 
+        message: "If an account exists, a magic link has been sent"
+      });
+    } catch (error: any) {
+      console.error("Magic link error:", error);
+      res.status(500).json({ message: "Failed to send magic link" });
+    }
+  });
+
+  // Client Portal - Verify Magic Link
+  app.post("/api/client-portal/auth/verify-magic-link", async (req: any, res: any) => {
+    try {
+      const { token, email } = req.body;
+
+      if (!token || !email) {
+        return res.status(400).json({ message: "Token and email required" });
+      }
+
+      // Find user by email (no tenantId needed)
+      const clientUser = await storage.getClientPortalUserByEmail(email.toLowerCase());
+      
+      if (!clientUser || 
+          clientUser.magicLinkToken !== token || 
+          !clientUser.magicLinkExpires ||
+          clientUser.magicLinkExpires < new Date()) {
+        return res.status(401).json({ message: "Invalid or expired magic link" });
+      }
+
+      // Clear magic link token
+      await storage.updateClientPortalUser(clientUser.id, clientUser.tenantId, clientUser.clientAccountId, {
+        magicLinkToken: null,
+        magicLinkExpires: null,
+        lastLoginAt: new Date()
+      });
+
+      // Create session with user's tenantId
+      const { sessionId, expiresAt } = await storage.createClientSession({
+        clientUserId: clientUser.id,
+        clientAccountId: clientUser.clientAccountId,
+        tenantId: clientUser.tenantId
+      });
+
+      res.cookie('clientSessionId', sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        expires: expiresAt
+      });
+
+      res.json({ message: "Login successful" });
+    } catch (error: any) {
+      console.error("Magic link verification error:", error);
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
+  // Client Portal - Logout
+  app.post("/api/client-portal/auth/logout", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const sessionId = req.cookies?.clientSessionId;
+      if (sessionId) {
+        await storage.deleteClientSession(sessionId);
+      }
+      res.clearCookie('clientSessionId');
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Client logout error:", error);
+      res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  // Client Portal - Get Current User Context
+  app.get("/api/client-portal/auth/me", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const clientContext = req.clientContext;
+      if (!clientContext) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const clientUser = await storage.getClientPortalUserByEmail(clientContext.email);
+      const clientAccount = await storage.getClientAccount(clientContext.clientAccountId, clientContext.tenantId);
+
+      res.json({
+        user: {
+          id: clientUser?.id,
+          email: clientUser?.email,
+          firstName: clientUser?.firstName,
+          lastName: clientUser?.lastName,
+          role: clientUser?.role
+        },
+        account: {
+          id: clientAccount?.id,
+          accountName: clientAccount?.accountName,
+          accountEmail: clientAccount?.accountEmail,
+          whiteLabelSettings: clientAccount?.whiteLabelSettings
+        },
+        tenantId: clientContext.tenantId
+      });
+    } catch (error) {
+      console.error("Get client context error:", error);
+      res.status(500).json({ error: "Failed to get user context" });
+    }
+  });
+
+  // Client Portal - List Projects
+  app.get("/api/client-portal/projects", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const projects = await storage.getClientProjects(clientAccountId, tenantId);
+      res.json(projects);
+    } catch (error) {
+      console.error("Get client projects error:", error);
+      res.status(500).json({ error: "Failed to get projects" });
+    }
+  });
+
+  // Client Portal - Get Project Details
+  app.get("/api/client-portal/projects/:id", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { id } = req.params;
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const project = await storage.getClientProject(id, clientAccountId, tenantId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Project not found or access denied" });
+      }
+
+      res.json(project);
+    } catch (error) {
+      console.error("Get client project error:", error);
+      res.status(500).json({ error: "Failed to get project" });
+    }
+  });
+
+  // Client Portal - List Deliverables
+  app.get("/api/client-portal/deliverables", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const { projectId } = req.query;
+      const deliverables = await storage.getClientDeliverables(
+        clientAccountId, 
+        tenantId, 
+        projectId as string | undefined
+      );
+      res.json(deliverables);
+    } catch (error) {
+      console.error("Get deliverables error:", error);
+      res.status(500).json({ error: "Failed to get deliverables" });
+    }
+  });
+
+  // Client Portal - Get Deliverable Details
+  app.get("/api/client-portal/deliverables/:id", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { id } = req.params;
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const deliverable = await storage.getClientDeliverable(id, clientAccountId, tenantId);
+      
+      if (!deliverable) {
+        return res.status(404).json({ error: "Deliverable not found or access denied" });
+      }
+
+      res.json(deliverable);
+    } catch (error) {
+      console.error("Get deliverable error:", error);
+      res.status(500).json({ error: "Failed to get deliverable" });
+    }
+  });
+
+  // Client Portal - Download Deliverable
+  app.get("/api/client-portal/deliverables/:id/download", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { id } = req.params;
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const deliverable = await storage.getClientDeliverable(id, clientAccountId, tenantId);
+      
+      if (!deliverable) {
+        return res.status(404).json({ error: "Deliverable not found or access denied" });
+      }
+
+      await storage.updateClientDeliverable(id, clientAccountId, tenantId, {
+        downloadCount: (deliverable.downloadCount || 0) + 1,
+        lastDownloadedAt: new Date()
+      });
+
+      res.json({
+        downloadUrl: deliverable.fileUrl,
+        fileName: deliverable.title,
+        fileType: deliverable.fileType
+      });
+    } catch (error) {
+      console.error("Download deliverable error:", error);
+      res.status(500).json({ error: "Failed to download deliverable" });
+    }
+  });
+
+  // Client Portal - List Invoices
+  app.get("/api/client-portal/invoices", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const invoices = await storage.getInvoices();
+      const clientInvoices = invoices.filter((inv: any) => 
+        inv.tenantId === tenantId && inv.clientId === clientAccountId
+      );
+      res.json(clientInvoices);
+    } catch (error) {
+      console.error("Get invoices error:", error);
+      res.status(500).json({ error: "Failed to get invoices" });
+    }
+  });
+
+  // Client Portal - Get Invoice Details
+  app.get("/api/client-portal/invoices/:id", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { id } = req.params;
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const invoice = await storage.getInvoice(parseInt(id));
+      
+      if (!invoice || invoice.tenantId !== tenantId || invoice.clientId !== clientAccountId) {
+        return res.status(404).json({ error: "Invoice not found or access denied" });
+      }
+
+      res.json(invoice);
+    } catch (error) {
+      console.error("Get invoice error:", error);
+      res.status(500).json({ error: "Failed to get invoice" });
+    }
+  });
+
+  // Client Portal - Initiate Payment
+  app.post("/api/client-portal/invoices/:id/pay", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { id } = req.params;
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const invoice = await storage.getInvoice(parseInt(id));
+      
+      if (!invoice || invoice.tenantId !== tenantId || invoice.clientId !== clientAccountId) {
+        return res.status(404).json({ error: "Invoice not found or access denied" });
+      }
+
+      if (invoice.status === 'paid') {
+        return res.status(400).json({ error: "Invoice already paid" });
+      }
+
+      res.json({
+        message: "Payment integration to be implemented",
+        invoiceId: id,
+        amount: invoice.total,
+        currency: invoice.currency || 'USD'
+      });
+    } catch (error) {
+      console.error("Initiate payment error:", error);
+      res.status(500).json({ error: "Failed to initiate payment" });
+    }
+  });
+
+  // Client Portal - List Messages
+  app.get("/api/client-portal/messages", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const { threadId } = req.query;
+      const messages = await storage.getClientMessages(
+        clientAccountId, 
+        tenantId, 
+        threadId as string | undefined
+      );
+      res.json(messages);
+    } catch (error) {
+      console.error("Get messages error:", error);
+      res.status(500).json({ error: "Failed to get messages" });
+    }
+  });
+
+  // Client Portal - Get Thread Messages
+  app.get("/api/client-portal/messages/:threadId", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { threadId } = req.params;
+      const { clientAccountId, tenantId } = req.clientContext!;
+      const messages = await storage.getClientMessages(clientAccountId, tenantId, threadId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Get thread messages error:", error);
+      res.status(500).json({ error: "Failed to get thread messages" });
+    }
+  });
+
+  // Client Portal - Send Message
+  app.post("/api/client-portal/messages", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { clientUserId, clientAccountId, tenantId, email } = req.clientContext!;
+      const { message, threadId, attachments } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ error: "Message content required" });
+      }
+
+      const clientUser = await storage.getClientPortalUserByEmail(email);
+      const senderName = `${clientUser?.firstName || ''} ${clientUser?.lastName || ''}`.trim() || email;
+
+      const newMessage = await storage.createClientMessage({
+        tenantId,
+        clientAccountId,
+        threadId: threadId || crypto.randomBytes(16).toString('hex'),
+        senderType: 'client',
+        senderId: clientUserId,
+        senderName,
+        message,
+        attachments: attachments || [],
+        isRead: false
+      });
+
+      res.json(newMessage);
+    } catch (error) {
+      console.error("Send message error:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  // Client Portal - Mark Message as Read
+  app.patch("/api/client-portal/messages/:id/read", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { id } = req.params;
+      const { clientAccountId, tenantId } = req.clientContext!;
+      await storage.markMessageAsRead(id, clientAccountId, tenantId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark message read error:", error);
+      res.status(500).json({ error: "Failed to mark message as read" });
+    }
+  });
+
+  // Client Portal - List Notifications
+  app.get("/api/client-portal/notifications", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { clientUserId, tenantId } = req.clientContext!;
+      const notifications = await storage.getClientNotifications(clientUserId, tenantId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Get notifications error:", error);
+      res.status(500).json({ error: "Failed to get notifications" });
+    }
+  });
+
+  // Client Portal - Mark Notification as Read
+  app.patch("/api/client-portal/notifications/:id/read", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { id } = req.params;
+      const { clientUserId, tenantId } = req.clientContext!;
+      await storage.markNotificationAsRead(id, clientUserId, tenantId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark notification read error:", error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  // Client Portal - Mark All Notifications as Read
+  app.patch("/api/client-portal/notifications/read-all", authenticateClient, async (req: RequestWithClientContext, res: any) => {
+    try {
+      const { clientUserId, tenantId } = req.clientContext!;
+      await storage.markAllNotificationsAsRead(clientUserId, tenantId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark all notifications read error:", error);
+      res.status(500).json({ error: "Failed to mark all notifications as read" });
     }
   });
 

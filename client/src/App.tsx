@@ -104,6 +104,16 @@ const SuperAdminDashboard = lazy(() => import("@/pages/super-admin-dashboard"));
 import ProtectedRoute from "@/components/protected-route";
 import "./App.css";
 
+// Client Portal imports
+import ClientPortalLogin from "@/pages/client-portal-login";
+import ClientPortalDashboard from "@/pages/client-portal-dashboard";
+import ClientPortalProjects from "@/pages/client-portal-projects";
+import ClientPortalDeliverables from "@/pages/client-portal-deliverables";
+import ClientPortalInvoices from "@/pages/client-portal-invoices";
+import ClientPortalMessages from "@/pages/client-portal-messages";
+import ClientPortalLayout from "@/components/client-portal-layout";
+import { ClientPortalProvider } from "@/contexts/client-portal-context";
+
 // OPTIMIZED: Clean loading component
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-[400px]">
@@ -453,6 +463,48 @@ function App() {
                             <ProtectedRoute requiredPermission="platform.read">
                               <PageTranslator><SuperAdminDashboard /></PageTranslator>
                             </ProtectedRoute>
+                          } />
+                          
+                          {/* Client Portal Routes - Separate authentication system */}
+                          <Route path="/client-portal/login" element={
+                            <ClientPortalProvider>
+                              <ClientPortalLogin />
+                            </ClientPortalProvider>
+                          } />
+                          <Route path="/client-portal/dashboard" element={
+                            <ClientPortalProvider>
+                              <ClientPortalLayout>
+                                <ClientPortalDashboard />
+                              </ClientPortalLayout>
+                            </ClientPortalProvider>
+                          } />
+                          <Route path="/client-portal/projects" element={
+                            <ClientPortalProvider>
+                              <ClientPortalLayout>
+                                <ClientPortalProjects />
+                              </ClientPortalLayout>
+                            </ClientPortalProvider>
+                          } />
+                          <Route path="/client-portal/deliverables" element={
+                            <ClientPortalProvider>
+                              <ClientPortalLayout>
+                                <ClientPortalDeliverables />
+                              </ClientPortalLayout>
+                            </ClientPortalProvider>
+                          } />
+                          <Route path="/client-portal/invoices" element={
+                            <ClientPortalProvider>
+                              <ClientPortalLayout>
+                                <ClientPortalInvoices />
+                              </ClientPortalLayout>
+                            </ClientPortalProvider>
+                          } />
+                          <Route path="/client-portal/messages" element={
+                            <ClientPortalProvider>
+                              <ClientPortalLayout>
+                                <ClientPortalMessages />
+                              </ClientPortalLayout>
+                            </ClientPortalProvider>
                           } />
                           
                           {/* Fallback */}

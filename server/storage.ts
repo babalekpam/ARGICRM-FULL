@@ -326,7 +326,7 @@ export interface IStorage {
 
   // Client Portal User Management - TENANT ISOLATED
   createClientPortalUser(data: any): Promise<any>;
-  getClientPortalUserByEmail(email: string, tenantId: string): Promise<any | null>;
+  getClientPortalUserByEmail(email: string): Promise<any | null>;
   getClientPortalUsers(clientAccountId: string, tenantId: string): Promise<any[]>;
   updateClientPortalUser(id: string, tenantId: string, clientAccountId: string, data: any): Promise<any>;
 
@@ -334,6 +334,28 @@ export interface IStorage {
   createClientSession(data: {clientUserId: string, clientAccountId: string, tenantId: string}): Promise<{sessionId: string, expiresAt: Date}>;
   validateClientSession(sessionId: string): Promise<{clientUserId: string, clientAccountId: string, tenantId: string} | null>;
   deleteClientSession(sessionId: string): Promise<void>;
+
+  // Client Deliverables - TENANT + CLIENT ISOLATED
+  getClientDeliverables(clientAccountId: string, tenantId: string, projectId?: string): Promise<any[]>;
+  getClientDeliverable(id: string, clientAccountId: string, tenantId: string): Promise<any | null>;
+  createClientDeliverable(data: any): Promise<any>;
+  updateClientDeliverable(id: string, clientAccountId: string, tenantId: string, data: any): Promise<any>;
+
+  // Client Messages - TENANT + CLIENT ISOLATED
+  getClientMessages(clientAccountId: string, tenantId: string, threadId?: string): Promise<any[]>;
+  getClientMessage(id: string, clientAccountId: string, tenantId: string): Promise<any | null>;
+  createClientMessage(data: any): Promise<any>;
+  markMessageAsRead(id: string, clientAccountId: string, tenantId: string): Promise<void>;
+
+  // Client Notifications - TENANT + CLIENT ISOLATED
+  getClientNotifications(clientUserId: string, tenantId: string): Promise<any[]>;
+  markNotificationAsRead(id: string, clientUserId: string, tenantId: string): Promise<void>;
+  markAllNotificationsAsRead(clientUserId: string, tenantId: string): Promise<void>;
+  createClientNotification(data: any): Promise<any>;
+
+  // Client Project Access - TENANT + CLIENT ISOLATED
+  getClientProjects(clientAccountId: string, tenantId: string): Promise<any[]>;
+  getClientProject(projectId: string, clientAccountId: string, tenantId: string): Promise<any | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -2178,8 +2200,8 @@ export class MemStorage implements IStorage {
     throw new Error('Client Portal not implemented in MemStorage');
   }
 
-  async getClientPortalUserByEmail(email: string, tenantId: string): Promise<any | null> {
-    return null;
+  async getClientPortalUserByEmail(email: string): Promise<any | null> {
+    throw new Error('MemStorage does not support client portal');
   }
 
   async getClientPortalUsers(clientAccountId: string, tenantId: string): Promise<any[]> {
