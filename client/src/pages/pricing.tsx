@@ -10,8 +10,7 @@ const plans = [
   {
     name: "Starter",
     price: "$49.99",
-    originalPrice: "$99",
-    period: "per month",
+    period: "/month",
     description: "Perfect for freelancers and solo entrepreneurs",
     popular: false,
     icon: Star,
@@ -32,15 +31,13 @@ const plans = [
       { name: "API access", included: false },
       { name: "Multi-user access", included: false }
     ],
-    cta: "Get Started",
-    highlight: "Great for getting started",
-    savings: "Save 50%"
+    cta: "Start Free Trial",
+    highlight: "Great for getting started"
   },
   {
     name: "Professional",
     price: "$149.99",
-    originalPrice: "$299",
-    period: "per month",
+    period: "/month",
     description: "Ideal for small businesses and marketing agencies",
     popular: true,
     icon: Zap,
@@ -62,15 +59,13 @@ const plans = [
       { name: "Multi-user (up to 3 users)", included: true },
       { name: "White-label branding (contact for pricing)", included: false }
     ],
-    cta: "Start Professional",
-    highlight: "Most popular - Best value",
-    savings: "Save 50%"
+    cta: "Start Free Trial",
+    highlight: "Most popular - Best value"
   },
   {
     name: "Business",
     price: "$299.99",
-    originalPrice: "$599",
-    period: "per month",
+    period: "/month",
     description: "Comprehensive solution for growing agencies",
     popular: false,
     icon: Crown,
@@ -91,15 +86,13 @@ const plans = [
       { name: "Custom domain + full branding (contact for pricing)", included: false },
       { name: "Reseller rights (contact for pricing)", included: false }
     ],
-    cta: "Get Business",
-    highlight: "Best for agencies",
-    savings: "Save 50%"
+    cta: "Start Free Trial",
+    highlight: "Best for agencies"
   },
   {
     name: "Enterprise",
     price: "$799.99",
-    originalPrice: "$1,599",
-    period: "per month",
+    period: "/month",
     description: "Ultimate solution for large organizations",
     popular: false,
     icon: Sparkles,
@@ -119,8 +112,7 @@ const plans = [
       { name: "Reseller rights (contact for pricing)", included: false }
     ],
     cta: "Contact Sales",
-    highlight: "Everything you need",
-    savings: "Save 50%"
+    highlight: "Everything you need"
   }
 ];
 
@@ -172,7 +164,7 @@ const addOns = [
   {
     name: "Additional Users",
     price: "$97",
-    period: "per user (one-time)",
+    period: "/month per user",
     description: "Add more team members to your account. Includes all features of your plan.",
     applicableTo: "Starter & Professional"
   },
@@ -186,7 +178,7 @@ const addOns = [
   {
     name: "Advanced Storage",
     price: "$197",
-    period: "per 100GB (one-time)",
+    period: "/month per 100GB",
     description: "Additional storage for documents, images, and files beyond plan limits",
     applicableTo: "All plans"
   },
@@ -215,8 +207,12 @@ const addOns = [
 
 const faqs = [
   {
-    question: "What does 'lifetime' really mean?",
-    answer: "Lifetime means you pay once and own the software forever. No monthly fees, no annual renewals. You get all future updates and improvements included. The only exceptions are optional add-ons like SMS credits or additional storage."
+    question: "Can I cancel anytime?",
+    answer: "Yes! You can cancel your subscription at any time with no penalties or long-term contracts. Your account will remain active until the end of your current billing period. You can export all your data before canceling."
+  },
+  {
+    question: "Do you offer annual billing?",
+    answer: "Yes! We offer annual billing options with discounted rates. Contact our sales team to discuss annual pricing and save up to 20% compared to monthly billing. Annual plans include priority support and dedicated onboarding."
   },
   {
     question: "Can I white-label the platform for my clients?",
@@ -231,8 +227,8 @@ const faqs = [
     answer: "The full CRM is included in all plans! You get contact management, deal tracking, pipeline automation, email/SMS marketing, task management, and more. It's not an add-on - it's core to every plan."
   },
   {
-    question: "Can I upgrade or add features later?",
-    answer: "Absolutely! You can upgrade to a higher tier anytime and we'll credit your original payment. You can also add individual features as add-ons if you don't need a full upgrade."
+    question: "Can I upgrade or downgrade my plan?",
+    answer: "Absolutely! You can upgrade or downgrade your plan at any time. Upgrades take effect immediately, and you'll be prorated for the remainder of your billing cycle. Downgrades take effect at the start of your next billing period."
   },
   {
     question: "What AI features are included?",
@@ -244,24 +240,24 @@ const faqs = [
   },
   {
     question: "What payment methods do you accept?",
-    answer: "We accept all major credit cards (Visa, Mastercard, Amex), PayPal, and wire transfers for Enterprise plans. All payments are processed securely through Stripe."
+    answer: "We accept all major credit cards (Visa, Mastercard, Amex), PayPal, and wire transfers for Enterprise plans. All payments are processed securely through Stripe. Subscriptions are billed automatically on your monthly or annual renewal date."
   }
 ];
 
 const comparisons = [
   {
     feature: "SEO Platform",
-    competitors: "Ubersuggest: $290-990 lifetime, SEMrush: $1,680-5,999/year",
+    competitors: "SEMrush: $250/month, Ahrefs: $199/month",
     argilette: "Included in all plans"
   },
   {
     feature: "CRM System",
-    competitors: "HubSpot: $1,600/year, Salesforce: $3,000/year",
+    competitors: "HubSpot: $133/month, Salesforce: $250/month",
     argilette: "Included in all plans"
   },
   {
     feature: "E-commerce",
-    competitors: "Shopify: $468/year, WooCommerce: $500+/year",
+    competitors: "Shopify: $39/month, BigCommerce: $29/month",
     argilette: "Included in all plans"
   },
   {
@@ -271,13 +267,13 @@ const comparisons = [
   },
   {
     feature: "Marketing Automation",
-    competitors: "Mailchimp: $600/year, ActiveCampaign: $1,200/year",
+    competitors: "Mailchimp: $50/month, ActiveCampaign: $100/month",
     argilette: "Included in all plans"
   },
   {
-    feature: "Total 3-Year Cost",
-    competitors: "$15,000 - $30,000+",
-    argilette: "$497.99 - $7,997.99 (one-time)"
+    feature: "Monthly Cost Comparison",
+    competitors: "$422+ per month (separate tools)",
+    argilette: "$149.99/month (all included)"
   }
 ];
 
@@ -285,9 +281,9 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <SEO
-        title="ARGILETTE Pricing - All-in-One CRM, SEO & Multi-Platform Tracking | Lifetime Payment"
-        description="Pay once, own forever. ARGILETTE combines CRM, SEO tools, e-commerce, and unique 7-platform tracking (Google to ChatGPT) in one lifetime payment. From $497.99. No monthly fees."
-        keywords="lifetime CRM pricing, SEO tool pricing, white-label CRM, multi-platform tracking, one-time payment CRM, affordable SEO platform, ChatGPT tracking, social media SEO"
+        title="ARGILETTE Pricing - Affordable Monthly Plans | All-in-One CRM, SEO & E-commerce"
+        description="Flexible monthly subscription plans starting at $49.99/month. ARGILETTE combines CRM, SEO tools, e-commerce, and unique 7-platform tracking in one platform. Cancel anytime."
+        keywords="CRM pricing, SEO tool pricing, white-label CRM, multi-platform tracking, affordable CRM, SaaS pricing, ChatGPT tracking, social media SEO"
         canonical="https://argilette.org/pricing"
       />
       
@@ -315,57 +311,57 @@ export default function PricingPage() {
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <Badge variant="outline" className="mb-4 px-4 py-2 text-sm">
-            ⚡ Pay Once, Own Forever - No Monthly Fees
+            ⚡ Flexible Monthly Plans - Cancel Anytime
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             One Platform.
             <br />
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              One Lifetime Payment.
+              Flexible Monthly Plans.
             </span>
           </h1>
           <p className="text-xl text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed">
-            Get CRM + SEO + E-commerce + Multi-Platform Tracking (Google to ChatGPT) in one comprehensive platform.
+            Get CRM + SEO + E-commerce + Multi-Platform Tracking (Google to ChatGPT) in one comprehensive subscription.
           </p>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            <strong>White-label ready</strong> for agencies. No hidden fees. All future updates included.
+            <strong>White-label ready</strong> for agencies. No hidden fees. No long-term contracts.
           </p>
         </div>
 
         {/* Value Comparison Banner */}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-8 mb-16 max-w-4xl mx-auto">
           <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Why Lifetime Pricing?</h3>
-            <p className="text-gray-600">See how much you save vs. buying separate monthly tools</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">All-in-One Platform Value</h3>
+            <p className="text-gray-600">See how much you save vs. buying separate tools monthly</p>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-white rounded-xl p-6 border-2 border-red-200">
-              <div className="text-red-600 font-semibold mb-3">❌ Traditional Approach (Monthly)</div>
+              <div className="text-red-600 font-semibold mb-3">❌ Buying Separate Tools</div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">SEMrush (SEO)</span>
-                  <span className="font-semibold">$2,999/year</span>
+                  <span className="font-semibold">$250/month</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">HubSpot (CRM)</span>
-                  <span className="font-semibold">$1,600/year</span>
+                  <span className="font-semibold">$133/month</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shopify (E-com)</span>
-                  <span className="font-semibold">$468/year</span>
+                  <span className="text-gray-600">Shopify (E-commerce)</span>
+                  <span className="font-semibold">$39/month</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Mailchimp</span>
-                  <span className="font-semibold">$600/year</span>
+                  <span className="text-gray-600">Mailchimp (Marketing)</span>
+                  <span className="font-semibold">$50/month</span>
                 </div>
                 <div className="border-t pt-2 mt-2 flex justify-between">
-                  <span className="font-bold">3-Year Total:</span>
-                  <span className="font-bold text-red-600">$16,002</span>
+                  <span className="font-bold">Monthly Total:</span>
+                  <span className="font-bold text-red-600">$472/month</span>
                 </div>
               </div>
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-500">
-              <div className="text-blue-600 font-semibold mb-3">✅ ARGILETTE (Lifetime)</div>
+              <div className="text-blue-600 font-semibold mb-3">✅ ARGILETTE (Professional)</div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">SEO + 7-Platform Tracking</span>
@@ -384,15 +380,15 @@ export default function PricingPage() {
                   <span className="font-semibold text-green-600">✓ Included</span>
                 </div>
                 <div className="border-t pt-2 mt-2 flex justify-between">
-                  <span className="font-bold">One-Time Payment:</span>
-                  <span className="font-bold text-blue-600">$1,297</span>
+                  <span className="font-bold">Monthly Cost:</span>
+                  <span className="font-bold text-blue-600">$149.99/month</span>
                 </div>
               </div>
             </div>
           </div>
           <div className="text-center mt-6">
             <Badge className="bg-green-600 text-white text-lg px-6 py-2">
-              Save $14,705 over 3 years with ARGILETTE Professional 🎉
+              Save $322/month with ARGILETTE Professional 🎉
             </Badge>
           </div>
         </div>
@@ -429,13 +425,9 @@ export default function PricingPage() {
                 </div>
                 <CardTitle className="text-xl font-bold mb-2">{plan.name}</CardTitle>
                 <div className="mb-2">
-                  <div className="text-sm text-gray-400 line-through">{plan.originalPrice}</div>
                   <div className="text-3xl font-bold text-gray-900">{plan.price}</div>
-                  <div className="text-xs text-gray-500">{plan.period}</div>
+                  <div className="text-sm text-gray-500">{plan.period}</div>
                 </div>
-                <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
-                  {plan.savings}
-                </Badge>
                 <CardDescription className="text-sm mt-3">{plan.description}</CardDescription>
               </CardHeader>
 
@@ -479,7 +471,7 @@ export default function PricingPage() {
             </Badge>
             <h2 className="text-4xl font-bold mb-4">Sell Under Your Own Brand</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Remove our branding and make it yours. Perfect for agencies and resellers.
+              Remove our branding and make it yours. Perfect for agencies and resellers. Additional monthly cost on top of base subscription.
             </p>
           </div>
           
@@ -530,24 +522,65 @@ export default function PricingPage() {
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-sm">{addon.description}</CardDescription>
+                  <p className="text-sm text-gray-600">{addon.description}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
 
+        {/* Comparison Table */}
+        <div className="mb-20">
+          <h2 className="text-3xl font-bold text-center mb-12">Monthly Cost Comparison</h2>
+          <Card className="max-w-4xl mx-auto">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-4 font-semibold">Feature</th>
+                      <th className="text-left p-4 font-semibold">Competitors</th>
+                      <th className="text-left p-4 font-semibold text-blue-600">ARGILETTE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisons.map((comparison, index) => (
+                      <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50">
+                        <td className="p-4 font-medium">{comparison.feature}</td>
+                        <td className="p-4 text-sm text-gray-600">{comparison.competitors}</td>
+                        <td className="p-4 text-sm font-semibold text-blue-600">{comparison.argilette}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          <div className="text-center mt-8">
+            <Link href="/signup">
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" data-testid="button-comparison-signup">
+                Start With Professional ($149.99/month)
+              </Button>
+            </Link>
+            <Link href="/contact">
+              <Button variant="outline" size="lg" className="ml-4" data-testid="button-comparison-contact">
+                Talk to Sales
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         {/* FAQ Section */}
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          <div className="max-w-3xl mx-auto space-y-6">
             {faqs.map((faq, index) => (
               <Card key={index} className="hover:shadow-lg transition-all duration-200" data-testid={`card-faq-${index}`}>
                 <CardHeader>
-                  <CardTitle className="text-base">{faq.question}</CardTitle>
+                  <CardTitle className="text-lg">{faq.question}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-sm leading-relaxed">{faq.answer}</CardDescription>
+                  <p className="text-gray-600">{faq.answer}</p>
                 </CardContent>
               </Card>
             ))}
@@ -555,31 +588,68 @@ export default function PricingPage() {
         </div>
 
         {/* CTA Section */}
-        <div className="text-center py-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-center text-white">
           <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-xl mb-2 opacity-90">
-            Join thousands of businesses using ARGILETTE to dominate search everywhere.
+          <p className="text-xl mb-8 opacity-90">
+            Start your free trial today. No credit card required. Cancel anytime.
           </p>
-          <p className="text-lg mb-8 opacity-75">
-            From Google to ChatGPT - track, optimize, and grow across all 7 platforms.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup">
-              <Button size="lg" variant="secondary" className="px-8 py-4 text-lg" data-testid="button-cta-signup">
-                Start With Professional ($1,297)
+              <Button size="lg" variant="outline" className="bg-white text-blue-600 hover:bg-gray-100 border-white" data-testid="button-cta-trial">
+                Start Free Trial
               </Button>
             </Link>
             <Link href="/contact">
-              <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-white text-white hover:bg-white hover:text-blue-600" data-testid="button-cta-contact">
-                Talk to Sales (Enterprise)
+              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10" data-testid="button-cta-demo">
+                Schedule a Demo
               </Button>
             </Link>
           </div>
           <p className="text-sm mt-6 opacity-75">
-            ✅ Lifetime access • ✅ All future updates • ✅ No monthly fees • ✅ 30-day money-back guarantee
+            Join thousands of businesses already using ARGILETTE
           </p>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <Logo size="sm" className="mb-4" />
+              <p className="text-sm text-gray-600">
+                All-in-one platform for CRM, SEO, and E-commerce
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><Link href="/features" data-testid="link-footer-features">Features</Link></li>
+                <li><Link href="/pricing" data-testid="link-footer-pricing">Pricing</Link></li>
+                <li><Link href="/integrations" data-testid="link-footer-integrations">Integrations</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Company</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><Link href="/about" data-testid="link-footer-about">About</Link></li>
+                <li><Link href="/contact" data-testid="link-footer-contact">Contact</Link></li>
+                <li><Link href="/support" data-testid="link-footer-support">Support</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Legal</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><Link href="/privacy" data-testid="link-footer-privacy">Privacy</Link></li>
+                <li><Link href="/terms" data-testid="link-footer-terms">Terms</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 mt-8 pt-8 text-center text-sm text-gray-600">
+            <p>© 2025 ARGILETTE. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

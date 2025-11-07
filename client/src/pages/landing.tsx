@@ -310,10 +310,10 @@ export default function SimpleLanding() {
           },
           {
             "@type": "Question",
-            "name": "Does ARGILETTE offer lifetime pricing?",
+            "name": "What are the ARGILETTE pricing plans?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes! ARGILETTE offers flexible monthly subscription plans starting at just $49.99/month for the Starter tier up to $799.99/month for Enterprise. All plans include CRM, SEO, E-commerce, Link Building, and 11-platform tracking. Much more affordable than buying Semrush + HubSpot + Shopify separately!"
+              "text": "ARGILETTE offers flexible monthly subscription plans starting at $49.99/month for Starter, $149.99/month for Professional, $299.99/month for Business, and $799.99/month for Enterprise. All plans include CRM, SEO, E-commerce, Link Building, and 11-platform tracking. Much more affordable than buying Semrush + HubSpot + Shopify separately!"
             }
           }
         ]
@@ -350,7 +350,7 @@ export default function SimpleLanding() {
         <SEO
           title="ARGILETTE - AI Business Platform | CRM + E-commerce + SEO Tools"
           description="All-in-one AI-powered business platform with CRM, e-commerce builder, SEO tools, Link Building, and marketing automation. Track your brand across 11 platforms. Monthly subscription from $49.99. 20+ languages, 195+ countries."
-          keywords="AI business platform, CRM software, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software, lifetime deal CRM"
+          keywords="AI business platform, CRM software, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software, monthly subscription CRM"
           canonical="https://argilette.org/"
           structuredData={structuredData}
         />
@@ -502,16 +502,6 @@ export default function SimpleLanding() {
                     data-testid="button-login-submit"
                   >
                     {isLoginLoading ? "Signing in..." : "Sign In"}
-                  </Button>
-                  
-                  {/* EMERGENCY QUICK LOGIN FOR PLATFORM OWNER */}
-                  <Button 
-                    type="button"
-                    onClick={() => window.location.href = '/api/quick-login-platform-owner'}
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700" 
-                    data-testid="button-quick-login"
-                  >
-                    🚀 QUICK LOGIN (Platform Owner)
                   </Button>
                   
                   <div className="text-center text-sm text-muted-foreground">
