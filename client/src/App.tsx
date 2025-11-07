@@ -147,9 +147,8 @@ function App() {
                   <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                     <Suspense fallback={<LoadingSpinner />}>
                       <Switch>
-                        {/* Public Routes */}
+                        {/* Public Routes - IMPORTANT: "/" must be at the END to avoid matching all paths */}
                         <Route path="/landing">{() => <PageTranslator><SimpleLanding /></PageTranslator>}</Route>
-                        <Route path="/">{() => <PageTranslator><SimpleLanding /></PageTranslator>}</Route>
                         <Route path="/login">{() => <Redirect to="/" />}</Route>
                         <Route path="/signup">{() => <PageTranslator><SignupPage /></PageTranslator>}</Route>
                           <Route path="/forgot-password">{() => <PageTranslator><ForgotPasswordPage /></PageTranslator>}</Route>
@@ -517,6 +516,9 @@ function App() {
                               </ClientPortalLayout>
                             </ClientPortalProvider>
                           )}</Route>
+                          
+                          {/* Home route - MUST be at the end to avoid prefix matching all paths */}
+                          <Route path="/">{() => <PageTranslator><SimpleLanding /></PageTranslator>}</Route>
                           
                           {/* Fallback */}
                           <Route path="*">{() => <Redirect to="/landing" />}</Route>
