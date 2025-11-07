@@ -20,7 +20,20 @@ import {
   CheckCircle2,
   ArrowRight,
   Menu,
-  X
+  X,
+  DollarSign,
+  Briefcase,
+  Link as LinkIcon,
+  Star,
+  ClipboardList,
+  MessageSquare,
+  Bot,
+  Radar,
+  Check,
+  Target,
+  UserPlus,
+  LineChart,
+  FolderKanban
 } from "lucide-react";
 import { Link } from "wouter";
 import Logo from "@/components/logo";
@@ -166,6 +179,46 @@ export default function Landing() {
       icon: Shield,
       title: "Enterprise Security",
       description: "Bank-level security with role-based access and data encryption"
+    },
+    {
+      icon: DollarSign,
+      title: "Financial Management",
+      description: "Multi-currency bookkeeping, invoicing, bank feeds, and automated tax calculation"
+    },
+    {
+      icon: Briefcase,
+      title: "HR & Projects",
+      description: "Employee management, Gantt charts, and document management"
+    },
+    {
+      icon: LinkIcon,
+      title: "Link Building",
+      description: "AI-powered backlink analysis, competitor research, and automated outreach"
+    },
+    {
+      icon: Star,
+      title: "Reputation Management",
+      description: "Monitor and manage your online reputation across platforms"
+    },
+    {
+      icon: ClipboardList,
+      title: "Forms & Surveys",
+      description: "Create and manage forms for data collection and feedback"
+    },
+    {
+      icon: MessageSquare,
+      title: "Unified Communications",
+      description: "Centralized messaging across all channels"
+    },
+    {
+      icon: Bot,
+      title: "Cloe AI Agent",
+      description: "Intelligent virtual assistant for automated support"
+    },
+    {
+      icon: Radar,
+      title: "11-Platform Search",
+      description: "Track visibility across AI platforms, social search, and traditional SEO"
     }
   ];
 
@@ -356,6 +409,67 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Enterprise Features - New in 2025 */}
+      <section className="py-20 px-4 bg-gradient-subtle">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-16">
+            <Badge className="mb-6 bg-primary/10 text-primary hover:bg-primary/20" data-testid="badge-enterprise">
+              New Enterprise Features
+            </Badge>
+            <h2 className="text-4xl font-bold text-foreground mb-4">Advanced Capabilities for Growing Teams</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Professional tools designed for conversion optimization and team efficiency
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="shadow-card hover:shadow-card-hover transition-all-smooth" data-testid="enterprise-card-ab-testing">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Target className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">A/B Testing</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Optimize conversion rates with built-in split testing for pages and campaigns
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-card hover:shadow-card-hover transition-all-smooth" data-testid="enterprise-card-client-portal">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <UserPlus className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Client Portal</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  White-labeled client access with project tracking and deliverables
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-card hover:shadow-card-hover transition-all-smooth" data-testid="enterprise-card-unified-analytics">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <LineChart className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Unified Analytics</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Cross-platform insights combining CRM, marketing, and e-commerce data
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-card hover:shadow-card-hover transition-all-smooth" data-testid="enterprise-card-resource-management">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <FolderKanban className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Resource Management</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Team scheduling, workload balancing, and capacity planning tools
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Benefits Section */}
       <section className="py-20 px-4 bg-accent/30">
         <div className="container mx-auto max-w-7xl">
@@ -406,6 +520,444 @@ export default function Landing() {
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-20 px-4 bg-background">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Choose the plan that fits your business needs. All plans include 14-day free trial.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Starter Plan */}
+            <Card className="shadow-card hover:shadow-card-hover transition-all-smooth" data-testid="pricing-starter">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold text-foreground mb-2">Starter</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-foreground">$49.99</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Basic CRM & Contact Management</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">SEO Tools & Analytics</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">E-commerce Store</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Up to 1,000 contacts</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Email support</span>
+                  </li>
+                </ul>
+                <Link href="/demo-signup">
+                  <Button variant="outline" className="w-full" data-testid="button-pricing-starter">
+                    Start Free Trial
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Professional Plan */}
+            <Card className="shadow-card hover:shadow-card-hover transition-all-smooth border-2 border-primary relative" data-testid="pricing-professional">
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground" data-testid="badge-most-popular">
+                Most Popular
+              </Badge>
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold text-foreground mb-2">Professional</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-foreground">$149.99</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Everything in Starter</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Marketing Automation</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">AI Campaign Studio</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Up to 10,000 contacts</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Priority support</span>
+                  </li>
+                </ul>
+                <Link href="/demo-signup">
+                  <Button className="w-full" data-testid="button-pricing-professional">
+                    Start Free Trial
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Business Plan */}
+            <Card className="shadow-card hover:shadow-card-hover transition-all-smooth" data-testid="pricing-business">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold text-foreground mb-2">Business</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-foreground">$299.99</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Everything in Professional</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Advanced Analytics</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Link Building Tools</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Unlimited contacts</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">24/7 phone support</span>
+                  </li>
+                </ul>
+                <Link href="/demo-signup">
+                  <Button variant="outline" className="w-full" data-testid="button-pricing-business">
+                    Start Free Trial
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Enterprise Plan */}
+            <Card className="shadow-card hover:shadow-card-hover transition-all-smooth" data-testid="pricing-enterprise">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold text-foreground mb-2">Enterprise</h3>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-foreground">$799.99</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Everything in Business</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">White-label options</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Custom integrations</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Dedicated account manager</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">SLA guarantee</span>
+                  </li>
+                </ul>
+                <Link href="/demo-signup">
+                  <Button variant="outline" className="w-full" data-testid="button-pricing-enterprise">
+                    Contact Sales
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Cost Comparison Section */}
+      <section className="py-20 px-4 bg-gradient-subtle">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-foreground mb-4">Save Thousands Every Year</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Why pay $950-1,200/month for multiple separate tools when NODE CRM offers everything in one platform?
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="shadow-card bg-accent/50" data-testid="comparison-traditional">
+              <CardContent className="p-8">
+                <h3 className="text-2xl font-bold text-foreground mb-6 text-center">Traditional Approach</h3>
+                <div className="space-y-4 mb-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">Semrush (SEO)</span>
+                    <span className="font-semibold text-foreground">$229.95/mo</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">HubSpot (CRM + Marketing)</span>
+                    <span className="font-semibold text-foreground">$450/mo</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">Shopify Plus (E-commerce)</span>
+                    <span className="font-semibold text-foreground">$299/mo</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">Additional Tools</span>
+                    <span className="font-semibold text-foreground">$171+/mo</span>
+                  </div>
+                </div>
+                <div className="border-t border-border pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-foreground">Total Monthly Cost</span>
+                    <span className="text-2xl font-bold text-destructive">$1,149.95+</span>
+                  </div>
+                  <div className="text-center mt-4">
+                    <span className="text-sm text-muted-foreground">$13,799/year</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card bg-primary/5 border-2 border-primary" data-testid="comparison-nodecrm">
+              <CardContent className="p-8">
+                <h3 className="text-2xl font-bold text-foreground mb-6 text-center">NODE CRM Platform</h3>
+                <div className="space-y-4 mb-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">Complete CRM Suite</span>
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">Full Marketing Automation</span>
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">E-commerce Platform</span>
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">Advanced SEO Tools</span>
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">AI-Powered Features</span>
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                </div>
+                <div className="border-t border-border pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-foreground">Total Monthly Cost</span>
+                    <span className="text-2xl font-bold text-success">$49.99-$799.99</span>
+                  </div>
+                  <div className="text-center mt-4">
+                    <Badge className="bg-success text-success-foreground">Save up to 93%</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Comparison Table */}
+      <section className="py-20 px-4 bg-background">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">Feature Comparison</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              See exactly what's included in each plan
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse" data-testid="features-comparison-table">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left p-4 font-semibold text-foreground">Feature</th>
+                  <th className="text-center p-4 font-semibold text-foreground">Starter</th>
+                  <th className="text-center p-4 font-semibold text-foreground">Professional</th>
+                  <th className="text-center p-4 font-semibold text-foreground">Business</th>
+                  <th className="text-center p-4 font-semibold text-foreground">Enterprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">CRM & Contact Management</td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">SEO Tools & Analytics</td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">E-commerce Platform</td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">Marketing Automation</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">AI Campaign Studio</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">Advanced Analytics</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">Link Building Tools</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">A/B Testing</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">White-label Options</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">Custom Integrations</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border hover:bg-accent/30">
+                  <td className="p-4 text-foreground">Dedicated Account Manager</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-muted-foreground mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-success mx-auto" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 px-4 bg-gradient-subtle">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">Trusted by Businesses Worldwide</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              See what our customers have to say about NODE CRM
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card className="shadow-card" data-testid="testimonial-1">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-5 w-5 text-primary fill-primary" />
+                  ))}
+                </div>
+                <p className="text-foreground mb-4 leading-relaxed">
+                  "NODE CRM has transformed our business operations. We consolidated 5 different tools into one platform and saved over $800/month. The AI features are incredible!"
+                </p>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Sarah Martinez</p>
+                    <p className="text-sm text-muted-foreground">CEO, TechVentures Inc.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card" data-testid="testimonial-2">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-5 w-5 text-primary fill-primary" />
+                  ))}
+                </div>
+                <p className="text-foreground mb-4 leading-relaxed">
+                  "The multi-currency support and offline capabilities were game-changers for our international operations. Best investment we've made in years."
+                </p>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Globe className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Michael Chen</p>
+                    <p className="text-sm text-muted-foreground">Operations Director, GlobalTrade Co.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card" data-testid="testimonial-3">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-5 w-5 text-primary fill-primary" />
+                  ))}
+                </div>
+                <p className="text-foreground mb-4 leading-relaxed">
+                  "Switching from HubSpot and Semrush to NODE CRM was seamless. We're now saving thousands while getting even more features. The SEO tools are outstanding!"
+                </p>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Emily Rodriguez</p>
+                    <p className="text-sm text-muted-foreground">Marketing Manager, GrowthLabs</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
