@@ -173,6 +173,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
       modules: [
         { path: "/employees", label: "Team Management", icon: UserPlus, permission: "hr.read" },
         { path: "/roles", label: "Roles & Permissions", icon: Shield, permission: "admin.read" },
+        { path: "/resource-management", label: "Resource Management", icon: Users, permission: "hr.read" },
       ]
     },
     {

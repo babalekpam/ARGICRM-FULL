@@ -24,9 +24,14 @@ import {
   type AbEvent, type InsertAbEvent,
   type AbConversion, type InsertAbConversion,
   type AbMetricsCache, type InsertAbMetricsCache,
+  type TeamCapacity, type InsertTeamCapacity,
+  type EmployeeSkill, type InsertEmployeeSkill,
+  type ResourceForecast, type InsertResourceForecast,
+  type WorkloadSnapshot, type InsertWorkloadSnapshot,
   leads, contacts, accounts, deals, tasks, employees, appointments, campaigns, tickets, projects, invoices, users, tenants, taxRates, salesChannels,
   aiContents, aiCampaigns, aiUsage,
   abTests, abVariants, abSessions, abEvents, abConversions, abMetricsCache,
+  teamCapacity, employeeSkills, resourceForecasts, workloadSnapshots,
   clientAccounts, clientPortalUsers, clientPortalSessions
 } from "@shared/schema";
 import {
@@ -2969,5 +2974,218 @@ export class DatabaseStorage implements IStorage {
       ...result.project,
       accessLevel: result.accessLevel
     };
+  }
+
+  // ==================== RESOURCE MANAGEMENT - TEAM CAPACITY ====================
+  async createTeamCapacity(data: InsertTeamCapacity): Promise<TeamCapacity> {
+    const capacityWithTenant = {
+      ...data,
+      tenantId: this.tenantId
+    };
+    
+    const [newCapacity] = await db.insert(teamCapacity).values(capacityWithTenant).returning();
+    return newCapacity;
+  }
+
+  async getTeamCapacityByWeek(weekStartDate: string): Promise<TeamCapacity[]> {
+    return await db.select().from(teamCapacity)
+      .where(and(
+        eq(teamCapacity.tenantId, this.tenantId),
+        eq(teamCapacity.weekStartDate, weekStartDate)
+      ))
+      .orderBy(desc(teamCapacity.createdAt));
+  }
+
+  async getTeamCapacityByUser(userId: string, startDate?: string, endDate?: string): Promise<TeamCapacity[]> {
+    const conditions = [
+      eq(teamCapacity.tenantId, this.tenantId),
+      eq(teamCapacity.userId, userId)
+    ];
+    
+    if (startDate) {
+      conditions.push(sql`${teamCapacity.weekStartDate} >= ${startDate}`);
+    }
+    if (endDate) {
+      conditions.push(sql`${teamCapacity.weekStartDate} <= ${endDate}`);
+    }
+    
+    return await db.select().from(teamCapacity)
+      .where(and(...conditions))
+      .orderBy(teamCapacity.weekStartDate);
+  }
+
+  async updateTeamCapacity(id: string, data: Partial<InsertTeamCapacity>): Promise<TeamCapacity | undefined> {
+    const [updated] = await db.update(teamCapacity)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(teamCapacity.id, id),
+        eq(teamCapacity.tenantId, this.tenantId)
+      ))
+      .returning();
+    
+    return updated;
+  }
+
+  async calculateUtilization(userId: string, weekStartDate: string): Promise<number> {
+    const [capacity] = await db.select().from(teamCapacity)
+      .where(and(
+        eq(teamCapacity.tenantId, this.tenantId),
+        eq(teamCapacity.userId, userId),
+        eq(teamCapacity.weekStartDate, weekStartDate)
+      ))
+      .limit(1);
+    
+    if (!capacity || capacity.availableHours === 0) return 0;
+    
+    return Math.round((capacity.allocatedHours / capacity.availableHours) * 100);
+  }
+
+  // ==================== RESOURCE MANAGEMENT - EMPLOYEE SKILLS ====================
+  async createEmployeeSkill(data: InsertEmployeeSkill): Promise<EmployeeSkill> {
+    const skillWithTenant = {
+      ...data,
+      tenantId: this.tenantId
+    };
+    
+    const [newSkill] = await db.insert(employeeSkills).values(skillWithTenant).returning();
+    return newSkill;
+  }
+
+  async getEmployeeSkills(userId: string): Promise<EmployeeSkill[]> {
+    return await db.select().from(employeeSkills)
+      .where(and(
+        eq(employeeSkills.tenantId, this.tenantId),
+        eq(employeeSkills.userId, userId)
+      ))
+      .orderBy(desc(employeeSkills.proficiencyLevel), employeeSkills.skillName);
+  }
+
+  async updateEmployeeSkill(id: string, data: Partial<InsertEmployeeSkill>): Promise<EmployeeSkill | undefined> {
+    const [updated] = await db.update(employeeSkills)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(employeeSkills.id, id),
+        eq(employeeSkills.tenantId, this.tenantId)
+      ))
+      .returning();
+    
+    return updated;
+  }
+
+  async searchSkillsByCategory(category: string): Promise<EmployeeSkill[]> {
+    return await db.select().from(employeeSkills)
+      .where(and(
+        eq(employeeSkills.tenantId, this.tenantId),
+        eq(employeeSkills.skillCategory, category)
+      ))
+      .orderBy(employeeSkills.skillName);
+  }
+
+  async deleteEmployeeSkill(id: string): Promise<boolean> {
+    const result = await db.delete(employeeSkills)
+      .where(and(
+        eq(employeeSkills.id, id),
+        eq(employeeSkills.tenantId, this.tenantId)
+      ));
+    
+    return result.rowCount > 0;
+  }
+
+  // ==================== RESOURCE MANAGEMENT - RESOURCE FORECASTS ====================
+  async createResourceForecast(data: InsertResourceForecast): Promise<ResourceForecast> {
+    const forecastWithTenant = {
+      ...data,
+      tenantId: this.tenantId
+    };
+    
+    const [newForecast] = await db.insert(resourceForecasts).values(forecastWithTenant).returning();
+    return newForecast;
+  }
+
+  async getResourceForecasts(filters?: { status?: string }): Promise<ResourceForecast[]> {
+    const conditions = [eq(resourceForecasts.tenantId, this.tenantId)];
+    
+    if (filters?.status) {
+      conditions.push(eq(resourceForecasts.status, filters.status));
+    }
+    
+    return await db.select().from(resourceForecasts)
+      .where(and(...conditions))
+      .orderBy(desc(resourceForecasts.createdAt));
+  }
+
+  async getResourceForecast(id: string): Promise<ResourceForecast | undefined> {
+    const [forecast] = await db.select().from(resourceForecasts)
+      .where(and(
+        eq(resourceForecasts.id, id),
+        eq(resourceForecasts.tenantId, this.tenantId)
+      ))
+      .limit(1);
+    
+    return forecast;
+  }
+
+  async updateResourceForecast(id: string, data: Partial<InsertResourceForecast>): Promise<ResourceForecast | undefined> {
+    const [updated] = await db.update(resourceForecasts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(resourceForecasts.id, id),
+        eq(resourceForecasts.tenantId, this.tenantId)
+      ))
+      .returning();
+    
+    return updated;
+  }
+
+  async deleteResourceForecast(id: string): Promise<boolean> {
+    const result = await db.delete(resourceForecasts)
+      .where(and(
+        eq(resourceForecasts.id, id),
+        eq(resourceForecasts.tenantId, this.tenantId)
+      ));
+    
+    return result.rowCount > 0;
+  }
+
+  // ==================== RESOURCE MANAGEMENT - WORKLOAD SNAPSHOTS ====================
+  async createWorkloadSnapshot(data: InsertWorkloadSnapshot): Promise<WorkloadSnapshot> {
+    const snapshotWithTenant = {
+      ...data,
+      tenantId: this.tenantId
+    };
+    
+    const [newSnapshot] = await db.insert(workloadSnapshots).values(snapshotWithTenant).returning();
+    return newSnapshot;
+  }
+
+  async getWorkloadSnapshots(userId?: string, startDate?: string, endDate?: string): Promise<WorkloadSnapshot[]> {
+    const conditions = [eq(workloadSnapshots.tenantId, this.tenantId)];
+    
+    if (userId) {
+      conditions.push(eq(workloadSnapshots.userId, userId));
+    }
+    if (startDate) {
+      conditions.push(sql`${workloadSnapshots.snapshotDate} >= ${startDate}`);
+    }
+    if (endDate) {
+      conditions.push(sql`${workloadSnapshots.snapshotDate} <= ${endDate}`);
+    }
+    
+    return await db.select().from(workloadSnapshots)
+      .where(and(...conditions))
+      .orderBy(desc(workloadSnapshots.snapshotDate));
+  }
+
+  async getWorkloadTrends(userId: string, days: number = 30): Promise<WorkloadSnapshot[]> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    return await db.select().from(workloadSnapshots)
+      .where(and(
+        eq(workloadSnapshots.tenantId, this.tenantId),
+        eq(workloadSnapshots.userId, userId),
+        sql`${workloadSnapshots.snapshotDate} >= ${startDate.toISOString().split('T')[0]}`
+      ))
+      .orderBy(workloadSnapshots.snapshotDate);
   }
 }

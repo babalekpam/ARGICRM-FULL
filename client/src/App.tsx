@@ -66,6 +66,7 @@ const TaxSettingsPage = lazy(() => import("@/pages/tax-settings"));
 // Team & Administration
 const EmployeesPage = lazy(() => import("@/pages/employees"));
 const RolesPage = lazy(() => import("@/pages/roles"));
+const ResourceManagement = lazy(() => import("@/pages/resource-management"));
 
 // AI & Intelligence  
 const AICampaignStudioPage = lazy(() => import("@/pages/ai-campaign-studio"));
@@ -335,6 +336,11 @@ function App() {
                           <Route path="/roles" element={
                             <ProtectedRoute requiredPermission="admin.read">
                               <PageTranslator><RolesPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/resource-management" element={
+                            <ProtectedRoute requiredPermission="hr.read">
+                              <PageTranslator><ResourceManagement /></PageTranslator>
                             </ProtectedRoute>
                           } />
                           

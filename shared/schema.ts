@@ -4622,6 +4622,136 @@ export const insertAIUsageSchema = createInsertSchema(aiUsage).omit({
   id: true,
   createdAt: true,
 });
+// ==================== RESOURCE MANAGEMENT ENHANCEMENT ====================
+
+// Team capacity planning - track employee capacity
+export const teamCapacity = pgTable("team_capacity", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  weekStartDate: date("week_start_date").notNull(), // Monday of the week
+  weeklyCapacityHours: integer("weekly_capacity_hours").default(40), // Default 40 hours/week
+  availableHours: integer("available_hours").notNull(), // After PTO and holidays
+  allocatedHours: integer("allocated_hours").default(0), // Hours assigned to projects
+  utilizationPercent: integer("utilization_percent").default(0), // allocated/available * 100
+  status: text("status").default("active"), // active, on_leave, unavailable
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_team_capacity_tenant").on(table.tenantId),
+  index("idx_team_capacity_user").on(table.userId),
+  index("idx_team_capacity_week").on(table.weekStartDate),
+]);
+
+// Employee skills for resource matching
+export const employeeSkills = pgTable("employee_skills", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  skillName: text("skill_name").notNull(), // JavaScript, Project Management, Design, etc.
+  skillCategory: text("skill_category").notNull(), // technical, soft_skills, domain_knowledge, tools
+  proficiencyLevel: integer("proficiency_level").notNull(), // 1-5 (1=beginner, 5=expert)
+  yearsOfExperience: integer("years_of_experience").default(0),
+  certifications: jsonb("certifications").$type<Array<{
+    name: string;
+    issuedBy: string;
+    issuedDate: string;
+    expiryDate?: string;
+  }>>().default([]),
+  lastUsedDate: date("last_used_date"),
+  endorsements: integer("endorsements").default(0), // Number of peer endorsements
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_employee_skills_tenant").on(table.tenantId),
+  index("idx_employee_skills_user").on(table.userId),
+  index("idx_employee_skills_name").on(table.skillName),
+  index("idx_employee_skills_category").on(table.skillCategory),
+]);
+
+// Resource forecasting for project planning
+export const resourceForecasts = pgTable("resource_forecasts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  forecastName: text("forecast_name").notNull(),
+  forecastPeriod: text("forecast_period").notNull(), // Q1-2025, Jan-2025, etc.
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  totalRequiredHours: integer("total_required_hours").default(0),
+  totalAvailableHours: integer("total_available_hours").default(0),
+  projectedUtilization: integer("projected_utilization").default(0), // Percentage
+  skillRequirements: jsonb("skill_requirements").$type<Array<{
+    skillName: string;
+    requiredHours: number;
+    availableHours: number;
+    gap: number; // Positive=surplus, Negative=shortage
+  }>>().default([]),
+  departmentBreakdown: jsonb("department_breakdown").$type<Record<string, {
+    requiredHours: number;
+    availableHours: number;
+  }>>().default({}),
+  recommendations: jsonb("recommendations").$type<Array<{
+    type: string; // hire, train, reallocate
+    priority: string; // high, medium, low
+    description: string;
+    estimatedImpact: string;
+  }>>().default([]),
+  status: text("status").default("draft"), // draft, active, archived
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_resource_forecasts_tenant").on(table.tenantId),
+  index("idx_resource_forecasts_period").on(table.forecastPeriod),
+  index("idx_resource_forecasts_status").on(table.status),
+]);
+
+// Workload snapshots for historical analytics
+export const workloadSnapshots = pgTable("workload_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  snapshotDate: date("snapshot_date").notNull(),
+  totalAllocatedHours: integer("total_allocated_hours").default(0),
+  totalCapacityHours: integer("total_capacity_hours").default(40),
+  utilizationPercent: integer("utilization_percent").default(0),
+  activeProjectsCount: integer("active_projects_count").default(0),
+  activeTasksCount: integer("active_tasks_count").default(0),
+  overdueTasksCount: integer("overdue_tasks_count").default(0),
+  workloadStatus: text("workload_status").default("balanced"), // underutilized, balanced, overallocated, critical
+  projectBreakdown: jsonb("project_breakdown").$type<Array<{
+    projectId: string;
+    projectName: string;
+    allocatedHours: number;
+    utilizationPercent: number;
+  }>>().default([]),
+  skillUtilization: jsonb("skill_utilization").$type<Record<string, number>>().default({}), // skill -> hours used
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_workload_snapshots_tenant").on(table.tenantId),
+  index("idx_workload_snapshots_user").on(table.userId),
+  index("idx_workload_snapshots_date").on(table.snapshotDate),
+  index("idx_workload_snapshots_status").on(table.workloadStatus),
+]);
+
+// Zod schemas and types for resource management
+export const insertTeamCapacitySchema = createInsertSchema(teamCapacity).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTeamCapacity = z.infer<typeof insertTeamCapacitySchema>;
+export type TeamCapacity = typeof teamCapacity.$inferSelect;
+
+export const insertEmployeeSkillSchema = createInsertSchema(employeeSkills).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertEmployeeSkill = z.infer<typeof insertEmployeeSkillSchema>;
+export type EmployeeSkill = typeof employeeSkills.$inferSelect;
+
+export const insertResourceForecastSchema = createInsertSchema(resourceForecasts).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertResourceForecast = z.infer<typeof insertResourceForecastSchema>;
+export type ResourceForecast = typeof resourceForecasts.$inferSelect;
+
+export const insertWorkloadSnapshotSchema = createInsertSchema(workloadSnapshots).omit({ id: true, createdAt: true });
+export type InsertWorkloadSnapshot = z.infer<typeof insertWorkloadSnapshotSchema>;
+export type WorkloadSnapshot = typeof workloadSnapshots.$inferSelect;
 
 // Re-export SEO schemas from server/argilette/seo-schema.ts for client use
 export { 

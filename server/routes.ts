@@ -104,7 +104,11 @@ import {
   insertAbVariantSchema,
   insertAbSessionSchema,
   insertAbEventSchema,
-  insertAbConversionSchema
+  insertAbConversionSchema,
+  insertTeamCapacitySchema,
+  insertEmployeeSkillSchema,
+  insertResourceForecastSchema,
+  insertWorkloadSnapshotSchema
 } from "@shared/schema.js";
 import { ZodError } from "zod";
 import { authenticate, type AuthUser, verifyToken } from "./middleware/auth.js";
@@ -13141,6 +13145,290 @@ ${req.body.companyName} Team`;
     } catch (error) {
       console.error("Mark all notifications read error:", error);
       res.status(500).json({ error: "Failed to mark all notifications as read" });
+    }
+  });
+
+  // ==================== RESOURCE MANAGEMENT ROUTES ====================
+  
+  // Team Capacity Routes
+  app.post("/api/resources/capacity", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const validatedData = insertTeamCapacitySchema.parse(req.body);
+      
+      const newCapacity = await storage.createTeamCapacity(validatedData);
+      res.status(201).json(newCapacity);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error creating team capacity:", error);
+      res.status(500).json({ error: "Failed to create team capacity", details: error.message });
+    }
+  });
+
+  app.get("/api/resources/capacity", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { weekStartDate, userId, startDate, endDate } = req.query;
+      
+      let capacityData;
+      if (weekStartDate) {
+        capacityData = await storage.getTeamCapacityByWeek(weekStartDate as string);
+      } else if (userId) {
+        capacityData = await storage.getTeamCapacityByUser(userId as string, startDate as string, endDate as string);
+      } else {
+        return res.status(400).json({ error: "weekStartDate or userId required" });
+      }
+      
+      res.json(capacityData);
+    } catch (error: any) {
+      console.error("Error fetching team capacity:", error);
+      res.status(500).json({ error: "Failed to fetch team capacity", details: error.message });
+    }
+  });
+
+  app.get("/api/resources/capacity/:userId", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { userId } = req.params;
+      const { startDate, endDate } = req.query;
+      
+      const capacityData = await storage.getTeamCapacityByUser(userId, startDate as string, endDate as string);
+      res.json(capacityData);
+    } catch (error: any) {
+      console.error("Error fetching user capacity:", error);
+      res.status(500).json({ error: "Failed to fetch user capacity", details: error.message });
+    }
+  });
+
+  app.patch("/api/resources/capacity/:id", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { id } = req.params;
+      const validatedData = insertTeamCapacitySchema.partial().parse(req.body);
+      
+      const updated = await storage.updateTeamCapacity(id, validatedData);
+      if (!updated) {
+        return res.status(404).json({ error: "Team capacity record not found" });
+      }
+      
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error updating team capacity:", error);
+      res.status(500).json({ error: "Failed to update team capacity", details: error.message });
+    }
+  });
+
+  // Employee Skills Routes
+  app.post("/api/resources/skills", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const validatedData = insertEmployeeSkillSchema.parse(req.body);
+      
+      const newSkill = await storage.createEmployeeSkill(validatedData);
+      res.status(201).json(newSkill);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error creating employee skill:", error);
+      res.status(500).json({ error: "Failed to create employee skill", details: error.message });
+    }
+  });
+
+  app.get("/api/resources/skills/:userId", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { userId } = req.params;
+      
+      const skills = await storage.getEmployeeSkills(userId);
+      res.json(skills);
+    } catch (error: any) {
+      console.error("Error fetching employee skills:", error);
+      res.status(500).json({ error: "Failed to fetch employee skills", details: error.message });
+    }
+  });
+
+  app.patch("/api/resources/skills/:id", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { id } = req.params;
+      const validatedData = insertEmployeeSkillSchema.partial().parse(req.body);
+      
+      const updated = await storage.updateEmployeeSkill(id, validatedData);
+      if (!updated) {
+        return res.status(404).json({ error: "Employee skill not found" });
+      }
+      
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error updating employee skill:", error);
+      res.status(500).json({ error: "Failed to update employee skill", details: error.message });
+    }
+  });
+
+  app.delete("/api/resources/skills/:id", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { id } = req.params;
+      
+      const deleted = await storage.deleteEmployeeSkill(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Employee skill not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting employee skill:", error);
+      res.status(500).json({ error: "Failed to delete employee skill", details: error.message });
+    }
+  });
+
+  app.get("/api/resources/skills/category/:category", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { category } = req.params;
+      
+      const skills = await storage.searchSkillsByCategory(category);
+      res.json(skills);
+    } catch (error: any) {
+      console.error("Error searching skills by category:", error);
+      res.status(500).json({ error: "Failed to search skills", details: error.message });
+    }
+  });
+
+  // Resource Forecasts Routes
+  app.post("/api/resources/forecasts", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const validatedData = insertResourceForecastSchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      const newForecast = await storage.createResourceForecast(validatedData);
+      res.status(201).json(newForecast);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error creating resource forecast:", error);
+      res.status(500).json({ error: "Failed to create resource forecast", details: error.message });
+    }
+  });
+
+  app.get("/api/resources/forecasts", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { status } = req.query;
+      
+      const forecasts = await storage.getResourceForecasts({ status: status as string });
+      res.json(forecasts);
+    } catch (error: any) {
+      console.error("Error fetching resource forecasts:", error);
+      res.status(500).json({ error: "Failed to fetch resource forecasts", details: error.message });
+    }
+  });
+
+  app.get("/api/resources/forecasts/:id", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { id } = req.params;
+      
+      const forecast = await storage.getResourceForecast(id);
+      if (!forecast) {
+        return res.status(404).json({ error: "Resource forecast not found" });
+      }
+      
+      res.json(forecast);
+    } catch (error: any) {
+      console.error("Error fetching resource forecast:", error);
+      res.status(500).json({ error: "Failed to fetch resource forecast", details: error.message });
+    }
+  });
+
+  app.patch("/api/resources/forecasts/:id", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { id } = req.params;
+      const validatedData = insertResourceForecastSchema.partial().parse(req.body);
+      
+      const updated = await storage.updateResourceForecast(id, validatedData);
+      if (!updated) {
+        return res.status(404).json({ error: "Resource forecast not found" });
+      }
+      
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error updating resource forecast:", error);
+      res.status(500).json({ error: "Failed to update resource forecast", details: error.message });
+    }
+  });
+
+  app.delete("/api/resources/forecasts/:id", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { id } = req.params;
+      
+      const deleted = await storage.deleteResourceForecast(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Resource forecast not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting resource forecast:", error);
+      res.status(500).json({ error: "Failed to delete resource forecast", details: error.message });
+    }
+  });
+
+  // Workload Snapshots Routes
+  app.get("/api/resources/workload", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const { userId, startDate, endDate, days } = req.query;
+      
+      let workloadData;
+      if (days && userId) {
+        workloadData = await storage.getWorkloadTrends(userId as string, parseInt(days as string));
+      } else {
+        workloadData = await storage.getWorkloadSnapshots(
+          userId as string, 
+          startDate as string, 
+          endDate as string
+        );
+      }
+      
+      res.json(workloadData);
+    } catch (error: any) {
+      console.error("Error fetching workload data:", error);
+      res.status(500).json({ error: "Failed to fetch workload data", details: error.message });
+    }
+  });
+
+  app.post("/api/resources/workload", authenticate, async (req: any, res) => {
+    try {
+      const storage = getUserStorage(req);
+      const validatedData = insertWorkloadSnapshotSchema.parse(req.body);
+      
+      const newSnapshot = await storage.createWorkloadSnapshot(validatedData);
+      res.status(201).json(newSnapshot);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error creating workload snapshot:", error);
+      res.status(500).json({ error: "Failed to create workload snapshot", details: error.message });
     }
   });
 
