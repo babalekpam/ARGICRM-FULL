@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Redirect } from 'wouter';
 import Dashboard from '@/pages/dashboard';
 
 export default function DashboardRedirect() {
@@ -16,7 +16,7 @@ export default function DashboardRedirect() {
   
   // Platform owners should be redirected to super-admin-dashboard
   if (isPlatformOwner) {
-    return <Navigate to="/super-admin-dashboard" replace />;
+    return <Redirect to="/super-admin-dashboard" />;
   }
   
   // Regular users get the normal dashboard
