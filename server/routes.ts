@@ -460,6 +460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           success: true,
           message: 'Login successful',
+          token: token, // CRITICAL FIX: Return token so frontend can store it
           user: {
             id: user.id,
             email: user.email,
@@ -474,7 +475,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: tenant.name,
             domain: tenant.domain
           }
-          // SECURITY: Token is now set as httpOnly cookie, not returned in response
         });
 
       } catch (authError) {
