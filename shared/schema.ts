@@ -4364,6 +4364,193 @@ export const abMetricsCache = pgTable("ab_metrics_cache", {
   index("idx_ab_metrics_calculated_at").on(table.calculatedAt),
 ]);
 
+// ==================== CLIENT PORTAL SYSTEM ====================
+
+// Client Accounts - Maps to CRM contacts, white-labelable per tenant
+export const clientAccounts = pgTable("client_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  crmContactId: varchar("crm_contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  accountName: text("account_name").notNull(),
+  accountEmail: text("account_email").notNull(),
+  status: text("status").notNull().default('active'),
+  whiteLabelSettings: jsonb("white_label_settings").$type<{
+    companyName?: string;
+    logoUrl?: string;
+    primaryColor?: string;
+    customDomain?: string;
+  }>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_client_accounts_tenant").on(table.tenantId),
+  index("idx_client_accounts_email").on(table.accountEmail),
+]);
+
+// Client Portal Users - Individual login accounts for client contacts
+export const clientPortalUsers = pgTable("client_portal_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  passwordHash: text("password_hash").notNull(),
+  role: text("role").default("viewer"),
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  magicLinkToken: text("magic_link_token"),
+  magicLinkExpires: timestamp("magic_link_expires"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_client_portal_users_client_account").on(table.clientAccountId),
+  index("idx_client_portal_users_tenant").on(table.tenantId),
+  index("idx_client_portal_users_email").on(table.email),
+]);
+
+// Client Portal Sessions
+export const clientPortalSessions = pgTable("client_portal_sessions", {
+  id: text("id").primaryKey(),
+  clientUserId: varchar("client_user_id").notNull().references(() => clientPortalUsers.id, { onDelete: "cascade" }),
+  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_client_portal_sessions_client_user").on(table.clientUserId),
+  index("idx_client_portal_sessions_tenant").on(table.tenantId),
+]);
+
+// Client Project Access - Controls which projects a client can see
+export const clientProjectAccess = pgTable("client_project_access", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  accessLevel: text("access_level").default("read"),
+  grantedAt: timestamp("granted_at").defaultNow(),
+  grantedBy: varchar("granted_by").references(() => users.id),
+}, (table) => [
+  index("idx_client_project_access_tenant").on(table.tenantId),
+  index("idx_client_project_access_client").on(table.clientAccountId, table.projectId),
+  index("idx_client_project_access_project").on(table.projectId),
+]);
+
+// Client Deliverables - Documents/files shared with clients
+export const clientDeliverables = pgTable("client_deliverables", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id").references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  fileType: text("file_type"),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  status: text("status").default("available"),
+  downloadCount: integer("download_count").default(0),
+  lastDownloadedAt: timestamp("last_downloaded_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_client_deliverables_tenant").on(table.tenantId),
+  index("idx_client_deliverables_client").on(table.clientAccountId),
+  index("idx_client_deliverables_project").on(table.projectId),
+]);
+
+// Client Messages - Communication thread
+export const clientMessages = pgTable("client_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  threadId: varchar("thread_id"),
+  senderType: text("sender_type").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  message: text("message").notNull(),
+  attachments: jsonb("attachments").$type<{url: string; name: string; type: string}[]>().default([]),
+  isRead: boolean("is_read").default(false),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_client_messages_tenant").on(table.tenantId),
+  index("idx_client_messages_client").on(table.clientAccountId),
+  index("idx_client_messages_thread").on(table.threadId),
+]);
+
+// Client Notifications
+export const clientNotifications = pgTable("client_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
+  clientUserId: varchar("client_user_id").notNull().references(() => clientPortalUsers.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  linkUrl: text("link_url"),
+  isRead: boolean("is_read").default(false),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_client_notifications_tenant").on(table.tenantId),
+  index("idx_client_notifications_client_account").on(table.clientAccountId),
+  index("idx_client_notifications_client_user").on(table.clientUserId),
+]);
+
+// Schema exports for Client Portal
+export type ClientAccount = typeof clientAccounts.$inferSelect;
+export type InsertClientAccount = typeof clientAccounts.$inferInsert;
+export type ClientPortalUser = typeof clientPortalUsers.$inferSelect;
+export type InsertClientPortalUser = typeof clientPortalUsers.$inferInsert;
+export type ClientPortalSession = typeof clientPortalSessions.$inferSelect;
+export type InsertClientPortalSession = typeof clientPortalSessions.$inferInsert;
+export type ClientProjectAccess = typeof clientProjectAccess.$inferSelect;
+export type InsertClientProjectAccess = typeof clientProjectAccess.$inferInsert;
+export type ClientDeliverable = typeof clientDeliverables.$inferSelect;
+export type InsertClientDeliverable = typeof clientDeliverables.$inferInsert;
+export type ClientMessage = typeof clientMessages.$inferSelect;
+export type InsertClientMessage = typeof clientMessages.$inferInsert;
+export type ClientNotification = typeof clientNotifications.$inferSelect;
+export type InsertClientNotification = typeof clientNotifications.$inferInsert;
+
+// Insert schemas for validation
+export const insertClientAccountSchema = createInsertSchema(clientAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertClientPortalUserSchema = createInsertSchema(clientPortalUsers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertClientPortalSessionSchema = createInsertSchema(clientPortalSessions).omit({
+  createdAt: true,
+});
+
+export const insertClientProjectAccessSchema = createInsertSchema(clientProjectAccess).omit({
+  id: true,
+  grantedAt: true,
+});
+
+export const insertClientDeliverableSchema = createInsertSchema(clientDeliverables).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertClientMessageSchema = createInsertSchema(clientMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertClientNotificationSchema = createInsertSchema(clientNotifications).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Schema exports for A/B Testing
 export type AbTest = typeof abTests.$inferSelect;
 export type InsertAbTest = typeof abTests.$inferInsert;

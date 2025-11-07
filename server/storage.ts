@@ -316,6 +316,24 @@ export interface IStorage {
   // Analytics - SECURITY FIX: tenantId is MANDATORY
   getTestMetrics(testId: string, tenantId: string): Promise<AbMetricsCache[]>;
   calculateTestMetrics(testId: string, tenantId: string): Promise<void>;
+
+  // ==================== CLIENT PORTAL OPERATIONS ====================
+  // Client Account Management - TENANT ISOLATED
+  createClientAccount(data: any): Promise<any>;
+  getClientAccount(id: string, tenantId: string): Promise<any | null>;
+  getClientAccountsByTenant(tenantId: string): Promise<any[]>;
+  updateClientAccount(id: string, tenantId: string, data: any): Promise<any>;
+
+  // Client Portal User Management - TENANT ISOLATED
+  createClientPortalUser(data: any): Promise<any>;
+  getClientPortalUserByEmail(email: string, tenantId: string): Promise<any | null>;
+  getClientPortalUsers(clientAccountId: string, tenantId: string): Promise<any[]>;
+  updateClientPortalUser(id: string, tenantId: string, clientAccountId: string, data: any): Promise<any>;
+
+  // Client Sessions - TENANT ISOLATED
+  createClientSession(data: {clientUserId: string, clientAccountId: string, tenantId: string}): Promise<{sessionId: string, expiresAt: Date}>;
+  validateClientSession(sessionId: string): Promise<{clientUserId: string, clientAccountId: string, tenantId: string} | null>;
+  deleteClientSession(sessionId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -2134,6 +2152,53 @@ export class MemStorage implements IStorage {
   }
 
   async calculateTestMetrics(testId: string, tenantId: string): Promise<void> {
+    // No-op for MemStorage
+  }
+
+  // ==================== CLIENT PORTAL STUB IMPLEMENTATIONS ====================
+  // Client Portal not supported in MemStorage - these are stubs for interface compliance
+
+  async createClientAccount(data: any): Promise<any> {
+    throw new Error('Client Portal not implemented in MemStorage');
+  }
+
+  async getClientAccount(id: string, tenantId: string): Promise<any | null> {
+    return null;
+  }
+
+  async getClientAccountsByTenant(tenantId: string): Promise<any[]> {
+    return [];
+  }
+
+  async updateClientAccount(id: string, tenantId: string, data: any): Promise<any> {
+    throw new Error('Client Portal not implemented in MemStorage');
+  }
+
+  async createClientPortalUser(data: any): Promise<any> {
+    throw new Error('Client Portal not implemented in MemStorage');
+  }
+
+  async getClientPortalUserByEmail(email: string, tenantId: string): Promise<any | null> {
+    return null;
+  }
+
+  async getClientPortalUsers(clientAccountId: string, tenantId: string): Promise<any[]> {
+    return [];
+  }
+
+  async updateClientPortalUser(id: string, tenantId: string, clientAccountId: string, data: any): Promise<any> {
+    throw new Error('Client Portal not implemented in MemStorage');
+  }
+
+  async createClientSession(data: {clientUserId: string, clientAccountId: string, tenantId: string}): Promise<{sessionId: string, expiresAt: Date}> {
+    throw new Error('Client Portal not implemented in MemStorage');
+  }
+
+  async validateClientSession(sessionId: string): Promise<{clientUserId: string, clientAccountId: string, tenantId: string} | null> {
+    return null;
+  }
+
+  async deleteClientSession(sessionId: string): Promise<void> {
     // No-op for MemStorage
   }
 }

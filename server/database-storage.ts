@@ -26,7 +26,8 @@ import {
   type AbMetricsCache, type InsertAbMetricsCache,
   leads, contacts, accounts, deals, tasks, employees, appointments, campaigns, tickets, projects, invoices, users, tenants, taxRates, salesChannels,
   aiContents, aiCampaigns, aiUsage,
-  abTests, abVariants, abSessions, abEvents, abConversions, abMetricsCache
+  abTests, abVariants, abSessions, abEvents, abConversions, abMetricsCache,
+  clientAccounts, clientPortalUsers, clientPortalSessions
 } from "@shared/schema";
 import {
   type Store, type InsertStore,
@@ -38,6 +39,7 @@ import {
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import type { IStorage } from "./storage";
+import crypto from "crypto";
 
 export class DatabaseStorage implements IStorage {
   public userEmail: string;
@@ -2600,5 +2602,155 @@ export class DatabaseStorage implements IStorage {
     const d = 0.3989423 * Math.exp(-x * x / 2);
     const prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
     return x > 0 ? 1 - prob : prob;
+  }
+
+  // ==================== CLIENT PORTAL OPERATIONS ====================
+  
+  async createClientAccount(data: any): Promise<any> {
+    const [account] = await db.insert(clientAccounts).values(data).returning();
+    return account;
+  }
+
+  async getClientAccount(id: string, tenantId: string): Promise<any | null> {
+    const [account] = await db
+      .select()
+      .from(clientAccounts)
+      .where(and(eq(clientAccounts.id, id), eq(clientAccounts.tenantId, tenantId)))
+      .limit(1);
+    return account || null;
+  }
+
+  async getClientAccountsByTenant(tenantId: string): Promise<any[]> {
+    return db
+      .select()
+      .from(clientAccounts)
+      .where(eq(clientAccounts.tenantId, tenantId))
+      .orderBy(desc(clientAccounts.createdAt));
+  }
+
+  async updateClientAccount(id: string, tenantId: string, data: any): Promise<any> {
+    const [updated] = await db
+      .update(clientAccounts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(clientAccounts.id, id), eq(clientAccounts.tenantId, tenantId)))
+      .returning();
+    return updated;
+  }
+
+  async createClientPortalUser(data: any): Promise<any> {
+    const [user] = await db.insert(clientPortalUsers).values(data).returning();
+    return user;
+  }
+
+  async getClientPortalUserByEmail(email: string, tenantId: string): Promise<any | null> {
+    const [user] = await db
+      .select()
+      .from(clientPortalUsers)
+      .where(and(eq(clientPortalUsers.email, email), eq(clientPortalUsers.tenantId, tenantId)))
+      .limit(1);
+    return user || null;
+  }
+
+  async getClientPortalUsers(clientAccountId: string, tenantId: string): Promise<any[]> {
+    return db
+      .select()
+      .from(clientPortalUsers)
+      .where(and(
+        eq(clientPortalUsers.clientAccountId, clientAccountId),
+        eq(clientPortalUsers.tenantId, tenantId)
+      ))
+      .orderBy(desc(clientPortalUsers.createdAt));
+  }
+
+  async updateClientPortalUser(
+    id: string,
+    tenantId: string,
+    clientAccountId: string,
+    data: any
+  ): Promise<any> {
+    const existing = await db.select().from(clientPortalUsers)
+      .where(and(
+        eq(clientPortalUsers.id, id),
+        eq(clientPortalUsers.tenantId, tenantId),
+        eq(clientPortalUsers.clientAccountId, clientAccountId)
+      ))
+      .limit(1);
+    
+    if (!existing.length) {
+      throw new Error('Client user not found or access denied');
+    }
+    
+    const [updated] = await db
+      .update(clientPortalUsers)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(clientPortalUsers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async createClientSession(data: {clientUserId: string, clientAccountId: string, tenantId: string}): Promise<{sessionId: string, expiresAt: Date}> {
+    const user = await db.select().from(clientPortalUsers)
+      .where(and(
+        eq(clientPortalUsers.id, data.clientUserId),
+        eq(clientPortalUsers.clientAccountId, data.clientAccountId),
+        eq(clientPortalUsers.tenantId, data.tenantId)
+      ))
+      .limit(1);
+    
+    if (!user.length) {
+      throw new Error('Invalid client user or account mismatch');
+    }
+    
+    const sessionId = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    await db.insert(clientPortalSessions).values({
+      id: sessionId,
+      clientUserId: data.clientUserId,
+      clientAccountId: data.clientAccountId,
+      tenantId: data.tenantId,
+      expiresAt
+    });
+
+    return { sessionId, expiresAt };
+  }
+
+  async validateClientSession(sessionId: string): Promise<{clientUserId: string, clientAccountId: string, tenantId: string} | null> {
+    const session = await db.select({
+      session: clientPortalSessions,
+      user: clientPortalUsers,
+      account: clientAccounts,
+    })
+      .from(clientPortalSessions)
+      .innerJoin(clientPortalUsers, eq(clientPortalSessions.clientUserId, clientPortalUsers.id))
+      .innerJoin(clientAccounts, eq(clientPortalSessions.clientAccountId, clientAccounts.id))
+      .where(eq(clientPortalSessions.id, sessionId))
+      .limit(1);
+    
+    if (!session.length) return null;
+    
+    const { session: s, user, account } = session[0];
+    
+    if (s.tenantId !== user.tenantId || 
+        s.tenantId !== account.tenantId ||
+        s.clientAccountId !== user.clientAccountId ||
+        s.clientAccountId !== account.id) {
+      throw new Error('Session data integrity violation');
+    }
+    
+    if (s.expiresAt < new Date()) {
+      await this.deleteClientSession(sessionId);
+      return null;
+    }
+
+    return {
+      clientUserId: s.clientUserId,
+      clientAccountId: s.clientAccountId,
+      tenantId: s.tenantId
+    };
+  }
+
+  async deleteClientSession(sessionId: string): Promise<void> {
+    await db.delete(clientPortalSessions).where(eq(clientPortalSessions.id, sessionId));
   }
 }
