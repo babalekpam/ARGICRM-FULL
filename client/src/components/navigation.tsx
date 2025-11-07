@@ -126,6 +126,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
         { path: "/simple-messaging", label: "Simple Messaging", icon: Mail, permission: "campaigns.read" },
         { path: "/funnel-builder", label: "Funnel Builder", icon: TrendingUp, permission: "marketing.read" },
         { path: "/sales-channels", label: "Sales Channels", icon: Target, permission: "marketing.read" },
+        { path: "/ab-testing", label: "A/B Testing", icon: TestTube, permission: "marketing.read", testId: "link-ab-testing" },
         { path: "/e-commerce-dashboard", label: "E-commerce Store", icon: Store, permission: "inventory.read" },
       ]
     },

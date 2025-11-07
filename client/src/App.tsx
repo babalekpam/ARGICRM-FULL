@@ -49,6 +49,9 @@ import UnsubscribePage from "@/pages/unsubscribe";
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics"));
 const AdvancedAnalyticsPage = lazy(() => import("@/pages/advanced-analytics"));
+const AbTestingPage = lazy(() => import("@/pages/ab-testing"));
+const AbTestingCreatePage = lazy(() => import("@/pages/ab-testing-create"));
+const AbTestingDetailsPage = lazy(() => import("@/pages/ab-testing-details"));
 const ReportsPage = lazy(() => import("@/pages/reports"));
 const InvoicesPage = lazy(() => import("@/pages/invoices"));
 const ProjectsPage = lazy(() => import("@/pages/projects"));
@@ -225,6 +228,23 @@ function App() {
                           <Route path="/store-preview/:id" element={
                             <ProtectedRoute requiredPermission="inventory.read">
                               <StorePreview />
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* A/B Testing Routes */}
+                          <Route path="/ab-testing" element={
+                            <ProtectedRoute requiredPermission="marketing.read">
+                              <PageTranslator><AbTestingPage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/ab-testing/create" element={
+                            <ProtectedRoute requiredPermission="marketing.read">
+                              <PageTranslator><AbTestingCreatePage /></PageTranslator>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/ab-testing/:id" element={
+                            <ProtectedRoute requiredPermission="marketing.read">
+                              <PageTranslator><AbTestingDetailsPage /></PageTranslator>
                             </ProtectedRoute>
                           } />
                           

@@ -36,6 +36,12 @@ import {
   type AIUsage, type InsertAIUsage,
   type Store, type InsertStore,
   type EcommerceProduct, type InsertEcommerceProduct,
+  type AbTest, type InsertAbTest,
+  type AbVariant, type InsertAbVariant,
+  type AbSession, type InsertAbSession,
+  type AbEvent, type InsertAbEvent,
+  type AbConversion, type InsertAbConversion,
+  type AbMetricsCache, type InsertAbMetricsCache,
   leads, contacts, accounts, deals, tasks, employees, campaigns, tickets, projects, invoices,
   tenants, users, tenantSubscriptions, auditLogs, systemMetrics, salesChannels,
   aiContents, aiCampaigns, aiUsage,
@@ -284,6 +290,32 @@ export interface IStorage {
   createCoupon(coupon: any): Promise<any>;
   updateCoupon(id: number, coupon: any): Promise<any | undefined>;
   deleteCoupon(id: number): Promise<boolean>;
+
+  // A/B Testing operations - TENANT ISOLATED
+  // A/B Tests CRUD
+  createAbTest(data: InsertAbTest): Promise<AbTest>;
+  getAbTests(tenantId: string, filters?: {status?: string, type?: string}): Promise<AbTest[]>;
+  getAbTestById(testId: string, tenantId: string): Promise<AbTest | null>;
+  updateAbTest(testId: string, tenantId: string, data: Partial<AbTest>): Promise<AbTest>;
+  deleteAbTest(testId: string, tenantId: string): Promise<void>;
+
+  // Variants - SECURITY FIX: tenantId now MANDATORY (removed ?)
+  createAbVariant(data: InsertAbVariant): Promise<AbVariant>;
+  getAbVariants(testId: string, tenantId: string): Promise<AbVariant[]>;
+  updateAbVariant(variantId: string, tenantId: string, data: Partial<AbVariant>): Promise<AbVariant>;
+  deleteAbVariant(variantId: string, tenantId: string): Promise<void>;
+
+  // Session Assignment
+  assignVariant(testId: string, sessionId: string, ipAddress?: string, userAgent?: string): Promise<{variantId: string, variantName: string}>;
+  getSessionVariant(testId: string, sessionId: string): Promise<AbSession | null>;
+
+  // Events & Conversions - SECURITY FIX: tenantId is MANDATORY
+  recordEvent(data: InsertAbEvent, tenantId: string): Promise<void>;
+  recordConversion(data: InsertAbConversion, tenantId: string): Promise<void>;
+
+  // Analytics - SECURITY FIX: tenantId is MANDATORY
+  getTestMetrics(testId: string, tenantId: string): Promise<AbMetricsCache[]>;
+  calculateTestMetrics(testId: string, tenantId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -2039,6 +2071,70 @@ export class MemStorage implements IStorage {
   async deleteStore(id: string): Promise<boolean> {
     const numId = parseInt(id);
     return this.stores.delete(numId);
+  }
+
+  // ==================== A/B TESTING STUB IMPLEMENTATIONS ====================
+  // SECURITY FIX: All A/B testing methods require mandatory tenantId (not optional)
+  // MemStorage doesn't support A/B testing - these are stubs for interface compliance
+
+  async createAbTest(data: InsertAbTest): Promise<AbTest> {
+    throw new Error('A/B Testing not implemented in MemStorage');
+  }
+
+  async getAbTests(tenantId: string, filters?: {status?: string, type?: string}): Promise<AbTest[]> {
+    return [];
+  }
+
+  async getAbTestById(testId: string, tenantId: string): Promise<AbTest | null> {
+    return null;
+  }
+
+  async updateAbTest(testId: string, tenantId: string, data: Partial<AbTest>): Promise<AbTest> {
+    throw new Error('A/B Testing not implemented in MemStorage');
+  }
+
+  async deleteAbTest(testId: string, tenantId: string): Promise<void> {
+    throw new Error('A/B Testing not implemented in MemStorage');
+  }
+
+  async createAbVariant(data: InsertAbVariant): Promise<AbVariant> {
+    throw new Error('A/B Testing not implemented in MemStorage');
+  }
+
+  async getAbVariants(testId: string, tenantId: string): Promise<AbVariant[]> {
+    return [];
+  }
+
+  async updateAbVariant(variantId: string, tenantId: string, data: Partial<AbVariant>): Promise<AbVariant> {
+    throw new Error('A/B Testing not implemented in MemStorage');
+  }
+
+  async deleteAbVariant(variantId: string, tenantId: string): Promise<void> {
+    throw new Error('A/B Testing not implemented in MemStorage');
+  }
+
+  async assignVariant(testId: string, sessionId: string, ipAddress?: string, userAgent?: string): Promise<{variantId: string, variantName: string}> {
+    throw new Error('A/B Testing not implemented in MemStorage');
+  }
+
+  async getSessionVariant(testId: string, sessionId: string): Promise<AbSession | null> {
+    return null;
+  }
+
+  async recordEvent(data: InsertAbEvent, tenantId: string): Promise<void> {
+    // No-op for MemStorage
+  }
+
+  async recordConversion(data: InsertAbConversion, tenantId: string): Promise<void> {
+    // No-op for MemStorage
+  }
+
+  async getTestMetrics(testId: string, tenantId: string): Promise<AbMetricsCache[]> {
+    return [];
+  }
+
+  async calculateTestMetrics(testId: string, tenantId: string): Promise<void> {
+    // No-op for MemStorage
   }
 }
 

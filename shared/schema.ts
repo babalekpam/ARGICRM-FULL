@@ -4237,6 +4237,180 @@ export const aiUsage = pgTable("ai_usage", {
   index("idx_ai_usage_tenant_provider").on(table.tenantId, table.provider),
 ]);
 
+// ==================== A/B TESTING SYSTEM ====================
+
+// Main test definitions
+export const abTests = pgTable("ab_tests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // landing_page, email_campaign, product_page, form
+  targetUrl: text("target_url"),
+  status: text("status").notNull().default("draft"), // draft, running, paused, completed
+  trafficSplit: jsonb("traffic_split").$type<Record<string, number>>().default({}), // {A: 50, B: 50}
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  winnerVariantId: uuid("winner_variant_id"),
+  configuration: jsonb("configuration").$type<{
+    audienceFilters?: Record<string, any>;
+    targetingRules?: Record<string, any>;
+    conversionGoals?: string[];
+  }>().default({}),
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_ab_tests_tenant").on(table.tenantId),
+  index("idx_ab_tests_tenant_status").on(table.tenantId, table.status),
+  index("idx_ab_tests_status").on(table.status),
+  index("idx_ab_tests_type").on(table.type),
+  index("idx_ab_tests_created_by").on(table.createdBy),
+]);
+
+// Test variants
+export const abVariants = pgTable("ab_variants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(), // Control, Variant B, etc.
+  description: text("description"),
+  content: jsonb("content").$type<{
+    html?: string;
+    emailTemplate?: string;
+    productDetails?: Record<string, any>;
+    formFields?: any[];
+  }>().default({}),
+  isControl: boolean("is_control").default(false),
+  trafficAllocation: integer("traffic_allocation").notNull(), // percentage 0-100
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_ab_variants_test").on(table.testId),
+  index("idx_ab_variants_test_control").on(table.testId, table.isControl),
+]);
+
+// Visitor session tracking
+export const abSessions = pgTable("ab_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  variantId: uuid("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
+  sessionId: text("session_id").notNull(), // browser fingerprint/cookie
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+}, (table) => [
+  index("idx_ab_sessions_test").on(table.testId),
+  index("idx_ab_sessions_variant").on(table.variantId),
+  index("idx_ab_sessions_test_variant").on(table.testId, table.variantId),
+  index("idx_ab_sessions_session_id").on(table.sessionId),
+  index("idx_ab_sessions_test_session").on(table.testId, table.sessionId),
+]);
+
+// Event tracking
+export const abEvents = pgTable("ab_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id").references(() => abSessions.id, { onDelete: "cascade" }).notNull(),
+  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  variantId: uuid("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
+  eventType: text("event_type").notNull(), // impression, click, interaction
+  eventData: jsonb("event_data").$type<Record<string, any>>().default({}),
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => [
+  index("idx_ab_events_session").on(table.sessionId),
+  index("idx_ab_events_test").on(table.testId),
+  index("idx_ab_events_variant").on(table.variantId),
+  index("idx_ab_events_test_variant").on(table.testId, table.variantId),
+  index("idx_ab_events_timestamp").on(table.timestamp),
+  index("idx_ab_events_type").on(table.eventType),
+]);
+
+// Conversion tracking
+export const abConversions = pgTable("ab_conversions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id").references(() => abSessions.id, { onDelete: "cascade" }).notNull(),
+  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  variantId: uuid("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
+  conversionType: text("conversion_type").notNull(), // form_submit, purchase, lead_capture, signup
+  conversionValue: decimal("conversion_value", { precision: 12, scale: 2 }),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  convertedAt: timestamp("converted_at").defaultNow(),
+}, (table) => [
+  index("idx_ab_conversions_session").on(table.sessionId),
+  index("idx_ab_conversions_test").on(table.testId),
+  index("idx_ab_conversions_variant").on(table.variantId),
+  index("idx_ab_conversions_test_variant").on(table.testId, table.variantId),
+  index("idx_ab_conversions_type").on(table.conversionType),
+  index("idx_ab_conversions_converted_at").on(table.convertedAt),
+]);
+
+// Pre-computed analytics
+export const abMetricsCache = pgTable("ab_metrics_cache", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  variantId: uuid("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
+  impressions: integer("impressions").default(0),
+  clicks: integer("clicks").default(0),
+  conversions: integer("conversions").default(0),
+  conversionRate: decimal("conversion_rate", { precision: 10, scale: 4 }),
+  uplift: decimal("uplift", { precision: 10, scale: 4 }), // vs control
+  pValue: decimal("p_value", { precision: 10, scale: 6 }),
+  confidenceLevel: decimal("confidence_level", { precision: 5, scale: 2 }),
+  revenue: decimal("revenue", { precision: 12, scale: 2 }),
+  calculatedAt: timestamp("calculated_at").defaultNow(),
+}, (table) => [
+  index("idx_ab_metrics_test").on(table.testId),
+  index("idx_ab_metrics_variant").on(table.variantId),
+  index("idx_ab_metrics_test_variant").on(table.testId, table.variantId),
+  index("idx_ab_metrics_calculated_at").on(table.calculatedAt),
+]);
+
+// Schema exports for A/B Testing
+export type AbTest = typeof abTests.$inferSelect;
+export type InsertAbTest = typeof abTests.$inferInsert;
+export type AbVariant = typeof abVariants.$inferSelect;
+export type InsertAbVariant = typeof abVariants.$inferInsert;
+export type AbSession = typeof abSessions.$inferSelect;
+export type InsertAbSession = typeof abSessions.$inferInsert;
+export type AbEvent = typeof abEvents.$inferSelect;
+export type InsertAbEvent = typeof abEvents.$inferInsert;
+export type AbConversion = typeof abConversions.$inferSelect;
+export type InsertAbConversion = typeof abConversions.$inferInsert;
+export type AbMetricsCache = typeof abMetricsCache.$inferSelect;
+export type InsertAbMetricsCache = typeof abMetricsCache.$inferInsert;
+
+// Insert schemas for validation
+export const insertAbTestSchema = createInsertSchema(abTests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAbVariantSchema = createInsertSchema(abVariants).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAbSessionSchema = createInsertSchema(abSessions).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertAbEventSchema = createInsertSchema(abEvents).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertAbConversionSchema = createInsertSchema(abConversions).omit({
+  id: true,
+  convertedAt: true,
+});
+
+export const insertAbMetricsCacheSchema = createInsertSchema(abMetricsCache).omit({
+  id: true,
+  calculatedAt: true,
+});
+
 // Schema exports for AI content
 export type AIContent = typeof aiContents.$inferSelect;
 export type InsertAIContent = typeof aiContents.$inferInsert;

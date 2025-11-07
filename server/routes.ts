@@ -91,7 +91,18 @@ import {
   insertEmployeeSchema,
   insertSentimentAnalysisSchema,
   insertTaxRateSchema,
-  insertReportSchema
+  insertReportSchema,
+  abTests,
+  abVariants,
+  abSessions,
+  abEvents,
+  abConversions,
+  abMetricsCache,
+  insertAbTestSchema,
+  insertAbVariantSchema,
+  insertAbSessionSchema,
+  insertAbEventSchema,
+  insertAbConversionSchema
 } from "@shared/schema.js";
 import { ZodError } from "zod";
 import { authenticate, type AuthUser, verifyToken } from "./middleware/auth.js";
@@ -11702,6 +11713,656 @@ ${req.body.companyName} Team`;
         error: 'Failed to generate emotional profile',
         details: error.message
       });
+    }
+  });
+
+  // ==================== A/B TESTING API ROUTES ====================
+  
+  // Test Management Routes
+  
+  // GET /api/ab-testing/tests - List all tests for tenant with filters
+  app.get("/api/ab-testing/tests", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { status, type } = req.query;
+      
+      // SECURITY FIX: Build query conditions using AND to maintain tenant isolation
+      const conditions = [eq(abTests.tenantId, tenantId)];
+      
+      // Apply filters if provided - always AND with tenantId
+      if (status) {
+        conditions.push(eq(abTests.status, status as string));
+      }
+      if (type) {
+        conditions.push(eq(abTests.type, type as string));
+      }
+      
+      const tests = await db.select()
+        .from(abTests)
+        .where(and(...conditions))
+        .orderBy(desc(abTests.createdAt));
+      
+      // Get variant counts for each test
+      const testsWithCounts = await Promise.all(
+        tests.map(async (test) => {
+          const variants = await db.select().from(abVariants).where(eq(abVariants.testId, test.id));
+          const sessions = await db.select().from(abSessions).where(eq(abSessions.testId, test.id));
+          const conversions = await db.select().from(abConversions).where(eq(abConversions.testId, test.id));
+          
+          return {
+            ...test,
+            variantsCount: variants.length,
+            totalVisitors: sessions.length,
+            conversionRate: sessions.length > 0 
+              ? ((conversions.length / sessions.length) * 100).toFixed(2)
+              : '0.00'
+          };
+        })
+      );
+      
+      res.json(testsWithCounts);
+    } catch (error: any) {
+      console.error("Error fetching A/B tests:", error);
+      res.status(500).json({ error: "Failed to fetch A/B tests", details: error.message });
+    }
+  });
+  
+  // POST /api/ab-testing/tests - Create new test
+  app.post("/api/ab-testing/tests", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const userId = req.user.id;
+      
+      // Validate request body
+      const validatedData = insertAbTestSchema.parse({
+        ...req.body,
+        tenantId,
+        createdBy: userId
+      });
+      
+      const [newTest] = await db.insert(abTests).values(validatedData).returning();
+      
+      res.status(201).json(newTest);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error creating A/B test:", error);
+      res.status(500).json({ error: "Failed to create A/B test", details: error.message });
+    }
+  });
+  
+  // GET /api/ab-testing/tests/:id - Get test details with variants
+  app.get("/api/ab-testing/tests/:id", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${id} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const variants = await db.select().from(abVariants).where(eq(abVariants.testId, id));
+      
+      res.json({ ...test, variants });
+    } catch (error: any) {
+      console.error("Error fetching test details:", error);
+      res.status(500).json({ error: "Failed to fetch test details", details: error.message });
+    }
+  });
+  
+  // PATCH /api/ab-testing/tests/:id - Update test
+  app.patch("/api/ab-testing/tests/:id", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      // Check test exists and belongs to tenant
+      const [existingTest] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${id} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!existingTest) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const [updatedTest] = await db.update(abTests)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(sql`${abTests.id} = ${id}`)
+        .returning();
+      
+      res.json(updatedTest);
+    } catch (error: any) {
+      console.error("Error updating test:", error);
+      res.status(500).json({ error: "Failed to update test", details: error.message });
+    }
+  });
+  
+  // DELETE /api/ab-testing/tests/:id - Delete test
+  app.delete("/api/ab-testing/tests/:id", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      // Check test exists and belongs to tenant
+      const [existingTest] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${id} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!existingTest) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      // Delete test (cascade will handle related records)
+      await db.delete(abTests).where(sql`${abTests.id} = ${id}`);
+      
+      res.json({ success: true, message: "Test deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting test:", error);
+      res.status(500).json({ error: "Failed to delete test", details: error.message });
+    }
+  });
+  
+  // POST /api/ab-testing/tests/:id/start - Start test
+  app.post("/api/ab-testing/tests/:id/start", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${id} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const [updatedTest] = await db.update(abTests)
+        .set({ status: 'running', startDate: new Date(), updatedAt: new Date() })
+        .where(sql`${abTests.id} = ${id}`)
+        .returning();
+      
+      res.json(updatedTest);
+    } catch (error: any) {
+      console.error("Error starting test:", error);
+      res.status(500).json({ error: "Failed to start test", details: error.message });
+    }
+  });
+  
+  // POST /api/ab-testing/tests/:id/pause - Pause test
+  app.post("/api/ab-testing/tests/:id/pause", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${id} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const [updatedTest] = await db.update(abTests)
+        .set({ status: 'paused', updatedAt: new Date() })
+        .where(sql`${abTests.id} = ${id}`)
+        .returning();
+      
+      res.json(updatedTest);
+    } catch (error: any) {
+      console.error("Error pausing test:", error);
+      res.status(500).json({ error: "Failed to pause test", details: error.message });
+    }
+  });
+  
+  // POST /api/ab-testing/tests/:id/complete - Complete test and set winner
+  app.post("/api/ab-testing/tests/:id/complete", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      const { winnerVariantId } = req.body;
+      
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${id} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const [updatedTest] = await db.update(abTests)
+        .set({ 
+          status: 'completed', 
+          endDate: new Date(), 
+          winnerVariantId: winnerVariantId || null,
+          updatedAt: new Date() 
+        })
+        .where(sql`${abTests.id} = ${id}`)
+        .returning();
+      
+      res.json(updatedTest);
+    } catch (error: any) {
+      console.error("Error completing test:", error);
+      res.status(500).json({ error: "Failed to complete test", details: error.message });
+    }
+  });
+  
+  // Variant Management Routes
+  
+  // POST /api/ab-testing/tests/:testId/variants - Add variant to test
+  app.post("/api/ab-testing/tests/:testId/variants", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { testId } = req.params;
+      
+      // Verify test exists and belongs to tenant
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${testId} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const validatedData = insertAbVariantSchema.parse({ ...req.body, testId });
+      const [newVariant] = await db.insert(abVariants).values(validatedData).returning();
+      
+      res.status(201).json(newVariant);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error creating variant:", error);
+      res.status(500).json({ error: "Failed to create variant", details: error.message });
+    }
+  });
+  
+  // GET /api/ab-testing/tests/:testId/variants - List variants
+  app.get("/api/ab-testing/tests/:testId/variants", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { testId } = req.params;
+      
+      // Verify test exists and belongs to tenant
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${testId} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const variants = await db.select().from(abVariants).where(eq(abVariants.testId, testId));
+      res.json(variants);
+    } catch (error: any) {
+      console.error("Error fetching variants:", error);
+      res.status(500).json({ error: "Failed to fetch variants", details: error.message });
+    }
+  });
+  
+  // PATCH /api/ab-testing/variants/:id - Update variant
+  app.patch("/api/ab-testing/variants/:id", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      // Verify variant exists and test belongs to tenant
+      const [variant] = await db.select().from(abVariants).where(eq(abVariants.id, id));
+      if (!variant) {
+        return res.status(404).json({ error: "Variant not found" });
+      }
+      
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${variant.testId} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found or access denied" });
+      }
+      
+      const [updatedVariant] = await db.update(abVariants)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(abVariants.id, id))
+        .returning();
+      
+      res.json(updatedVariant);
+    } catch (error: any) {
+      console.error("Error updating variant:", error);
+      res.status(500).json({ error: "Failed to update variant", details: error.message });
+    }
+  });
+  
+  // DELETE /api/ab-testing/variants/:id - Delete variant
+  app.delete("/api/ab-testing/variants/:id", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      // Verify variant exists and test belongs to tenant
+      const [variant] = await db.select().from(abVariants).where(eq(abVariants.id, id));
+      if (!variant) {
+        return res.status(404).json({ error: "Variant not found" });
+      }
+      
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${variant.testId} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found or access denied" });
+      }
+      
+      await db.delete(abVariants).where(eq(abVariants.id, id));
+      res.json({ success: true, message: "Variant deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting variant:", error);
+      res.status(500).json({ error: "Failed to delete variant", details: error.message });
+    }
+  });
+  
+  // Tracking & Analytics Routes
+  
+  // POST /api/ab-testing/assign - Assign visitor to variant
+  app.post("/api/ab-testing/assign", async (req, res) => {
+    try {
+      const { testId, sessionId } = req.body;
+      
+      if (!testId || !sessionId) {
+        return res.status(400).json({ error: "testId and sessionId are required" });
+      }
+      
+      // Check if session already assigned
+      const [existingSession] = await db.select().from(abSessions)
+        .where(sql`${abSessions.testId} = ${testId} AND ${abSessions.sessionId} = ${sessionId}`);
+      
+      if (existingSession) {
+        return res.json(existingSession);
+      }
+      
+      // Get test variants
+      const variants = await db.select().from(abVariants).where(eq(abVariants.testId, testId));
+      
+      if (variants.length === 0) {
+        return res.status(404).json({ error: "No variants found for this test" });
+      }
+      
+      // Randomly assign to variant based on traffic allocation
+      const totalAllocation = variants.reduce((sum, v) => sum + v.trafficAllocation, 0);
+      const random = Math.random() * totalAllocation;
+      let cumulativeAllocation = 0;
+      let assignedVariant = variants[0];
+      
+      for (const variant of variants) {
+        cumulativeAllocation += variant.trafficAllocation;
+        if (random <= cumulativeAllocation) {
+          assignedVariant = variant;
+          break;
+        }
+      }
+      
+      const validatedData = insertAbSessionSchema.parse({
+        testId,
+        variantId: assignedVariant.id,
+        sessionId,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
+      });
+      
+      const [newSession] = await db.insert(abSessions).values(validatedData).returning();
+      
+      res.json(newSession);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error assigning visitor:", error);
+      res.status(500).json({ error: "Failed to assign visitor", details: error.message });
+    }
+  });
+  
+  // POST /api/ab-testing/events - Record event
+  app.post("/api/ab-testing/events", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { sessionId, testId, variantId, eventType, eventData } = req.body;
+      
+      if (!sessionId || !testId || !variantId || !eventType) {
+        return res.status(400).json({ 
+          error: "sessionId, testId, variantId, and eventType are required" 
+        });
+      }
+      
+      // SECURITY FIX: Verify session belongs to a test owned by this tenant
+      const [result] = await db.select({ session: abSessions, test: abTests })
+        .from(abSessions)
+        .innerJoin(abTests, eq(abSessions.testId, abTests.id))
+        .where(and(
+          eq(abSessions.sessionId, sessionId),
+          eq(abSessions.testId, testId),
+          eq(abTests.tenantId, tenantId)
+        ))
+        .limit(1);
+      
+      if (!result) {
+        return res.status(404).json({ error: "Session not found or access denied" });
+      }
+      
+      const validatedData = insertAbEventSchema.parse({
+        sessionId: result.session.id,  // Use the UUID session ID from the table
+        testId,
+        variantId,
+        eventType,
+        eventData: eventData || {}
+      });
+      
+      const [newEvent] = await db.insert(abEvents).values(validatedData).returning();
+      
+      res.json(newEvent);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error recording event:", error);
+      res.status(500).json({ error: "Failed to record event", details: error.message });
+    }
+  });
+  
+  // POST /api/ab-testing/conversions - Record conversion
+  app.post("/api/ab-testing/conversions", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { sessionId, testId, variantId, conversionType, conversionValue, metadata } = req.body;
+      
+      if (!sessionId || !testId || !variantId || !conversionType) {
+        return res.status(400).json({ 
+          error: "sessionId, testId, variantId, and conversionType are required" 
+        });
+      }
+      
+      // SECURITY FIX: Verify session belongs to a test owned by this tenant
+      const [result] = await db.select({ session: abSessions, test: abTests })
+        .from(abSessions)
+        .innerJoin(abTests, eq(abSessions.testId, abTests.id))
+        .where(and(
+          eq(abSessions.sessionId, sessionId),
+          eq(abSessions.testId, testId),
+          eq(abTests.tenantId, tenantId)
+        ))
+        .limit(1);
+      
+      if (!result) {
+        return res.status(404).json({ error: "Session not found or access denied" });
+      }
+      
+      const validatedData = insertAbConversionSchema.parse({
+        sessionId: result.session.id,  // Use the UUID session ID from the table
+        testId,
+        variantId,
+        conversionType,
+        conversionValue: conversionValue || null,
+        metadata: metadata || {}
+      });
+      
+      const [newConversion] = await db.insert(abConversions).values(validatedData).returning();
+      
+      res.json(newConversion);
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error recording conversion:", error);
+      res.status(500).json({ error: "Failed to record conversion", details: error.message });
+    }
+  });
+  
+  // GET /api/ab-testing/tests/:id/metrics - Get test analytics
+  app.get("/api/ab-testing/tests/:id/metrics", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      // Verify test exists and belongs to tenant
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${id} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      // Get cached metrics first
+      const cachedMetrics = await db.select().from(abMetricsCache)
+        .where(eq(abMetricsCache.testId, id));
+      
+      if (cachedMetrics.length > 0) {
+        return res.json({ test, metrics: cachedMetrics });
+      }
+      
+      // If no cache, calculate metrics on the fly
+      const variants = await db.select().from(abVariants).where(eq(abVariants.testId, id));
+      
+      const metricsPromises = variants.map(async (variant) => {
+        const sessions = await db.select().from(abSessions)
+          .where(sql`${abSessions.testId} = ${id} AND ${abSessions.variantId} = ${variant.id}`);
+        
+        const events = await db.select().from(abEvents)
+          .where(sql`${abEvents.testId} = ${id} AND ${abEvents.variantId} = ${variant.id}`);
+        
+        const conversions = await db.select().from(abConversions)
+          .where(sql`${abConversions.testId} = ${id} AND ${abConversions.variantId} = ${variant.id}`);
+        
+        const impressions = sessions.length;
+        const clicks = events.filter(e => e.eventType === 'click').length;
+        const conversionCount = conversions.length;
+        const conversionRate = impressions > 0 ? (conversionCount / impressions) * 100 : 0;
+        
+        return {
+          variantId: variant.id,
+          variantName: variant.name,
+          impressions,
+          clicks,
+          conversions: conversionCount,
+          conversionRate,
+          isControl: variant.isControl
+        };
+      });
+      
+      const metrics = await Promise.all(metricsPromises);
+      
+      // Calculate statistical significance
+      const controlMetric = metrics.find(m => m.isControl);
+      const metricsWithUplift = metrics.map(m => {
+        if (!controlMetric || m.isControl) {
+          return { ...m, uplift: 0, pValue: null, confidenceLevel: null };
+        }
+        
+        const uplift = controlMetric.conversionRate > 0 
+          ? ((m.conversionRate - controlMetric.conversionRate) / controlMetric.conversionRate) * 100 
+          : 0;
+        
+        // Simple z-test for statistical significance
+        const p1 = m.conversionRate / 100;
+        const p2 = controlMetric.conversionRate / 100;
+        const n1 = m.impressions;
+        const n2 = controlMetric.impressions;
+        
+        if (n1 > 0 && n2 > 0) {
+          const pooledP = ((p1 * n1) + (p2 * n2)) / (n1 + n2);
+          const se = Math.sqrt(pooledP * (1 - pooledP) * ((1 / n1) + (1 / n2)));
+          const zScore = se > 0 ? Math.abs(p1 - p2) / se : 0;
+          
+          // Approximate p-value using normal distribution
+          const pValue = 2 * (1 - normalCDF(zScore));
+          const confidenceLevel = (1 - pValue) * 100;
+          
+          return { ...m, uplift, pValue, confidenceLevel };
+        }
+        
+        return { ...m, uplift, pValue: null, confidenceLevel: null };
+      });
+      
+      res.json({ test, metrics: metricsWithUplift });
+    } catch (error: any) {
+      console.error("Error fetching test metrics:", error);
+      res.status(500).json({ error: "Failed to fetch test metrics", details: error.message });
+    }
+  });
+  
+  // Helper function for normal CDF (standard normal distribution cumulative distribution function)
+  function normalCDF(x: number): number {
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const d = 0.3989423 * Math.exp(-x * x / 2);
+    const prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return x > 0 ? 1 - prob : prob;
+  }
+  
+  // POST /api/ab-testing/tests/:id/calculate-metrics - Trigger metrics calculation
+  app.post("/api/ab-testing/tests/:id/calculate-metrics", authenticate, async (req: any, res) => {
+    try {
+      const tenantId = req.user.tenantId;
+      const { id } = req.params;
+      
+      // Verify test exists and belongs to tenant
+      const [test] = await db.select().from(abTests)
+        .where(sql`${abTests.id} = ${id} AND ${abTests.tenantId} = ${tenantId}`);
+      
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const variants = await db.select().from(abVariants).where(eq(abVariants.testId, id));
+      
+      // Delete old cached metrics
+      await db.delete(abMetricsCache).where(eq(abMetricsCache.testId, id));
+      
+      // Calculate and cache new metrics
+      for (const variant of variants) {
+        const sessions = await db.select().from(abSessions)
+          .where(sql`${abSessions.testId} = ${id} AND ${abSessions.variantId} = ${variant.id}`);
+        
+        const events = await db.select().from(abEvents)
+          .where(sql`${abEvents.testId} = ${id} AND ${abEvents.variantId} = ${variant.id}`);
+        
+        const conversions = await db.select().from(abConversions)
+          .where(sql`${abConversions.testId} = ${id} AND ${abConversions.variantId} = ${variant.id}`);
+        
+        const impressions = sessions.length;
+        const clicks = events.filter(e => e.eventType === 'click').length;
+        const conversionCount = conversions.length;
+        const conversionRate = impressions > 0 ? (conversionCount / impressions) : 0;
+        const revenue = conversions.reduce((sum, c) => sum + Number(c.conversionValue || 0), 0);
+        
+        await db.insert(abMetricsCache).values({
+          testId: id,
+          variantId: variant.id,
+          impressions,
+          clicks,
+          conversions: conversionCount,
+          conversionRate: conversionRate.toString(),
+          uplift: "0", // Will be calculated in metrics endpoint
+          pValue: null,
+          confidenceLevel: null,
+          revenue: revenue.toString()
+        });
+      }
+      
+      res.json({ success: true, message: "Metrics calculated and cached successfully" });
+    } catch (error: any) {
+      console.error("Error calculating metrics:", error);
+      res.status(500).json({ error: "Failed to calculate metrics", details: error.message });
     }
   });
 

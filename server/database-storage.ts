@@ -18,8 +18,15 @@ import {
   type AIContent, type InsertAIContent,
   type AICampaign, type InsertAICampaign,
   type AIUsage, type InsertAIUsage,
+  type AbTest, type InsertAbTest,
+  type AbVariant, type InsertAbVariant,
+  type AbSession, type InsertAbSession,
+  type AbEvent, type InsertAbEvent,
+  type AbConversion, type InsertAbConversion,
+  type AbMetricsCache, type InsertAbMetricsCache,
   leads, contacts, accounts, deals, tasks, employees, appointments, campaigns, tickets, projects, invoices, users, tenants, taxRates, salesChannels,
-  aiContents, aiCampaigns, aiUsage
+  aiContents, aiCampaigns, aiUsage,
+  abTests, abVariants, abSessions, abEvents, abConversions, abMetricsCache
 } from "@shared/schema";
 import {
   type Store, type InsertStore,
@@ -2158,5 +2165,440 @@ export class DatabaseStorage implements IStorage {
       console.error('Error deleting ecommerce product:', error);
       throw error;
     }
+  }
+
+  // ==================== A/B TESTING OPERATIONS ====================
+
+  // A/B Tests CRUD
+  async createAbTest(data: InsertAbTest): Promise<AbTest> {
+    try {
+      const [newTest] = await db.insert(abTests).values(data).returning();
+      return newTest;
+    } catch (error) {
+      console.error('Error creating A/B test:', error);
+      throw error;
+    }
+  }
+
+  async getAbTests(tenantId: string, filters?: {status?: string, type?: string}): Promise<AbTest[]> {
+    try {
+      const conditions = [eq(abTests.tenantId, tenantId)];
+      
+      if (filters?.status) {
+        conditions.push(eq(abTests.status, filters.status));
+      }
+      if (filters?.type) {
+        conditions.push(eq(abTests.type, filters.type));
+      }
+      
+      return await db.select().from(abTests)
+        .where(and(...conditions))
+        .orderBy(desc(abTests.createdAt));
+    } catch (error) {
+      console.error('Error fetching A/B tests:', error);
+      return [];
+    }
+  }
+
+  async getAbTestById(testId: string, tenantId: string): Promise<AbTest | null> {
+    try {
+      const [test] = await db.select().from(abTests)
+        .where(and(eq(abTests.id, testId), eq(abTests.tenantId, tenantId)));
+      return test || null;
+    } catch (error) {
+      console.error('Error fetching A/B test by ID:', error);
+      return null;
+    }
+  }
+
+  async updateAbTest(testId: string, tenantId: string, data: Partial<AbTest>): Promise<AbTest> {
+    try {
+      const [updatedTest] = await db.update(abTests)
+        .set({ ...data, updatedAt: new Date() })
+        .where(and(eq(abTests.id, testId), eq(abTests.tenantId, tenantId)))
+        .returning();
+      
+      if (!updatedTest) {
+        throw new Error('A/B test not found');
+      }
+      
+      return updatedTest;
+    } catch (error) {
+      console.error('Error updating A/B test:', error);
+      throw error;
+    }
+  }
+
+  async deleteAbTest(testId: string, tenantId: string): Promise<void> {
+    try {
+      await db.delete(abTests)
+        .where(and(eq(abTests.id, testId), eq(abTests.tenantId, tenantId)));
+    } catch (error) {
+      console.error('Error deleting A/B test:', error);
+      throw error;
+    }
+  }
+
+  // Variants
+  async createAbVariant(data: InsertAbVariant): Promise<AbVariant> {
+    try {
+      const [newVariant] = await db.insert(abVariants).values(data).returning();
+      return newVariant;
+    } catch (error) {
+      console.error('Error creating A/B variant:', error);
+      throw error;
+    }
+  }
+
+  async getAbVariants(testId: string, tenantId: string): Promise<AbVariant[]> {
+    try {
+      // SECURITY FIX: ALWAYS verify test belongs to this tenant before returning variants
+      // tenantId is now MANDATORY - compiler enforces it cannot be omitted
+      const [test] = await db.select().from(abTests)
+        .where(and(eq(abTests.id, testId), eq(abTests.tenantId, tenantId)))
+        .limit(1);
+      
+      if (!test) {
+        throw new Error('Test not found or access denied');
+      }
+      
+      return await db.select().from(abVariants)
+        .where(eq(abVariants.testId, testId))
+        .orderBy(abVariants.isControl);
+    } catch (error) {
+      console.error('Error fetching A/B variants:', error);
+      throw error;
+    }
+  }
+
+  async updateAbVariant(variantId: string, tenantId: string, data: Partial<AbVariant>): Promise<AbVariant> {
+    try {
+      // SECURITY FIX: Join to verify tenant ownership before update
+      const [result] = await db.select({ 
+        variant: abVariants, 
+        test: abTests 
+      })
+        .from(abVariants)
+        .innerJoin(abTests, eq(abVariants.testId, abTests.id))
+        .where(and(eq(abVariants.id, variantId), eq(abTests.tenantId, tenantId)))
+        .limit(1);
+      
+      if (!result) {
+        throw new Error('Variant not found or access denied');
+      }
+      
+      // Now safe to update
+      const [updatedVariant] = await db.update(abVariants)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(abVariants.id, variantId))
+        .returning();
+      
+      return updatedVariant;
+    } catch (error) {
+      console.error('Error updating A/B variant:', error);
+      throw error;
+    }
+  }
+
+  async deleteAbVariant(variantId: string, tenantId: string): Promise<void> {
+    try {
+      // SECURITY FIX: Verify tenant ownership before delete
+      const [result] = await db.select({ 
+        variant: abVariants, 
+        test: abTests 
+      })
+        .from(abVariants)
+        .innerJoin(abTests, eq(abVariants.testId, abTests.id))
+        .where(and(eq(abVariants.id, variantId), eq(abTests.tenantId, tenantId)))
+        .limit(1);
+      
+      if (!result) {
+        throw new Error('Variant not found or access denied');
+      }
+      
+      // Now safe to delete
+      await db.delete(abVariants).where(eq(abVariants.id, variantId));
+    } catch (error) {
+      console.error('Error deleting A/B variant:', error);
+      throw error;
+    }
+  }
+
+  // Session Assignment
+  async assignVariant(testId: string, sessionId: string, ipAddress?: string, userAgent?: string): Promise<{variantId: string, variantName: string}> {
+    try {
+      // Check if session already has an assignment
+      const [existingSession] = await db.select().from(abSessions)
+        .where(and(eq(abSessions.testId, testId), eq(abSessions.sessionId, sessionId)))
+        .limit(1);
+      
+      if (existingSession) {
+        const [variant] = await db.select().from(abVariants)
+          .where(eq(abVariants.id, existingSession.variantId));
+        return {
+          variantId: existingSession.variantId,
+          variantName: variant?.name || 'Unknown'
+        };
+      }
+      
+      // Get all variants for the test
+      const variants = await db.select().from(abVariants)
+        .where(eq(abVariants.testId, testId));
+      
+      if (variants.length === 0) {
+        throw new Error('No variants found for test');
+      }
+      
+      // Use traffic allocation to randomly assign variant
+      const random = Math.random() * 100;
+      let cumulative = 0;
+      let selectedVariant = variants[0];
+      
+      for (const variant of variants) {
+        cumulative += variant.trafficAllocation;
+        if (random <= cumulative) {
+          selectedVariant = variant;
+          break;
+        }
+      }
+      
+      // Create session assignment
+      await db.insert(abSessions).values({
+        testId,
+        variantId: selectedVariant.id,
+        sessionId,
+        ipAddress,
+        userAgent
+      });
+      
+      return {
+        variantId: selectedVariant.id,
+        variantName: selectedVariant.name
+      };
+    } catch (error) {
+      console.error('Error assigning variant:', error);
+      throw error;
+    }
+  }
+
+  async getSessionVariant(testId: string, sessionId: string): Promise<AbSession | null> {
+    try {
+      const [session] = await db.select().from(abSessions)
+        .where(and(eq(abSessions.testId, testId), eq(abSessions.sessionId, sessionId)))
+        .limit(1);
+      return session || null;
+    } catch (error) {
+      console.error('Error fetching session variant:', error);
+      return null;
+    }
+  }
+
+  // Events & Conversions
+  async recordEvent(data: InsertAbEvent, tenantId: string): Promise<void> {
+    try {
+      // SECURITY FIX: Verify session belongs to tenant's test
+      const [session] = await db.select({ session: abSessions, test: abTests })
+        .from(abSessions)
+        .innerJoin(abTests, eq(abSessions.testId, abTests.id))
+        .where(and(
+          eq(abSessions.sessionId, data.sessionId),
+          eq(abSessions.testId, data.testId),
+          eq(abTests.tenantId, tenantId)
+        ))
+        .limit(1);
+      
+      if (!session) {
+        throw new Error('Session not found or access denied');
+      }
+      
+      await db.insert(abEvents).values(data);
+    } catch (error) {
+      console.error('Error recording event:', error);
+      throw error;
+    }
+  }
+
+  async recordConversion(data: InsertAbConversion, tenantId: string): Promise<void> {
+    try {
+      // SECURITY FIX: Verify session belongs to tenant's test
+      const [session] = await db.select({ session: abSessions, test: abTests })
+        .from(abSessions)
+        .innerJoin(abTests, eq(abSessions.testId, abTests.id))
+        .where(and(
+          eq(abSessions.sessionId, data.sessionId),
+          eq(abSessions.testId, data.testId),
+          eq(abTests.tenantId, tenantId)
+        ))
+        .limit(1);
+      
+      if (!session) {
+        throw new Error('Session not found or access denied');
+      }
+      
+      await db.insert(abConversions).values(data);
+    } catch (error) {
+      console.error('Error recording conversion:', error);
+      throw error;
+    }
+  }
+
+  // Analytics
+  async getTestMetrics(testId: string, tenantId: string): Promise<AbMetricsCache[]> {
+    try {
+      // SECURITY FIX: Verify test ownership before returning metrics
+      const [test] = await db.select().from(abTests)
+        .where(and(eq(abTests.id, testId), eq(abTests.tenantId, tenantId)))
+        .limit(1);
+      
+      if (!test) {
+        throw new Error('Test not found or access denied');
+      }
+      
+      return await db.select().from(abMetricsCache)
+        .where(eq(abMetricsCache.testId, testId))
+        .orderBy(desc(abMetricsCache.calculatedAt));
+    } catch (error) {
+      console.error('Error fetching test metrics:', error);
+      throw error;
+    }
+  }
+
+  async calculateTestMetrics(testId: string, tenantId: string): Promise<void> {
+    try {
+      // SECURITY FIX: Verify test ownership before calculating metrics
+      const [test] = await db.select().from(abTests)
+        .where(and(eq(abTests.id, testId), eq(abTests.tenantId, tenantId)))
+        .limit(1);
+      
+      if (!test) {
+        throw new Error('Test not found or access denied');
+      }
+      
+      // Get all variants for the test
+      const variants = await db.select().from(abVariants)
+        .where(eq(abVariants.testId, testId));
+      
+      if (variants.length === 0) {
+        return;
+      }
+      
+      // Find control variant
+      const controlVariant = variants.find(v => v.isControl);
+      let controlMetrics: any = null;
+      
+      // Calculate metrics for each variant
+      for (const variant of variants) {
+        // Count impressions (unique sessions)
+        const sessionsResult = await db.execute(sql`
+          SELECT COUNT(DISTINCT id) as count
+          FROM ${abSessions}
+          WHERE test_id = ${testId} AND variant_id = ${variant.id}
+        `);
+        const impressions = Number(sessionsResult.rows[0]?.count || 0);
+        
+        // Count clicks
+        const clicksResult = await db.execute(sql`
+          SELECT COUNT(*) as count
+          FROM ${abEvents}
+          WHERE test_id = ${testId} AND variant_id = ${variant.id}
+          AND event_type = 'click'
+        `);
+        const clicks = Number(clicksResult.rows[0]?.count || 0);
+        
+        // Count conversions
+        const conversionsResult = await db.execute(sql`
+          SELECT COUNT(*) as count, COALESCE(SUM(CAST(conversion_value AS DECIMAL)), 0) as revenue
+          FROM ${abConversions}
+          WHERE test_id = ${testId} AND variant_id = ${variant.id}
+        `);
+        const conversions = Number(conversionsResult.rows[0]?.count || 0);
+        const revenue = Number(conversionsResult.rows[0]?.revenue || 0);
+        
+        // Calculate conversion rate
+        const conversionRate = impressions > 0 ? (conversions / impressions) * 100 : 0;
+        
+        const metrics = {
+          impressions,
+          clicks,
+          conversions,
+          conversionRate,
+          revenue
+        };
+        
+        // Store control metrics for uplift calculation
+        if (variant.isControl) {
+          controlMetrics = metrics;
+        }
+        
+        // Calculate uplift and statistical significance
+        let uplift = 0;
+        let pValue = 1.0;
+        let confidenceLevel = 0;
+        
+        if (controlMetrics && !variant.isControl && controlMetrics.impressions > 0) {
+          // Calculate uplift percentage
+          const controlRate = controlMetrics.conversionRate;
+          uplift = controlRate > 0 ? ((conversionRate - controlRate) / controlRate) * 100 : 0;
+          
+          // Calculate statistical significance using z-test
+          const p1 = conversionRate / 100;
+          const p2 = controlRate / 100;
+          const n1 = impressions;
+          const n2 = controlMetrics.impressions;
+          
+          if (n1 > 0 && n2 > 0) {
+            const pooledP = ((p1 * n1) + (p2 * n2)) / (n1 + n2);
+            const standardError = Math.sqrt(pooledP * (1 - pooledP) * ((1 / n1) + (1 / n2)));
+            
+            if (standardError > 0) {
+              const zScore = Math.abs((p1 - p2) / standardError);
+              
+              // Approximate p-value from z-score (two-tailed test)
+              // This is a simplified calculation
+              pValue = 2 * (1 - this.normalCDF(zScore));
+              confidenceLevel = (1 - pValue) * 100;
+            }
+          }
+        }
+        
+        // Upsert metrics cache
+        await db.insert(abMetricsCache).values({
+          testId,
+          variantId: variant.id,
+          impressions,
+          clicks,
+          conversions,
+          conversionRate: conversionRate.toString(),
+          uplift: uplift.toString(),
+          pValue: pValue.toString(),
+          confidenceLevel: confidenceLevel.toString(),
+          revenue: revenue.toString()
+        }).onConflictDoUpdate({
+          target: [abMetricsCache.testId, abMetricsCache.variantId],
+          set: {
+            impressions,
+            clicks,
+            conversions,
+            conversionRate: conversionRate.toString(),
+            uplift: uplift.toString(),
+            pValue: pValue.toString(),
+            confidenceLevel: confidenceLevel.toString(),
+            revenue: revenue.toString(),
+            calculatedAt: new Date()
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error calculating test metrics:', error);
+      throw error;
+    }
+  }
+
+  // Helper function for normal CDF approximation
+  private normalCDF(x: number): number {
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const d = 0.3989423 * Math.exp(-x * x / 2);
+    const prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return x > 0 ? 1 - prob : prob;
   }
 }
