@@ -223,8 +223,9 @@ export default function SuperAdminDashboard() {
   });
 
   // Fetch user registrations - Uses default queryFn with automatic Authorization header
-  const { data: registrationData, isLoading: registrationsLoading, refetch: refetchRegistrations } = useQuery({
-    queryKey: ['/api/admin/users']
+  const { data: registrationData, isLoading: registrationsLoading, error: registrationsError, refetch: refetchRegistrations } = useQuery({
+    queryKey: ['/api/admin/users'],
+    retry: false // Don't retry on 403 errors
   });
 
   // Fetch platform stats - Uses default queryFn with automatic Authorization header
@@ -369,6 +370,30 @@ export default function SuperAdminDashboard() {
           <AlertDescription>
             You must be logged in as a platform owner (abel@argilette.com or admin@default.com) to access this dashboard.
             Current account: <strong>{currentUserEmail}</strong>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Helpful explanation for different device/account scenarios */}
+      {isPlatformOwner && (
+        <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950" data-testid="alert-device-info">
+          <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertTitle>Seeing Different Data on Different Devices?</AlertTitle>
+          <AlertDescription>
+            The Super Admin Dashboard shows <strong>ALL users across ALL tenants</strong> (currently <strong>{(registrationData as any)?.totalUsers || 0} users</strong>).
+            {registrationsError && (
+              <span className="block mt-2 text-destructive font-semibold">
+                Error loading user data. Please check your connection and try refreshing.
+              </span>
+            )}
+            <div className="mt-2 space-y-1 text-sm">
+              <p><strong>Platform Owner accounts</strong> (abel@argilette.com, admin@default.com): See all {(registrationData as any)?.totalUsers || 0} users</p>
+              <p><strong>Regular user accounts</strong>: Cannot access this dashboard (403 error)</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                💡 Tip: If you see different numbers on laptop vs phone, you're logged in with different accounts on each device. 
+                Check the "Logged in as" field above to confirm which account you're using.
+              </p>
+            </div>
           </AlertDescription>
         </Alert>
       )}
