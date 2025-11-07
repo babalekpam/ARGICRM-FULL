@@ -15,11 +15,19 @@ export default function ProtectedRoute({
   requiredPermission, 
   requiredRole 
 }: ProtectedRouteProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
-  // Minimal debug logging to reduce console noise
-  if (!isAuthenticated) {
-    console.log('ProtectedRoute: User not authenticated, redirecting to login');
+  // CRITICAL FIX: Wait for auth to finish loading before redirecting
+  // This prevents redirect loops when auth is being restored
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   // If user is not authenticated, redirect to landing page with login form
