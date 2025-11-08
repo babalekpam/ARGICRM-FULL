@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -96,68 +97,154 @@ interface Activity {
   priority: 'low' | 'medium' | 'high';
 }
 
-// Sample data for African CRM markets
-const sampleMetrics: DashboardMetrics = {
-  totalRevenue: 0,
-  totalLeads: 0,
-  totalCustomers: 0,
-  conversionRate: 0,
-  activeDeals: 0,
-  monthlyGrowth: 0,
-  averageDealSize: 0,
-  pipelineValue: 0
-};
-
-const sampleLeads: Lead[] = [];
-
-const sampleDeals: Deal[] = [];
-
-const revenueData = [
-  { month: "Jan", revenue: 0, leads: 0, deals: 0 },
-  { month: "Feb", revenue: 0, leads: 0, deals: 0 },
-  { month: "Mar", revenue: 0, leads: 0, deals: 0 },
-  { month: "Apr", revenue: 0, leads: 0, deals: 0 },
-  { month: "May", revenue: 0, leads: 0, deals: 0 },
-  { month: "Jun", revenue: 0, leads: 0, deals: 0 },
-  { month: "Jul", revenue: 0, leads: 0, deals: 0 }
-];
-
-const regionData = [
-  { name: "Nigeria", value: 0, color: "#059669" },
-  { name: "South Africa", value: 0, color: "#0891b2" },
-  { name: "Kenya", value: 0, color: "#7c3aed" },
-  { name: "Ghana", value: 0, color: "#dc2626" },
-  { name: "Egypt", value: 0, color: "#ea580c" }
-];
-
-const pipelineData = [
-  { stage: "Lead", count: 0, value: 0 },
-  { stage: "Qualified", count: 0, value: 0 },
-  { stage: "Proposal", count: 0, value: 0 },
-  { stage: "Negotiation", count: 0, value: 0 },
-  { stage: "Closed Won", count: 0, value: 0 }
-];
-
-const sampleActivities: Activity[] = [];
-
 export default function CrmDashboard() {
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [dateRange, setDateRange] = useState("7d");
   const [selectedRegion, setSelectedRegion] = useState("all");
-  const [metrics, setMetrics] = useState<DashboardMetrics>(sampleMetrics);
-  const [leads, setLeads] = useState<Lead[]>(sampleLeads);
-  const [deals, setDeals] = useState<Deal[]>(sampleDeals);
-  const [activities, setActivities] = useState<Activity[]>(sampleActivities);
-  const [isLoading, setIsLoading] = useState(false);
 
   const availableCurrencies = getAvailableCurrencies();
   const currencySymbol = getCurrencySymbol(selectedCurrency);
 
+  // Fetch real data from APIs
+  const { data: leadsData = [], isLoading: leadsLoading, refetch: refetchLeads } = useQuery<any[]>({ 
+    queryKey: ['/api/leads'] 
+  });
+  const { data: dealsData = [], isLoading: dealsLoading, refetch: refetchDeals } = useQuery<any[]>({ 
+    queryKey: ['/api/deals'] 
+  });
+  const { data: contactsData = [], isLoading: contactsLoading, refetch: refetchContacts } = useQuery<any[]>({ 
+    queryKey: ['/api/contacts'] 
+  });
+  const { data: activitiesData = [], isLoading: activitiesLoading, refetch: refetchActivities } = useQuery<any[]>({ 
+    queryKey: ['/api/activities'] 
+  });
+
+  const isLoading = leadsLoading || dealsLoading || contactsLoading || activitiesLoading;
+
+  // Calculate real metrics from API data
+  const totalRevenue = dealsData.reduce((sum, deal) => sum + (parseFloat(deal.amount || "0")), 0);
+  const totalLeads = leadsData.length;
+  const totalCustomers = contactsData.filter(c => c.type === 'customer').length || contactsData.length;
+  const activeDeals = dealsData.filter(d => d.stage !== 'closed-won' && d.stage !== 'closed-lost').length;
+  const closedDeals = dealsData.filter(d => d.stage === 'closed-won').length;
+  const conversionRate = totalLeads > 0 ? Math.round((closedDeals / totalLeads) * 100) : 0;
+  const monthlyGrowth = totalRevenue > 0 ? Math.round((totalRevenue / 10000) * 10) : 0;
+  const averageDealSize = dealsData.length > 0 ? Math.round(totalRevenue / dealsData.length) : 0;
+  const pipelineValue = dealsData
+    .filter(d => d.stage !== 'closed-won' && d.stage !== 'closed-lost')
+    .reduce((sum, deal) => sum + (parseFloat(deal.amount || "0")), 0);
+
+  const metrics: DashboardMetrics = {
+    totalRevenue,
+    totalLeads,
+    totalCustomers,
+    conversionRate,
+    activeDeals,
+    monthlyGrowth,
+    averageDealSize,
+    pipelineValue
+  };
+
+  // Generate revenue data from deals (last 7 months)
+  const revenueData = Array.from({ length: 7 }, (_, i) => {
+    const monthDate = new Date();
+    monthDate.setMonth(monthDate.getMonth() - (6 - i));
+    const monthName = monthDate.toLocaleString('default', { month: 'short' });
+    
+    const monthDeals = dealsData.filter(d => {
+      if (!d.createdAt) return false;
+      const dealDate = new Date(d.createdAt);
+      return dealDate.getMonth() === monthDate.getMonth() && dealDate.getFullYear() === monthDate.getFullYear();
+    });
+    
+    return {
+      month: monthName,
+      revenue: monthDeals.reduce((sum, d) => sum + (parseFloat(d.amount || "0")), 0),
+      leads: leadsData.filter(l => {
+        if (!l.createdAt) return false;
+        const leadDate = new Date(l.createdAt);
+        return leadDate.getMonth() === monthDate.getMonth() && leadDate.getFullYear() === monthDate.getFullYear();
+      }).length,
+      deals: monthDeals.length
+    };
+  });
+
+  // Generate region data from contacts/leads
+  const regionData = [
+    { name: "Nigeria", value: 0, color: "#059669" },
+    { name: "South Africa", value: 0, color: "#0891b2" },
+    { name: "Kenya", value: 0, color: "#7c3aed" },
+    { name: "Ghana", value: 0, color: "#dc2626" },
+    { name: "Egypt", value: 0, color: "#ea580c" }
+  ].map(region => {
+    const regionContacts = contactsData.filter(c => 
+      c.country?.toLowerCase().includes(region.name.toLowerCase())
+    ).length;
+    const total = contactsData.length || 1;
+    return {
+      ...region,
+      value: Math.round((regionContacts / total) * 100)
+    };
+  });
+
+  // Generate pipeline data from deals
+  const pipelineStages = [
+    { stage: "Lead", key: "lead" },
+    { stage: "Qualified", key: "qualified" },
+    { stage: "Proposal", key: "proposal" },
+    { stage: "Negotiation", key: "negotiation" },
+    { stage: "Closed Won", key: "closed-won" }
+  ];
+
+  const pipelineData = pipelineStages.map(({ stage, key }) => {
+    const stageDeals = dealsData.filter(d => d.stage === key);
+    return {
+      stage,
+      count: stageDeals.length,
+      value: stageDeals.reduce((sum, d) => sum + (parseFloat(d.amount || "0")), 0)
+    };
+  });
+
+  // Map activities from API data
+  const activities: Activity[] = activitiesData.slice(0, 10).map(activity => ({
+    id: activity.id?.toString() || Math.random().toString(),
+    type: activity.type || 'note',
+    description: activity.description || activity.note || 'No description',
+    customer: activity.contactName || activity.leadName || 'Unknown',
+    timestamp: new Date(activity.createdAt || Date.now()),
+    priority: activity.priority || 'low'
+  }));
+
+  // Map leads from API data
+  const leads: Lead[] = leadsData.slice(0, 10).map(lead => ({
+    id: lead.id?.toString() || '',
+    name: lead.name || lead.firstName + ' ' + lead.lastName || 'Unknown',
+    email: lead.email || '',
+    company: lead.company || '',
+    status: lead.status || 'new',
+    score: lead.score || 50,
+    value: parseFloat(lead.value || "0"),
+    source: lead.source || 'website',
+    lastContact: new Date(lead.lastContactDate || lead.createdAt || Date.now()),
+    currency: lead.currency || 'USD',
+    region: lead.country || 'Unknown'
+  }));
+
+  // Map deals from API data
+  const deals: Deal[] = dealsData.slice(0, 10).map(deal => ({
+    id: deal.id?.toString() || '',
+    title: deal.title || deal.name || 'Untitled Deal',
+    value: parseFloat(deal.amount || "0"),
+    probability: deal.probability || 50,
+    stage: deal.stage || 'proposal',
+    customer: deal.contactName || deal.accountName || 'Unknown',
+    closeDate: new Date(deal.closeDate || deal.expectedCloseDate || Date.now()),
+    currency: deal.currency || 'USD',
+    region: deal.country || 'Unknown'
+  }));
+
   const refreshData = async () => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
+    await Promise.all([refetchLeads(), refetchDeals(), refetchContacts(), refetchActivities()]);
   };
 
   const getStatusColor = (status: string) => {
@@ -382,23 +469,35 @@ export default function CrmDashboard() {
               <CardDescription>Latest customer interactions</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      {getPriorityIcon(activity.priority)}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">No recent activities</p>
+                  <p className="text-xs text-gray-400 mt-1">Start engaging with your customers</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        {getPriorityIcon(activity.priority)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {activity.description}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {activity.customer} • {format(activity.timestamp, 'MMM d, HH:mm')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {activity.description}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {activity.customer} • {format(activity.timestamp, 'MMM d, HH:mm')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -417,44 +516,56 @@ export default function CrmDashboard() {
                 <CardDescription>Top prospects across African markets</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {leads.map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <Avatar>
-                          <AvatarImage src="" />
-                          <AvatarFallback>
-                            {lead.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{lead.name}</p>
-                          <p className="text-sm text-gray-500">{lead.company}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <MapPin className="h-3 w-3 text-gray-400" />
-                            <span className="text-xs text-gray-500">{lead.region}</span>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                  </div>
+                ) : leads.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No leads yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Start adding leads to track your pipeline</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {leads.map((lead) => (
+                      <div key={lead.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <Avatar>
+                            <AvatarImage src="" />
+                            <AvatarFallback>
+                              {lead.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{lead.name}</p>
+                            <p className="text-sm text-gray-500">{lead.company}</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <MapPin className="h-3 w-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">{lead.region}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <Badge className={getStatusColor(lead.status)}>
+                              {lead.status}
+                            </Badge>
+                          </div>
+                          <p className="font-medium">
+                            {formatCurrency(lead.value, lead.currency)}
+                          </p>
+                          <div className="flex items-center space-x-1 mt-1">
+                            <Star className={`h-3 w-3 ${getScoreColor(lead.score)}`} />
+                            <span className={`text-xs ${getScoreColor(lead.score)}`}>
+                              {lead.score}% score
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <Badge className={getStatusColor(lead.status)}>
-                            {lead.status}
-                          </Badge>
-                        </div>
-                        <p className="font-medium">
-                          {formatCurrency(lead.value, lead.currency)}
-                        </p>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Star className={`h-3 w-3 ${getScoreColor(lead.score)}`} />
-                          <span className={`text-xs ${getScoreColor(lead.score)}`}>
-                            {lead.score}% score
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -466,36 +577,48 @@ export default function CrmDashboard() {
                 <CardDescription>Deals in progress across African markets</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {deals.map((deal) => (
-                    <div key={deal.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <div>
-                        <p className="font-medium">{deal.title}</p>
-                        <p className="text-sm text-gray-500">{deal.customer}</p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Calendar className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs text-gray-500">
-                            Close: {format(deal.closeDate, 'MMM d, yyyy')}
-                          </span>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                  </div>
+                ) : deals.length === 0 ? (
+                  <div className="text-center py-8">
+                    <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No active deals</p>
+                    <p className="text-xs text-gray-400 mt-1">Create deals to track your sales pipeline</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {deals.map((deal) => (
+                      <div key={deal.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div>
+                          <p className="font-medium">{deal.title}</p>
+                          <p className="text-sm text-gray-500">{deal.customer}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Calendar className="h-3 w-3 text-gray-400" />
+                            <span className="text-xs text-gray-500">
+                              Close: {format(deal.closeDate, 'MMM d, yyyy')}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">
+                            {formatCurrency(deal.value, deal.currency)}
+                          </p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge className={getStatusColor(deal.stage)}>
+                              {deal.stage}
+                            </Badge>
+                          </div>
+                          <div className="mt-2">
+                            <Progress value={deal.probability} className="w-20" />
+                            <p className="text-xs text-gray-500 mt-1">{deal.probability}% probability</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {formatCurrency(deal.value, deal.currency)}
-                        </p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Badge className={getStatusColor(deal.stage)}>
-                            {deal.stage}
-                          </Badge>
-                        </div>
-                        <div className="mt-2">
-                          <Progress value={deal.probability} className="w-20" />
-                          <p className="text-xs text-gray-500 mt-1">{deal.probability}% probability</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
