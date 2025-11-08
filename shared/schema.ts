@@ -5,7 +5,7 @@ import { z } from "zod";
 
 // Multi-tenant system: Each company gets its own isolated environment
 export const tenants = pgTable("tenants", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   domain: text("domain").unique(), // Custom subdomain like company.argilette.com
   subscriptionPlan: text("subscription_plan").default("starter"), // starter, professional, enterprise
@@ -29,8 +29,8 @@ export const tenants = pgTable("tenants", {
 
 // User management with tenant isolation
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   email: text("email").notNull(),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -52,8 +52,8 @@ export const users = pgTable("users", {
 
 // Role-based permissions system
 export const roles = pgTable("roles", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(), // Sales Manager, Marketing Lead, etc.
   description: text("description"),
   permissions: jsonb("permissions").$type<string[]>().default([]),
@@ -66,11 +66,11 @@ export const roles = pgTable("roles", {
 
 // User role assignments
 export const userRoles = pgTable("user_roles", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
-  roleId: uuid("role_id").references(() => roles.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  roleId: varchar("role_id").references(() => roles.id).notNull(),
   assignedAt: timestamp("assigned_at").defaultNow(),
-  assignedBy: uuid("assigned_by").references(() => users.id),
+  assignedBy: varchar("assigned_by").references(() => users.id),
 }, (table) => [
   index("idx_user_roles_user").on(table.userId),
   index("idx_user_roles_role").on(table.roleId),
@@ -88,8 +88,8 @@ export const permissions = pgTable("permissions", {
 // Session management for multi-tenant
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
@@ -99,8 +99,8 @@ export const sessions = pgTable("sessions", {
 
 // Tenant subscriptions with feature entitlements
 export const tenantSubscriptions = pgTable("tenant_subscriptions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   planId: text("plan_id").notNull(), // starter, professional, enterprise, unlimited, platform_owner
   status: text("status").default("active"), // active, canceled, past_due, trial, suspended
   billingCycle: text("billing_cycle").default("monthly"), // monthly, yearly
@@ -139,8 +139,8 @@ export const tenantSubscriptions = pgTable("tenant_subscriptions", {
 
 // Tenant Payment Configuration - for e-commerce stores only
 export const tenantPaymentConfigs = pgTable("tenant_payment_configs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   tenantEmail: text("tenant_email").notNull(),
   
   // Stripe Configuration
@@ -185,9 +185,9 @@ export const tenantPaymentConfigs = pgTable("tenant_payment_configs", {
 
 // Tenant E-commerce Payment Transactions Log
 export const tenantPaymentTransactions = pgTable("tenant_payment_transactions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  configId: uuid("config_id").references(() => tenantPaymentConfigs.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  configId: varchar("config_id").references(() => tenantPaymentConfigs.id),
   
   // Transaction details
   transactionId: text("transaction_id").notNull(),
@@ -233,9 +233,9 @@ export const tenantPaymentTransactions = pgTable("tenant_payment_transactions", 
 
 // Audit logs for tracking all platform activities
 export const auditLogs = pgTable("audit_logs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
-  userId: uuid("user_id").references(() => users.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id),
+  userId: varchar("user_id").references(() => users.id),
   action: text("action").notNull(), // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
   resource: text("resource").notNull(), // contacts, deals, settings, etc.
   resourceId: text("resource_id"), // ID of the affected resource
@@ -260,7 +260,7 @@ export const auditLogs = pgTable("audit_logs", {
 
 // System metrics for platform monitoring
 export const systemMetrics = pgTable("system_metrics", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   metricType: text("metric_type").notNull(), // revenue, users, performance, errors
   metricName: text("metric_name").notNull(), // daily_revenue, active_users, response_time
   value: decimal("value", { precision: 15, scale: 4 }).notNull(),
@@ -305,10 +305,10 @@ export const projects = pgTable("projects", {
 
 // Project tasks with dependencies for Gantt charts
 export const projectTasks = pgTable("project_tasks", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  projectId: uuid("project_id").references(() => projects.id).notNull(),
-  parentTaskId: uuid("parent_task_id").references(() => projectTasks.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  projectId: varchar("project_id").references(() => projects.id).notNull(),
+  parentTaskId: varchar("parent_task_id").references(() => projectTasks.id),
   name: text("name").notNull(),
   description: text("description"),
   status: text("status").default("todo"), // todo, in_progress, review, done, blocked
@@ -318,11 +318,11 @@ export const projectTasks = pgTable("project_tasks", {
   plannedHours: integer("planned_hours"),
   actualHours: integer("actual_hours"),
   progress: integer("progress").default(0), // 0-100
-  assigneeId: uuid("assignee_id").references(() => users.id),
+  assigneeId: varchar("assignee_id").references(() => users.id),
   dependencies: jsonb("dependencies").$type<string[]>().default([]), // Task IDs this task depends on
   tags: jsonb("tags").$type<string[]>().default([]),
   customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -334,11 +334,11 @@ export const projectTasks = pgTable("project_tasks", {
 
 // Resource allocation and capacity planning
 export const resourceAllocations = pgTable("resource_allocations", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  projectId: uuid("project_id").references(() => projects.id).notNull(),
-  taskId: uuid("task_id").references(() => projectTasks.id),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  projectId: varchar("project_id").references(() => projects.id).notNull(),
+  taskId: varchar("task_id").references(() => projectTasks.id),
+  userId: varchar("user_id").references(() => users.id).notNull(),
   allocatedHours: integer("allocated_hours").notNull(),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
@@ -346,7 +346,7 @@ export const resourceAllocations = pgTable("resource_allocations", {
   billableRate: decimal("billable_rate", { precision: 10, scale: 2 }),
   status: text("status").default("planned"), // planned, active, completed
   notes: text("notes"),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -357,11 +357,11 @@ export const resourceAllocations = pgTable("resource_allocations", {
 
 // Time tracking for projects and tasks
 export const timeEntries = pgTable("time_entries", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
-  projectId: uuid("project_id").references(() => projects.id),
-  taskId: uuid("task_id").references(() => projectTasks.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  projectId: varchar("project_id").references(() => projects.id),
+  taskId: varchar("task_id").references(() => projectTasks.id),
   description: text("description"),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time"),
@@ -383,10 +383,10 @@ export const timeEntries = pgTable("time_entries", {
 
 // Performance management
 export const performanceReviews = pgTable("performance_reviews", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: uuid("employee_id").references(() => users.id).notNull(),
-  reviewerId: uuid("reviewer_id").references(() => users.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  employeeId: varchar("employee_id").references(() => users.id).notNull(),
+  reviewerId: varchar("reviewer_id").references(() => users.id).notNull(),
   reviewPeriod: text("review_period").notNull(), // Q1-2024, Annual-2024, etc.
   reviewType: text("review_type").default("annual"), // annual, quarterly, monthly, project
   status: text("status").default("draft"), // draft, in_progress, completed, approved
@@ -416,7 +416,7 @@ export const performanceReviews = pgTable("performance_reviews", {
   reviewDate: date("review_date"),
   dueDate: date("due_date"),
   completedDate: date("completed_date"),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -428,9 +428,9 @@ export const performanceReviews = pgTable("performance_reviews", {
 
 // Employee attendance and time tracking
 export const attendanceRecords = pgTable("attendance_records", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: uuid("employee_id").references(() => users.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  employeeId: varchar("employee_id").references(() => users.id).notNull(),
   date: date("date").notNull(),
   clockInTime: timestamp("clock_in_time"),
   clockOutTime: timestamp("clock_out_time"),
@@ -440,7 +440,7 @@ export const attendanceRecords = pgTable("attendance_records", {
   breakTime: integer("break_time"), // in minutes
   status: text("status").default("present"), // present, absent, late, half_day, sick, vacation
   notes: text("notes"),
-  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -452,16 +452,16 @@ export const attendanceRecords = pgTable("attendance_records", {
 
 // Leave management
 export const leaveRequests = pgTable("leave_requests", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: uuid("employee_id").references(() => users.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  employeeId: varchar("employee_id").references(() => users.id).notNull(),
   leaveType: text("leave_type").notNull(), // vacation, sick, personal, maternity, bereavement
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
   totalDays: integer("total_days").notNull(),
   reason: text("reason"),
   status: text("status").default("pending"), // pending, approved, denied, cancelled
-  approverId: uuid("approver_id").references(() => users.id),
+  approverId: varchar("approver_id").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   approverComments: text("approver_comments"),
   emergencyContact: text("emergency_contact"),
@@ -478,8 +478,8 @@ export const leaveRequests = pgTable("leave_requests", {
 
 // Product catalog
 export const products = pgTable("products", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   sku: text("sku").notNull(),
   name: text("name").notNull(),
   description: text("description"),
@@ -507,7 +507,7 @@ export const products = pgTable("products", {
   barcode: text("barcode"),
   tags: jsonb("tags").$type<string[]>().default([]),
   customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -519,18 +519,18 @@ export const products = pgTable("products", {
 
 // Inventory movements
 export const inventoryMovements = pgTable("inventory_movements", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  productId: uuid("product_id").references(() => products.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  productId: varchar("product_id").references(() => products.id).notNull(),
   movementType: text("movement_type").notNull(), // in, out, adjustment, transfer
   quantity: integer("quantity").notNull(),
   previousQuantity: integer("previous_quantity").notNull(),
   newQuantity: integer("new_quantity").notNull(),
   reason: text("reason"), // sale, purchase, return, adjustment, damage, etc.
-  referenceId: uuid("reference_id"), // Order ID, Invoice ID, etc.
+  referenceId: varchar("reference_id"), // Order ID, Invoice ID, etc.
   referenceType: text("reference_type"), // order, invoice, return, adjustment
   notes: text("notes"),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_inventory_movements_tenant").on(table.tenantId),
@@ -541,10 +541,10 @@ export const inventoryMovements = pgTable("inventory_movements", {
 
 // Purchase orders
 export const purchaseOrders = pgTable("purchase_orders", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   poNumber: text("po_number").notNull(),
-  supplierId: uuid("supplier_id").references(() => contacts.id).notNull(),
+  supplierId: varchar("supplier_id").references(() => contacts.id).notNull(),
   orderDate: date("order_date").notNull(),
   expectedDeliveryDate: date("expected_delivery_date"),
   actualDeliveryDate: date("actual_delivery_date"),
@@ -563,7 +563,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
     country?: string;
   }>().default({}),
   notes: text("notes"),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -575,10 +575,10 @@ export const purchaseOrders = pgTable("purchase_orders", {
 
 // Purchase order items
 export const purchaseOrderItems = pgTable("purchase_order_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  purchaseOrderId: uuid("purchase_order_id").references(() => purchaseOrders.id).notNull(),
-  productId: uuid("product_id").references(() => products.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  purchaseOrderId: varchar("purchase_order_id").references(() => purchaseOrders.id).notNull(),
+  productId: varchar("product_id").references(() => products.id).notNull(),
   quantity: integer("quantity").notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
@@ -675,9 +675,9 @@ export const ecommerceProducts = pgTable("ecommerce_products", {
 
 // Product variants (size, color, etc.)
 export const productVariants = pgTable("product_variants", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  productId: uuid("product_id").references(() => ecommerceProducts.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  productId: varchar("product_id").references(() => ecommerceProducts.id).notNull(),
   sku: text("sku").notNull(),
   name: text("name").notNull(),
   options: jsonb("options").$type<Record<string, string>>().default({}), // {size: "Large", color: "Red"}
@@ -699,13 +699,13 @@ export const productVariants = pgTable("product_variants", {
 
 // Product categories and collections
 export const productCategories = pgTable("product_categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  storeId: uuid("store_id").references(() => stores.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  storeId: varchar("store_id").references(() => stores.id).notNull(),
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   description: text("description"),
-  parentId: uuid("parent_id").references(() => productCategories.id),
+  parentId: varchar("parent_id").references(() => productCategories.id),
   image: text("image"),
   sortOrder: integer("sort_order").default(0),
   isVisible: boolean("is_visible").default(true),
@@ -721,9 +721,9 @@ export const productCategories = pgTable("product_categories", {
 
 // Customer accounts for e-commerce
 export const customers = pgTable("customers", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  storeId: uuid("store_id").references(() => stores.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  storeId: varchar("store_id").references(() => stores.id).notNull(),
   email: text("email").notNull(),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -752,9 +752,9 @@ export const customers = pgTable("customers", {
 
 // Customer addresses
 export const customerAddresses = pgTable("customer_addresses", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  customerId: uuid("customer_id").references(() => customers.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
   type: text("type").default("shipping"), // shipping, billing
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -776,11 +776,11 @@ export const customerAddresses = pgTable("customer_addresses", {
 
 // E-commerce orders
 export const ecommerceOrders = pgTable("ecommerce_orders", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  storeId: uuid("store_id").references(() => stores.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  storeId: varchar("store_id").references(() => stores.id).notNull(),
   orderNumber: text("order_number").notNull().unique(),
-  customerId: uuid("customer_id").references(() => customers.id),
+  customerId: varchar("customer_id").references(() => customers.id),
   
   // Order status
   status: text("status").default("pending"), // pending, processing, shipped, delivered, cancelled, refunded
@@ -845,7 +845,7 @@ export const ecommerceOrders = pgTable("ecommerce_orders", {
   internalNotes: text("internal_notes"),
   source: text("source").default("online_store"), // online_store, pos, api, manual
   
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -858,11 +858,11 @@ export const ecommerceOrders = pgTable("ecommerce_orders", {
 
 // Order line items
 export const orderItems = pgTable("order_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  orderId: uuid("order_id").references(() => ecommerceOrders.id).notNull(),
-  productId: uuid("product_id").references(() => ecommerceProducts.id).notNull(),
-  variantId: uuid("variant_id").references(() => productVariants.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  orderId: varchar("order_id").references(() => ecommerceOrders.id).notNull(),
+  productId: varchar("product_id").references(() => ecommerceProducts.id).notNull(),
+  variantId: varchar("variant_id").references(() => productVariants.id),
   sku: text("sku").notNull(),
   productName: text("product_name").notNull(),
   variantTitle: text("variant_title"),
@@ -881,10 +881,10 @@ export const orderItems = pgTable("order_items", {
 
 // Shopping cart for guests and customers
 export const shoppingCarts = pgTable("shopping_carts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  storeId: uuid("store_id").references(() => stores.id).notNull(),
-  customerId: uuid("customer_id").references(() => customers.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  storeId: varchar("store_id").references(() => stores.id).notNull(),
+  customerId: varchar("customer_id").references(() => customers.id),
   sessionId: text("session_id"), // For guest users
   items: jsonb("items").$type<Array<{
     productId: string;
@@ -908,9 +908,9 @@ export const shoppingCarts = pgTable("shopping_carts", {
 
 // Discount codes and promotions
 export const discountCodes = pgTable("discount_codes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  storeId: uuid("store_id").references(() => stores.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  storeId: varchar("store_id").references(() => stores.id).notNull(),
   code: text("code").notNull(),
   name: text("name").notNull(),
   description: text("description"),
@@ -925,7 +925,7 @@ export const discountCodes = pgTable("discount_codes", {
   startsAt: timestamp("starts_at"),
   endsAt: timestamp("ends_at"),
   isActive: boolean("is_active").default(true),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -938,8 +938,8 @@ export const discountCodes = pgTable("discount_codes", {
 
 // Document storage and version control
 export const documents = pgTable("documents", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   fileName: text("file_name").notNull(),
@@ -948,13 +948,13 @@ export const documents = pgTable("documents", {
   filePath: text("file_path").notNull(),
   fileHash: text("file_hash"), // For duplicate detection
   version: integer("version").default(1),
-  parentDocumentId: uuid("parent_document_id").references(() => documents.id),
-  folderId: uuid("folder_id").references(() => documentFolders.id),
+  parentDocumentId: varchar("parent_document_id").references(() => documents.id),
+  folderId: varchar("folder_id").references(() => documentFolders.id),
   status: text("status").default("active"), // active, archived, deleted
   accessLevel: text("access_level").default("private"), // private, team, company, public
   tags: jsonb("tags").$type<string[]>().default([]),
   metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
-  uploadedBy: uuid("uploaded_by").references(() => users.id),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -966,14 +966,14 @@ export const documents = pgTable("documents", {
 
 // Document folders
 export const documentFolders = pgTable("document_folders", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  parentFolderId: uuid("parent_folder_id").references(() => documentFolders.id),
+  parentFolderId: varchar("parent_folder_id").references(() => documentFolders.id),
   path: text("path").notNull(),
   accessLevel: text("access_level").default("private"), // private, team, company, public
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -983,14 +983,14 @@ export const documentFolders = pgTable("document_folders", {
 
 // Document approval workflows
 export const documentApprovals = pgTable("document_approvals", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  documentId: uuid("document_id").references(() => documents.id).notNull(),
-  workflowId: uuid("workflow_id").references(() => approvalWorkflows.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  documentId: varchar("document_id").references(() => documents.id).notNull(),
+  workflowId: varchar("workflow_id").references(() => approvalWorkflows.id).notNull(),
   status: text("status").default("pending"), // pending, approved, rejected, cancelled
   currentStep: integer("current_step").default(1),
   totalSteps: integer("total_steps").notNull(),
-  submittedBy: uuid("submitted_by").references(() => users.id),
+  submittedBy: varchar("submitted_by").references(() => users.id),
   submittedAt: timestamp("submitted_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   notes: text("notes"),
@@ -1005,8 +1005,8 @@ export const documentApprovals = pgTable("document_approvals", {
 
 // Approval workflows
 export const approvalWorkflows = pgTable("approval_workflows", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   steps: jsonb("steps").$type<Array<{
@@ -1019,7 +1019,7 @@ export const approvalWorkflows = pgTable("approval_workflows", {
   }>>().default([]),
   documentTypes: jsonb("document_types").$type<string[]>().default([]),
   isActive: boolean("is_active").default(true),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1029,16 +1029,16 @@ export const approvalWorkflows = pgTable("approval_workflows", {
 
 // Document approval steps
 export const documentApprovalSteps = pgTable("document_approval_steps", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  documentApprovalId: uuid("document_approval_id").references(() => documentApprovals.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  documentApprovalId: varchar("document_approval_id").references(() => documentApprovals.id).notNull(),
   stepNumber: integer("step_number").notNull(),
-  approverId: uuid("approver_id").references(() => users.id).notNull(),
+  approverId: varchar("approver_id").references(() => users.id).notNull(),
   status: text("status").default("pending"), // pending, approved, rejected, skipped
   decision: text("decision"), // approve, reject, delegate
   comments: text("comments"),
   decidedAt: timestamp("decided_at"),
-  delegatedTo: uuid("delegated_to").references(() => users.id),
+  delegatedTo: varchar("delegated_to").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1052,13 +1052,13 @@ export const documentApprovalSteps = pgTable("document_approval_steps", {
 
 // Sales territories
 export const territories = pgTable("territories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   territoryType: text("territory_type").notNull(), // geographic, account_based, industry, hybrid
-  parentTerritoryId: uuid("parent_territory_id").references(() => territories.id),
-  managerId: uuid("manager_id").references(() => users.id),
+  parentTerritoryId: varchar("parent_territory_id").references(() => territories.id),
+  managerId: varchar("manager_id").references(() => users.id),
   geographicBounds: jsonb("geographic_bounds").$type<{
     countries?: string[];
     states?: string[];
@@ -1079,7 +1079,7 @@ export const territories = pgTable("territories", {
     currency?: string;
   }>().default({}),
   isActive: boolean("is_active").default(true),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1091,13 +1091,13 @@ export const territories = pgTable("territories", {
 
 // Territory assignments
 export const territoryAssignments = pgTable("territory_assignments", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  territoryId: uuid("territory_id").references(() => territories.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  territoryId: varchar("territory_id").references(() => territories.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
   role: text("role").default("rep"), // rep, manager, support
   assignedAt: timestamp("assigned_at").defaultNow(),
-  assignedBy: uuid("assigned_by").references(() => users.id),
+  assignedBy: varchar("assigned_by").references(() => users.id),
   isActive: boolean("is_active").default(true),
   quotas: jsonb("quotas").$type<{
     annual?: number;
@@ -1115,12 +1115,12 @@ export const territoryAssignments = pgTable("territory_assignments", {
 
 // Account territory assignments
 export const accountTerritoryAssignments = pgTable("account_territory_assignments", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  accountId: uuid("account_id").references(() => accounts.id).notNull(),
-  territoryId: uuid("territory_id").references(() => territories.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  accountId: varchar("account_id").references(() => accounts.id).notNull(),
+  territoryId: varchar("territory_id").references(() => territories.id).notNull(),
   assignedAt: timestamp("assigned_at").defaultNow(),
-  assignedBy: uuid("assigned_by").references(() => users.id),
+  assignedBy: varchar("assigned_by").references(() => users.id),
   isActive: boolean("is_active").default(true),
   assignmentReason: text("assignment_reason"), // geographic, strategic, custom
   createdAt: timestamp("created_at").defaultNow(),
@@ -1135,12 +1135,12 @@ export const accountTerritoryAssignments = pgTable("account_territory_assignment
 
 // Chart of accounts
 export const chartOfAccounts = pgTable("chart_of_accounts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   accountCode: text("account_code").notNull(),
   accountName: text("account_name").notNull(),
   accountType: text("account_type").notNull(), // asset, liability, equity, revenue, expense
-  parentAccountId: uuid("parent_account_id").references(() => chartOfAccounts.id),
+  parentAccountId: varchar("parent_account_id").references(() => chartOfAccounts.id),
   subType: text("sub_type"), // current_asset, fixed_asset, current_liability, etc.
   normalBalance: text("normal_balance").notNull(), // debit, credit
   description: text("description"),
@@ -1153,7 +1153,7 @@ export const chartOfAccounts = pgTable("chart_of_accounts", {
     accountType?: string;
   }>().default({}),
   taxCode: text("tax_code"),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1165,8 +1165,8 @@ export const chartOfAccounts = pgTable("chart_of_accounts", {
 
 // Journal entries
 export const journalEntries = pgTable("journal_entries", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   entryNumber: text("entry_number").notNull(),
   entryDate: date("entry_date").notNull(),
   description: text("description").notNull(),
@@ -1174,12 +1174,12 @@ export const journalEntries = pgTable("journal_entries", {
   totalDebit: decimal("total_debit", { precision: 15, scale: 2 }).notNull(),
   totalCredit: decimal("total_credit", { precision: 15, scale: 2 }).notNull(),
   status: text("status").default("draft"), // draft, posted, reversed
-  reversalEntryId: uuid("reversal_entry_id").references(() => journalEntries.id),
+  reversalEntryId: varchar("reversal_entry_id").references(() => journalEntries.id),
   isAdjustment: boolean("is_adjustment").default(false),
   adjustmentReason: text("adjustment_reason"),
-  recurringEntryId: uuid("recurring_entry_id").references(() => recurringEntries.id),
-  createdBy: uuid("created_by").references(() => users.id),
-  postedBy: uuid("posted_by").references(() => users.id),
+  recurringEntryId: varchar("recurring_entry_id").references(() => recurringEntries.id),
+  createdBy: varchar("created_by").references(() => users.id),
+  postedBy: varchar("posted_by").references(() => users.id),
   postedAt: timestamp("posted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -1192,10 +1192,10 @@ export const journalEntries = pgTable("journal_entries", {
 
 // Journal entry line items
 export const journalEntryLineItems = pgTable("journal_entry_line_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id).notNull(),
-  accountId: uuid("account_id").references(() => chartOfAccounts.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  journalEntryId: varchar("journal_entry_id").references(() => journalEntries.id).notNull(),
+  accountId: varchar("account_id").references(() => chartOfAccounts.id).notNull(),
   description: text("description"),
   debitAmount: decimal("debit_amount", { precision: 15, scale: 2 }).default("0.00"),
   creditAmount: decimal("credit_amount", { precision: 15, scale: 2 }).default("0.00"),
@@ -1209,8 +1209,8 @@ export const journalEntryLineItems = pgTable("journal_entry_line_items", {
 
 // Recurring journal entries
 export const recurringEntries = pgTable("recurring_entries", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   frequency: text("frequency").notNull(), // daily, weekly, monthly, quarterly, yearly
@@ -1228,7 +1228,7 @@ export const recurringEntries = pgTable("recurring_entries", {
       creditAmount?: number;
     }>;
   }>().notNull(),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1239,16 +1239,16 @@ export const recurringEntries = pgTable("recurring_entries", {
 
 // Financial periods
 export const financialPeriods = pgTable("financial_periods", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   periodType: text("period_type").notNull(), // month, quarter, year
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
   status: text("status").default("open"), // open, closed, locked
-  closedBy: uuid("closed_by").references(() => users.id),
+  closedBy: varchar("closed_by").references(() => users.id),
   closedAt: timestamp("closed_at"),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1259,10 +1259,10 @@ export const financialPeriods = pgTable("financial_periods", {
 
 // Account balances
 export const accountBalances = pgTable("account_balances", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  accountId: uuid("account_id").references(() => chartOfAccounts.id).notNull(),
-  periodId: uuid("period_id").references(() => financialPeriods.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  accountId: varchar("account_id").references(() => chartOfAccounts.id).notNull(),
+  periodId: varchar("period_id").references(() => financialPeriods.id).notNull(),
   openingBalance: decimal("opening_balance", { precision: 15, scale: 2 }).default("0.00"),
   closingBalance: decimal("closing_balance", { precision: 15, scale: 2 }).default("0.00"),
   debitTotal: decimal("debit_total", { precision: 15, scale: 2 }).default("0.00"),
@@ -1279,9 +1279,9 @@ export const accountBalances = pgTable("account_balances", {
 
 // Payroll profiles
 export const payrollProfiles = pgTable("payroll_profiles", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id).notNull(),
   payrollId: text("payroll_id").notNull(), // Unique payroll identifier
   payType: text("pay_type").notNull(), // salary, hourly, commission, contract
   baseSalary: decimal("base_salary", { precision: 15, scale: 2 }).default("0.00"),
@@ -1321,7 +1321,7 @@ export const payrollProfiles = pgTable("payroll_profiles", {
     otherDeductions?: Array<{ name: string; amount: number; recurring: boolean }>;
   }>().default({}),
   isActive: boolean("is_active").default(true),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1332,8 +1332,8 @@ export const payrollProfiles = pgTable("payroll_profiles", {
 
 // Payroll periods
 export const payrollPeriods = pgTable("payroll_periods", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   periodName: text("period_name").notNull(),
   payFrequency: text("pay_frequency").notNull(),
   startDate: date("start_date").notNull(),
@@ -1345,11 +1345,11 @@ export const payrollPeriods = pgTable("payroll_periods", {
   totalTaxes: decimal("total_taxes", { precision: 15, scale: 2 }).default("0.00"),
   totalDeductions: decimal("total_deductions", { precision: 15, scale: 2 }).default("0.00"),
   employeeCount: integer("employee_count").default(0),
-  processedBy: uuid("processed_by").references(() => users.id),
+  processedBy: varchar("processed_by").references(() => users.id),
   processedAt: timestamp("processed_at"),
-  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1360,11 +1360,11 @@ export const payrollPeriods = pgTable("payroll_periods", {
 
 // Payroll entries (individual employee payroll records)
 export const payrollEntries = pgTable("payroll_entries", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  payrollPeriodId: uuid("payroll_period_id").references(() => payrollPeriods.id).notNull(),
-  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
-  payrollProfileId: uuid("payroll_profile_id").references(() => payrollProfiles.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  payrollPeriodId: varchar("payroll_period_id").references(() => payrollPeriods.id).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id).notNull(),
+  payrollProfileId: varchar("payroll_profile_id").references(() => payrollProfiles.id).notNull(),
   
   // Earnings
   basePay: decimal("base_pay", { precision: 15, scale: 2 }).default("0.00"),
@@ -1415,7 +1415,7 @@ export const payrollEntries = pgTable("payroll_entries", {
   paidDate: date("paid_date"),
   notes: text("notes"),
   
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1428,10 +1428,10 @@ export const payrollEntries = pgTable("payroll_entries", {
 
 // Time tracking for payroll
 export const timeSheets = pgTable("time_sheets", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
-  payrollPeriodId: uuid("payroll_period_id").references(() => payrollPeriods.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id).notNull(),
+  payrollPeriodId: varchar("payroll_period_id").references(() => payrollPeriods.id),
   
   // Time entries
   workDate: date("work_date").notNull(),
@@ -1449,7 +1449,7 @@ export const timeSheets = pgTable("time_sheets", {
   personalHours: decimal("personal_hours", { precision: 8, scale: 2 }).default("0.00"),
   
   // Project/task tracking
-  projectId: uuid("project_id").references(() => projects.id),
+  projectId: varchar("project_id").references(() => projects.id),
   taskDescription: text("task_description"),
   location: text("location"),
   deviceUsed: text("device_used"),
@@ -1457,12 +1457,12 @@ export const timeSheets = pgTable("time_sheets", {
   
   // Approval
   status: text("status").default("pending"), // pending, approved, rejected, needs_review
-  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   rejectionReason: text("rejection_reason"),
   
   // Metadata
-  submittedBy: uuid("submitted_by").references(() => users.id),
+  submittedBy: varchar("submitted_by").references(() => users.id),
   submittedAt: timestamp("submitted_at"),
   notes: text("notes"),
   
@@ -1478,8 +1478,8 @@ export const timeSheets = pgTable("time_sheets", {
 
 // Payroll tax filings
 export const payrollTaxFilings = pgTable("payroll_tax_filings", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   filingType: text("filing_type").notNull(), // quarterly_941, annual_940, w2, state_quarterly
   taxYear: integer("tax_year").notNull(),
   quarter: integer("quarter"), // 1, 2, 3, 4 (null for annual filings)
@@ -1504,9 +1504,9 @@ export const payrollTaxFilings = pgTable("payroll_tax_filings", {
   rejectionReason: text("rejection_reason"),
   
   // Metadata
-  preparedBy: uuid("prepared_by").references(() => users.id),
-  reviewedBy: uuid("reviewed_by").references(() => users.id),
-  submittedBy: uuid("submitted_by").references(() => users.id),
+  preparedBy: varchar("prepared_by").references(() => users.id),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  submittedBy: varchar("submitted_by").references(() => users.id),
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -1522,8 +1522,8 @@ export const payrollTaxFilings = pgTable("payroll_tax_filings", {
 
 // Automated bank reconciliation
 export const bankReconciliations = pgTable("bank_reconciliations", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   bankAccountId: integer("bank_account_id").references(() => bankAccounts.id).notNull(),
   reconciliationDate: date("reconciliation_date").notNull(),
   statementDate: date("statement_date").notNull(),
@@ -1545,9 +1545,9 @@ export const bankReconciliations = pgTable("bank_reconciliations", {
   discrepancyAmount: decimal("discrepancy_amount", { precision: 15, scale: 2 }).default("0.00"),
   
   // Approval workflow
-  reconciledBy: uuid("reconciled_by").references(() => users.id),
-  reviewedBy: uuid("reviewed_by").references(() => users.id),
-  approvedBy: uuid("approved_by").references(() => users.id),
+  reconciledBy: varchar("reconciled_by").references(() => users.id),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
   
   reconciliationItems: jsonb("reconciliation_items").$type<Array<{
     transactionId: string;
@@ -1569,12 +1569,12 @@ export const bankReconciliations = pgTable("bank_reconciliations", {
 
 // Smart expense categorization
 export const expenseCategories = pgTable("expense_categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  parentCategoryId: uuid("parent_category_id").references(() => expenseCategories.id),
-  accountId: uuid("account_id").references(() => chartOfAccounts.id),
+  parentCategoryId: varchar("parent_category_id").references(() => expenseCategories.id),
+  accountId: varchar("account_id").references(() => chartOfAccounts.id),
   
   // AI categorization rules
   keywords: jsonb("keywords").$type<string[]>().default([]),
@@ -1602,7 +1602,7 @@ export const expenseCategories = pgTable("expense_categories", {
   color: text("color").default("#4F46E5"),
   icon: text("icon").default("receipt"),
   
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1614,10 +1614,10 @@ export const expenseCategories = pgTable("expense_categories", {
 
 // Enhanced receipt management
 export const receipts = pgTable("receipts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  transactionId: uuid("transaction_id").references(() => transactions.id),
-  expenseId: uuid("expense_id"), // Reference to expense if different from transaction
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  transactionId: varchar("transaction_id").references(() => transactions.id),
+  expenseId: varchar("expense_id"), // Reference to expense if different from transaction
   
   // Receipt details
   receiptNumber: text("receipt_number"),
@@ -1661,7 +1661,7 @@ export const receipts = pgTable("receipts", {
   verificationStatus: text("verification_status").default("unverified"), // unverified, verified, flagged
   
   // Categorization
-  categoryId: uuid("category_id").references(() => expenseCategories.id),
+  categoryId: varchar("category_id").references(() => expenseCategories.id),
   categoryConfidence: decimal("category_confidence", { precision: 5, scale: 2 }).default("0.00"),
   
   // Compliance
@@ -1671,9 +1671,9 @@ export const receipts = pgTable("receipts", {
   approvalStatus: text("approval_status").default("pending"), // pending, approved, rejected
   
   // Metadata
-  uploadedBy: uuid("uploaded_by").references(() => users.id),
-  verifiedBy: uuid("verified_by").references(() => users.id),
-  approvedBy: uuid("approved_by").references(() => users.id),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  verifiedBy: varchar("verified_by").references(() => users.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
   
   notes: text("notes"),
   tags: jsonb("tags").$type<string[]>().default([]),
@@ -1792,8 +1792,8 @@ export type InsertReceipt = z.infer<typeof insertReceiptSchema>;
 
 // Company Device Management Tables
 export const companyDevices = pgTable("company_devices", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   userEmail: text("user_email").notNull(),
   deviceName: text("device_name").notNull(),
   deviceType: text("device_type").notNull(), // desktop, laptop, mobile, tablet
@@ -1825,9 +1825,9 @@ export const companyDevices = pgTable("company_devices", {
 ]);
 
 export const deviceActivityLogs = pgTable("device_activity_logs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  deviceId: uuid("device_id").references(() => companyDevices.id).notNull(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  deviceId: varchar("device_id").references(() => companyDevices.id).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   userEmail: text("user_email").notNull(),
   activityType: text("activity_type").notNull(), // login, logout, access_attempt, security_alert
   activityDescription: text("activity_description"),
@@ -1845,8 +1845,8 @@ export const deviceActivityLogs = pgTable("device_activity_logs", {
 ]);
 
 export const deviceSecurityPolicies = pgTable("device_security_policies", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   policyName: text("policy_name").notNull(),
   policyType: text("policy_type").notNull(), // ip_whitelist, geo_restriction, device_trust
   policyRules: jsonb("policy_rules").$type<{
@@ -1889,8 +1889,8 @@ export type InsertDeviceSecurityPolicy = z.infer<typeof insertDeviceSecurityPoli
 
 // Core CRM with tenant isolation
 export const contacts = pgTable("contacts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),
@@ -1904,8 +1904,8 @@ export const contacts = pgTable("contacts", {
   leadSource: text("lead_source"),
   status: text("status").default("active"), // active, inactive, prospect, customer
   tags: jsonb("tags").$type<string[]>().default([]),
-  assignedTo: uuid("assigned_to").references(() => users.id),
-  createdBy: uuid("created_by").references(() => users.id),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1914,8 +1914,8 @@ export const contacts = pgTable("contacts", {
 ]);
 
 export const accounts = pgTable("accounts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   industry: text("industry"),
   website: text("website"),
@@ -1924,11 +1924,11 @@ export const accounts = pgTable("accounts", {
   billingAddress: text("billing_address"),
   shippingAddress: text("shipping_address"),
   accountType: text("account_type"), // prospect, customer, partner
-  parentAccountId: uuid("parent_account_id"),
+  parentAccountId: varchar("parent_account_id"),
   annualRevenue: decimal("annual_revenue"),
   employees: integer("employees"),
-  ownerId: uuid("owner_id").references(() => users.id),
-  createdBy: uuid("created_by").references(() => users.id),
+  ownerId: varchar("owner_id").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -2097,7 +2097,7 @@ export const workflows = pgTable("workflows", {
 
 export const reports = pgTable("reports", {
   id: serial("id").primaryKey(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   reportType: text("report_type").notNull(), // sales, revenue, customer, activity, forecast, pipeline
@@ -2112,7 +2112,7 @@ export const reports = pgTable("reports", {
   lastRun: timestamp("last_run"),
   nextRun: timestamp("next_run"),
   schedule: text("schedule"), // cron expression for scheduled reports
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -2483,7 +2483,7 @@ export const bankAccounts = pgTable("bank_accounts", {
   currentBalance: decimal("current_balance", { precision: 15, scale: 2 }).default("0.00"),
   statementBalance: decimal("statement_balance", { precision: 15, scale: 2 }).default("0.00"),
   lastReconciled: timestamp("last_reconciled"),
-  chartAccountId: uuid("chart_account_id").references(() => chartOfAccounts.id),
+  chartAccountId: varchar("chart_account_id").references(() => chartOfAccounts.id),
   isActive: boolean("is_active").default(true),
   routingNumber: varchar("routing_number", { length: 20 }),
   swiftCode: varchar("swift_code", { length: 20 }),
@@ -3169,8 +3169,8 @@ export type InsertUsageTracking = z.infer<typeof insertUsageTrackingSchema>;
 
 // Advanced Lead Management with AI Scoring
 export const crmLeads = pgTable("crm_leads", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
@@ -3197,7 +3197,7 @@ export const crmLeads = pgTable("crm_leads", {
   companySize: varchar("company_size", { length: 50 }),
   
   // Metadata
-  assignedTo: uuid("assigned_to").references(() => users.id),
+  assignedTo: varchar("assigned_to").references(() => users.id),
   notes: text("notes"),
   tags: text("tags").array(), // ["hot", "enterprise", "technical"]
   customFields: jsonb("custom_fields").default({}),
@@ -3207,35 +3207,35 @@ export const crmLeads = pgTable("crm_leads", {
 
 // Advanced Pipeline Management
 export const pipelines = pgTable("pipelines", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   stages: jsonb("stages").notNull(), // [{id, name, probability, color}]
   isDefault: boolean("is_default").default(false),
   currency: varchar("currency", { length: 3 }).default("USD"),
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Advanced Deals with AI Predictions
 export const crmDeals = pgTable("crm_deals", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }),
   currency: varchar("currency", { length: 3 }).default("USD"),
   
   // Pipeline Management
-  pipelineId: uuid("pipeline_id").references(() => pipelines.id),
+  pipelineId: varchar("pipeline_id").references(() => pipelines.id),
   stageId: varchar("stage_id", { length: 50 }),
   probability: integer("probability").default(0), // 0-100%
   
   // Relationships
-  contactId: uuid("contact_id"),
-  companyId: uuid("company_id"),
-  assignedTo: uuid("assigned_to").references(() => users.id),
+  contactId: varchar("contact_id"),
+  companyId: varchar("company_id"),
+  assignedTo: varchar("assigned_to").references(() => users.id),
   
   // AI Predictions
   aiCloseDate: timestamp("ai_close_date"), // AI predicted close date
@@ -3257,8 +3257,8 @@ export const crmDeals = pgTable("crm_deals", {
 
 // Enhanced Contact Management
 export const crmContacts = pgTable("crm_contacts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   email: varchar("email", { length: 255 }).unique(),
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
@@ -3268,7 +3268,7 @@ export const crmContacts = pgTable("crm_contacts", {
   // Professional Info
   jobTitle: varchar("job_title", { length: 150 }),
   department: varchar("department", { length: 100 }),
-  companyId: uuid("company_id"),
+  companyId: varchar("company_id"),
   
   // Communication Preferences
   preferredChannel: varchar("preferred_channel", { length: 50 }).default("email"), // email, phone, whatsapp, sms
@@ -3289,7 +3289,7 @@ export const crmContacts = pgTable("crm_contacts", {
   tags: text("tags").array(),
   status: varchar("status", { length: 50 }).default("active"), // active, inactive, bounced
   source: varchar("source", { length: 100 }),
-  assignedTo: uuid("assigned_to").references(() => users.id),
+  assignedTo: varchar("assigned_to").references(() => users.id),
   customFields: jsonb("custom_fields").default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -3297,8 +3297,8 @@ export const crmContacts = pgTable("crm_contacts", {
 
 // Company/Account Management
 export const companies = pgTable("companies", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   website: varchar("website", { length: 500 }),
   industry: varchar("industry", { length: 100 }),
@@ -3328,7 +3328,7 @@ export const companies = pgTable("companies", {
   status: varchar("status", { length: 50 }).default("active"),
   customerSince: timestamp("customer_since"),
   lastActivity: timestamp("last_activity"),
-  assignedTo: uuid("assigned_to").references(() => users.id),
+  assignedTo: varchar("assigned_to").references(() => users.id),
   
   // AI Insights
   healthScore: integer("health_score").default(50), // 0-100
@@ -3344,17 +3344,17 @@ export const companies = pgTable("companies", {
 
 // Activities and Interactions
 export const crmActivities = pgTable("crm_activities", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   type: varchar("type", { length: 50 }).notNull(), // call, email, meeting, task, note
   title: varchar("title", { length: 255 }),
   description: text("description"),
   
   // Relationships
-  contactId: uuid("contact_id"),
-  companyId: uuid("company_id"),
-  dealId: uuid("deal_id"),
-  leadId: uuid("lead_id"),
+  contactId: varchar("contact_id"),
+  companyId: varchar("company_id"),
+  dealId: varchar("deal_id"),
+  leadId: varchar("lead_id"),
   
   // Activity Details
   status: varchar("status", { length: 50 }).default("completed"), // scheduled, completed, cancelled
@@ -3377,8 +3377,8 @@ export const crmActivities = pgTable("crm_activities", {
   actionItems: jsonb("action_items"), // extracted action items from AI
   
   // Metadata
-  createdBy: uuid("created_by").references(() => users.id),
-  assignedTo: uuid("assigned_to").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
+  assignedTo: varchar("assigned_to").references(() => users.id),
   isPrivate: boolean("is_private").default(false),
   customFields: jsonb("custom_fields").default({}),
   createdAt: timestamp("created_at").defaultNow(),
@@ -3387,12 +3387,12 @@ export const crmActivities = pgTable("crm_activities", {
 
 // Email Marketing and Automation
 export const emailCampaigns = pgTable("email_campaigns", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   subject: varchar("subject", { length: 255 }),
   content: text("content"),
-  templateId: uuid("template_id"),
+  templateId: varchar("template_id"),
   
   // Campaign Settings
   type: varchar("type", { length: 50 }).default("one_time"), // one_time, drip, trigger
@@ -3403,7 +3403,7 @@ export const emailCampaigns = pgTable("email_campaigns", {
   sentAt: timestamp("sent_at"),
   
   // Targeting
-  segmentId: uuid("segment_id"),
+  segmentId: varchar("segment_id"),
   recipientCount: integer("recipient_count").default(0),
   
   // Performance Metrics
@@ -3417,15 +3417,15 @@ export const emailCampaigns = pgTable("email_campaigns", {
   aiSubjectLine: varchar("ai_subject_line", { length: 255 }),
   aiSendTime: timestamp("ai_send_time"),
   
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // CRM Workflow Automation
 export const crmWorkflows = pgTable("crm_workflows", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   
@@ -3443,7 +3443,7 @@ export const crmWorkflows = pgTable("crm_workflows", {
   lastExecuted: timestamp("last_executed"),
   
   // Metadata
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   tags: text("tags").array(),
   category: varchar("category", { length: 100 }), // sales, marketing, support
   createdAt: timestamp("created_at").defaultNow(),
@@ -3452,8 +3452,8 @@ export const crmWorkflows = pgTable("crm_workflows", {
 
 // Communication Channels
 export const communicationChannels = pgTable("communication_channels", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   type: varchar("type", { length: 50 }).notNull(), // whatsapp, sms, email, voice
   name: varchar("name", { length: 255 }),
   
@@ -3472,10 +3472,10 @@ export const communicationChannels = pgTable("communication_channels", {
 
 // AI Predictions and Insights
 export const aiInsights = pgTable("ai_insights", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   entityType: varchar("entity_type", { length: 50 }).notNull(), // lead, deal, contact, company
-  entityId: uuid("entity_id").notNull(),
+  entityId: varchar("entity_id").notNull(),
   
   // Insight Data
   insightType: varchar("insight_type", { length: 100 }).notNull(), // churn_risk, upsell_opportunity, etc
@@ -3488,7 +3488,7 @@ export const aiInsights = pgTable("ai_insights", {
   
   // Lifecycle
   isActive: boolean("is_active").default(true),
-  acknowledgedBy: uuid("acknowledged_by").references(() => users.id),
+  acknowledgedBy: varchar("acknowledged_by").references(() => users.id),
   acknowledgedAt: timestamp("acknowledged_at"),
   
   createdAt: timestamp("created_at").defaultNow(),
@@ -3497,8 +3497,8 @@ export const aiInsights = pgTable("ai_insights", {
 
 // CRM Reports and Analytics
 export const crmReports = pgTable("crm_reports", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   
@@ -3516,7 +3516,7 @@ export const crmReports = pgTable("crm_reports", {
   sharedWith: text("shared_with").array(), // user emails
   
   // Metadata
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   lastGenerated: timestamp("last_generated"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -3524,8 +3524,8 @@ export const crmReports = pgTable("crm_reports", {
 
 // Integration Management
 export const integrations = pgTable("integrations", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   type: varchar("type", { length: 100 }).notNull(), // zapier, webhook, api, email
   
@@ -3542,15 +3542,15 @@ export const integrations = pgTable("integrations", {
   syncStatus: varchar("sync_status", { length: 50 }).default("active"), // active, error, paused
   errorCount: integer("error_count").default(0),
   
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Custom Fields Definition
 export const customFields = pgTable("custom_fields", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   entityType: varchar("entity_type", { length: 50 }).notNull(), // lead, contact, company, deal
   name: varchar("name", { length: 255 }).notNull(),
   label: varchar("label", { length: 255 }),
@@ -3570,16 +3570,16 @@ export const customFields = pgTable("custom_fields", {
   displayOrder: integer("display_order").default(0),
   isVisible: boolean("is_visible").default(true),
   
-  createdBy: uuid("created_by").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // WhatsApp Integration
 export const whatsappMessages = pgTable("whatsapp_messages", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  contactId: uuid("contact_id"),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id"),
   
   // Message Data
   messageId: varchar("message_id", { length: 255 }), // WhatsApp message ID
@@ -3601,9 +3601,9 @@ export const whatsappMessages = pgTable("whatsapp_messages", {
 
 // Mobile App User Sessions
 export const mobileSessions = pgTable("mobile_sessions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  userId: uuid("user_id").references(() => users.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id),
   
   // Session Data
   deviceType: varchar("device_type", { length: 50 }), // ios, android
@@ -3720,8 +3720,8 @@ export type PaymentConfigValidation = z.infer<typeof paymentConfigValidationSche
 
 // E-commerce platform health metrics
 export const ecommerceHealthMetrics = pgTable("ecommerce_health_metrics", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   storeId: integer("store_id"),
   metricType: text("metric_type").notNull(), // sales, inventory, performance, customer, system
   metricName: text("metric_name").notNull(),
@@ -3757,8 +3757,8 @@ export const ecommerceHealthMetrics = pgTable("ecommerce_health_metrics", {
 
 // E-commerce system alerts
 export const ecommerceSystemAlerts = pgTable("ecommerce_system_alerts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   storeId: integer("store_id"),
   alertType: text("alert_type").notNull(), // performance, inventory, sales, security, system
   severity: text("severity").notNull(), // low, medium, high, critical
@@ -3770,9 +3770,9 @@ export const ecommerceSystemAlerts = pgTable("ecommerce_system_alerts", {
   
   // Resolution tracking
   status: text("status").default("open"), // open, acknowledged, resolved, suppressed
-  acknowledgedBy: uuid("acknowledged_by").references(() => users.id),
+  acknowledgedBy: varchar("acknowledged_by").references(() => users.id),
   acknowledgedAt: timestamp("acknowledged_at"),
-  resolvedBy: uuid("resolved_by").references(() => users.id),
+  resolvedBy: varchar("resolved_by").references(() => users.id),
   resolvedAt: timestamp("resolved_at"),
   resolution: text("resolution"),
   
@@ -3808,8 +3808,8 @@ export const ecommerceSystemAlerts = pgTable("ecommerce_system_alerts", {
 
 // E-commerce performance snapshots
 export const ecommercePerformanceSnapshots = pgTable("ecommerce_performance_snapshots", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   storeId: integer("store_id"),
   snapshotType: text("snapshot_type").notNull(), // hourly, daily, weekly, monthly
   
@@ -3989,9 +3989,9 @@ export type InsertChurnPrediction = z.infer<typeof insertChurnPredictionSchema>;
 
 // Sales channel integrations (TikTok, Facebook, Instagram, Google Ads, etc.)
 export const salesChannels = pgTable("sales_channels", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
-  userId: uuid("user_id").references(() => users.id).notNull(), // Who connected this channel
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
+  userId: varchar("user_id").references(() => users.id).notNull(), // Who connected this channel
   platformId: text("platform_id").notNull(), // tiktok, facebook_business, instagram_business, google_ads, etc.
   platformName: text("platform_name").notNull(), // Human-readable name
   status: text("status").notNull().default("disconnected"), // connected, disconnected, error, pending_auth
@@ -4034,9 +4034,9 @@ export const salesChannels = pgTable("sales_channels", {
 
 // Sales channel metrics and analytics
 export const salesChannelMetrics = pgTable("sales_channel_metrics", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  channelId: uuid("channel_id").references(() => salesChannels.id).notNull(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  channelId: varchar("channel_id").references(() => salesChannels.id).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
   
   // Time period for this metric snapshot
   metricDate: date("metric_date").notNull(),
@@ -4065,10 +4065,10 @@ export const salesChannelMetrics = pgTable("sales_channel_metrics", {
 
 // Sales channel leads/contacts integration
 export const salesChannelLeads = pgTable("sales_channel_leads", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  channelId: uuid("channel_id").references(() => salesChannels.id).notNull(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
-  contactId: uuid("contact_id").references(() => contacts.id), // Link to CRM contact
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  channelId: varchar("channel_id").references(() => salesChannels.id).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
+  contactId: varchar("contact_id").references(() => contacts.id), // Link to CRM contact
   
   // Lead source data
   platformLeadId: text("platform_lead_id").notNull(), // ID from the platform
@@ -4122,14 +4122,14 @@ export const insertSalesChannelLeadSchema = createInsertSchema(salesChannelLeads
 
 // AI-generated content (ads and emails)
 export const aiContents = pgTable("ai_contents", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
   
   type: text("type").notNull(),
   channel: text("channel"),
-  campaignId: uuid("campaign_id"),
-  salesChannelId: uuid("sales_channel_id").references(() => salesChannels.id),
+  campaignId: varchar("campaign_id"),
+  salesChannelId: varchar("sales_channel_id").references(() => salesChannels.id),
   
   input: jsonb("input").$type<{
     url?: string;
@@ -4191,9 +4191,9 @@ export const aiContents = pgTable("ai_contents", {
 
 // AI Campaign grouping
 export const aiCampaigns = pgTable("ai_campaigns", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
   
   name: text("name").notNull(),
   description: text("description"),
@@ -4221,9 +4221,9 @@ export const aiCampaigns = pgTable("ai_campaigns", {
 
 // AI Usage tracking
 export const aiUsage = pgTable("ai_usage", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  userId: uuid("user_id").references(() => users.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id),
   
   provider: text("provider").notNull(),
   model: text("model"),
@@ -4249,8 +4249,8 @@ export const aiUsage = pgTable("ai_usage", {
 
 // Main test definitions
 export const abTests = pgTable("ab_tests", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   type: text("type").notNull(), // landing_page, email_campaign, product_page, form
@@ -4259,13 +4259,13 @@ export const abTests = pgTable("ab_tests", {
   trafficSplit: jsonb("traffic_split").$type<Record<string, number>>().default({}), // {A: 50, B: 50}
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
-  winnerVariantId: uuid("winner_variant_id"),
+  winnerVariantId: varchar("winner_variant_id"),
   configuration: jsonb("configuration").$type<{
     audienceFilters?: Record<string, any>;
     targetingRules?: Record<string, any>;
     conversionGoals?: string[];
   }>().default({}),
-  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -4278,8 +4278,8 @@ export const abTests = pgTable("ab_tests", {
 
 // Test variants
 export const abVariants = pgTable("ab_variants", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(), // Control, Variant B, etc.
   description: text("description"),
   content: jsonb("content").$type<{
@@ -4299,9 +4299,9 @@ export const abVariants = pgTable("ab_variants", {
 
 // Visitor session tracking
 export const abSessions = pgTable("ab_sessions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  variantId: uuid("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  variantId: varchar("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
   sessionId: text("session_id").notNull(), // browser fingerprint/cookie
   assignedAt: timestamp("assigned_at").defaultNow(),
   ipAddress: text("ip_address"),
@@ -4316,10 +4316,10 @@ export const abSessions = pgTable("ab_sessions", {
 
 // Event tracking
 export const abEvents = pgTable("ab_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  sessionId: uuid("session_id").references(() => abSessions.id, { onDelete: "cascade" }).notNull(),
-  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  variantId: uuid("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => abSessions.id, { onDelete: "cascade" }).notNull(),
+  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  variantId: varchar("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
   eventType: text("event_type").notNull(), // impression, click, interaction
   eventData: jsonb("event_data").$type<Record<string, any>>().default({}),
   timestamp: timestamp("timestamp").defaultNow(),
@@ -4334,10 +4334,10 @@ export const abEvents = pgTable("ab_events", {
 
 // Conversion tracking
 export const abConversions = pgTable("ab_conversions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  sessionId: uuid("session_id").references(() => abSessions.id, { onDelete: "cascade" }).notNull(),
-  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  variantId: uuid("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => abSessions.id, { onDelete: "cascade" }).notNull(),
+  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  variantId: varchar("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
   conversionType: text("conversion_type").notNull(), // form_submit, purchase, lead_capture, signup
   conversionValue: decimal("conversion_value", { precision: 12, scale: 2 }),
   metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
@@ -4353,9 +4353,9 @@ export const abConversions = pgTable("ab_conversions", {
 
 // Pre-computed analytics
 export const abMetricsCache = pgTable("ab_metrics_cache", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  testId: uuid("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  variantId: uuid("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
+  variantId: varchar("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
   impressions: integer("impressions").default(0),
   clicks: integer("clicks").default(0),
   conversions: integer("conversions").default(0),
@@ -4656,7 +4656,7 @@ export const insertAIUsageSchema = createInsertSchema(aiUsage).omit({
 
 // Team capacity planning - track employee capacity
 export const teamCapacity = pgTable("team_capacity", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
   weekStartDate: date("week_start_date").notNull(), // Monday of the week
@@ -4676,7 +4676,7 @@ export const teamCapacity = pgTable("team_capacity", {
 
 // Employee skills for resource matching
 export const employeeSkills = pgTable("employee_skills", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
   skillName: text("skill_name").notNull(), // JavaScript, Project Management, Design, etc.
@@ -4703,7 +4703,7 @@ export const employeeSkills = pgTable("employee_skills", {
 
 // Resource forecasting for project planning
 export const resourceForecasts = pgTable("resource_forecasts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   forecastName: text("forecast_name").notNull(),
   forecastPeriod: text("forecast_period").notNull(), // Q1-2025, Jan-2025, etc.
@@ -4740,7 +4740,7 @@ export const resourceForecasts = pgTable("resource_forecasts", {
 
 // Workload snapshots for historical analytics
 export const workloadSnapshots = pgTable("workload_snapshots", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
   snapshotDate: date("snapshot_date").notNull(),
