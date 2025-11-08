@@ -1,8 +1,9 @@
 import ContactList from "@/components/contact-list";
 import ContactForm from "@/components/contact-form";
 import Layout from "@/components/layout";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTabManager } from "@/hooks/useTabManager";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,10 +17,16 @@ import { Plus, Upload, FileText, Download, CheckCircle, AlertCircle, Eye, Edit, 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import EmotionalIntelligenceWidget from "@/components/emotional-intelligence-widget";
+import type { Contact } from "@shared/schema";
 
 export default function ContactsPage() {
   const { user } = useAuth();
   const [showContactForm, setShowContactForm] = useState(false);
+
+  // Fetch contacts data from API
+  const { data: contacts = [], isLoading: isLoadingContacts } = useQuery<Contact[]>({
+    queryKey: ['/api/contacts'],
+  });
 
   // Enhanced tab management with persistence and query invalidation
   const { activeTab, setActiveTab } = useTabManager({
@@ -31,6 +38,44 @@ export default function ContactsPage() {
     ],
     persistKey: "contacts-page"
   });
+
+  // Calculate real statistics from API data
+  const statistics = useMemo(() => {
+    if (!contacts.length) {
+      return {
+        totalContacts: 0,
+        activeContacts: 0,
+        newThisMonth: 0,
+        conversionRate: 0,
+      };
+    }
+
+    const totalContacts = contacts.length;
+    const activeContacts = contacts.filter(c => c.status === 'active').length;
+    
+    // Calculate new contacts this month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const newThisMonth = contacts.filter(c => {
+      if (!c.createdAt) return false;
+      const created = new Date(c.createdAt);
+      return created.getMonth() === currentMonth && created.getFullYear() === currentYear;
+    }).length;
+
+    // Calculate conversion rate (active contacts / total contacts)
+    const conversionRate = totalContacts > 0 
+      ? ((activeContacts / totalContacts) * 100).toFixed(1)
+      : 0;
+
+    return {
+      totalContacts,
+      activeContacts,
+      newThisMonth,
+      conversionRate,
+    };
+  }, [contacts]);
 
   // Check if user is platform owner - ONLY abel@argilette.com
   const isPlatformOwner = user?.email === 'abel@argilette.com';
@@ -577,7 +622,9 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">530</div>
+                    <div className="text-2xl font-bold" data-testid="stat-total-contacts">
+                      {isLoadingContacts ? '...' : statistics.totalContacts}
+                    </div>
                     <p className="text-xs text-muted-foreground">All contacts</p>
                   </CardContent>
                 </Card>
@@ -587,7 +634,9 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
                     <CheckCircle className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">487</div>
+                    <div className="text-2xl font-bold" data-testid="stat-active-contacts">
+                      {isLoadingContacts ? '...' : statistics.activeContacts}
+                    </div>
                     <p className="text-xs text-muted-foreground">Engaged contacts</p>
                   </CardContent>
                 </Card>
@@ -597,8 +646,15 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
                     <Plus className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">43</div>
-                    <p className="text-xs text-muted-foreground">+12% from last month</p>
+                    <div className="text-2xl font-bold" data-testid="stat-new-month">
+                      {isLoadingContacts ? '...' : statistics.newThisMonth}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {statistics.totalContacts > 0 
+                        ? `${((statistics.newThisMonth / statistics.totalContacts) * 100).toFixed(1)}% of total`
+                        : 'No data yet'
+                      }
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -607,8 +663,10 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
                     <BarChart3 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">18.5%</div>
-                    <p className="text-xs text-muted-foreground">Contact to lead rate</p>
+                    <div className="text-2xl font-bold" data-testid="stat-conversion-rate">
+                      {isLoadingContacts ? '...' : `${statistics.conversionRate}%`}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Contact to active rate</p>
                   </CardContent>
                 </Card>
               </div>
@@ -678,11 +736,15 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span>Total Contacts:</span>
-                          <span className="font-medium">530</span>
+                          <span className="font-medium" data-testid="export-stat-total">
+                            {isLoadingContacts ? '...' : statistics.totalContacts}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Active Contacts:</span>
-                          <span className="font-medium">487</span>
+                          <span className="font-medium" data-testid="export-stat-active">
+                            {isLoadingContacts ? '...' : statistics.activeContacts}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Last Export:</span>
