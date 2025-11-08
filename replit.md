@@ -31,13 +31,14 @@ The application features a monorepo structure with a React 18 frontend (Vite, Ty
 ### Technical Implementations
 - **Monorepo Structure**: Separated client-side and server-side codebases.
 - **Multi-tenancy**: Robust system with data isolation, configurable roles & permissions.
+- **RBAC System (November 2025)**: Enterprise-grade Role-Based Access Control with 143 granular permissions across 37 functional modules (CRM, Marketing, E-commerce, SEO, AI, Projects, Financial, Enterprise, Administration). Five system roles (Platform Owner, Admin, Manager, User, Viewer) with wildcard "*" support for platform owner. Platform owner (abel@argilette.com) has unrestricted access via email-based checking. Frontend usePermissions hook consumes real-time permission data from /api/rbac/my-permissions endpoint. Database tables: permissions, roles, user_roles, access_control_matrix with full tenant isolation. Admin UI includes users-management and roles-management pages with platform owner protection preventing deactivation/role changes.
 - **Offline Capabilities**: PWA with service worker, IndexedDB, background sync, and offline CRUD.
 - **AI Integration**: White-labeled "Argilette AI" services for SEO insights, campaign generation, autonomous operations, and template generation, using a multi-provider failover system. All AI services use Replit AI Integrations with OpenAI GPT-5 fully white-labeled as "Argilette AI".
 - **Authentication**: Secure login/signup with bcrypt password hashing and email verification.
 - **Translation System**: Page-wide automatic translation with RTL support and caching.
 - **SEO Optimization**: Comprehensive meta tags, Open Graph, Twitter Cards, structured data, sitemap, robots.txt, Google Search Console verification, and SEO-friendly routing; fixed critical domain/canonical mismatch and updated branding.
 - **Lander Redirect System**: Bulletproof 6-layer redirect system for `/lander` to `/landing`.
-- **Database Schema**: Core CRM tables (contacts, leads, deals, tasks, accounts) with tenant isolation and relationships.
+- **Database Schema**: Core CRM tables (contacts, leads, deals, tasks, accounts) with tenant isolation and relationships. All UUID columns use VARCHAR type with gen_random_uuid() defaults to match existing database structure.
 - **AI Campaign Studio**: Backend for automated ad/email generation, tenant-isolated content, usage tracking, and REST API.
 - **Sales Channels**: Multi-platform integration for publishing AI-generated content to social/business platforms, with improved UX for connection flow.
 - **ARGILETTE SEO Platform**: Integrated Ubersuggest clone with keyword research, site audits, backlinks, rank tracking, competitor analysis, content intelligence, and local SEO, built on a multi-tenant PostgreSQL architecture with AI insights.
