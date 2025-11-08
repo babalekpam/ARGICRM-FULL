@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Switch, Route, Redirect } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { WhiteLabelProvider } from "@/components/white-label-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import ErrorBoundary from "@/components/error-boundary";
@@ -142,14 +143,15 @@ function App() {
     <ErrorBoundary>
       <PerformanceProvider>
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider defaultTheme="light" storageKey="argilette-theme">
-            <LanguageProvider>
-              <WhiteLabelProvider>
-                <AuthProvider>
-                  <TrackingScripts />
-                  <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                    <Suspense fallback={<LoadingSpinner />}>
-                      <Switch>
+          <TooltipProvider>
+            <ThemeProvider defaultTheme="light" storageKey="argilette-theme">
+              <LanguageProvider>
+                <WhiteLabelProvider>
+                  <AuthProvider>
+                    <TrackingScripts />
+                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Switch>
                         {/* Public Routes - IMPORTANT: "/" must be at the END to avoid matching all paths */}
                         <Route path="/landing">{() => <PageTranslator><SimpleLanding /></PageTranslator>}</Route>
                         <Route path="/login">{() => <PageTranslator><LoginPage /></PageTranslator>}</Route>
@@ -543,6 +545,7 @@ function App() {
               </WhiteLabelProvider>
             </LanguageProvider>
           </ThemeProvider>
+          </TooltipProvider>
         </QueryClientProvider>
       </PerformanceProvider>
     </ErrorBoundary>
