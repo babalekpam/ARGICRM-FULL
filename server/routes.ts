@@ -6275,6 +6275,10 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
   
   app.use('/api/voice-emotion', voiceEmotionRoutes);
 
+  // Role-Based Access Control routes
+  const rbacRouter = (await import('./routes/rbac.js')).default;
+  app.use('/api/rbac', rbacRouter);
+
   // Sales platforms endpoint - no auth required
   app.get('/api/sales/platforms', async (req, res) => {
     try {

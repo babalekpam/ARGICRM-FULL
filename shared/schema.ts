@@ -2866,6 +2866,14 @@ export const insertRoleSchema = createInsertSchema(roles).omit({
   updatedAt: true,
 });
 
+export const updateRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  tenantId: true,
+  isSystemRole: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
 export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
   id: true,
   assignedAt: true,
