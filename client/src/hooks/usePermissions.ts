@@ -1,16 +1,37 @@
 import { useAuth } from "./useAuth";
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+
+interface PermissionsResponse {
+  permissions: string[];
+  role: string;
+  isAdmin: boolean;
+  isPlatformOwner: boolean;
+}
 
 export function usePermissions() {
   const { user } = useAuth();
   
+  // Fetch user permissions from API
+  const { data: permissionsData, isLoading, error } = useQuery<PermissionsResponse>({
+    queryKey: ['/api/rbac/my-permissions'],
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: 2
+  });
+  
   const isPlatformOwner = (): boolean => {
     if (!user) return false;
-    return user.email === 'abel@argilette.com' || user.role === 'platform_owner' || user.isPlatformOwner === true;
+    // Check email as primary identifier for platform owner (client-side safety)
+    if (user.email === 'abel@argilette.com') return true;
+    // Also check API response
+    return permissionsData?.isPlatformOwner === true;
   };
   
   const isAdmin = (): boolean => {
     if (!user) return false;
+    // Check API response first
+    if (permissionsData?.isAdmin === true) return true;
+    // Fallback to role check for backwards compatibility
     return user.role === 'admin' || user.role === 'demo_admin';
   };
   
@@ -22,28 +43,19 @@ export function usePermissions() {
       return true;
     }
     
-    // Admin and demo_admin have most permissions
-    if (isAdmin()) {
-      // Exclude platform-specific permissions for regular admins
-      const platformOnlyPermissions = [
-        'platform.read',
-        'platform.write',
-        'subscribers.read',
-        'subscribers.write',
-        'revenue.read',
-        'white_label.read',
-        'white_label.update'
-      ];
-      
-      if (platformOnlyPermissions.includes(permission)) {
-        return false;
-      }
-      
+    // Check if permissions have loaded
+    if (!permissionsData?.permissions) {
+      // While loading, deny access (conservative approach)
+      return false;
+    }
+    
+    // Check for wildcard permission
+    if (permissionsData.permissions.includes('*')) {
       return true;
     }
     
-    // Default deny for other roles
-    return false;
+    // Check for specific permission
+    return permissionsData.permissions.includes(permission);
   };
   
   const hasAnyPermission = (permissions: string[]): boolean => {
@@ -63,100 +75,6 @@ export function usePermissions() {
     return hasPermission(permission);
   };
   
-  const userPermissions = useMemo(() => {
-    if (!user) return [];
-    
-    const allPermissions = [
-      'dashboard.read',
-      'ai.read',
-      'contacts.read',
-      'contacts.create',
-      'contacts.update',
-      'contacts.delete',
-      'contacts.export',
-      'contacts.import',
-      'accounts.read', 
-      'accounts.create',
-      'accounts.update',
-      'accounts.delete',
-      'leads.read',
-      'leads.create',
-      'leads.update',
-      'leads.delete',
-      'deals.read',
-      'deals.create',
-      'deals.update',
-      'deals.delete',
-      'tasks.read',
-      'tasks.create',
-      'tasks.update',
-      'tasks.delete',
-      'campaigns.read',
-      'campaigns.create',
-      'campaigns.update',
-      'campaigns.delete',
-      'campaigns.publish',
-      'marketing.read',
-      'marketing.create',
-      'marketing.update',
-      'analytics.read',
-      'analytics.export',
-      'reports.read',
-      'reports.create',
-      'reports.export',
-      'scheduling.read',
-      'scheduling.create',
-      'scheduling.update',
-      'tickets.read',
-      'tickets.create',
-      'tickets.update',
-      'projects.read',
-      'projects.create',
-      'projects.update',
-      'team.read',
-      'team.create',
-      'team.update',
-      'financial.read',
-      'financial.update',
-      'enterprise.read',
-      'settings.read',
-      'settings.update',
-      'billing.read',
-      'billing.update',
-      'users.read',
-      'users.create',
-      'users.update',
-      'users.delete',
-      'roles.read',
-      'roles.create',
-      'roles.update',
-      'roles.delete',
-      'workflows.read',
-      'workflows.create',
-      'workflows.update',
-      'products.read',
-      'products.create',
-      'products.update',
-      'products.delete',
-      'inventory.read',
-      'inventory.update',
-      'orders.read',
-      'orders.update',
-      'seo.read',
-      'seo.create',
-      'seo.update',
-      'platform.read',
-      'platform.write',
-      'subscribers.read',
-      'subscribers.write',
-      'revenue.read',
-      'white_label.read',
-      'white_label.update'
-    ];
-    
-    return allPermissions.filter(permission => hasPermission(permission));
-  }, [user]);
-  
   return {
     hasPermission,
     hasAnyPermission,
@@ -164,10 +82,10 @@ export function usePermissions() {
     canAccess,
     isPlatformOwner,
     isAdmin,
-    userPermissions,
-    userRole: user?.role,
+    userPermissions: permissionsData?.permissions || [],
+    userRole: user?.role || permissionsData?.role,
     isAuthenticated: !!user,
-    isLoading: false,
-    error: null
+    isLoading,
+    error
   };
 }
