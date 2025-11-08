@@ -114,7 +114,14 @@ import { ZodError } from "zod";
 import { authenticate, type AuthUser, verifyToken } from "./middleware/auth.js";
 // Secure auth imports disabled temporarily - using existing auth
 // import { secureAuthenticate, setSecureAuthCookie, clearAuthCookie, generateSecureToken, secureLogout } from "./middleware/secure-auth.js";
-// import { requirePlatformOwner, requireAdmin, requirePermissions } from "./middleware/rbac.js";
+import { 
+  requirePermission, 
+  requireAnyPermission, 
+  requireAllPermissions, 
+  requirePlatformOwner, 
+  requireAdminRole,
+  requireManagerOrHigher
+} from "./middleware/rbac.js";
 import { TenantRequest } from "./middleware/tenant.js";
 import { requireFeature, checkUsageLimit, FeatureCheckRequest, FEATURE_DEFINITIONS, PLAN_LIMITS } from "./middleware/feature-check.js";
 import { subscriptionSyncService } from "./services/subscription-sync.js";
@@ -1419,7 +1426,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/contacts", authenticate, async (req, res) => {
+  // RBAC Demo: Requires 'contacts.create' permission
+  app.post("/api/contacts", authenticate, requirePermission('contacts.create'), async (req, res) => {
     try {
       console.log('Received contact data:', req.body);
       
@@ -3923,7 +3931,8 @@ function performSimpleSentimentAnalysis(text: string) {
     }
   });
 
-  app.put("/api/deals/:id", async (req, res) => {
+  // RBAC Demo: Requires 'deals.update' permission
+  app.put("/api/deals/:id", authenticate, requirePermission('deals.update'), async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid deal ID' });
@@ -3947,7 +3956,8 @@ function performSimpleSentimentAnalysis(text: string) {
     }
   });
 
-  app.delete("/api/deals/:id", async (req, res) => {
+  // RBAC Demo: Requires admin role (demonstrates requireAdminRole middleware)
+  app.delete("/api/deals/:id", authenticate, requireAdminRole, async (req, res) => {
     const id = parseInt(req.params.id);
     
     if (isNaN(id)) {

@@ -504,6 +504,108 @@ router.get("/users/:userId/permissions", requireAdmin, async (req: Request & { u
 });
 
 // ============================================================================
+// USER MANAGEMENT
+// ============================================================================
+
+// GET /api/rbac/users - List all users in current tenant (admin only)
+router.get("/users", requireAdmin, async (req: Request & { user?: AuthUser }, res: Response) => {
+  try {
+    const user = req.user!;
+    const tenantId = user.tenantId;
+
+    const tenantUsers = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        isActive: users.isActive,
+        lastLoginAt: users.lastLoginAt,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(eq(users.tenantId, tenantId))
+      .orderBy(desc(users.createdAt));
+
+    res.json(tenantUsers);
+  } catch (error: any) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// PATCH /api/rbac/users/:id - Update user details (admin only)
+router.patch("/users/:id", requireAdmin, async (req: Request & { user?: AuthUser }, res: Response) => {
+  try {
+    const user = req.user!;
+    const { id } = req.params;
+    const { firstName, lastName, role, isActive } = req.body;
+
+    // Verify user belongs to same tenant
+    const targetUser = await db
+      .select()
+      .from(users)
+      .where(and(
+        eq(users.id, id),
+        eq(users.tenantId, user.tenantId)
+      ))
+      .limit(1);
+
+    if (!targetUser || targetUser.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const targetUserData = targetUser[0];
+
+    // Platform owner protection - cannot change role or deactivate
+    if (isPlatformOwner(targetUserData.email)) {
+      if (isActive !== undefined && isActive !== true) {
+        return res.status(403).json({ 
+          error: "Platform owner account cannot be deactivated" 
+        });
+      }
+      if (role !== undefined && role !== targetUserData.role) {
+        return res.status(403).json({ 
+          error: "Platform owner account role cannot be changed" 
+        });
+      }
+    }
+
+    // Build update object
+    const updates: any = {
+      updatedAt: new Date()
+    };
+    if (firstName !== undefined) updates.firstName = firstName;
+    if (lastName !== undefined) updates.lastName = lastName;
+    if (role !== undefined) updates.role = role;
+    if (isActive !== undefined) updates.isActive = isActive;
+
+    const updatedUser = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        isActive: users.isActive,
+        lastLoginAt: users.lastLoginAt,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      });
+
+    res.json(updatedUser[0]);
+  } catch (error: any) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
+// ============================================================================
 // SYSTEM ROLES REFERENCE
 // ============================================================================
 

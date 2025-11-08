@@ -68,6 +68,8 @@ const TaxSettingsPage = lazy(() => import("@/pages/tax-settings"));
 const EmployeesPage = lazy(() => import("@/pages/employees"));
 const RolesPage = lazy(() => import("@/pages/roles"));
 const ResourceManagement = lazy(() => import("@/pages/resource-management"));
+const UsersManagement = lazy(() => import("@/pages/users-management"));
+const RolesManagement = lazy(() => import("@/pages/roles-management"));
 
 // AI & Intelligence  
 const AICampaignStudioPage = lazy(() => import("@/pages/ai-campaign-studio"));
@@ -340,6 +342,16 @@ function App() {
                           <Route path="/resource-management">{() => (
                             <ProtectedRoute requiredPermission="hr.read">
                               <PageTranslator><ResourceManagement /></PageTranslator>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/users-management">{() => (
+                            <ProtectedRoute requiredPermission="users.read">
+                              <PageTranslator><UsersManagement /></PageTranslator>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/roles-management">{() => (
+                            <ProtectedRoute requiredPermission="roles.read">
+                              <PageTranslator><RolesManagement /></PageTranslator>
                             </ProtectedRoute>
                           )}</Route>
                           

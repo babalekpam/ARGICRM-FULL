@@ -208,6 +208,21 @@ export default function Navigation({ onLogout }: NavigationProps) {
     }
   ];
 
+  // Add Administration group for admins and platform owners
+  const isAdmin = user?.role === 'admin' || user?.role === 'platform_owner';
+  if (isAdmin || isPlatformOwner) {
+    navigationGroups.push({
+      key: "administration",
+      title: "Administration",
+      icon: UserCog,
+      description: "User and role management",
+      modules: [
+        { path: "/users-management", label: "User Management", icon: Users, permission: "users.read" },
+        { path: "/roles-management", label: "Roles & Permissions", icon: Shield, permission: "roles.read" },
+      ]
+    });
+  }
+
   // Add Admin group for platform owners
   if (isPlatformOwner) {
     navigationGroups.push({

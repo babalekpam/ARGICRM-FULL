@@ -239,6 +239,10 @@ export async function registerTenant(req: Request, res: Response) {
     // Create default roles for the tenant
     await storage.createDefaultRoles(tenant.id);
 
+    // Seed RBAC permissions and system roles for new tenant
+    const { seedRBACForNewTenant } = await import('./seed-rbac.js');
+    await seedRBACForNewTenant(tenant.id);
+
     res.status(201).json({
       message: 'Tenant and admin created successfully',
       tenant: {

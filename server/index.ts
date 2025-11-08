@@ -209,6 +209,10 @@ app.use((req, res, next) => {
   // Apply schema hotfix before starting server
   await ensureStripeColumns();
   
+  // Initialize RBAC system (seed permissions if needed)
+  const { initializeRBAC } = await import("./seed-rbac.js");
+  await initializeRBAC();
+  
   // CRITICAL FIX: Setup Vite middleware BEFORE routes in development for proper request handling
   let server: Server;
   
