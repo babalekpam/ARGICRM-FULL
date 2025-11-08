@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { saasFeatures } from "@/services/saas-features";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { BrandedLogo } from "./branded-logo";
 import { LanguageSelector } from "./LanguageSelector";
 import { useOffline } from "@/hooks/useOffline";
@@ -72,6 +73,7 @@ interface NavigationProps {
 export default function Navigation({ onLogout }: NavigationProps) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { hasPermission, isPlatformOwner: checkIsPlatformOwner } = usePermissions();
   const { status, downloadForOffline } = useOffline();
   const { toast } = useToast();
 
@@ -90,12 +92,8 @@ export default function Navigation({ onLogout }: NavigationProps) {
     setCollapsedSections(newCollapsed);
   };
   
-  // Check if user is platform owner - ONLY abel@argilette.com
-  const isPlatformOwner = Boolean(
-    user?.isPlatformOwner === true ||
-    user?.email === 'abel@argilette.com' ||
-    user?.role === 'platform_owner'
-  );
+  // Check if user is platform owner using the hook
+  const isPlatformOwner = checkIsPlatformOwner();
 
   // Define navigation groups with icons and modules
   const dashboardPath = isPlatformOwner ? "/super-admin-dashboard" : "/user-dashboard";
@@ -251,17 +249,22 @@ export default function Navigation({ onLogout }: NavigationProps) {
     description: "Personal settings and account management",
     modules: [
       { path: "/terms-of-service", label: "Terms of Service", icon: Scale, permission: null },
-      { path: "/account-settings", label: "Account Settings", icon: User, permission: "" },
+      { path: "/account-settings", label: "Account Settings", icon: User, permission: null },
     ]
   });
 
-  const hasPermission = (permission: string | null, requiredRole?: string) => {
-    return true;
-  };
-
   const renderCollapsibleGroup = (group: any) => {
     const isCollapsed = collapsedSections.has(group.key);
-    const visibleModules = group.modules;
+    
+    // Filter modules based on permissions
+    // If permission is null or empty, module is accessible to all
+    // Otherwise, check if user has the required permission
+    const visibleModules = group.modules.filter((item: any) => {
+      if (!item.permission || item.permission === '') {
+        return true; // No permission required - show to all
+      }
+      return hasPermission(item.permission);
+    });
     const GroupIcon = group.icon;
     
     // Check if any item in this group is currently active

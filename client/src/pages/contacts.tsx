@@ -16,6 +16,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Upload, FileText, Download, CheckCircle, AlertCircle, Eye, Edit, Trash2, Save, Users, BarChart3, Filter, FileSpreadsheet, Brain, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { ProtectedButton } from "@/components/protected-button";
+import { ProtectedSection } from "@/components/protected-section";
 import EmotionalIntelligenceWidget from "@/components/emotional-intelligence-widget";
 import type { Contact } from "@shared/schema";
 
@@ -300,14 +303,25 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
             </div>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            <Button variant="outline" className="bg-white shadow-md border-slate-200">
+            <ProtectedButton 
+              permission="analytics.read"
+              variant="outline" 
+              className="bg-white shadow-md border-slate-200"
+              data-testid="button-contact-analytics"
+            >
               <BarChart3 className="w-4 h-4 mr-2" />
               Contact Analytics
-            </Button>
-            <Button onClick={() => setShowContactForm(true)} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
+            </ProtectedButton>
+            <ProtectedButton 
+              permission="contacts.create"
+              onClick={() => setShowContactForm(true)} 
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
+              hideIfNoPermission
+              data-testid="button-add-contact"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
-            </Button>
+            </ProtectedButton>
           </div>
         </div>
 
@@ -351,6 +365,19 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
           </TabsContent>
 
             <TabsContent value="import" className="space-y-6 mt-0">
+            <ProtectedSection 
+              permission="contacts.import"
+              fallback={
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Import Not Available</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">You don't have permission to import contacts.</p>
+                  </CardContent>
+                </Card>
+              }
+            >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -612,6 +639,7 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
                 </AlertDescription>
               </Alert>
             )}
+            </ProtectedSection>
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6 mt-0">

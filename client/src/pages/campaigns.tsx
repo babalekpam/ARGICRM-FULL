@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { ProtectedButton } from "@/components/protected-button";
+import { ProtectedSection } from "@/components/protected-section";
 import { 
   Plus, 
   Megaphone, 
@@ -219,17 +222,26 @@ export default function CampaignsPage() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            <Button onClick={() => setShowForm(true)} variant="outline" className="bg-white shadow-md border-slate-200">
+            <ProtectedButton 
+              permission="campaigns.create"
+              onClick={() => setShowForm(true)} 
+              variant="outline" 
+              className="bg-white shadow-md border-slate-200"
+              data-testid="button-manual-campaign"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Manual Campaign
-            </Button>
-            <Button 
+            </ProtectedButton>
+            <ProtectedButton 
+              permission="campaigns.create"
               onClick={() => setShowAIBuilder(true)} 
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg"
+              hideIfNoPermission
+              data-testid="button-ai-campaign-builder"
             >
               <Bot className="h-4 w-4 mr-2" />
               AI Campaign Builder
-            </Button>
+            </ProtectedButton>
           </div>
         </div>
 
@@ -246,13 +258,15 @@ export default function CampaignsPage() {
                 <span>✓ Business Goals</span>
               </div>
             </div>
-            <Button 
+            <ProtectedButton 
+              permission="campaigns.create"
               onClick={() => setShowAIBuilder(true)} 
               className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-6 py-3"
+              data-testid="button-try-personalization"
             >
               <Target className="h-4 w-4 mr-2" />
               Try Personalization
-            </Button>
+            </ProtectedButton>
           </div>
         </div>
 

@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { usePermissions } from "@/hooks/usePermissions";
+import { ProtectedButton } from "@/components/protected-button";
+import { ProtectedSection } from "@/components/protected-section";
 import { 
   Package, 
   Plus, 
@@ -664,10 +667,14 @@ export default function ProductManagement() {
                       ? "Get started by creating your first product"
                       : "Try adjusting your search or filters"}
                   </p>
-                  <Button onClick={() => setShowAddProduct(true)}>
+                  <ProtectedButton 
+                    permission="products.create"
+                    onClick={() => setShowAddProduct(true)}
+                    data-testid="button-add-product"
+                  >
                     <Plus className="mr-2" size={16} />
                     Add Product
-                  </Button>
+                  </ProtectedButton>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -706,15 +713,31 @@ export default function ProductManagement() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
+                        <ProtectedButton 
+                          permission="products.read"
+                          variant="ghost" 
+                          size="sm"
+                          data-testid={`button-view-product-${product.id}`}
+                        >
                           <Eye size={16} />
-                        </Button>
-                        <Button variant="ghost" size="sm">
+                        </ProtectedButton>
+                        <ProtectedButton 
+                          permission="products.update"
+                          variant="ghost" 
+                          size="sm"
+                          data-testid={`button-edit-product-${product.id}`}
+                        >
                           <Edit size={16} />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                        </ProtectedButton>
+                        <ProtectedButton 
+                          permission="products.delete"
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700"
+                          data-testid={`button-delete-product-${product.id}`}
+                        >
                           <Trash2 size={16} />
-                        </Button>
+                        </ProtectedButton>
                       </div>
                     </div>
                   ))}

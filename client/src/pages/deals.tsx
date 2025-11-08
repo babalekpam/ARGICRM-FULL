@@ -7,6 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { Plus, DollarSign, Calendar, User, Edit, Trash2, Save, BarChart3, Target, TrendingUp, ArrowLeft } from "lucide-react";
 import Layout from "@/components/layout";
 import { apiRequest } from "@/lib/queryClient";
+import { usePermissions } from "@/hooks/usePermissions";
+import { ProtectedButton } from "@/components/protected-button";
+import { ProtectedSection } from "@/components/protected-section";
 import type { Deal } from "@shared/schema";
 import { useSearch, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -168,14 +171,25 @@ export default function DealsPage() {
                 Back to Contacts
               </Button>
             )}
-            <Button variant="outline" className="bg-white shadow-md border-slate-200">
+            <ProtectedButton 
+              permission="analytics.read"
+              variant="outline" 
+              className="bg-white shadow-md border-slate-200"
+              data-testid="button-pipeline-analytics"
+            >
               <BarChart3 className="w-4 h-4 mr-2" />
               Pipeline Analytics
-            </Button>
-            <Button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 shadow-lg">
+            </ProtectedButton>
+            <ProtectedButton 
+              permission="deals.create"
+              onClick={() => setShowForm(true)} 
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 shadow-lg"
+              hideIfNoPermission
+              data-testid="button-add-deal"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Deal
-            </Button>
+            </ProtectedButton>
           </div>
         </div>
 
@@ -233,16 +247,19 @@ export default function DealsPage() {
                       </div>
                     )}
                     <div className="flex space-x-2 pt-4 border-t">
-                      <Button
+                      <ProtectedButton
+                        permission="deals.update"
                         variant="outline"
                         size="sm"
                         className="flex-1"
                         onClick={() => setEditingDeal(deal)}
+                        data-testid={`button-edit-deal-${deal.id}`}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
-                      </Button>
-                      <Button
+                      </ProtectedButton>
+                      <ProtectedButton
+                        permission="deals.delete"
                         variant="destructive"
                         size="sm"
                         className="flex-1"
@@ -252,10 +269,11 @@ export default function DealsPage() {
                           }
                         }}
                         disabled={deleteMutation.isPending}
+                        data-testid={`button-delete-deal-${deal.id}`}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         {deleteMutation.isPending ? "Deleting..." : "Delete"}
-                      </Button>
+                      </ProtectedButton>
                     </div>
                   </div>
                 </CardContent>
