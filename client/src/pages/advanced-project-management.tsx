@@ -86,83 +86,7 @@ const timeEntrySchema = z.object({
   billableRate: z.string().optional(),
 });
 
-// Mock data for development
-const mockProjects = [
-  {
-    id: "1",
-    name: "Website Redesign",
-    description: "Complete redesign of company website with modern UI/UX",
-    status: "active",
-    priority: "high",
-    startDate: new Date("2024-01-15"),
-    endDate: new Date("2024-03-15"),
-    plannedStartDate: new Date("2024-01-15"),
-    plannedEndDate: new Date("2024-03-15"),
-    budget: "50000.00",
-    actualCost: "25000.00",
-    progress: 65,
-    projectManagerId: "user1",
-    clientId: "client1",
-    tasks: [
-      {
-        id: "t1",
-        name: "UI Design",
-        status: "done",
-        progress: 100,
-        startDate: new Date("2024-01-15"),
-        endDate: new Date("2024-02-01"),
-        assignee: "Designer A"
-      },
-      {
-        id: "t2", 
-        name: "Frontend Development",
-        status: "in_progress",
-        progress: 70,
-        startDate: new Date("2024-02-01"),
-        endDate: new Date("2024-02-28"),
-        assignee: "Developer B"
-      },
-      {
-        id: "t3",
-        name: "Backend Integration", 
-        status: "todo",
-        progress: 0,
-        startDate: new Date("2024-02-15"),
-        endDate: new Date("2024-03-10"),
-        assignee: "Developer C"
-      }
-    ]
-  },
-  {
-    id: "2",
-    name: "Mobile App Development",
-    description: "Native mobile app for iOS and Android",
-    status: "planning",
-    priority: "medium",
-    startDate: new Date("2024-02-01"),
-    endDate: new Date("2024-06-01"),
-    plannedStartDate: new Date("2024-02-01"),
-    plannedEndDate: new Date("2024-06-01"),
-    budget: "100000.00",
-    actualCost: "0.00",
-    progress: 15,
-    projectManagerId: "user2",
-    clientId: "client2",
-    tasks: []
-  }
-];
-
-const mockUsers = [
-  { id: "user1", name: "John Smith", role: "Project Manager" },
-  { id: "user2", name: "Sarah Johnson", role: "Senior Developer" },
-  { id: "user3", name: "Mike Chen", role: "Designer" },
-  { id: "user4", name: "Lisa Brown", role: "Developer" }
-];
-
-const mockClients = [
-  { id: "client1", name: "Tech Corp", industry: "Technology" },
-  { id: "client2", name: "Design Studio", industry: "Creative" }
-];
+// Fetch real data from APIs - no more mock data
 
 // Gantt Chart Component
 function GanttChart({ projects }: { projects: any[] }) {
@@ -347,14 +271,10 @@ function GanttChart({ projects }: { projects: any[] }) {
 function ResourcePlanning({ users }: { users: any[] }) {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
   
-  const mockAllocations = [
-    { userId: "user1", projectName: "Website Redesign", hours: 40, utilization: 100 },
-    { userId: "user1", projectName: "Mobile App", hours: 0, utilization: 0 },
-    { userId: "user2", projectName: "Website Redesign", hours: 30, utilization: 75 },
-    { userId: "user2", projectName: "Mobile App", hours: 10, utilization: 25 },
-    { userId: "user3", projectName: "Website Redesign", hours: 20, utilization: 50 },
-    { userId: "user4", projectName: "Mobile App", hours: 35, utilization: 87.5 },
-  ];
+  // Fetch real resource allocations from API
+  const { data: allocations = [], isLoading: allocationsLoading } = useQuery({
+    queryKey: ['/api/project-management/resource-allocations'],
+  });
 
   return (
     <div className="space-y-6">
@@ -378,11 +298,22 @@ function ResourcePlanning({ users }: { users: any[] }) {
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {users.map((user) => {
-          const userAllocations = mockAllocations.filter(a => a.userId === user.id);
-          const totalHours = userAllocations.reduce((sum, a) => sum + a.hours, 0);
-          const totalUtilization = totalHours / 40 * 100; // Assuming 40 hour work week
+      {allocationsLoading ? (
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
+          <p className="text-gray-500">Loading resource allocations...</p>
+        </div>
+      ) : users.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <p>No team members found - Add team members to start planning resources</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {users.map((user) => {
+            const userAllocations = allocations.filter((a: any) => a.userId === user.id);
+            const totalHours = userAllocations.reduce((sum: number, a: any) => sum + a.hours, 0);
+            const totalUtilization = totalHours / 40 * 100; // Assuming 40 hour work week
           
           return (
             <Card key={user.id}>
@@ -418,7 +349,8 @@ function ResourcePlanning({ users }: { users: any[] }) {
             </Card>
           );
         })}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -428,28 +360,10 @@ function TimeTracking() {
   const [isTracking, setIsTracking] = useState(false);
   const [currentTask, setCurrentTask] = useState<string>("");
   
-  const mockTimeEntries = [
-    {
-      id: "1",
-      project: "Website Redesign",
-      task: "Frontend Development",
-      user: "Sarah Johnson",
-      duration: "2h 30m",
-      billable: true,
-      date: new Date(),
-      status: "completed"
-    },
-    {
-      id: "2", 
-      project: "Mobile App",
-      task: "UI Design",
-      user: "Mike Chen",
-      duration: "3h 15m",
-      billable: true,
-      date: new Date(),
-      status: "completed"
-    }
-  ];
+  // Fetch real time entries from API
+  const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery({
+    queryKey: ['/api/project-management/time-entries'],
+  });
 
   return (
     <div className="space-y-6">
@@ -504,8 +418,19 @@ function TimeTracking() {
           <CardTitle className="text-base">Recent Time Entries</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {mockTimeEntries.map((entry) => (
+          {timeEntriesLoading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mb-2"></div>
+              <p className="text-sm text-gray-500">Loading time entries...</p>
+            </div>
+          ) : timeEntries.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Timer className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>No time entries yet - Start tracking your time to see entries here</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {timeEntries.map((entry: any) => (
               <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="space-y-1">
                   <div className="font-medium text-sm">{entry.project}</div>
@@ -527,7 +452,8 @@ function TimeTracking() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -575,9 +501,25 @@ export default function AdvancedProjectManagement() {
     }
   };
 
-  const projects = mockProjects;
-  const users = mockUsers;
-  const clients = mockClients;
+  // Fetch real data from APIs
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+    queryKey: ['/api/projects'],
+  });
+
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['/api/users'],
+  });
+
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
+    queryKey: ['/api/clients'],
+  });
+
+  // Calculate real statistics from data
+  const activeProjects = projects.filter((p: any) => p.status === 'active').length;
+  const totalHoursTracked = 0; // TODO: Calculate from time entries API
+  const onSchedulePercentage = projects.length > 0 
+    ? Math.round((projects.filter((p: any) => p.progress >= 80).length / projects.length) * 100)
+    : 0;
 
   return (
     <Layout>
@@ -737,7 +679,7 @@ export default function AdvancedProjectManagement() {
                 <Target className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Active Projects</p>
-                  <p className="text-2xl font-bold">12</p>
+                  <p className="text-2xl font-bold">{projectsLoading ? '...' : activeProjects}</p>
                 </div>
               </div>
             </CardContent>
@@ -749,7 +691,7 @@ export default function AdvancedProjectManagement() {
                 <Users className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Team Members</p>
-                  <p className="text-2xl font-bold">24</p>
+                  <p className="text-2xl font-bold">{usersLoading ? '...' : users.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -761,7 +703,7 @@ export default function AdvancedProjectManagement() {
                 <Clock className="h-8 w-8 text-orange-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Hours Tracked</p>
-                  <p className="text-2xl font-bold">1,847</p>
+                  <p className="text-2xl font-bold">{totalHoursTracked}</p>
                 </div>
               </div>
             </CardContent>
@@ -773,7 +715,7 @@ export default function AdvancedProjectManagement() {
                 <TrendingUp className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">On Schedule</p>
-                  <p className="text-2xl font-bold">87%</p>
+                  <p className="text-2xl font-bold">{projectsLoading ? '...' : `${onSchedulePercentage}%`}</p>
                 </div>
               </div>
             </CardContent>
@@ -791,8 +733,24 @@ export default function AdvancedProjectManagement() {
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-6">
-              {projects.map((project) => (
+            {projectsLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
+                <p className="text-gray-500">Loading projects...</p>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="text-center py-12">
+                <Target className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
+                <p className="text-gray-500 mb-4">Get started by creating your first project</p>
+                <Button className="bg-gradient-to-r from-orange-600 to-amber-600">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Project
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-6">
+                {projects.map((project: any) => (
                 <Card key={project.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
@@ -866,7 +824,8 @@ export default function AdvancedProjectManagement() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="gantt" className="space-y-6">

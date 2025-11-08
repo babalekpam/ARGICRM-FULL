@@ -179,36 +179,10 @@ export default function VoiceEmotionAnalyticsPage() {
     return colorMap[emotion] || '#6B7280';
   };
 
-  const mockCallHistory: CallAnalysis[] = [
-    {
-      id: '1',
-      customerName: 'Sarah Johnson',
-      duration: '12:34',
-      overallSentiment: 'positive',
-      emotionalJourney: [
-        { emotion: 'Nervous', intensity: 70, confidence: 85, timestamp: new Date(), color: '#F59E0B' },
-        { emotion: 'Interested', intensity: 80, confidence: 90, timestamp: new Date(), color: '#10B981' },
-        { emotion: 'Excited', intensity: 90, confidence: 95, timestamp: new Date(), color: '#8B5CF6' }
-      ],
-      keyMoments: [
-        {
-          timestamp: '2:15',
-          emotion: 'Frustrated',
-          description: 'Customer expressed confusion about pricing',
-          suggestion: 'Use simpler language and provide visual aids'
-        },
-        {
-          timestamp: '8:30',
-          emotion: 'Excited',
-          description: 'Customer showed enthusiasm about features',
-          suggestion: 'Focus on this area and ask for commitment'
-        }
-      ],
-      empathyScore: 87,
-      stressLevel: 30,
-      satisfactionPrediction: 92
-    }
-  ];
+  // Fetch real call history from API - no more mock data
+  const { data: callHistory = [], isLoading: callHistoryLoading } = useQuery<CallAnalysis[]>({
+    queryKey: ['/api/voice-analytics/call-history'],
+  });
 
   const startRecording = () => {
     if (!selectedContact) {
@@ -718,14 +692,26 @@ export default function VoiceEmotionAnalyticsPage() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Calls</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {mockCallHistory.map((call) => (
+            {callHistoryLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-4"></div>
+                <p className="text-gray-500">Loading call history...</p>
+              </div>
+            ) : callHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <Clock className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No call history yet</h3>
+                <p className="text-gray-500">Start analyzing customer calls to build your history</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Recent Calls</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {callHistory.map((call) => (
                       <div 
                         key={call.id}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -811,7 +797,8 @@ export default function VoiceEmotionAnalyticsPage() {
                   </Card>
                 )}
               </div>
-            </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-6">

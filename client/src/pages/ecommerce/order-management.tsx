@@ -33,68 +33,13 @@ export default function OrderManagement() {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
 
-  // Fetch orders
+  // Fetch orders from API
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["/api/ecommerce/orders"],
   });
 
-  // Mock order data for demonstration
-  const mockOrders = [
-    {
-      id: "1",
-      orderNumber: "ORD-001",
-      customerEmail: "john@example.com",
-      customerName: "John Doe",
-      status: "processing",
-      financialStatus: "paid",
-      fulfillmentStatus: "unfulfilled",
-      totalAmount: 149.99,
-      currency: "USD",
-      orderDate: new Date("2024-08-09T10:30:00"),
-      items: [
-        { id: "1", productName: "Wireless Headphones", quantity: 1, unitPrice: 149.99 }
-      ],
-      shippingAddress: {
-        firstName: "John",
-        lastName: "Doe",
-        address1: "123 Main St",
-        city: "New York",
-        state: "NY",
-        zipCode: "10001",
-        country: "USA"
-      }
-    },
-    {
-      id: "2",
-      orderNumber: "ORD-002",
-      customerEmail: "jane@example.com",
-      customerName: "Jane Smith",
-      status: "shipped",
-      financialStatus: "paid",
-      fulfillmentStatus: "fulfilled",
-      totalAmount: 299.98,
-      currency: "USD",
-      orderDate: new Date("2024-08-08T14:20:00"),
-      trackingNumber: "1Z999AA1234567890",
-      items: [
-        { id: "1", productName: "Smartphone Case", quantity: 2, unitPrice: 149.99 }
-      ],
-      shippingAddress: {
-        firstName: "Jane",
-        lastName: "Smith",
-        address1: "456 Oak Ave",
-        city: "Los Angeles",
-        state: "CA",
-        zipCode: "90210",
-        country: "USA"
-      }
-    }
-  ];
-
-  const displayOrders = orders.length > 0 ? orders : mockOrders;
-
   // Filter orders
-  const filteredOrders = displayOrders.filter((order: any) => {
+  const filteredOrders = orders.filter((order: any) => {
     const matchesSearch = order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          order.customerEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          order.customerName?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -265,14 +210,14 @@ export default function OrderManagement() {
     );
   };
 
-  // Calculate statistics
+  // Calculate statistics from real data
   const stats = {
-    total: displayOrders.length,
-    pending: displayOrders.filter(o => o.status === 'pending').length,
-    processing: displayOrders.filter(o => o.status === 'processing').length,
-    shipped: displayOrders.filter(o => o.status === 'shipped').length,
-    delivered: displayOrders.filter(o => o.status === 'delivered').length,
-    totalRevenue: displayOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+    total: orders.length,
+    pending: orders.filter(o => o.status === 'pending').length,
+    processing: orders.filter(o => o.status === 'processing').length,
+    shipped: orders.filter(o => o.status === 'shipped').length,
+    delivered: orders.filter(o => o.status === 'delivered').length,
+    totalRevenue: orders.reduce((sum, o) => sum + o.totalAmount, 0)
   };
 
   return (
@@ -408,13 +353,18 @@ export default function OrderManagement() {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredOrders.length === 0 ? (
+            {ordersLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-500">Loading orders...</p>
+              </div>
+            ) : filteredOrders.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingCart className="mx-auto text-gray-400 mb-4" size={48} />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
                 <p className="text-gray-500">
-                  {displayOrders.length === 0 
-                    ? "Orders will appear here once customers start placing orders"
+                  {orders.length === 0 
+                    ? "Orders will appear here once customers start placing orders through your e-commerce store"
                     : "Try adjusting your search or filters"}
                 </p>
               </div>

@@ -86,132 +86,17 @@ interface ReputationMetrics {
   averageResponseTime: number; // in hours
 }
 
-const mockReviews: Review[] = [
-  {
-    id: 1,
-    platform: 'Google',
-    rating: 5,
-    title: "Excellent service and professional team!",
-    content: "I had an amazing experience with this company. The team was professional, responsive, and delivered exactly what they promised. Highly recommended!",
-    reviewer: {
-      name: "Sarah Johnson",
-      verified: true,
-      reviewCount: 15
-    },
-    date: new Date(2025, 5, 22),
-    location: "New York, NY",
-    status: 'new',
-    sentiment: 'positive',
-    keywords: ['professional', 'responsive', 'excellent'],
-    helpful: 8,
-    device: 'desktop'
-  },
-  {
-    id: 2,
-    platform: 'Yelp',
-    rating: 2,
-    title: "Disappointing experience",
-    content: "The service was slower than expected and communication could have been better. Not what I was hoping for given the reviews.",
-    reviewer: {
-      name: "Mike Chen",
-      verified: true,
-      reviewCount: 23
-    },
-    date: new Date(2025, 5, 20),
-    status: 'flagged',
-    sentiment: 'negative',
-    keywords: ['slow', 'communication', 'disappointing'],
-    helpful: 3,
-    device: 'mobile'
-  },
-  {
-    id: 3,
-    platform: 'Facebook',
-    rating: 4,
-    title: "Good overall experience",
-    content: "Solid service with good results. The team was helpful and the pricing was fair. Would use again.",
-    reviewer: {
-      name: "Jennifer Davis",
-      verified: true,
-      reviewCount: 8
-    },
-    date: new Date(2025, 5, 18),
-    status: 'responded',
-    sentiment: 'positive',
-    keywords: ['solid', 'helpful', 'fair pricing'],
-    helpful: 12,
-    device: 'mobile',
-    response: {
-      content: "Thank you Jennifer! We're glad you had a positive experience with our team. We look forward to working with you again.",
-      date: new Date(2025, 5, 19),
-      author: "Customer Service Team"
-    }
-  },
-  {
-    id: 4,
-    platform: 'TripAdvisor',
-    rating: 1,
-    title: "Poor customer service",
-    content: "Very disappointed with the customer service. Issues were not resolved promptly and staff seemed unprofessional.",
-    reviewer: {
-      name: "Robert Wilson",
-      verified: false,
-      reviewCount: 3
-    },
-    date: new Date(2025, 5, 15),
-    status: 'new',
-    sentiment: 'negative',
-    keywords: ['disappointed', 'unprofessional', 'poor service'],
-    helpful: 1,
-    device: 'desktop'
-  },
-  {
-    id: 5,
-    platform: 'Trustpilot',
-    rating: 5,
-    title: "Outstanding results!",
-    content: "Exceeded all expectations. The project was completed ahead of schedule and the quality was top-notch. Fantastic team to work with!",
-    reviewer: {
-      name: "Lisa Anderson",
-      verified: true,
-      reviewCount: 31
-    },
-    date: new Date(2025, 5, 12),
-    status: 'responded',
-    sentiment: 'positive',
-    keywords: ['exceeded expectations', 'top-notch', 'fantastic'],
-    helpful: 15,
-    device: 'desktop',
-    response: {
-      content: "Lisa, thank you so much for this wonderful review! We're thrilled we could exceed your expectations and deliver quality results.",
-      date: new Date(2025, 5, 13),
-      author: "Management Team"
-    }
-  }
-];
+const mockReviews: Review[] = [];
 
 const mockMetrics: ReputationMetrics = {
-  overallRating: 4.2,
-  totalReviews: 147,
-  ratingDistribution: { 5: 65, 4: 32, 3: 18, 2: 12, 1: 20 },
-  monthlyTrend: [
-    { month: 'Jan', rating: 4.1, count: 23 },
-    { month: 'Feb', rating: 4.0, count: 28 },
-    { month: 'Mar', rating: 4.3, count: 31 },
-    { month: 'Apr', rating: 4.2, count: 25 },
-    { month: 'May', rating: 4.4, count: 22 },
-    { month: 'Jun', rating: 4.2, count: 18 }
-  ],
-  platformBreakdown: [
-    { platform: 'Google', rating: 4.5, count: 68, change: 5.2 },
-    { platform: 'Yelp', rating: 3.8, count: 34, change: -2.1 },
-    { platform: 'Facebook', rating: 4.3, count: 25, change: 3.4 },
-    { platform: 'TripAdvisor', rating: 4.0, count: 12, change: 1.8 },
-    { platform: 'Trustpilot', rating: 4.6, count: 8, change: 8.3 }
-  ],
-  sentimentBreakdown: { positive: 72, neutral: 18, negative: 10 },
-  responseRate: 68,
-  averageResponseTime: 4.2
+  overallRating: 0,
+  totalReviews: 0,
+  ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+  monthlyTrend: [],
+  platformBreakdown: [],
+  sentimentBreakdown: { positive: 0, neutral: 0, negative: 0 },
+  responseRate: 0,
+  averageResponseTime: 0
 };
 
 export default function ReputationManagementPage() {

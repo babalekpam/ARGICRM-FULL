@@ -43,24 +43,29 @@ interface TeamMember {
   avatar: string;
 }
 
-const mockTeamMembers: TeamMember[] = [
-  { id: 1, name: "Sarah Johnson", email: "sarah@company.com", status: "online", avatar: "SJ" },
-  { id: 2, name: "Mike Chen", email: "mike@company.com", status: "busy", avatar: "MC" },
-  { id: 3, name: "Emily Davis", email: "emily@company.com", status: "away", avatar: "ED" },
-  { id: 4, name: "Alex Rodriguez", email: "alex@company.com", status: "online", avatar: "AR" },
-];
-
-const mockChatMessages: ChatMessage[] = [
-  { id: 1, user: "Sarah Johnson", message: "Hey team! Just finished the client presentation. It went really well!", timestamp: new Date(2025, 5, 24, 10, 30), type: 'text' },
-  { id: 2, user: "Mike Chen", message: "That's awesome! Did they ask about the new features we discussed?", timestamp: new Date(2025, 5, 24, 10, 32), type: 'text' },
-  { id: 3, user: "Emily Davis", message: "I've uploaded the updated proposal document to the shared folder.", timestamp: new Date(2025, 5, 24, 10, 35), type: 'file' },
-  { id: 4, user: "Alex Rodriguez", message: "Perfect timing! I'll review it before our 2 PM meeting.", timestamp: new Date(2025, 5, 24, 10, 37), type: 'text' },
-];
+// No more mock data - using real API data only
 
 export default function TeamCollaborationPage() {
   const [activeTab, setActiveTab] = useState("chat");
   const [newMessage, setNewMessage] = useState("");
-  const [messages, setMessages] = useState(mockChatMessages);
+  
+  // Fetch real data from APIs
+  const { data: teamMembers = [], isLoading: teamMembersLoading } = useQuery<TeamMember[]>({
+    queryKey: ['/api/team-members'],
+  });
+  
+  const { data: chatMessages = [], isLoading: chatMessagesLoading } = useQuery<ChatMessage[]>({
+    queryKey: ['/api/chat-messages'],
+  });
+  
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  
+  // Update local messages when data is loaded
+  React.useEffect(() => {
+    if (chatMessages.length > 0) {
+      setMessages(chatMessages);
+    }
+  }, [chatMessages]);
   const [selectedProvider, setSelectedProvider] = useState("zoom");
   const [isSchedulingOpen, setIsSchedulingOpen] = useState(false);
   const [meetingData, setMeetingData] = useState({
@@ -104,7 +109,7 @@ export default function TeamCollaborationPage() {
       if (provider) {
         const result = await provider.startMeeting({
           topic: "Quick Team Meeting",
-          participantEmails: mockTeamMembers.map(m => m.email)
+          participantEmails: teamMembers.map(m => m.email)
         });
         
         if (result.success) {
@@ -289,8 +294,20 @@ export default function TeamCollaborationPage() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="h-96 overflow-y-auto border rounded-lg p-4 bg-gray-50">
-                        {messages.map((msg) => (
-                          <div key={msg.id} className="mb-4">
+                        {chatMessagesLoading ? (
+                          <div className="text-center py-8">
+                            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
+                            <p className="text-sm text-gray-500">Loading messages...</p>
+                          </div>
+                        ) : messages.length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                            <p>No messages yet - Start a conversation with your team</p>
+                          </div>
+                        ) : (
+                          <>
+                          {messages.map((msg) => (
+                            <div key={msg.id} className="mb-4">
                             <div className="flex items-center space-x-2 mb-1">
                               <span className="font-semibold text-sm">{msg.user}</span>
                               <span className="text-xs text-gray-500">
@@ -308,6 +325,8 @@ export default function TeamCollaborationPage() {
                             </div>
                           </div>
                         ))}
+                          </>
+                        )}
                       </div>
                       
                       <div className="flex space-x-2">
@@ -336,8 +355,15 @@ export default function TeamCollaborationPage() {
                     <CardTitle className="text-sm">Online Team Members</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {mockTeamMembers.filter(member => member.status === 'online').map((member) => (
+                    {teamMembersLoading ? (
+                      <div className="text-center py-4">
+                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      </div>
+                    ) : teamMembers.filter(member => member.status === 'online').length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-4">No team members online</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {teamMembers.filter(member => member.status === 'online').map((member) => (
                         <div key={member.id} className="flex items-center space-x-3">
                           <div className="relative">
                             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
@@ -351,7 +377,8 @@ export default function TeamCollaborationPage() {
                           </div>
                         </div>
                       ))}
-                    </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -590,8 +617,20 @@ export default function TeamCollaborationPage() {
           </TabsContent>
 
           <TabsContent value="team" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {mockTeamMembers.map((member) => (
+            {teamMembersLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-500">Loading team members...</p>
+              </div>
+            ) : teamMembers.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No team members yet</h3>
+                <p className="text-gray-500">Invite team members to start collaborating</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {teamMembers.map((member) => (
                 <Card key={member.id}>
                   <CardContent className="pt-6">
                     <div className="text-center">
@@ -613,7 +652,8 @@ export default function TeamCollaborationPage() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

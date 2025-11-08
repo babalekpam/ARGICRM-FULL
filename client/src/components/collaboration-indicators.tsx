@@ -53,63 +53,15 @@ const CollaborationIndicators: React.FC = () => {
   const [activities, setActivities] = useState<RealtimeActivity[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Initialize with platform owner only
+  // Initialize with empty data - real collaboration data would come from WebSocket/API
   useEffect(() => {
     const initializeUsers = () => {
-      const sampleUsers: CollaborationUser[] = [
-        {
-          id: 'abel@argilette.com',
-          name: 'Platform Administrator',
-          email: 'abel@argilette.com',
-          status: 'online',
-          lastActivity: new Date(),
-          currentActivity: {
-            type: 'viewing',
-            resource: 'Dashboard',
-            details: 'Reviewing platform metrics'
-          },
-          location: {
-            page: 'Dashboard',
-            section: 'Overview'
-          }
-        }
-      ];
+      const sampleUsers: CollaborationUser[] = [];
       setUsers(sampleUsers);
     };
 
     const initializeActivities = () => {
-      const sampleActivities: RealtimeActivity[] = [
-        {
-          id: '1',
-          userId: 'abel@argilette.com',
-          userName: 'Platform Admin',
-          type: 'view',
-          resource: 'Dashboard',
-          details: 'Reviewing platform analytics',
-          timestamp: new Date(),
-          duration: 60
-        },
-        {
-          id: '2',
-          userId: 'abel@argilette.com',
-          userName: 'Platform Admin',
-          type: 'view',
-          resource: 'System Settings',
-          details: 'Platform configuration check',
-          timestamp: new Date(Date.now() - 120000),
-          duration: 180
-        },
-        {
-          id: '3',
-          userId: 'abel@argilette.com',
-          userName: 'Platform Admin',
-          type: 'view',
-          resource: 'User Management',
-          details: 'System administration tasks',
-          timestamp: new Date(Date.now() - 300000),
-          duration: 300
-        }
-      ];
+      const sampleActivities: RealtimeActivity[] = [];
       setActivities(sampleActivities);
     };
 

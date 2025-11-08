@@ -117,105 +117,7 @@ interface FormIntegration {
   config: Record<string, any>;
 }
 
-const mockForms: FormTemplate[] = [
-  {
-    id: 1,
-    name: "Lead Capture Form",
-    description: "Primary contact form for website visitors",
-    type: "contact",
-    responses: 142,
-    conversionRate: 24.5,
-    status: "active",
-    createdAt: new Date(2025, 5, 20),
-    fields: [
-      { id: '1', type: 'text', label: 'Full Name', placeholder: 'Enter your full name', required: true },
-      { id: '2', type: 'email', label: 'Email Address', placeholder: 'Enter your email', required: true },
-      { id: '3', type: 'phone', label: 'Phone Number', placeholder: 'Enter your phone', required: false },
-      { id: '4', type: 'select', label: 'Company Size', required: true, options: ['1-10', '11-50', '51-200', '200+'] },
-      { id: '5', type: 'textarea', label: 'Message', placeholder: 'Tell us about your needs', required: false }
-    ],
-    analytics: {
-      views: 580,
-      submissions: 142,
-      abandonment: 75.5,
-      avgCompletionTime: 3.2,
-      topExitPoints: ['Company Size', 'Message'],
-      deviceBreakdown: { mobile: 45, desktop: 40, tablet: 15 },
-      sourceBreakdown: { direct: 30, social: 25, email: 20, search: 25 }
-    },
-    integrations: [
-      { type: 'email_marketing', enabled: true, config: { listId: 'main-leads' } },
-      { type: 'crm', enabled: true, config: { pipeline: 'sales' } }
-    ]
-  },
-  {
-    id: 2,
-    name: "Customer Satisfaction Survey",
-    description: "Post-purchase satisfaction feedback",
-    type: "survey",
-    responses: 89,
-    conversionRate: 67.2,
-    status: "active",
-    createdAt: new Date(2025, 5, 18),
-    isMultiStep: true,
-    steps: [
-      { id: 'step1', title: 'Product Experience', fields: ['1', '2'] },
-      { id: 'step2', title: 'Service Rating', fields: ['3', '4'] },
-      { id: 'step3', title: 'Additional Feedback', fields: ['5', '6'] }
-    ],
-    fields: [
-      { id: '1', type: 'rating', label: 'Overall Satisfaction', required: true },
-      { id: '2', type: 'rating', label: 'Product Quality', required: true },
-      { id: '3', type: 'rating', label: 'Customer Service', required: true },
-      { id: '4', type: 'range', label: 'Value for Money (1-10)', required: true, validation: { min: 1, max: 10 } },
-      { id: '5', type: 'checkbox', label: 'What did you like?', required: false, options: ['Quality', 'Price', 'Customer Service', 'Delivery Speed', 'User Experience'] },
-      { id: '6', type: 'textarea', label: 'Additional Comments', placeholder: 'Any other feedback?', required: false }
-    ],
-    analytics: {
-      views: 132,
-      submissions: 89,
-      abandonment: 32.6,
-      avgCompletionTime: 4.8,
-      topExitPoints: ['Step 2', 'Additional Comments'],
-      deviceBreakdown: { mobile: 60, desktop: 30, tablet: 10 },
-      sourceBreakdown: { direct: 70, social: 10, email: 15, search: 5 }
-    }
-  },
-  {
-    id: 3,
-    name: "Webinar Registration",
-    description: "Registration for monthly marketing webinar",
-    type: "registration",
-    responses: 256,
-    conversionRate: 45.8,
-    status: "active",
-    createdAt: new Date(2025, 5, 15),
-    fields: [
-      { id: '1', type: 'text', label: 'Full Name', required: true },
-      { id: '2', type: 'email', label: 'Email Address', required: true, validation: { pattern: '[^@]+@[^@]+\\.[^@]+' } },
-      { id: '3', type: 'text', label: 'Company', required: true },
-      { id: '4', type: 'text', label: 'Job Title', required: false },
-      { id: '5', type: 'select', label: 'Industry', required: true, options: ['Technology', 'Healthcare', 'Finance', 'Retail', 'Manufacturing', 'Other'] },
-      { id: '6', type: 'checkbox', label: 'Communication Preferences', required: false, options: ['Email updates', 'SMS reminders', 'Follow-up resources'] },
-      { id: '7', type: 'signature', label: 'Digital Signature', required: true },
-      { id: '8', type: 'file', label: 'Upload Business Card', required: false }
-    ],
-    analytics: {
-      views: 559,
-      submissions: 256,
-      abandonment: 54.2,
-      avgCompletionTime: 5.1,
-      topExitPoints: ['Industry', 'Digital Signature'],
-      deviceBreakdown: { mobile: 35, desktop: 55, tablet: 10 },
-      sourceBreakdown: { direct: 20, social: 40, email: 30, search: 10 }
-    },
-    integrations: [
-      { type: 'email_marketing', enabled: true, config: { listId: 'webinar-attendees' } },
-      { type: 'crm', enabled: true, config: { pipeline: 'events' } },
-      { type: 'webhook', enabled: true, config: { url: 'https://api.example.com/webhook' } }
-    ]
-  }
-];
+// No more mock data - using real API data only
 
 // Enhanced drag and drop sortable item component with edit functionality
 function SortableFieldItem({ 
@@ -306,7 +208,12 @@ function SortableFieldItem({
 
 export default function FormsSurveysPage() {
   const [activeTab, setActiveTab] = useState("forms");
-  const [forms, setForms] = useState(mockForms);
+  
+  // Fetch real forms data from API
+  const { data: forms = [], isLoading: formsLoading } = useQuery<FormTemplate[]>({
+    queryKey: ['/api/forms'],
+  });
+  
   const [selectedForm, setSelectedForm] = useState<FormTemplate | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isAdvancedBuilder, setIsAdvancedBuilder] = useState(false);
@@ -900,8 +807,24 @@ export default function FormsSurveysPage() {
           </TabsList>
 
           <TabsContent value="forms" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {forms.map((form) => (
+            {formsLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-500">Loading forms...</p>
+              </div>
+            ) : forms.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No forms yet</h3>
+                <p className="text-gray-500 mb-4">Create your first form to start collecting responses</p>
+                <Button onClick={() => setIsCreating(true)} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Form
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {forms.map((form) => (
                 <Card key={form.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -963,7 +886,8 @@ export default function FormsSurveysPage() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
@@ -1006,7 +930,9 @@ export default function FormsSurveysPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold">
-                    {(forms.reduce((sum, form) => sum + form.conversionRate, 0) / forms.length).toFixed(1)}%
+                    {forms.length > 0 
+                      ? (forms.reduce((sum, form) => sum + form.conversionRate, 0) / forms.length).toFixed(1)
+                      : '0'}%
                   </p>
                   <p className="text-sm text-gray-600">Across all active forms</p>
                 </CardContent>
