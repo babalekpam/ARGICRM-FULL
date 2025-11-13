@@ -1,15 +1,26 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import Layout from "@/components/layout";
 import Logo from "@/components/logo";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
-  TrendingDown, 
+  Sparkles,
   Plus, 
   Edit, 
   Trash2, 
@@ -19,169 +30,255 @@ import {
   Target,
   DollarSign,
   CheckCircle,
-  BarChart3
+  BarChart3,
+  Facebook,
+  Linkedin,
+  Mail,
+  FileText,
+  Zap,
+  TrendingUp,
+  Loader2,
+  ExternalLink,
+  Globe,
+  Send,
+  Calendar,
+  Clock
 } from "lucide-react";
 
-interface FunnelStep {
-  id: number;
+// Form validation schema
+const generateFunnelSchema = z.object({
+  offerName: z.string().min(3, "Offer name must be at least 3 characters"),
+  offerDescription: z.string().min(10, "Offer description must be at least 10 characters"),
+  targetAudience: z.string().optional(),
+  pricePoint: z.string().optional(),
+  industryType: z.enum(['ecommerce', 'saas', 'consulting', 'coaching', 'agency', 'local_business', 'other']).default('other'),
+  funnelGoal: z.enum(['lead_generation', 'product_sales', 'appointment_booking', 'webinar_signup', 'demo_request']).default('lead_generation'),
+});
+
+type GenerateFunnelFormData = z.infer<typeof generateFunnelSchema>;
+
+// Type definitions for API responses
+interface FunnelProject {
+  id: string;
   name: string;
-  type: 'landing' | 'email' | 'phone' | 'meeting' | 'close';
   description: string;
-  conversionRate: number;
-  visitors: number;
-  converted: number;
+  status: 'draft' | 'active' | 'paused' | 'archived';
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface Funnel {
-  id: number;
-  name: string;
-  description: string;
-  status: 'active' | 'draft' | 'paused';
-  steps: FunnelStep[];
-  totalVisitors: number;
-  totalConversions: number;
-  conversionRate: number;
-  revenue: number;
-  createdAt: Date;
+interface CompleteFunnel {
+  funnel: FunnelProject;
+  version: {
+    id: string;
+    versionNumber: number;
+  };
+  steps: Array<{
+    id: string;
+    name: string;
+    stepType: string;
+    orderIndex: number;
+  }>;
+  landingPage?: {
+    id: string;
+    headline: string;
+    subheadline: string;
+    heroContent: string;
+    benefits: Array<{ title: string; description: string }>;
+    testimonials: Array<{ quote: string; author: string; role: string }>;
+    ctaText: string;
+    faqs: Array<{ question: string; answer: string }>;
+  };
+  ads: Array<{
+    id: string;
+    platform: string;
+    variantName: string;
+    headline: string;
+    bodyText: string;
+    ctaText: string;
+  }>;
+  emails: Array<{
+    id: string;
+    sequenceName: string;
+    subject: string;
+    preheader: string;
+    bodyHtml: string;
+    ctaText: string;
+    sequenceOrder: number;
+    delayDays: number;
+  }>;
+  workflows: Array<{
+    id: string;
+    name: string;
+    triggerType: string;
+    actions: string[];
+  }>;
+  aiGeneration?: {
+    id: string;
+    provider: string;
+    tokensUsed: number;
+    durationMs: number;
+  };
 }
-
-const mockFunnels: Funnel[] = [];
 
 export default function FunnelBuilderPage() {
-  const [funnels, setFunnels] = useState(mockFunnels);
-  const [selectedFunnel, setSelectedFunnel] = useState<Funnel | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isNewFunnelDialogOpen, setIsNewFunnelDialogOpen] = useState(false);
-  const [editingStep, setEditingStep] = useState<FunnelStep | null>(null);
-  const [newFunnelData, setNewFunnelData] = useState({
-    name: '',
-    description: ''
+  const { toast } = useToast();
+  const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+
+  // Form for AI generation
+  const form = useForm<GenerateFunnelFormData>({
+    resolver: zodResolver(generateFunnelSchema),
+    defaultValues: {
+      offerName: '',
+      offerDescription: '',
+      targetAudience: '',
+      pricePoint: '',
+      industryType: 'other',
+      funnelGoal: 'lead_generation',
+    },
   });
 
-  const [newStep, setNewStep] = useState({
-    name: '',
-    type: 'landing' as const,
-    description: '',
-    conversionRate: 0,
-    visitors: 0
+  // Fetch funnels list
+  const { data: funnelsData, isLoading: isLoadingFunnels } = useQuery({
+    queryKey: ['/api/funnels'],
+    queryFn: async () => {
+      const response = await fetch('/api/funnels');
+      if (!response.ok) throw new Error('Failed to fetch funnels');
+      const data = await response.json();
+      return data;
+    },
   });
 
-  // Action handlers for funnels
-  const handleViewFunnel = (funnel: Funnel) => {
-    alert(`Viewing funnel: ${funnel.name}\n\nDescription: ${funnel.description}\n\nStatus: ${funnel.status}\nTotal Visitors: ${funnel.totalVisitors}\nConversions: ${funnel.totalConversions}\nRevenue: $${funnel.revenue.toLocaleString()}`);
-  };
+  // Fetch complete funnel details when selected
+  const { data: selectedFunnelData, isLoading: isLoadingFunnelDetails } = useQuery({
+    queryKey: ['/api/funnels', selectedFunnelId],
+    queryFn: async () => {
+      if (!selectedFunnelId) return null;
+      const response = await fetch(`/api/funnels/${selectedFunnelId}`);
+      if (!response.ok) throw new Error('Failed to fetch funnel details');
+      const data = await response.json();
+      return data as CompleteFunnel;
+    },
+    enabled: !!selectedFunnelId,
+  });
 
-  const handleEditFunnel = (funnel: Funnel) => {
-    const newName = prompt('Edit funnel name:', funnel.name);
-    if (newName && newName !== funnel.name) {
-      const updatedFunnel = { ...funnel, name: newName };
-      setFunnels(funnels.map(f => f.id === funnel.id ? updatedFunnel : f));
-      if (selectedFunnel?.id === funnel.id) {
-        setSelectedFunnel(updatedFunnel);
+  // AI Generate funnel mutation
+  const generateFunnelMutation = useMutation({
+    mutationFn: async (data: GenerateFunnelFormData) => {
+      return await apiRequest('/api/funnels/generate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
+      toast({
+        title: "✨ Funnel Generated Successfully!",
+        description: `Your funnel "${data.funnel.name}" has been created with AI-powered content.`,
+      });
+      setIsGenerateDialogOpen(false);
+      form.reset();
+      
+      // Auto-select the newly created funnel
+      if (data.funnel?.id) {
+        setSelectedFunnelId(data.funnel.id);
       }
-    }
-  };
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate funnel. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const handleDeleteFunnel = (funnel: Funnel) => {
-    if (confirm(`Are you sure you want to delete the funnel "${funnel.name}"?`)) {
-      setFunnels(funnels.filter(f => f.id !== funnel.id));
-      if (selectedFunnel?.id === funnel.id) {
-        setSelectedFunnel(null);
+  // Delete funnel mutation
+  const deleteFunnelMutation = useMutation({
+    mutationFn: async (funnelId: string) => {
+      return await apiRequest(`/api/funnels/${funnelId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
+      toast({
+        title: "Funnel Deleted",
+        description: "The funnel has been successfully deleted.",
+      });
+      if (selectedFunnelId) {
+        setSelectedFunnelId(null);
       }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete funnel.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Publish funnel mutation
+  const publishFunnelMutation = useMutation({
+    mutationFn: async (funnelId: string) => {
+      return await apiRequest(`/api/funnels/${funnelId}/publish`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
+      toast({
+        title: "🚀 Funnel Published!",
+        description: `Your funnel is now live at: ${data.publishedUrl}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Publish Failed",
+        description: error.message || "Failed to publish funnel.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGenerateFunnel = (data: GenerateFunnelFormData) => {
+    generateFunnelMutation.mutate(data);
+  };
+
+  const handleDeleteFunnel = (funnelId: string, funnelName: string) => {
+    if (confirm(`Are you sure you want to delete the funnel "${funnelName}"?`)) {
+      deleteFunnelMutation.mutate(funnelId);
     }
   };
 
-  const getStepIcon = (type: string) => {
-    switch (type) {
-      case 'landing': return <Target className="h-4 w-4" />;
-      case 'email': return <Users className="h-4 w-4" />;
-      case 'phone': return <Users className="h-4 w-4" />;
-      case 'meeting': return <Users className="h-4 w-4" />;
-      case 'close': return <DollarSign className="h-4 w-4" />;
-      default: return <Target className="h-4 w-4" />;
-    }
+  const handlePublishFunnel = (funnelId: string) => {
+    publishFunnelMutation.mutate(funnelId);
   };
 
-  const getStepColor = (type: string) => {
-    switch (type) {
-      case 'landing': return 'bg-blue-100 text-blue-800';
-      case 'email': return 'bg-green-100 text-green-800';
-      case 'phone': return 'bg-orange-100 text-orange-800';
-      case 'meeting': return 'bg-purple-100 text-purple-800';
-      case 'close': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const funnels = funnelsData?.funnels || [];
+  const selectedFunnel = selectedFunnelData;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      case 'paused': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
+      case 'paused': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
     }
-  };
-
-  const handleAddStep = () => {
-    if (!selectedFunnel || !newStep.name.trim()) return;
-
-    const step: FunnelStep = {
-      id: Date.now(),
-      name: newStep.name,
-      type: newStep.type,
-      description: newStep.description,
-      conversionRate: newStep.conversionRate,
-      visitors: newStep.visitors,
-      converted: Math.round(newStep.visitors * (newStep.conversionRate / 100))
-    };
-
-    const updatedFunnel = {
-      ...selectedFunnel,
-      steps: [...selectedFunnel.steps, step]
-    };
-
-    setFunnels(funnels.map(f => f.id === selectedFunnel.id ? updatedFunnel : f));
-    setSelectedFunnel(updatedFunnel);
-    setNewStep({ name: '', type: 'landing', description: '', conversionRate: 0, visitors: 0 });
-    setIsDialogOpen(false);
-  };
-
-  const handleCreateFunnel = () => {
-    if (!newFunnelData.name.trim()) return;
-
-    const newFunnel: Funnel = {
-      id: Date.now(),
-      name: newFunnelData.name,
-      description: newFunnelData.description,
-      status: 'draft',
-      totalVisitors: 0,
-      totalConversions: 0,
-      conversionRate: 0,
-      revenue: 0,
-      createdAt: new Date(),
-      steps: [
-        {
-          id: Date.now() + 1,
-          name: "Landing Page",
-          type: 'landing',
-          description: "Initial visitor entry point",
-          conversionRate: 0,
-          visitors: 0,
-          converted: 0
-        }
-      ]
-    };
-
-    setFunnels([...funnels, newFunnel]);
-    setSelectedFunnel(newFunnel);
-    setNewFunnelData({ name: '', description: '' });
-    setIsNewFunnelDialogOpen(false);
   };
 
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <Logo size="md" />
             <div className="space-y-2">
@@ -189,94 +286,283 @@ export default function FunnelBuilderPage() {
                 AI-Powered Funnel Builder
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Design, optimize, and automate high-converting sales funnels with AI insights
+                Generate complete sales funnels with AI-powered landing pages, ads, and email sequences
               </p>
-              <div className="flex space-x-2 mt-2">
-                <Badge variant="secondary" className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 border-0">
-                  Conversion Optimization
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="secondary" className="bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/20 dark:to-red-900/20 text-orange-800 dark:text-orange-400 border-0">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI-Powered
                 </Badge>
-                <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 border-0">
+                <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 text-blue-800 dark:text-blue-400 border-0">
+                  <BarChart3 className="h-3 w-3 mr-1" />
                   Smart Analytics
                 </Badge>
               </div>
             </div>
           </div>
           
-          <Dialog open={isNewFunnelDialogOpen} onOpenChange={setIsNewFunnelDialogOpen}>
+          {/* Primary CTA - AI Generate Funnel */}
+          <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Funnel
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                data-testid="button-ai-generate-funnel"
+              >
+                <Sparkles className="h-5 w-5 mr-2" />
+                AI Generate Funnel
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create New Funnel</DialogTitle>
+                <DialogTitle className="flex items-center text-2xl">
+                  <Sparkles className="h-6 w-6 mr-2 text-orange-600" />
+                  Generate Funnel with AI
+                </DialogTitle>
+                <DialogDescription>
+                  Provide details about your offer and let AI create a complete marketing funnel with landing pages, ad copy, and email sequences.
+                </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Funnel Name</label>
-                  <Input
-                    value={newFunnelData.name}
-                    onChange={(e) => setNewFunnelData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter funnel name"
+              
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleGenerateFunnel)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="offerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Offer Name *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g., Social Media Marketing Course" 
+                            {...field} 
+                            data-testid="input-offer-name"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={newFunnelData.description}
-                    onChange={(e) => setNewFunnelData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe your funnel purpose"
-                    rows={3}
+
+                  <FormField
+                    control={form.control}
+                    name="offerDescription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Offer Description *</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Describe your offer in detail: what it includes, the value it provides, who it's for..."
+                            rows={4}
+                            {...field} 
+                            data-testid="textarea-offer-description"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Be specific - this helps AI create better content
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsNewFunnelDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateFunnel} disabled={!newFunnelData.name.trim()}>
-                    Create Funnel
-                  </Button>
-                </div>
-              </div>
+
+                  <FormField
+                    control={form.control}
+                    name="targetAudience"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Target Audience</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g., Small business owners, entrepreneurs" 
+                            {...field} 
+                            data-testid="input-target-audience"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="funnelGoal"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Main Goal *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-funnel-goal">
+                                <SelectValue placeholder="Select goal" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="lead_generation">Lead Generation</SelectItem>
+                              <SelectItem value="product_sales">Product Sales</SelectItem>
+                              <SelectItem value="appointment_booking">Appointment Booking</SelectItem>
+                              <SelectItem value="webinar_signup">Webinar Signup</SelectItem>
+                              <SelectItem value="demo_request">Demo Request</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="industryType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Industry Type *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-industry-type">
+                                <SelectValue placeholder="Select industry" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="ecommerce">E-commerce</SelectItem>
+                              <SelectItem value="saas">SaaS</SelectItem>
+                              <SelectItem value="consulting">Consulting</SelectItem>
+                              <SelectItem value="coaching">Coaching</SelectItem>
+                              <SelectItem value="agency">Agency</SelectItem>
+                              <SelectItem value="local_business">Local Business</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="pricePoint"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price Point (Optional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g., $497, Free, $29/month" 
+                            {...field} 
+                            data-testid="input-price-point"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsGenerateDialogOpen(false)}
+                      disabled={generateFunnelMutation.isPending}
+                      data-testid="button-cancel-generate"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={generateFunnelMutation.isPending}
+                      className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                      data-testid="button-submit-generate"
+                    >
+                      {generateFunnelMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate Funnel
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Funnel List */}
+          {/* Funnel List Sidebar */}
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
-                <CardTitle>Your Funnels</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Your Funnels</span>
+                  <Badge variant="secondary" data-testid="badge-funnel-count">
+                    {funnels.length}
+                  </Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="space-y-1">
-                  {funnels.map((funnel) => (
-                    <div
-                      key={funnel.id}
-                      onClick={() => setSelectedFunnel(funnel)}
-                      className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                        selectedFunnel?.id === funnel.id ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-r-blue-500' : ''
-                      }`}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{funnel.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <Badge className={getStatusColor(funnel.status)} variant="secondary">
-                              {funnel.status}
-                            </Badge>
-                            <div className="flex items-center space-x-1">
+                <ScrollArea className="h-[600px]">
+                  <div className="space-y-1 p-4">
+                    {isLoadingFunnels ? (
+                      <>
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="p-4 space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-3 w-2/3" />
+                          </div>
+                        ))}
+                      </>
+                    ) : funnels.length === 0 ? (
+                      <div className="text-center py-12 px-4" data-testid="empty-state-funnels">
+                        <Target className="h-16 w-16 mx-auto mb-4 text-gray-400 opacity-50" />
+                        <p className="text-gray-600 dark:text-gray-400 font-medium mb-2">No funnels yet</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-500">
+                          Click "AI Generate Funnel" to create your first conversion funnel
+                        </p>
+                      </div>
+                    ) : (
+                      funnels.map((funnel: FunnelProject) => (
+                        <div
+                          key={funnel.id}
+                          onClick={() => setSelectedFunnelId(funnel.id)}
+                          className={`p-4 cursor-pointer rounded-lg transition-colors hover-elevate ${
+                            selectedFunnelId === funnel.id 
+                              ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' 
+                              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                          }`}
+                          data-testid={`funnel-item-${funnel.id}`}
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="font-medium text-sm line-clamp-2">{funnel.name}</span>
+                              <Badge 
+                                className={getStatusColor(funnel.status)} 
+                                variant="secondary"
+                                data-testid={`badge-status-${funnel.id}`}
+                              >
+                                {funnel.status}
+                              </Badge>
+                            </div>
+                            {funnel.description && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                                {funnel.description}
+                              </p>
+                            )}
+                            <div className="flex items-center space-x-2 pt-2">
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleViewFunnel(funnel);
+                                  setSelectedFunnelId(funnel.id);
+                                  setViewDialogOpen(true);
                                 }}
-                                className="h-6 w-6 p-0"
+                                className="h-7 px-2"
+                                data-testid={`button-view-${funnel.id}`}
                               >
                                 <Eye className="h-3 w-3" />
                               </Button>
@@ -285,265 +571,423 @@ export default function FunnelBuilderPage() {
                                 variant="ghost"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleEditFunnel(funnel);
+                                  handleDeleteFunnel(funnel.id, funnel.name);
                                 }}
-                                className="h-6 w-6 p-0"
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteFunnel(funnel);
-                                }}
-                                className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                className="h-7 px-2 text-red-600 hover:text-red-700 dark:text-red-400"
+                                disabled={deleteFunnelMutation.isPending}
+                                data-testid={`button-delete-${funnel.id}`}
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </div>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          <div>{funnel.totalVisitors.toLocaleString()} visitors</div>
-                          <div>{funnel.conversionRate.toFixed(1)}% conversion</div>
-                          <div>${funnel.revenue.toLocaleString()} revenue</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {funnels.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No funnels created yet</p>
-                      <p className="text-sm">Build your first funnel to track conversions</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Funnel Stats */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Performance</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-400">
-                    $0
+                      ))
+                    )}
                   </div>
-                  <div className="text-sm text-gray-600">Total Revenue</div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 border border-gray-200 dark:border-gray-700 rounded">
-                    <div className="text-lg font-bold text-gray-400">
-                      0
-                    </div>
-                    <div className="text-xs text-gray-500">Total Visitors</div>
-                  </div>
-                  <div className="text-center p-3 border border-gray-200 dark:border-gray-700 rounded">
-                    <div className="text-lg font-bold text-gray-400">
-                      {funnels.length > 0 ? (funnels.reduce((sum, f) => sum + f.conversionRate, 0) / funnels.length).toFixed(1) : 0}%
-                    </div>
-                    <div className="text-xs text-gray-500">Avg Conversion</div>
-                  </div>
-                </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           </div>
 
-          {/* Funnel Details */}
+          {/* Funnel Details - Main Content Area */}
           <div className="lg:col-span-3">
-            {selectedFunnel ? (
+            {!selectedFunnelId ? (
+              <Card className="h-full min-h-[600px]">
+                <CardContent className="flex flex-col items-center justify-center h-full py-12">
+                  <div className="text-center max-w-md" data-testid="empty-state-no-selection">
+                    <div className="bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/20 dark:to-red-900/20 rounded-full p-6 mx-auto mb-6 w-24 h-24 flex items-center justify-center">
+                      <Sparkles className="h-12 w-12 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-3">Ready to Build Your Funnel?</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Use AI to generate complete marketing funnels with landing pages, ad copy, and email sequences in seconds.
+                    </p>
+                    <Button 
+                      size="lg"
+                      onClick={() => setIsGenerateDialogOpen(true)}
+                      className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                      data-testid="button-get-started-generate"
+                    >
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Get Started with AI
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : isLoadingFunnelDetails ? (
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-8 w-2/3" />
+                  <Skeleton className="h-4 w-full mt-2" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="h-48 w-full" />
+                </CardContent>
+              </Card>
+            ) : selectedFunnel ? (
               <div className="space-y-6">
                 {/* Funnel Header */}
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center">
-                          <TrendingDown className="h-5 w-5 mr-2" />
-                          {selectedFunnel.name}
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <CardTitle className="flex items-center text-2xl">
+                          <Target className="h-6 w-6 mr-2 text-orange-600" />
+                          {selectedFunnel.funnel.name}
                         </CardTitle>
-                        <p className="text-gray-600 dark:text-gray-400 mt-1">
-                          {selectedFunnel.description}
-                        </p>
+                        <CardDescription className="mt-2">
+                          {selectedFunnel.funnel.description}
+                        </CardDescription>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={getStatusColor(selectedFunnel.status)} variant="secondary">
-                          {selectedFunnel.status}
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          className={getStatusColor(selectedFunnel.funnel.status)} 
+                          variant="secondary"
+                          data-testid="badge-selected-funnel-status"
+                        >
+                          {selectedFunnel.funnel.status}
                         </Badge>
-                        <Button variant="outline" size="sm" onClick={() => handleEditFunnel(selectedFunnel)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleViewFunnel(selectedFunnel)}>
-                          <Eye className="h-4 w-4" />
+                        <Button
+                          variant="default"
+                          onClick={() => handlePublishFunnel(selectedFunnel.funnel.id)}
+                          disabled={publishFunnelMutation.isPending || selectedFunnel.funnel.status === 'active'}
+                          data-testid="button-publish-funnel"
+                        >
+                          {publishFunnelMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Publishing...
+                            </>
+                          ) : (
+                            <>
+                              <Globe className="h-4 w-4 mr-2" />
+                              {selectedFunnel.funnel.status === 'active' ? 'Published' : 'Publish'}
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">
-                          {selectedFunnel.totalVisitors.toLocaleString()}
+                  {selectedFunnel.aiGeneration && (
+                    <CardContent>
+                      <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-orange-600" />
+                          <span>AI Provider: {selectedFunnel.aiGeneration.provider}</span>
                         </div>
-                        <div className="text-sm text-gray-500">Total Visitors</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">
-                          {selectedFunnel.totalConversions}
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4" />
+                          <span>Tokens: {selectedFunnel.aiGeneration.tokensUsed.toLocaleString()}</span>
                         </div>
-                        <div className="text-sm text-gray-500">Conversions</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">
-                          {selectedFunnel.conversionRate.toFixed(1)}%
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>Generated in {(selectedFunnel.aiGeneration.durationMs / 1000).toFixed(1)}s</span>
                         </div>
-                        <div className="text-sm text-gray-500">Conversion Rate</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">
-                          ${selectedFunnel.revenue.toLocaleString()}
-                        </div>
-                        <div className="text-sm text-gray-500">Revenue</div>
-                      </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  )}
                 </Card>
 
-                {/* Funnel Steps */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Funnel Steps</CardTitle>
-                      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Step
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Add Funnel Step</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <Input
-                              placeholder="Step name"
-                              value={newStep.name}
-                              onChange={(e) => setNewStep({...newStep, name: e.target.value})}
-                            />
-                            <Select value={newStep.type} onValueChange={(value: any) => setNewStep({...newStep, type: value})}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="landing">Landing Page</SelectItem>
-                                <SelectItem value="email">Email/Form</SelectItem>
-                                <SelectItem value="phone">Phone Call</SelectItem>
-                                <SelectItem value="meeting">Meeting</SelectItem>
-                                <SelectItem value="close">Close/Purchase</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Textarea
-                              placeholder="Step description"
-                              value={newStep.description}
-                              onChange={(e) => setNewStep({...newStep, description: e.target.value})}
-                            />
-                            <div className="grid grid-cols-2 gap-2">
-                              <Input
-                                type="number"
-                                placeholder="Visitors"
-                                value={newStep.visitors}
-                                onChange={(e) => setNewStep({...newStep, visitors: parseInt(e.target.value) || 0})}
-                              />
-                              <Input
-                                type="number"
-                                placeholder="Conversion %"
-                                value={newStep.conversionRate}
-                                onChange={(e) => setNewStep({...newStep, conversionRate: parseFloat(e.target.value) || 0})}
-                              />
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                                Cancel
-                              </Button>
-                              <Button onClick={handleAddStep}>
-                                Add Step
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {selectedFunnel.steps.map((step, index) => (
-                        <div key={step.id}>
-                          <div className="flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <div className={`p-2 rounded-lg ${getStepColor(step.type).replace('text-', 'text-').replace('bg-', 'bg-')}`}>
-                                {getStepIcon(step.type)}
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-medium">{step.name}</div>
-                                <div className="text-sm text-gray-500">{step.description}</div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center space-x-6 text-sm">
-                              <div className="text-center">
-                                <div className="font-bold">{step.visitors.toLocaleString()}</div>
-                                <div className="text-gray-500">Visitors</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="font-bold text-green-600">{step.converted}</div>
-                                <div className="text-gray-500">Converted</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="font-bold text-blue-600">{step.conversionRate.toFixed(1)}%</div>
-                                <div className="text-gray-500">Rate</div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                {/* Tabbed Content */}
+                <Tabs defaultValue="landing" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4" data-testid="tabs-funnel-content">
+                    <TabsTrigger value="landing" data-testid="tab-landing-page">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Landing Page
+                    </TabsTrigger>
+                    <TabsTrigger value="ads" data-testid="tab-ads">
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Ad Copy
+                    </TabsTrigger>
+                    <TabsTrigger value="emails" data-testid="tab-emails">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Emails
+                    </TabsTrigger>
+                    <TabsTrigger value="automations" data-testid="tab-automations">
+                      <Zap className="h-4 w-4 mr-2" />
+                      Automations
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Landing Page Tab */}
+                  <TabsContent value="landing" className="space-y-4">
+                    {selectedFunnel.landingPage ? (
+                      <Card data-testid="card-landing-page-content">
+                        <CardHeader>
+                          <CardTitle>Landing Page Content</CardTitle>
+                          <CardDescription>AI-generated landing page copy optimized for conversions</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Headline</h3>
+                            <p className="text-2xl font-bold" data-testid="text-headline">{selectedFunnel.landingPage.headline}</p>
                           </div>
                           
-                          {index < selectedFunnel.steps.length - 1 && (
-                            <div className="flex justify-center py-2">
-                              <ArrowDown className="h-6 w-6 text-gray-400" />
+                          {selectedFunnel.landingPage.subheadline && (
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Subheadline</h3>
+                              <p className="text-lg text-gray-700 dark:text-gray-300" data-testid="text-subheadline">
+                                {selectedFunnel.landingPage.subheadline}
+                              </p>
                             </div>
                           )}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+
+                          {selectedFunnel.landingPage.heroContent && (
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Hero Content</h3>
+                              <p className="text-gray-700 dark:text-gray-300" data-testid="text-hero-content">
+                                {selectedFunnel.landingPage.heroContent}
+                              </p>
+                            </div>
+                          )}
+
+                          <Separator />
+
+                          {selectedFunnel.landingPage.benefits && selectedFunnel.landingPage.benefits.length > 0 && (
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Key Benefits</h3>
+                              <div className="grid gap-4" data-testid="list-benefits">
+                                {selectedFunnel.landingPage.benefits.map((benefit, idx) => (
+                                  <div key={idx} className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-900/10 rounded-lg">
+                                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                                    <div>
+                                      <h4 className="font-semibold mb-1">{benefit.title}</h4>
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">{benefit.description}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedFunnel.landingPage.testimonials && selectedFunnel.landingPage.testimonials.length > 0 && (
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Testimonials</h3>
+                              <div className="grid gap-4" data-testid="list-testimonials">
+                                {selectedFunnel.landingPage.testimonials.map((testimonial, idx) => (
+                                  <div key={idx} className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border-l-4 border-blue-500">
+                                    <p className="italic mb-2">"{testimonial.quote}"</p>
+                                    <p className="text-sm font-medium">— {testimonial.author}</p>
+                                    {testimonial.role && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">{testimonial.role}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-lg border-2 border-orange-500">
+                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Call to Action</h3>
+                            <Button 
+                              size="lg" 
+                              className="w-full bg-gradient-to-r from-orange-600 to-red-600"
+                              data-testid="button-cta-preview"
+                            >
+                              {selectedFunnel.landingPage.ctaText}
+                            </Button>
+                          </div>
+
+                          {selectedFunnel.landingPage.faqs && selectedFunnel.landingPage.faqs.length > 0 && (
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">FAQs</h3>
+                              <div className="space-y-3" data-testid="list-faqs">
+                                {selectedFunnel.landingPage.faqs.map((faq, idx) => (
+                                  <div key={idx} className="p-4 border rounded-lg">
+                                    <h4 className="font-semibold mb-2">{faq.question}</h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{faq.answer}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <Card>
+                        <CardContent className="py-12 text-center" data-testid="empty-state-landing-page">
+                          <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                          <p className="text-gray-600 dark:text-gray-400">No landing page content available</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  {/* Ads Tab */}
+                  <TabsContent value="ads" className="space-y-4">
+                    {selectedFunnel.ads && selectedFunnel.ads.length > 0 ? (
+                      <>
+                        {['facebook', 'google', 'linkedin'].map((platform) => {
+                          const platformAds = selectedFunnel.ads.filter(ad => ad.platform === platform);
+                          if (platformAds.length === 0) return null;
+
+                          const getPlatformIcon = (platform: string) => {
+                            switch (platform) {
+                              case 'facebook': return <Facebook className="h-5 w-5" />;
+                              case 'linkedin': return <Linkedin className="h-5 w-5" />;
+                              default: return <TrendingUp className="h-5 w-5" />;
+                            }
+                          };
+
+                          return (
+                            <Card key={platform} data-testid={`card-ads-${platform}`}>
+                              <CardHeader>
+                                <CardTitle className="flex items-center capitalize">
+                                  {getPlatformIcon(platform)}
+                                  <span className="ml-2">{platform} Ads</span>
+                                  <Badge className="ml-2" variant="secondary">{platformAds.length} variants</Badge>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                {platformAds.map((ad, idx) => (
+                                  <div 
+                                    key={ad.id} 
+                                    className="p-4 border rounded-lg space-y-3"
+                                    data-testid={`ad-variant-${platform}-${idx}`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <Badge variant="outline">{ad.variantName}</Badge>
+                                    </div>
+                                    <div>
+                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Headline</h4>
+                                      <p className="font-semibold">{ad.headline}</p>
+                                    </div>
+                                    <div>
+                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Body</h4>
+                                      <p className="text-sm text-gray-700 dark:text-gray-300">{ad.bodyText}</p>
+                                    </div>
+                                    <div>
+                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">CTA</h4>
+                                      <Button variant="outline" size="sm" disabled data-testid={`button-ad-cta-${idx}`}>
+                                        {ad.ctaText}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </>
+                    ) : (
+                      <Card>
+                        <CardContent className="py-12 text-center" data-testid="empty-state-ads">
+                          <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                          <p className="text-gray-600 dark:text-gray-400">No ad copy available</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  {/* Emails Tab */}
+                  <TabsContent value="emails" className="space-y-4">
+                    {selectedFunnel.emails && selectedFunnel.emails.length > 0 ? (
+                      <div className="space-y-4" data-testid="list-email-sequences">
+                        {selectedFunnel.emails
+                          .sort((a, b) => a.sequenceOrder - b.sequenceOrder)
+                          .map((email, idx) => (
+                            <Card key={email.id} data-testid={`card-email-${idx}`}>
+                              <CardHeader>
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="flex items-center">
+                                    <Mail className="h-5 w-5 mr-2 text-blue-600" />
+                                    {email.sequenceName}
+                                  </CardTitle>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline">Day {email.delayDays}</Badge>
+                                    <Badge variant="secondary">Email #{email.sequenceOrder}</Badge>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <div>
+                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Subject Line</h4>
+                                  <p className="font-semibold">{email.subject}</p>
+                                </div>
+                                {email.preheader && (
+                                  <div>
+                                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Preview Text</h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{email.preheader}</p>
+                                  </div>
+                                )}
+                                <div>
+                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Email Content</h4>
+                                  <div 
+                                    className="prose prose-sm dark:prose-invert max-w-none p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                                    dangerouslySetInnerHTML={{ __html: email.bodyHtml }}
+                                    data-testid={`email-body-${idx}`}
+                                  />
+                                </div>
+                                {email.ctaText && (
+                                  <div>
+                                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Call to Action</h4>
+                                    <Button variant="default" disabled data-testid={`button-email-cta-${idx}`}>
+                                      <Send className="h-4 w-4 mr-2" />
+                                      {email.ctaText}
+                                    </Button>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                      </div>
+                    ) : (
+                      <Card>
+                        <CardContent className="py-12 text-center" data-testid="empty-state-emails">
+                          <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                          <p className="text-gray-600 dark:text-gray-400">No email sequences available</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  {/* Automations Tab */}
+                  <TabsContent value="automations" className="space-y-4">
+                    {selectedFunnel.workflows && selectedFunnel.workflows.length > 0 ? (
+                      <div className="space-y-4" data-testid="list-workflows">
+                        {selectedFunnel.workflows.map((workflow, idx) => (
+                          <Card key={workflow.id} data-testid={`card-workflow-${idx}`}>
+                            <CardHeader>
+                              <CardTitle className="flex items-center">
+                                <Zap className="h-5 w-5 mr-2 text-purple-600" />
+                                {workflow.name}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Trigger</h4>
+                                <Badge variant="outline" className="capitalize">
+                                  {workflow.triggerType.replace('_', ' ')}
+                                </Badge>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Actions</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {workflow.actions.map((action, actionIdx) => (
+                                    <Badge key={actionIdx} variant="secondary" className="capitalize">
+                                      {action.replace('_', ' ')}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <Card>
+                        <CardContent className="py-12 text-center" data-testid="empty-state-automations">
+                          <Zap className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                          <p className="text-gray-600 dark:text-gray-400">No automation workflows available</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
-            ) : (
-              <Card>
-                <CardContent className="flex items-center justify-center h-96">
-                  <div className="text-center">
-                    <TrendingDown className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">No funnel selected</h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Select a funnel from the list to view and edit
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

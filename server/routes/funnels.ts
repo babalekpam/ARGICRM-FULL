@@ -29,6 +29,188 @@ function getUserStorage(req: any): IStorage {
 
 const aiService = aiFailoverService;
 
+// ===== TRANSFORMATION HELPERS: snake_case → camelCase =====
+// These functions transform database responses (snake_case) to API responses (camelCase)
+
+function transformAiGeneration(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    tenantId: db.tenant_id || db.tenantId,
+    provider: db.provider,
+    model: db.model,
+    tokensUsed: db.tokens_used || db.tokensUsed,
+    durationMs: db.duration_ms || db.durationMs,
+    prompt: db.prompt,
+    generationType: db.generation_type || db.generationType,
+    generatedBy: db.generated_by || db.generatedBy,
+    createdAt: db.created_at || db.createdAt,
+  };
+}
+
+function transformLandingPage(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    stepId: db.step_id || db.stepId,
+    headline: db.headline,
+    subheadline: db.subheadline,
+    heroContent: db.hero_content || db.heroContent,
+    benefits: db.benefits || [],
+    testimonials: db.testimonials || [],
+    ctaText: db.cta_text || db.ctaText,
+    formFields: db.form_fields || db.formFields || [],
+    stylePreset: db.style_preset || db.stylePreset,
+    customCss: db.custom_css || db.customCss,
+    customScripts: db.custom_scripts || db.customScripts,
+    faqs: db.faqs || [],
+    metadata: db.metadata || {},
+    aiGenerationId: db.ai_generation_id || db.aiGenerationId,
+    createdAt: db.created_at || db.createdAt,
+    updatedAt: db.updated_at || db.updatedAt,
+  };
+}
+
+function transformFunnelAd(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    versionId: db.version_id || db.versionId,
+    platform: db.platform,
+    adType: db.ad_type || db.adType,
+    variantName: db.variant_name || db.variantName,
+    headline: db.headline,
+    bodyText: db.body_text || db.bodyText,
+    ctaText: db.cta_text || db.ctaText,
+    targetUrl: db.target_url || db.targetUrl,
+    targetAudience: db.target_audience || db.targetAudience,
+    variants: db.variants || [],
+    aiGenerationId: db.ai_generation_id || db.aiGenerationId,
+    createdAt: db.created_at || db.createdAt,
+  };
+}
+
+function transformFunnelEmail(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    versionId: db.version_id || db.versionId,
+    sequenceName: db.sequence_name || db.sequenceName,
+    sequenceOrder: db.sequence_order || db.sequenceOrder,
+    delayDays: db.delay_days || db.delayDays,
+    subject: db.subject,
+    preheader: db.preheader,
+    bodyHtml: db.body_html || db.bodyHtml,
+    bodyText: db.body_text || db.bodyText,
+    ctaText: db.cta_text || db.ctaText,
+    ctaUrl: db.cta_url || db.ctaUrl,
+    aiGenerationId: db.ai_generation_id || db.aiGenerationId,
+    createdAt: db.created_at || db.createdAt,
+  };
+}
+
+function transformAutomationWorkflow(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    versionId: db.version_id || db.versionId,
+    name: db.name,
+    description: db.description,
+    triggerType: db.trigger_type || db.triggerType,
+    triggerConditions: db.trigger_conditions || db.triggerConditions || {},
+    isActive: db.is_active !== undefined ? db.is_active : db.isActive,
+    actions: db.actions || [],
+    createdAt: db.created_at || db.createdAt,
+    updatedAt: db.updated_at || db.updatedAt,
+  };
+}
+
+function transformFunnelStep(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    versionId: db.version_id || db.versionId,
+    name: db.name,
+    stepType: db.step_type || db.stepType,
+    orderIndex: db.order_index || db.orderIndex,
+    description: db.description,
+    crmLinkage: db.crm_linkage || db.crmLinkage || {},
+    conversionGoal: db.conversion_goal || db.conversionGoal,
+    createdAt: db.created_at || db.createdAt,
+  };
+}
+
+function transformFunnelVersion(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    funnelId: db.funnel_id || db.funnelId,
+    versionNumber: db.version_number || db.versionNumber,
+    name: db.version_name || db.versionName || db.name,
+    sourceFunnelId: db.source_funnel_id || db.sourceFunnelId,
+    clonedFromVersionId: db.cloned_from_version_id || db.clonedFromVersionId,
+    settings: db.settings || {},
+    createdBy: db.created_by || db.createdBy,
+    createdAt: db.created_at || db.createdAt,
+  };
+}
+
+function transformFunnelPublication(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    funnelId: db.funnel_id || db.funnelId,
+    versionId: db.version_id || db.versionId,
+    publishedUrl: db.published_url || db.publishedUrl,
+    customDomain: db.custom_domain || db.customDomain,
+    environment: db.environment,
+    status: db.status,
+    publishedBy: db.published_by || db.publishedBy,
+    publishedAt: db.published_at || db.publishedAt,
+    lastDeployedAt: db.last_deployed_at || db.lastDeployedAt,
+  };
+}
+
+function transformFunnelProject(db: any) {
+  if (!db) return null;
+  return {
+    id: db.id,
+    tenantId: db.tenant_id || db.tenantId,
+    name: db.name,
+    description: db.description,
+    offerDescription: db.offer_description || db.offerDescription,
+    status: db.status,
+    isTemplate: db.is_template !== undefined ? db.is_template : db.isTemplate,
+    templateCategory: db.template_category || db.templateCategory,
+    activeVersionId: db.active_version_id || db.activeVersionId,
+    aiGenerationId: db.ai_generation_id || db.aiGenerationId,
+    createdBy: db.created_by || db.createdBy,
+    createdAt: db.created_at || db.createdAt,
+    updatedAt: db.updated_at || db.updatedAt,
+  };
+}
+
+function transformCompleteFunnel(db: any) {
+  if (!db) return null;
+  
+  return {
+    funnel: transformFunnelProject(db.funnel_project || db.funnel),
+    version: db.version ? transformFunnelVersion(db.version) : null,
+    steps: Array.isArray(db.steps) ? db.steps.map(transformFunnelStep) : [],
+    landingPage: transformLandingPage(db.landing_page || db.landingPage),
+    ads: Array.isArray(db.ad_assets || db.ads) 
+      ? (db.ad_assets || db.ads).map(transformFunnelAd) 
+      : [],
+    emails: Array.isArray(db.email_sequences || db.emails)
+      ? (db.email_sequences || db.emails).map(transformFunnelEmail)
+      : [],
+    workflows: Array.isArray(db.automation_workflows || db.workflows)
+      ? (db.automation_workflows || db.workflows).map(transformAutomationWorkflow)
+      : [],
+    aiGeneration: transformAiGeneration(db.ai_generation || db.aiGeneration),
+  };
+}
+
 // Validation schemas
 const generateFunnelSchema = z.object({
   offerName: z.string().min(3, "Offer name must be at least 3 characters"),
@@ -274,30 +456,21 @@ Return the response as valid JSON in this exact format:
       }
     }
 
-    // Return the complete saved funnel with database IDs
+    // Return the complete saved funnel with database IDs - TRANSFORMED TO CAMELCASE
+    const transformedResponse = transformCompleteFunnel({
+      funnel_project: funnelProject,
+      version: funnelVersion,
+      steps: funnelSteps,
+      landing_page: landingPage,
+      ad_assets: createdAds,
+      email_sequences: createdEmails,
+      automation_workflows: workflows,
+      ai_generation: aiGeneration,
+    });
+
     res.json({
       success: true,
-      funnel: {
-        id: funnelProject.id,
-        name: funnelProject.name,
-        description: funnelProject.description,
-        status: funnelProject.status,
-        version: {
-          id: funnelVersion.id,
-          versionNumber: funnelVersion.versionNumber,
-        },
-        steps: funnelSteps,
-        landingPage,
-        ads: createdAds,
-        emails: createdEmails,
-        workflows,
-        aiGeneration: {
-          id: aiGeneration.id,
-          provider: aiGeneration.provider,
-          tokensUsed: aiGeneration.tokensUsed,
-          durationMs: aiGeneration.durationMs,
-        },
-      },
+      ...transformedResponse,
       metadata: {
         generatedAt: new Date().toISOString(),
         provider: aiResponse.provider,
@@ -322,10 +495,13 @@ router.get('/', async (req: TenantRequest, res: Response) => {
 
     const funnels = await storage.getFunnelProjects();
 
+    // Transform all funnels to camelCase
+    const transformedFunnels = funnels.map(transformFunnelProject);
+
     res.json({
       success: true,
-      funnels,
-      total: funnels.length,
+      funnels: transformedFunnels,
+      total: transformedFunnels.length,
     });
 
   } catch (error: any) {
@@ -351,9 +527,12 @@ router.get('/:id', async (req: TenantRequest, res: Response) => {
       });
     }
 
+    // Transform complete funnel to camelCase
+    const transformed = transformCompleteFunnel(completeFunnel);
+
     res.json({
       success: true,
-      ...completeFunnel,
+      ...transformed,
     });
 
   } catch (error: any) {
@@ -420,10 +599,13 @@ router.post('/:id/publish', async (req: TenantRequest, res: Response) => {
       status: 'active',
     });
 
+    // Transform publication to camelCase
+    const transformedPublication = transformFunnelPublication(publication);
+
     res.json({
       success: true,
-      publication,
-      publishedUrl: publication.publishedUrl,
+      publication: transformedPublication,
+      publishedUrl: transformedPublication.publishedUrl,
       message: 'Funnel published successfully',
     });
 
