@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
 import { DatabaseStorage } from './database-storage';
 
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001'; // Platform owner tenant
+
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const DEFAULT_OPENAI_MODEL = "gpt-4o";
 
@@ -85,7 +87,7 @@ export class StoreAutomationEngine {
   private processingQueue: Map<string, any[]> = new Map(); // tenantId -> queue
 
   constructor() {
-    this.storage = new DatabaseStorage();
+    this.storage = new DatabaseStorage('system@argilette.com', SYSTEM_TENANT_ID, false);
     this.initializeDefaultRules();
   }
 

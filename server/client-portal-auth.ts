@@ -6,6 +6,8 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { DatabaseStorage } from "./database-storage";
 
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001'; // Platform owner tenant
+
 export interface ClientContext {
   clientUserId: string;
   clientAccountId: string;
@@ -29,7 +31,7 @@ export async function authenticateClient(
       return res.status(401).json({ error: "No session token provided" });
     }
 
-    const storage = new DatabaseStorage('', '', false);
+    const storage = new DatabaseStorage('system@argilette.com', SYSTEM_TENANT_ID, false);
     const sessionData = await storage.validateClientSession(sessionId);
 
     if (!sessionData) {

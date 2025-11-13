@@ -70,6 +70,7 @@ import voiceEmotionRoutes from "./routes/voice-emotion.js";
 import { googleServicesRouter } from "./routes/google-services.js";
 import salesChannelRoutes from "./routes/sales-channels.js";
 import aiCampaignRoutes from "./routes/ai-campaigns.js";
+import funnelRoutes from "./routes/funnels.js";
 import unsubscribeRoutes from "./routes/unsubscribe.js";
 import { trialLockMiddleware, requireActiveSubscription } from "./middleware/trial-lock-middleware.js";
 import { registerEcommerceRoutes } from "./routes/ecommerce.js";
@@ -6312,6 +6313,7 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
 
   app.use('/api/sales', salesChannelRoutes);
   app.use('/api/ai-campaigns', aiCampaignRoutes);
+  app.use('/api/funnels', funnelRoutes);
   app.use('/api/unsubscribe', unsubscribeRoutes);
   
   // Register Google services routes

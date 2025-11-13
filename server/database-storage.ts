@@ -29,11 +29,23 @@ import {
   type ResourceForecast, type InsertResourceForecast,
   type WorkloadSnapshot, type InsertWorkloadSnapshot,
   type ResourceAllocation, type InsertResourceAllocation,
+  type FunnelProject, type InsertFunnelProject,
+  type FunnelVersion, type InsertFunnelVersion,
+  type FunnelStep, type InsertFunnelStep,
+  type LandingPage, type InsertLandingPage,
+  type FunnelAd, type InsertFunnelAd,
+  type FunnelEmail, type InsertFunnelEmail,
+  type FunnelAutomationWorkflow, type InsertFunnelAutomationWorkflow,
+  type FunnelPublication, type InsertFunnelPublication,
+  type FunnelStepMetric, type InsertFunnelStepMetric,
+  type AiGeneration, type InsertAiGeneration,
   leads, contacts, accounts, deals, tasks, employees, appointments, campaigns, tickets, projects, invoices, users, tenants, taxRates, salesChannels,
   aiContents, aiCampaigns, aiUsage,
   abTests, abVariants, abSessions, abEvents, abConversions, abMetricsCache,
   teamCapacity, employeeSkills, resourceForecasts, workloadSnapshots, resourceAllocations,
-  clientAccounts, clientPortalUsers, clientPortalSessions
+  clientAccounts, clientPortalUsers, clientPortalSessions,
+  aiGenerations, funnelProjects, funnelVersions, funnelSteps, landingPages, funnelAds, funnelEmails,
+  funnelAutomationWorkflows, funnelPublications, funnelStepMetrics
 } from "@shared/schema";
 import {
   type Store, type InsertStore,
@@ -47,6 +59,8 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import type { IStorage } from "./storage";
 import crypto from "crypto";
 
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001'; // Platform owner tenant
+
 export class DatabaseStorage implements IStorage {
   public userEmail: string;
   public tenantId: string;
@@ -54,13 +68,17 @@ export class DatabaseStorage implements IStorage {
 
   constructor(userEmail: string = '', tenantId: string = '', isPlatformOwner: boolean = false) {
     this.userEmail = userEmail;
-    // Validate and correct tenant ID format
-    if (tenantId && !this.isValidUUID(tenantId)) {
-      console.log(`Invalid tenantId format: ${tenantId}, using fallback UUID`);
-      this.tenantId = isPlatformOwner ? '00000000-0000-0000-0000-000000000001' : '00000000-0000-0000-0000-000000000002';
-    } else {
-      this.tenantId = tenantId || '00000000-0000-0000-0000-000000000002';
+    
+    // SECURITY: Strict tenantId validation - no default fallbacks allowed
+    if (!tenantId || typeof tenantId !== 'string' || tenantId.trim() === '') {
+      throw new Error('Valid tenantId is required for DatabaseStorage');
     }
+    
+    if (!this.isValidUUID(tenantId)) {
+      throw new Error(`Invalid tenantId format: ${tenantId}. Must be a valid UUID.`);
+    }
+    
+    this.tenantId = tenantId;
     this.isPlatformOwner = isPlatformOwner;
   }
 
@@ -1038,7 +1056,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   static getInstance(): DatabaseStorage {
-    return new DatabaseStorage();
+    return new DatabaseStorage('system@argilette.com', SYSTEM_TENANT_ID, false);
   }
 
   // ================== TAX RATE OPERATIONS ==================
@@ -3334,5 +3352,291 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(employeeSkills)
       .where(eq(employeeSkills.tenantId, this.tenantId))
       .orderBy(employeeSkills.skillName, desc(employeeSkills.proficiencyLevel));
+  }
+
+  // ==================== FUNNEL BUILDER OPERATIONS - TENANT ISOLATED ====================
+  
+  // AI Generation tracking
+  async createAIGeneration(data: InsertAiGeneration): Promise<AiGeneration> {
+    const generationWithTenant = {
+      ...data,
+      tenantId: this.tenantId
+    };
+    
+    const [newGeneration] = await db.insert(aiGenerations).values(generationWithTenant).returning();
+    return newGeneration;
+  }
+  
+  // Funnel Project CRUD
+  async createFunnelProject(data: InsertFunnelProject): Promise<FunnelProject> {
+    const projectWithTenant = {
+      ...data,
+      tenantId: this.tenantId
+    };
+    
+    const [newProject] = await db.insert(funnelProjects).values(projectWithTenant).returning();
+    return newProject;
+  }
+  
+  async getFunnelProjects(): Promise<FunnelProject[]> {
+    return await db.select().from(funnelProjects)
+      .where(eq(funnelProjects.tenantId, this.tenantId))
+      .orderBy(desc(funnelProjects.createdAt));
+  }
+  
+  async getFunnelProject(id: string): Promise<FunnelProject | null> {
+    const [project] = await db.select().from(funnelProjects)
+      .where(and(
+        eq(funnelProjects.id, id),
+        eq(funnelProjects.tenantId, this.tenantId)
+      ));
+    
+    return project || null;
+  }
+  
+  async updateFunnelProject(id: string, data: Partial<InsertFunnelProject>): Promise<FunnelProject> {
+    const [updated] = await db.update(funnelProjects)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(funnelProjects.id, id),
+        eq(funnelProjects.tenantId, this.tenantId)
+      ))
+      .returning();
+    
+    return updated;
+  }
+  
+  async deleteFunnelProject(id: string): Promise<void> {
+    await db.delete(funnelProjects)
+      .where(and(
+        eq(funnelProjects.id, id),
+        eq(funnelProjects.tenantId, this.tenantId)
+      ));
+  }
+  
+  // Funnel Version CRUD
+  async createFunnelVersion(data: InsertFunnelVersion): Promise<FunnelVersion> {
+    const [newVersion] = await db.insert(funnelVersions).values(data).returning();
+    return newVersion;
+  }
+  
+  async getFunnelVersions(funnelId: string): Promise<FunnelVersion[]> {
+    return await db.select().from(funnelVersions)
+      .where(eq(funnelVersions.funnelId, funnelId))
+      .orderBy(desc(funnelVersions.versionNumber));
+  }
+  
+  async getFunnelVersion(id: string): Promise<FunnelVersion | null> {
+    const [version] = await db.select().from(funnelVersions)
+      .where(eq(funnelVersions.id, id));
+    
+    return version || null;
+  }
+  
+  // Funnel Steps (bulk operations for efficiency)
+  async createFunnelSteps(steps: InsertFunnelStep[]): Promise<FunnelStep[]> {
+    if (steps.length === 0) return [];
+    return await db.insert(funnelSteps).values(steps).returning();
+  }
+  
+  async getFunnelSteps(versionId: string): Promise<FunnelStep[]> {
+    return await db.select().from(funnelSteps)
+      .where(eq(funnelSteps.versionId, versionId))
+      .orderBy(funnelSteps.orderIndex);
+  }
+  
+  // Landing Pages
+  async createLandingPage(data: InsertLandingPage): Promise<LandingPage> {
+    const [newPage] = await db.insert(landingPages).values(data).returning();
+    return newPage;
+  }
+  
+  async updateLandingPage(id: string, data: Partial<InsertLandingPage>): Promise<LandingPage> {
+    const [updated] = await db.update(landingPages)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(landingPages.id, id))
+      .returning();
+    
+    return updated;
+  }
+  
+  async getLandingPage(stepId: string): Promise<LandingPage | null> {
+    const [page] = await db.select().from(landingPages)
+      .where(eq(landingPages.stepId, stepId));
+    
+    return page || null;
+  }
+  
+  // Funnel Ads (bulk operations)
+  async createFunnelAds(ads: InsertFunnelAd[]): Promise<FunnelAd[]> {
+    if (ads.length === 0) return [];
+    return await db.insert(funnelAds).values(ads).returning();
+  }
+  
+  async getFunnelAds(versionId: string): Promise<FunnelAd[]> {
+    return await db.select().from(funnelAds)
+      .where(eq(funnelAds.versionId, versionId));
+  }
+  
+  // Funnel Emails (bulk operations)
+  async createFunnelEmails(emails: InsertFunnelEmail[]): Promise<FunnelEmail[]> {
+    if (emails.length === 0) return [];
+    return await db.insert(funnelEmails).values(emails).returning();
+  }
+  
+  async getFunnelEmails(versionId: string): Promise<FunnelEmail[]> {
+    return await db.select().from(funnelEmails)
+      .where(eq(funnelEmails.versionId, versionId))
+      .orderBy(funnelEmails.sequenceOrder);
+  }
+  
+  // Automation Workflows
+  async createAutomationWorkflow(data: InsertFunnelAutomationWorkflow): Promise<FunnelAutomationWorkflow> {
+    const [newWorkflow] = await db.insert(funnelAutomationWorkflows).values(data).returning();
+    return newWorkflow;
+  }
+  
+  async getAutomationWorkflows(versionId: string): Promise<FunnelAutomationWorkflow[]> {
+    return await db.select().from(funnelAutomationWorkflows)
+      .where(eq(funnelAutomationWorkflows.versionId, versionId));
+  }
+  
+  // Funnel Publishing
+  async publishFunnel(data: InsertFunnelPublication): Promise<FunnelPublication> {
+    const [publication] = await db.insert(funnelPublications).values(data).returning();
+    return publication;
+  }
+  
+  async getFunnelPublication(funnelId: string): Promise<FunnelPublication | null> {
+    const [publication] = await db.select().from(funnelPublications)
+      .where(and(
+        eq(funnelPublications.funnelId, funnelId),
+        eq(funnelPublications.status, 'active')
+      ))
+      .orderBy(desc(funnelPublications.publishedAt))
+      .limit(1);
+    
+    return publication || null;
+  }
+  
+  async updateFunnelPublication(id: string, data: Partial<InsertFunnelPublication>): Promise<FunnelPublication> {
+    const [updated] = await db.update(funnelPublications)
+      .set(data)
+      .where(eq(funnelPublications.id, id))
+      .returning();
+    
+    return updated;
+  }
+  
+  // Funnel Analytics
+  async getFunnelAnalytics(funnelId: string, startDate?: Date, endDate?: Date): Promise<{
+    totalVisitors: number;
+    totalConversions: number;
+    conversionRate: number;
+    revenue: number;
+    stepMetrics: FunnelStepMetric[];
+  }> {
+    // Get the active version of the funnel
+    const funnel = await this.getFunnelProject(funnelId);
+    if (!funnel || !funnel.activeVersionId) {
+      return {
+        totalVisitors: 0,
+        totalConversions: 0,
+        conversionRate: 0,
+        revenue: 0,
+        stepMetrics: []
+      };
+    }
+    
+    // Get all steps for the active version
+    const steps = await this.getFunnelSteps(funnel.activeVersionId);
+    const stepIds = steps.map(s => s.id);
+    
+    if (stepIds.length === 0) {
+      return {
+        totalVisitors: 0,
+        totalConversions: 0,
+        conversionRate: 0,
+        revenue: 0,
+        stepMetrics: []
+      };
+    }
+    
+    // Build query conditions
+    const conditions = [
+      sql`${funnelStepMetrics.stepId} IN (${sql.join(stepIds.map(id => sql`${id}`), sql`, `)})`,
+      eq(funnelStepMetrics.tenantId, this.tenantId)
+    ];
+    
+    if (startDate) {
+      conditions.push(sql`${funnelStepMetrics.date} >= ${startDate.toISOString().split('T')[0]}`);
+    }
+    if (endDate) {
+      conditions.push(sql`${funnelStepMetrics.date} <= ${endDate.toISOString().split('T')[0]}`);
+    }
+    
+    // Get metrics
+    const metrics = await db.select().from(funnelStepMetrics)
+      .where(and(...conditions));
+    
+    // Calculate totals
+    const totalVisitors = metrics.reduce((sum, m) => sum + (m.visitors || 0), 0);
+    const totalConversions = metrics.reduce((sum, m) => sum + (m.conversions || 0), 0);
+    const revenue = metrics.reduce((sum, m) => sum + parseFloat(m.revenue || '0'), 0);
+    const conversionRate = totalVisitors > 0 ? (totalConversions / totalVisitors) * 100 : 0;
+    
+    return {
+      totalVisitors,
+      totalConversions,
+      conversionRate,
+      revenue,
+      stepMetrics: metrics
+    };
+  }
+  
+  // Complete funnel with all relations
+  async getCompleteFunnel(funnelId: string): Promise<{
+    funnel: FunnelProject;
+    version: FunnelVersion;
+    steps: FunnelStep[];
+    landingPages: LandingPage[];
+    ads: FunnelAd[];
+    emails: FunnelEmail[];
+    workflows: FunnelAutomationWorkflow[];
+  } | null> {
+    // Get funnel project
+    const funnel = await this.getFunnelProject(funnelId);
+    if (!funnel || !funnel.activeVersionId) {
+      return null;
+    }
+    
+    // Get active version
+    const version = await this.getFunnelVersion(funnel.activeVersionId);
+    if (!version) {
+      return null;
+    }
+    
+    // Get all related data in parallel
+    const [steps, ads, emails, workflows] = await Promise.all([
+      this.getFunnelSteps(version.id),
+      this.getFunnelAds(version.id),
+      this.getFunnelEmails(version.id),
+      this.getAutomationWorkflows(version.id)
+    ]);
+    
+    // Get landing pages for each step
+    const landingPages = await Promise.all(
+      steps.map(step => this.getLandingPage(step.id))
+    ).then(pages => pages.filter(p => p !== null) as LandingPage[]);
+    
+    return {
+      funnel,
+      version,
+      steps,
+      landingPages,
+      ads,
+      emails,
+      workflows
+    };
   }
 }

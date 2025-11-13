@@ -42,6 +42,16 @@ import {
   type AbEvent, type InsertAbEvent,
   type AbConversion, type InsertAbConversion,
   type AbMetricsCache, type InsertAbMetricsCache,
+  type FunnelProject, type InsertFunnelProject,
+  type FunnelVersion, type InsertFunnelVersion,
+  type FunnelStep, type InsertFunnelStep,
+  type LandingPage, type InsertLandingPage,
+  type FunnelAd, type InsertFunnelAd,
+  type FunnelEmail, type InsertFunnelEmail,
+  type FunnelAutomationWorkflow, type InsertFunnelAutomationWorkflow,
+  type FunnelPublication, type InsertFunnelPublication,
+  type FunnelStepMetric, type InsertFunnelStepMetric,
+  type AiGeneration, type InsertAiGeneration,
   leads, contacts, accounts, deals, tasks, employees, campaigns, tickets, projects, invoices,
   tenants, users, tenantSubscriptions, auditLogs, systemMetrics, salesChannels,
   aiContents, aiCampaigns, aiUsage,
@@ -360,6 +370,68 @@ export interface IStorage {
   // Client Invoice Access - TENANT + CLIENT ISOLATED
   getClientInvoices(clientAccountId: string, tenantId: string): Promise<any[]>;
   getClientInvoice(invoiceId: string, clientAccountId: string, tenantId: string): Promise<any | null>;
+
+  // ==================== FUNNEL BUILDER OPERATIONS - TENANT ISOLATED ====================
+  // AI Generation tracking
+  createAIGeneration(data: InsertAiGeneration): Promise<AiGeneration>;
+  
+  // Funnel Project CRUD
+  createFunnelProject(data: InsertFunnelProject): Promise<FunnelProject>;
+  getFunnelProjects(): Promise<FunnelProject[]>;
+  getFunnelProject(id: string): Promise<FunnelProject | null>;
+  updateFunnelProject(id: string, data: Partial<InsertFunnelProject>): Promise<FunnelProject>;
+  deleteFunnelProject(id: string): Promise<void>;
+  
+  // Funnel Version CRUD
+  createFunnelVersion(data: InsertFunnelVersion): Promise<FunnelVersion>;
+  getFunnelVersions(funnelId: string): Promise<FunnelVersion[]>;
+  getFunnelVersion(id: string): Promise<FunnelVersion | null>;
+  
+  // Funnel Steps (bulk operations for efficiency)
+  createFunnelSteps(steps: InsertFunnelStep[]): Promise<FunnelStep[]>;
+  getFunnelSteps(versionId: string): Promise<FunnelStep[]>;
+  
+  // Landing Pages
+  createLandingPage(data: InsertLandingPage): Promise<LandingPage>;
+  updateLandingPage(id: string, data: Partial<InsertLandingPage>): Promise<LandingPage>;
+  getLandingPage(stepId: string): Promise<LandingPage | null>;
+  
+  // Funnel Ads (bulk operations)
+  createFunnelAds(ads: InsertFunnelAd[]): Promise<FunnelAd[]>;
+  getFunnelAds(versionId: string): Promise<FunnelAd[]>;
+  
+  // Funnel Emails (bulk operations)
+  createFunnelEmails(emails: InsertFunnelEmail[]): Promise<FunnelEmail[]>;
+  getFunnelEmails(versionId: string): Promise<FunnelEmail[]>;
+  
+  // Automation Workflows
+  createAutomationWorkflow(data: InsertFunnelAutomationWorkflow): Promise<FunnelAutomationWorkflow>;
+  getAutomationWorkflows(versionId: string): Promise<FunnelAutomationWorkflow[]>;
+  
+  // Funnel Publishing
+  publishFunnel(data: InsertFunnelPublication): Promise<FunnelPublication>;
+  getFunnelPublication(funnelId: string): Promise<FunnelPublication | null>;
+  updateFunnelPublication(id: string, data: Partial<InsertFunnelPublication>): Promise<FunnelPublication>;
+  
+  // Funnel Analytics
+  getFunnelAnalytics(funnelId: string, startDate?: Date, endDate?: Date): Promise<{
+    totalVisitors: number;
+    totalConversions: number;
+    conversionRate: number;
+    revenue: number;
+    stepMetrics: FunnelStepMetric[];
+  }>;
+  
+  // Complete funnel with all relations
+  getCompleteFunnel(funnelId: string): Promise<{
+    funnel: FunnelProject;
+    version: FunnelVersion;
+    steps: FunnelStep[];
+    landingPages: LandingPage[];
+    ads: FunnelAd[];
+    emails: FunnelEmail[];
+    workflows: FunnelAutomationWorkflow[];
+  } | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -2220,4 +2292,7 @@ export class MemStorage implements IStorage {
 // Create a global storage instance that persists across module reloads  
 import { DatabaseStorage } from "./database-storage"; // FIXED: Use database storage for authentication
 
-export const storage = new DatabaseStorage(); // FIXED: Use database storage where real users exist
+// System tenant ID for pre-authentication operations
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001'; // Platform owner tenant
+
+export const storage = new DatabaseStorage('system@argilette.com', SYSTEM_TENANT_ID, false); // FIXED: Use database storage where real users exist
