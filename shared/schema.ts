@@ -4783,6 +4783,344 @@ export const insertWorkloadSnapshotSchema = createInsertSchema(workloadSnapshots
 export type InsertWorkloadSnapshot = z.infer<typeof insertWorkloadSnapshotSchema>;
 export type WorkloadSnapshot = typeof workloadSnapshots.$inferSelect;
 
+// ============================
+// AI-POWERED FUNNEL BUILDER
+// ============================
+
+// AI generation metadata - centralized tracking for all AI content
+export const aiGenerations = pgTable("ai_generations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  provider: text("provider").notNull(), // argilette, anthropic, google, etc.
+  model: text("model").notNull(), // gpt-4o, claude-sonnet-4, etc.
+  tokensUsed: integer("tokens_used"),
+  durationMs: integer("duration_ms"),
+  prompt: text("prompt"),
+  generationType: text("generation_type").notNull(), // funnel, landing_page, ad_copy, email, automation
+  generatedBy: varchar("generated_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_ai_generations_tenant").on(table.tenantId),
+  index("idx_ai_generations_type").on(table.generationType),
+]);
+
+// Main funnel container
+export const funnelProjects = pgTable("funnel_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  offerDescription: text("offer_description"), // Original offer input for AI generation
+  status: text("status").default("draft"), // draft, active, paused, archived
+  isTemplate: boolean("is_template").default(false),
+  templateCategory: text("template_category"), // e-commerce, saas, consulting, etc.
+  activeVersionId: varchar("active_version_id"), // References funnel_versions
+  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_funnel_projects_tenant").on(table.tenantId),
+  index("idx_funnel_projects_status").on(table.status),
+  index("idx_funnel_projects_template").on(table.isTemplate),
+]);
+
+// Funnel versions for cloning and version control
+export const funnelVersions = pgTable("funnel_versions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  funnelId: varchar("funnel_id").references(() => funnelProjects.id).notNull(),
+  versionNumber: integer("version_number").notNull(),
+  sourceFunnelId: varchar("source_funnel_id"), // For cloned funnels
+  clonedFromVersionId: varchar("cloned_from_version_id"),
+  versionName: text("version_name"),
+  settings: jsonb("settings").$type<{
+    colors?: Record<string, string>;
+    fonts?: Record<string, string>;
+    spacing?: Record<string, string>;
+    tracking?: Record<string, string>;
+  }>().default({}),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_funnel_versions_funnel").on(table.funnelId),
+  index("idx_funnel_versions_number").on(table.funnelId, table.versionNumber),
+]);
+
+// Funnel steps - conversion stages
+export const funnelSteps = pgTable("funnel_steps", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
+  name: text("name").notNull(),
+  stepType: text("step_type").notNull(), // landing, email, phone, meeting, close, thank_you
+  orderIndex: integer("order_index").notNull(),
+  description: text("description"),
+  crmLinkage: jsonb("crm_linkage").$type<{
+    targetType?: 'contact' | 'lead' | 'deal' | 'task';
+    targetId?: string;
+    stageName?: string;
+  }>().default({}),
+  conversionGoal: text("conversion_goal"), // form_submit, call_scheduled, purchase, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_funnel_steps_version").on(table.versionId),
+  index("idx_funnel_steps_order").on(table.versionId, table.orderIndex),
+]);
+
+// Landing pages per step
+export const landingPages = pgTable("landing_pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  stepId: varchar("step_id").references(() => funnelSteps.id).notNull(),
+  headline: text("headline").notNull(),
+  subheadline: text("subheadline"),
+  heroImageUrl: text("hero_image_url"),
+  offerSummary: text("offer_summary"),
+  ctaText: text("cta_text").notNull(),
+  ctaUrl: text("cta_url"),
+  sections: jsonb("sections").$type<Array<{
+    id: string;
+    type: 'hero' | 'features' | 'benefits' | 'testimonials' | 'pricing' | 'faq' | 'cta';
+    content: Record<string, any>;
+    order: number;
+  }>>().default([]),
+  metadata: jsonb("metadata").$type<{
+    seoTitle?: string;
+    seoDescription?: string;
+    openGraphImage?: string;
+  }>().default({}),
+  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_landing_pages_step").on(table.stepId),
+]);
+
+// Landing page version history
+export const landingPageVersions = pgTable("landing_page_versions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  landingPageId: varchar("landing_page_id").references(() => landingPages.id).notNull(),
+  versionNumber: integer("version_number").notNull(),
+  headline: text("headline").notNull(),
+  content: jsonb("content").$type<any>().default({}),
+  editedBy: varchar("edited_by").references(() => users.id),
+  editSummary: text("edit_summary"),
+  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_landing_page_versions_page").on(table.landingPageId),
+]);
+
+// Ad copy for multiple platforms
+export const funnelAds = pgTable("funnel_ads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
+  platform: text("platform").notNull(), // facebook, google, linkedin, instagram, twitter
+  adType: text("ad_type").notNull(), // single_image, carousel, video, text
+  headline: text("headline").notNull(),
+  bodyText: text("body_text").notNull(),
+  ctaText: text("cta_text").notNull(),
+  targetUrl: text("target_url"),
+  variants: jsonb("variants").$type<Array<{
+    id: string;
+    headline: string;
+    bodyText: string;
+    ctaText: string;
+    targetAudience?: string;
+  }>>().default([]),
+  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_funnel_ads_version").on(table.versionId),
+  index("idx_funnel_ads_platform").on(table.platform),
+]);
+
+// Email sequences
+export const funnelEmails = pgTable("funnel_emails", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
+  sequenceName: text("sequence_name").notNull(),
+  sequenceOrder: integer("sequence_order").notNull(),
+  delayDays: integer("delay_days").default(0),
+  subject: text("subject").notNull(),
+  preheader: text("preheader"),
+  bodyHtml: text("body_html").notNull(),
+  bodyText: text("body_text"),
+  ctaText: text("cta_text"),
+  ctaUrl: text("cta_url"),
+  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_funnel_emails_version").on(table.versionId),
+  index("idx_funnel_emails_sequence").on(table.versionId, table.sequenceOrder),
+]);
+
+// Automation workflows
+export const funnelAutomationWorkflows = pgTable("funnel_automation_workflows", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  triggerType: text("trigger_type").notNull(), // form_submit, page_visit, email_click, time_delay, deal_stage
+  triggerConditions: jsonb("trigger_conditions").$type<Record<string, any>>().default({}),
+  isActive: boolean("is_active").default(true),
+  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_funnel_workflows_version").on(table.versionId),
+  index("idx_funnel_workflows_active").on(table.isActive),
+]);
+
+// Workflow steps
+export const workflowSteps = pgTable("workflow_steps", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workflowId: varchar("workflow_id").references(() => funnelAutomationWorkflows.id).notNull(),
+  name: text("name").notNull(),
+  stepType: text("step_type").notNull(), // action, condition, wait
+  orderIndex: integer("order_index").notNull(),
+  conditions: jsonb("conditions").$type<Array<{
+    field: string;
+    operator: string;
+    value: any;
+  }>>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_workflow_steps_workflow").on(table.workflowId),
+  index("idx_workflow_steps_order").on(table.workflowId, table.orderIndex),
+]);
+
+// Workflow actions
+export const workflowActions = pgTable("workflow_actions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  stepId: varchar("step_id").references(() => workflowSteps.id).notNull(),
+  actionType: text("action_type").notNull(), // send_email, create_task, update_deal, create_contact, send_sms, webhook
+  targetType: text("target_type"), // contact, deal, task, lead
+  targetId: varchar("target_id"),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  dealId: varchar("deal_id").references(() => deals.id),
+  taskTemplateId: varchar("task_template_id").references(() => tasks.id),
+  config: jsonb("config").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_workflow_actions_step").on(table.stepId),
+  index("idx_workflow_actions_contact").on(table.contactId),
+  index("idx_workflow_actions_deal").on(table.dealId),
+]);
+
+// Published funnels - live deployments
+export const funnelPublications = pgTable("funnel_publications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  funnelId: varchar("funnel_id").references(() => funnelProjects.id).notNull(),
+  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
+  publishedUrl: text("published_url").notNull().unique(),
+  customDomain: text("custom_domain"),
+  environment: text("environment").default("production"), // production, staging, preview
+  status: text("status").default("active"), // active, inactive, archived
+  publishedBy: varchar("published_by").references(() => users.id),
+  publishedAt: timestamp("published_at").defaultNow(),
+  lastDeployedAt: timestamp("last_deployed_at"),
+}, (table) => [
+  index("idx_funnel_publications_funnel").on(table.funnelId),
+  index("idx_funnel_publications_version").on(table.versionId),
+  index("idx_funnel_publications_status").on(table.status),
+]);
+
+// Analytics - step metrics
+export const funnelStepMetrics = pgTable("funnel_step_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  stepId: varchar("step_id").references(() => funnelSteps.id).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  date: date("date").notNull(),
+  visitors: integer("visitors").default(0),
+  conversions: integer("conversions").default(0),
+  revenue: decimal("revenue", { precision: 12, scale: 2 }).default("0"),
+  conversionRate: decimal("conversion_rate", { precision: 5, scale: 2 }),
+  attribution: jsonb("attribution").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_funnel_step_metrics_step").on(table.stepId),
+  index("idx_funnel_step_metrics_date").on(table.date),
+  index("idx_funnel_step_metrics_tenant").on(table.tenantId),
+]);
+
+// Conversion events - granular tracking
+export const funnelConversionEvents = pgTable("funnel_conversion_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  stepId: varchar("step_id").references(() => funnelSteps.id).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  eventType: text("event_type").notNull(), // page_view, form_submit, button_click, conversion
+  sessionId: text("session_id"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"),
+  revenue: decimal("revenue", { precision: 12, scale: 2 }),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_funnel_conversion_events_step").on(table.stepId),
+  index("idx_funnel_conversion_events_contact").on(table.contactId),
+  index("idx_funnel_conversion_events_type").on(table.eventType),
+  index("idx_funnel_conversion_events_tenant").on(table.tenantId),
+  index("idx_funnel_conversion_events_created").on(table.createdAt),
+]);
+
+// Zod schemas and types for funnel system
+export const insertAiGenerationSchema = createInsertSchema(aiGenerations).omit({ id: true, createdAt: true });
+export type InsertAiGeneration = z.infer<typeof insertAiGenerationSchema>;
+export type AiGeneration = typeof aiGenerations.$inferSelect;
+
+export const insertFunnelProjectSchema = createInsertSchema(funnelProjects).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFunnelProject = z.infer<typeof insertFunnelProjectSchema>;
+export type FunnelProject = typeof funnelProjects.$inferSelect;
+
+export const insertFunnelVersionSchema = createInsertSchema(funnelVersions).omit({ id: true, createdAt: true });
+export type InsertFunnelVersion = z.infer<typeof insertFunnelVersionSchema>;
+export type FunnelVersion = typeof funnelVersions.$inferSelect;
+
+export const insertFunnelStepSchema = createInsertSchema(funnelSteps).omit({ id: true, createdAt: true });
+export type InsertFunnelStep = z.infer<typeof insertFunnelStepSchema>;
+export type FunnelStep = typeof funnelSteps.$inferSelect;
+
+export const insertLandingPageSchema = createInsertSchema(landingPages).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertLandingPage = z.infer<typeof insertLandingPageSchema>;
+export type LandingPage = typeof landingPages.$inferSelect;
+
+export const insertLandingPageVersionSchema = createInsertSchema(landingPageVersions).omit({ id: true, createdAt: true });
+export type InsertLandingPageVersion = z.infer<typeof insertLandingPageVersionSchema>;
+export type LandingPageVersion = typeof landingPageVersions.$inferSelect;
+
+export const insertFunnelAdSchema = createInsertSchema(funnelAds).omit({ id: true, createdAt: true });
+export type InsertFunnelAd = z.infer<typeof insertFunnelAdSchema>;
+export type FunnelAd = typeof funnelAds.$inferSelect;
+
+export const insertFunnelEmailSchema = createInsertSchema(funnelEmails).omit({ id: true, createdAt: true });
+export type InsertFunnelEmail = z.infer<typeof insertFunnelEmailSchema>;
+export type FunnelEmail = typeof funnelEmails.$inferSelect;
+
+export const insertFunnelAutomationWorkflowSchema = createInsertSchema(funnelAutomationWorkflows).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFunnelAutomationWorkflow = z.infer<typeof insertFunnelAutomationWorkflowSchema>;
+export type FunnelAutomationWorkflow = typeof funnelAutomationWorkflows.$inferSelect;
+
+export const insertWorkflowStepSchema = createInsertSchema(workflowSteps).omit({ id: true, createdAt: true });
+export type InsertWorkflowStep = z.infer<typeof insertWorkflowStepSchema>;
+export type WorkflowStep = typeof workflowSteps.$inferSelect;
+
+export const insertWorkflowActionSchema = createInsertSchema(workflowActions).omit({ id: true, createdAt: true });
+export type InsertWorkflowAction = z.infer<typeof insertWorkflowActionSchema>;
+export type WorkflowAction = typeof workflowActions.$inferSelect;
+
+export const insertFunnelPublicationSchema = createInsertSchema(funnelPublications).omit({ id: true, publishedAt: true });
+export type InsertFunnelPublication = z.infer<typeof insertFunnelPublicationSchema>;
+export type FunnelPublication = typeof funnelPublications.$inferSelect;
+
+export const insertFunnelStepMetricSchema = createInsertSchema(funnelStepMetrics).omit({ id: true, createdAt: true });
+export type InsertFunnelStepMetric = z.infer<typeof insertFunnelStepMetricSchema>;
+export type FunnelStepMetric = typeof funnelStepMetrics.$inferSelect;
+
+export const insertFunnelConversionEventSchema = createInsertSchema(funnelConversionEvents).omit({ id: true, createdAt: true });
+export type InsertFunnelConversionEvent = z.infer<typeof insertFunnelConversionEventSchema>;
+export type FunnelConversionEvent = typeof funnelConversionEvents.$inferSelect;
+
 // Re-export SEO schemas from server/argilette/seo-schema.ts for client use
 export { 
   keywords,
