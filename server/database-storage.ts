@@ -35,7 +35,7 @@ import {
   type LandingPage, type InsertLandingPage,
   type FunnelAd, type InsertFunnelAd,
   type FunnelEmail, type InsertFunnelEmail,
-  type FunnelAutomationWorkflow, type InsertFunnelAutomationWorkflow,
+  type AutomationWorkflow, type InsertAutomationWorkflow,
   type FunnelPublication, type InsertFunnelPublication,
   type FunnelStepMetric, type InsertFunnelStepMetric,
   type AiGeneration, type InsertAiGeneration,
@@ -45,7 +45,7 @@ import {
   teamCapacity, employeeSkills, resourceForecasts, workloadSnapshots, resourceAllocations,
   clientAccounts, clientPortalUsers, clientPortalSessions,
   aiGenerations, funnelProjects, funnelVersions, funnelSteps, landingPages, funnelAds, funnelEmails,
-  funnelAutomationWorkflows, funnelPublications, funnelStepMetrics
+  automationWorkflows, funnelPublications, funnelStepMetrics
 } from "@shared/schema";
 import {
   type Store, type InsertStore,
@@ -3491,14 +3491,14 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Automation Workflows
-  async createAutomationWorkflow(data: InsertFunnelAutomationWorkflow): Promise<FunnelAutomationWorkflow> {
-    const [newWorkflow] = await db.insert(funnelAutomationWorkflows).values(data).returning();
+  async createAutomationWorkflow(data: InsertAutomationWorkflow): Promise<AutomationWorkflow> {
+    const [newWorkflow] = await db.insert(automationWorkflows).values(data).returning();
     return newWorkflow;
   }
   
-  async getAutomationWorkflows(versionId: string): Promise<FunnelAutomationWorkflow[]> {
-    return await db.select().from(funnelAutomationWorkflows)
-      .where(eq(funnelAutomationWorkflows.versionId, versionId));
+  async getAutomationWorkflows(versionId: string): Promise<AutomationWorkflow[]> {
+    return await db.select().from(automationWorkflows)
+      .where(eq(automationWorkflows.versionId, versionId));
   }
   
   // Funnel Publishing

@@ -4872,16 +4872,32 @@ export const landingPages = pgTable("landing_pages", {
   stepId: varchar("step_id").references(() => funnelSteps.id).notNull(),
   headline: text("headline").notNull(),
   subheadline: text("subheadline"),
-  heroImageUrl: text("hero_image_url"),
-  offerSummary: text("offer_summary"),
+  heroContent: text("hero_content"),
+  benefits: jsonb("benefits").$type<Array<{
+    title: string;
+    description: string;
+  }>>().default([]),
+  testimonials: jsonb("testimonials").$type<Array<{
+    name: string;
+    role: string;
+    content: string;
+    rating?: number;
+  }>>().default([]),
   ctaText: text("cta_text").notNull(),
   ctaUrl: text("cta_url"),
-  sections: jsonb("sections").$type<Array<{
-    id: string;
-    type: 'hero' | 'features' | 'benefits' | 'testimonials' | 'pricing' | 'faq' | 'cta';
-    content: Record<string, any>;
-    order: number;
+  faqs: jsonb("faqs").$type<Array<{
+    question: string;
+    answer: string;
   }>>().default([]),
+  formFields: jsonb("form_fields").$type<Array<{
+    name: string;
+    type: string;
+    label: string;
+    required?: boolean;
+  }>>().default([]),
+  stylePreset: text("style_preset"),
+  customCss: text("custom_css"),
+  customScripts: text("custom_scripts"),
   metadata: jsonb("metadata").$type<{
     seoTitle?: string;
     seoDescription?: string;
@@ -4909,23 +4925,20 @@ export const landingPageVersions = pgTable("landing_page_versions", {
   index("idx_landing_page_versions_page").on(table.landingPageId),
 ]);
 
-// Ad copy for multiple platforms
+// Ad copy for multiple platforms (each variant is a separate record)
 export const funnelAds = pgTable("funnel_ads", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
   platform: text("platform").notNull(), // facebook, google, linkedin, instagram, twitter
-  adType: text("ad_type").notNull(), // single_image, carousel, video, text
+  adType: text("ad_type"), // single_image, carousel, video, text
+  variantName: text("variant_name"),
   headline: text("headline").notNull(),
   bodyText: text("body_text").notNull(),
   ctaText: text("cta_text").notNull(),
   targetUrl: text("target_url"),
-  variants: jsonb("variants").$type<Array<{
-    id: string;
-    headline: string;
-    bodyText: string;
-    ctaText: string;
-    targetAudience?: string;
-  }>>().default([]),
+  imageUrl: text("image_url"),
+  targeting: jsonb("targeting").$type<Record<string, any>>().default({}),
+  targetAudience: text("target_audience"),
   aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
@@ -4954,13 +4967,14 @@ export const funnelEmails = pgTable("funnel_emails", {
 ]);
 
 // Automation workflows
-export const funnelAutomationWorkflows = pgTable("funnel_automation_workflows", {
+export const automationWorkflows = pgTable("automation_workflows", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   triggerType: text("trigger_type").notNull(), // form_submit, page_visit, email_click, time_delay, deal_stage
   triggerConditions: jsonb("trigger_conditions").$type<Record<string, any>>().default({}),
+  actions: jsonb("actions").$type<Array<Record<string, any>>>().default([]).notNull(),
   isActive: boolean("is_active").default(true),
   aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -4973,7 +4987,7 @@ export const funnelAutomationWorkflows = pgTable("funnel_automation_workflows", 
 // Workflow steps
 export const workflowSteps = pgTable("workflow_steps", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  workflowId: varchar("workflow_id").references(() => funnelAutomationWorkflows.id).notNull(),
+  workflowId: varchar("workflow_id").references(() => automationWorkflows.id).notNull(),
   name: text("name").notNull(),
   stepType: text("step_type").notNull(), // action, condition, wait
   orderIndex: integer("order_index").notNull(),
@@ -5097,9 +5111,9 @@ export const insertFunnelEmailSchema = createInsertSchema(funnelEmails).omit({ i
 export type InsertFunnelEmail = z.infer<typeof insertFunnelEmailSchema>;
 export type FunnelEmail = typeof funnelEmails.$inferSelect;
 
-export const insertFunnelAutomationWorkflowSchema = createInsertSchema(funnelAutomationWorkflows).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertFunnelAutomationWorkflow = z.infer<typeof insertFunnelAutomationWorkflowSchema>;
-export type FunnelAutomationWorkflow = typeof funnelAutomationWorkflows.$inferSelect;
+export const insertAutomationWorkflowSchema = createInsertSchema(automationWorkflows).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAutomationWorkflow = z.infer<typeof insertAutomationWorkflowSchema>;
+export type AutomationWorkflow = typeof automationWorkflows.$inferSelect;
 
 export const insertWorkflowStepSchema = createInsertSchema(workflowSteps).omit({ id: true, createdAt: true });
 export type InsertWorkflowStep = z.infer<typeof insertWorkflowStepSchema>;
