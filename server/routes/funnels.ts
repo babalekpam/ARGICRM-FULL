@@ -618,6 +618,50 @@ router.post('/:id/publish', async (req: TenantRequest, res: Response) => {
   }
 });
 
+// PATCH /api/funnels/:funnelId/landing-page/:landingPageId - Update landing page
+router.patch('/:funnelId/landing-page/:landingPageId', async (req: TenantRequest, res: Response) => {
+  try {
+    const storage = getUserStorage(req);
+    const { funnelId, landingPageId } = req.params;
+
+    // SECURITY: Verify funnel ownership
+    const funnel = await storage.getFunnelProject(funnelId);
+    if (!funnel) {
+      return res.status(404).json({
+        error: 'Funnel not found',
+      });
+    }
+
+    // Validate and parse landing page data
+    const updateData = insertLandingPageSchema.partial().parse(req.body);
+
+    // Update landing page
+    const updatedLandingPage = await storage.updateLandingPage(landingPageId, updateData);
+
+    if (!updatedLandingPage) {
+      return res.status(404).json({
+        error: 'Landing page not found',
+      });
+    }
+
+    // Transform to camelCase
+    const transformed = transformLandingPage(updatedLandingPage);
+
+    res.json({
+      success: true,
+      landingPage: transformed,
+      message: 'Landing page updated successfully',
+    });
+
+  } catch (error: any) {
+    console.error('❌ Update landing page error:', error);
+    res.status(error instanceof z.ZodError ? 400 : 500).json({
+      error: error instanceof z.ZodError ? 'Invalid landing page data' : 'Failed to update landing page',
+      details: error instanceof z.ZodError ? error.errors : error.message,
+    });
+  }
+});
+
 // DELETE /api/funnels/:id - Delete funnel
 router.delete('/:id', async (req: TenantRequest, res: Response) => {
   try {

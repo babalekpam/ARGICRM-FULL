@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import Layout from "@/components/layout";
 import Logo from "@/components/logo";
+import LandingPageEditor from "@/components/landing-page-editor";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -144,34 +145,25 @@ export default function FunnelBuilderPage() {
   const { data: funnelsData, isLoading: isLoadingFunnels } = useQuery({
     queryKey: ['/api/funnels'],
     queryFn: async () => {
-      const response = await fetch('/api/funnels');
-      if (!response.ok) throw new Error('Failed to fetch funnels');
-      const data = await response.json();
-      return data;
+      const response = await apiRequest('GET', '/api/funnels');
+      return response;
     },
   });
 
   // Fetch complete funnel details when selected
   const { data: selectedFunnelData, isLoading: isLoadingFunnelDetails } = useQuery({
     queryKey: ['/api/funnels', selectedFunnelId],
-    queryFn: async () => {
-      if (!selectedFunnelId) return null;
-      const response = await fetch(`/api/funnels/${selectedFunnelId}`);
-      if (!response.ok) throw new Error('Failed to fetch funnel details');
-      const data = await response.json();
-      return data as CompleteFunnel;
-    },
     enabled: !!selectedFunnelId,
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/funnels/${selectedFunnelId}`);
+      return response;
+    },
   });
 
   // AI Generate funnel mutation
   const generateFunnelMutation = useMutation({
     mutationFn: async (data: GenerateFunnelFormData) => {
-      return await apiRequest('/api/funnels/generate', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return await apiRequest('POST', '/api/funnels/generate', data);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
@@ -199,9 +191,7 @@ export default function FunnelBuilderPage() {
   // Delete funnel mutation
   const deleteFunnelMutation = useMutation({
     mutationFn: async (funnelId: string) => {
-      return await apiRequest(`/api/funnels/${funnelId}`, {
-        method: 'DELETE',
-      });
+      return await apiRequest('DELETE', `/api/funnels/${funnelId}`, null);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
@@ -225,11 +215,7 @@ export default function FunnelBuilderPage() {
   // Publish funnel mutation
   const publishFunnelMutation = useMutation({
     mutationFn: async (funnelId: string) => {
-      return await apiRequest(`/api/funnels/${funnelId}/publish`, {
-        method: 'POST',
-        body: JSON.stringify({}),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return await apiRequest('POST', `/api/funnels/${funnelId}/publish`, {});
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
@@ -714,97 +700,10 @@ export default function FunnelBuilderPage() {
                   {/* Landing Page Tab */}
                   <TabsContent value="landing" className="space-y-4">
                     {selectedFunnel.landingPage ? (
-                      <Card data-testid="card-landing-page-content">
-                        <CardHeader>
-                          <CardTitle>Landing Page Content</CardTitle>
-                          <CardDescription>AI-generated landing page copy optimized for conversions</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Headline</h3>
-                            <p className="text-2xl font-bold" data-testid="text-headline">{selectedFunnel.landingPage.headline}</p>
-                          </div>
-                          
-                          {selectedFunnel.landingPage.subheadline && (
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Subheadline</h3>
-                              <p className="text-lg text-gray-700 dark:text-gray-300" data-testid="text-subheadline">
-                                {selectedFunnel.landingPage.subheadline}
-                              </p>
-                            </div>
-                          )}
-
-                          {selectedFunnel.landingPage.heroContent && (
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Hero Content</h3>
-                              <p className="text-gray-700 dark:text-gray-300" data-testid="text-hero-content">
-                                {selectedFunnel.landingPage.heroContent}
-                              </p>
-                            </div>
-                          )}
-
-                          <Separator />
-
-                          {selectedFunnel.landingPage.benefits && selectedFunnel.landingPage.benefits.length > 0 && (
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Key Benefits</h3>
-                              <div className="grid gap-4" data-testid="list-benefits">
-                                {selectedFunnel.landingPage.benefits.map((benefit, idx) => (
-                                  <div key={idx} className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-900/10 rounded-lg">
-                                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
-                                    <div>
-                                      <h4 className="font-semibold mb-1">{benefit.title}</h4>
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">{benefit.description}</p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {selectedFunnel.landingPage.testimonials && selectedFunnel.landingPage.testimonials.length > 0 && (
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Testimonials</h3>
-                              <div className="grid gap-4" data-testid="list-testimonials">
-                                {selectedFunnel.landingPage.testimonials.map((testimonial, idx) => (
-                                  <div key={idx} className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border-l-4 border-blue-500">
-                                    <p className="italic mb-2">"{testimonial.quote}"</p>
-                                    <p className="text-sm font-medium">— {testimonial.author}</p>
-                                    {testimonial.role && (
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">{testimonial.role}</p>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-lg border-2 border-orange-500">
-                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Call to Action</h3>
-                            <Button 
-                              size="lg" 
-                              className="w-full bg-gradient-to-r from-orange-600 to-red-600"
-                              data-testid="button-cta-preview"
-                            >
-                              {selectedFunnel.landingPage.ctaText}
-                            </Button>
-                          </div>
-
-                          {selectedFunnel.landingPage.faqs && selectedFunnel.landingPage.faqs.length > 0 && (
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">FAQs</h3>
-                              <div className="space-y-3" data-testid="list-faqs">
-                                {selectedFunnel.landingPage.faqs.map((faq, idx) => (
-                                  <div key={idx} className="p-4 border rounded-lg">
-                                    <h4 className="font-semibold mb-2">{faq.question}</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{faq.answer}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                      <LandingPageEditor
+                        landingPage={selectedFunnel.landingPage}
+                        funnelId={selectedFunnel.funnel.id}
+                      />
                     ) : (
                       <Card>
                         <CardContent className="py-12 text-center" data-testid="empty-state-landing-page">
