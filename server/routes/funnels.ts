@@ -792,6 +792,94 @@ router.patch('/:funnelId/workflows/:workflowId', async (req: TenantRequest, res:
   }
 });
 
+// PATCH /api/funnels/:funnelId/ads/:adId - Update funnel ad
+router.patch('/:funnelId/ads/:adId', async (req: TenantRequest, res: Response) => {
+  try {
+    const storage = getUserStorage(req);
+    const { funnelId, adId } = req.params;
+
+    // SECURITY: Verify funnel ownership
+    const funnel = await storage.getFunnelProject(funnelId);
+    if (!funnel) {
+      return res.status(404).json({
+        error: 'Funnel not found',
+      });
+    }
+
+    // Validate and parse ad data
+    const updateData = insertFunnelAdSchema.partial().parse(req.body);
+
+    // Update funnel ad
+    const updatedAd = await storage.updateFunnelAd(adId, updateData);
+
+    if (!updatedAd) {
+      return res.status(404).json({
+        error: 'Ad not found',
+      });
+    }
+
+    // Transform to camelCase
+    const transformed = transformFunnelAd(updatedAd);
+
+    res.json({
+      success: true,
+      ad: transformed,
+      message: 'Ad updated successfully',
+    });
+
+  } catch (error: any) {
+    console.error('❌ Update ad error:', error);
+    res.status(error instanceof z.ZodError ? 400 : 500).json({
+      error: error instanceof z.ZodError ? 'Invalid ad data' : 'Failed to update ad',
+      details: error instanceof z.ZodError ? error.errors : error.message,
+    });
+  }
+});
+
+// PATCH /api/funnels/:funnelId/emails/:emailId - Update funnel email
+router.patch('/:funnelId/emails/:emailId', async (req: TenantRequest, res: Response) => {
+  try {
+    const storage = getUserStorage(req);
+    const { funnelId, emailId } = req.params;
+
+    // SECURITY: Verify funnel ownership
+    const funnel = await storage.getFunnelProject(funnelId);
+    if (!funnel) {
+      return res.status(404).json({
+        error: 'Funnel not found',
+      });
+    }
+
+    // Validate and parse email data
+    const updateData = insertFunnelEmailSchema.partial().parse(req.body);
+
+    // Update funnel email
+    const updatedEmail = await storage.updateFunnelEmail(emailId, updateData);
+
+    if (!updatedEmail) {
+      return res.status(404).json({
+        error: 'Email not found',
+      });
+    }
+
+    // Transform to camelCase
+    const transformed = transformFunnelEmail(updatedEmail);
+
+    res.json({
+      success: true,
+      email: transformed,
+      message: 'Email updated successfully',
+    });
+
+  } catch (error: any) {
+    console.error('❌ Update email error:', error);
+    res.status(error instanceof z.ZodError ? 400 : 500).json({
+      error: error instanceof z.ZodError ? 'Invalid email data' : 'Failed to update email',
+      details: error instanceof z.ZodError ? error.errors : error.message,
+    });
+  }
+});
+
 // GET /api/funnels/:id/analytics - Get funnel analytics
 router.get('/:id/analytics', async (req: TenantRequest, res: Response) => {
   try {

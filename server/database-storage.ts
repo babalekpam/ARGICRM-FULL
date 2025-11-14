@@ -3510,6 +3510,26 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
   
+  // Funnel Ads Updates
+  async updateFunnelAd(id: string, data: Partial<InsertFunnelAd>): Promise<FunnelAd> {
+    const [updated] = await db.update(funnelAds)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(funnelAds.id, id))
+      .returning();
+    
+    return updated;
+  }
+  
+  // Funnel Emails Updates
+  async updateFunnelEmail(id: string, data: Partial<InsertFunnelEmail>): Promise<FunnelEmail> {
+    const [updated] = await db.update(funnelEmails)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(funnelEmails.id, id))
+      .returning();
+    
+    return updated;
+  }
+  
   // Funnel Publishing
   async publishFunnel(data: InsertFunnelPublication): Promise<FunnelPublication> {
     const [publication] = await db.insert(funnelPublications).values(data).returning();

@@ -409,6 +409,12 @@ export interface IStorage {
   getAutomationWorkflows(versionId: string): Promise<FunnelAutomationWorkflow[]>;
   updateAutomationWorkflow(id: string, data: Partial<InsertFunnelAutomationWorkflow>): Promise<FunnelAutomationWorkflow>;
   
+  // Funnel Ads Updates
+  updateFunnelAd(id: string, data: Partial<InsertFunnelAd>): Promise<FunnelAd>;
+  
+  // Funnel Emails Updates
+  updateFunnelEmail(id: string, data: Partial<InsertFunnelEmail>): Promise<FunnelEmail>;
+  
   // Funnel Publishing
   publishFunnel(data: InsertFunnelPublication): Promise<FunnelPublication>;
   getFunnelPublication(funnelId: string): Promise<FunnelPublication | null>;

@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { insertFunnelAdSchema, insertFunnelEmailSchema, insertAutomationWorkflowSchema } from "@shared/schema";
 import { 
   Sparkles,
   Plus, 
@@ -51,7 +52,8 @@ import {
   Pause,
   BarChart2,
   MousePointerClick,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from "lucide-react";
 
 // Form validation schema
@@ -109,8 +111,8 @@ interface CompleteFunnel {
   emails: Array<{
     id: string;
     sequenceName: string;
-    subject: string;
-    preheader: string;
+    subjectLine: string;
+    previewText: string;
     bodyHtml: string;
     ctaText: string;
     sequenceOrder: number;
@@ -135,6 +137,11 @@ export default function FunnelBuilderPage() {
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [emailPreviewId, setEmailPreviewId] = useState<string | null>(null);
+  
+  // Inline editing state for each tab
+  const [editingAdId, setEditingAdId] = useState<string | null>(null);
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+  const [editingWorkflowId, setEditingWorkflowId] = useState<string | null>(null);
   
   // Utility: Copy to clipboard
   const copyToClipboard = async (text: string, label: string) => {
@@ -339,6 +346,75 @@ export default function FunnelBuilderPage() {
     onSettled: () => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
+    },
+  });
+
+  // Update ad mutation for inline editing
+  const updateAdMutation = useMutation({
+    mutationFn: async ({ funnelId, adId, data }: { funnelId: string; adId: string; data: any }) => {
+      const response = await apiRequest('PATCH', `/api/funnels/${funnelId}/ads/${adId}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
+      setEditingAdId(null);
+      toast({
+        title: "Ad Updated",
+        description: "Your changes have been saved",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update ad.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update email mutation for inline editing
+  const updateEmailMutation = useMutation({
+    mutationFn: async ({ funnelId, emailId, data }: { funnelId: string; emailId: string; data: any }) => {
+      const response = await apiRequest('PATCH', `/api/funnels/${funnelId}/emails/${emailId}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
+      setEditingEmailId(null);
+      toast({
+        title: "Email Updated",
+        description: "Your changes have been saved",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update email.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update workflow mutation for inline editing (full edit, not just isActive)
+  const updateWorkflowFullMutation = useMutation({
+    mutationFn: async ({ funnelId, workflowId, data }: { funnelId: string; workflowId: string; data: any }) => {
+      const response = await apiRequest('PATCH', `/api/funnels/${funnelId}/workflows/${workflowId}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
+      setEditingWorkflowId(null);
+      toast({
+        title: "Workflow Updated",
+        description: "Your changes have been saved",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update workflow.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -849,83 +925,212 @@ export default function FunnelBuilderPage() {
                                 </div>
                               </CardHeader>
                               <CardContent className="space-y-4">
-                                {platformAds.map((ad: any, idx: number) => (
-                                  <div 
-                                    key={ad.id} 
-                                    className="p-4 border rounded-lg space-y-3 bg-gray-50 dark:bg-gray-900"
-                                    data-testid={`ad-variant-${platform}-${idx}`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <Badge variant="outline">{ad.variantName}</Badge>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm"
-                                        onClick={() => copyToClipboard(
-                                          `Headline: ${ad.headline}\n\nBody: ${ad.bodyText}\n\nCTA: ${ad.ctaText}`,
-                                          'Ad copy'
-                                        )}
-                                        data-testid={`button-copy-ad-${idx}`}
-                                      >
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        Copy All
-                                      </Button>
+                                {platformAds.map((ad: any, idx: number) => {
+                                  const AdEditForm = () => {
+                                    const adForm = useForm({
+                                      resolver: zodResolver(insertFunnelAdSchema.partial()),
+                                      defaultValues: {
+                                        headline: ad.headline || '',
+                                        bodyText: ad.bodyText || '',
+                                        ctaText: ad.ctaText || '',
+                                      },
+                                    });
+
+                                    const handleSaveAd = (data: any) => {
+                                      updateAdMutation.mutate({
+                                        funnelId: selectedFunnel.funnel.id,
+                                        adId: ad.id,
+                                        data,
+                                      });
+                                    };
+
+                                    const handleCancelEdit = () => {
+                                      adForm.reset();
+                                      setEditingAdId(null);
+                                    };
+
+                                    return (
+                                      <Form {...adForm}>
+                                        <form onSubmit={adForm.handleSubmit(handleSaveAd)} className="space-y-4">
+                                          <FormField
+                                            control={adForm.control}
+                                            name="headline"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Headline</FormLabel>
+                                                <FormControl>
+                                                  <Input 
+                                                    {...field} 
+                                                    data-testid={`input-ad-headline-${idx}`}
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={adForm.control}
+                                            name="bodyText"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Body Text</FormLabel>
+                                                <FormControl>
+                                                  <Textarea 
+                                                    {...field} 
+                                                    rows={4}
+                                                    data-testid={`textarea-ad-body-${idx}`}
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={adForm.control}
+                                            name="ctaText"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Call to Action</FormLabel>
+                                                <FormControl>
+                                                  <Input 
+                                                    {...field} 
+                                                    data-testid={`input-ad-cta-${idx}`}
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <div className="flex gap-2 justify-end pt-4">
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              onClick={handleCancelEdit}
+                                              disabled={updateAdMutation.isPending}
+                                              data-testid={`button-cancel-ad-${idx}`}
+                                            >
+                                              <X className="h-4 w-4 mr-2" />
+                                              Cancel
+                                            </Button>
+                                            <Button
+                                              type="submit"
+                                              disabled={updateAdMutation.isPending}
+                                              className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                                              data-testid={`button-save-ad-${idx}`}
+                                            >
+                                              {updateAdMutation.isPending ? (
+                                                <>
+                                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                  Saving...
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                                  Save Changes
+                                                </>
+                                              )}
+                                            </Button>
+                                          </div>
+                                        </form>
+                                      </Form>
+                                    );
+                                  };
+
+                                  return (
+                                    <div 
+                                      key={ad.id} 
+                                      className="p-4 border rounded-lg space-y-3 bg-gray-50 dark:bg-gray-900"
+                                      data-testid={`ad-variant-${platform}-${idx}`}
+                                    >
+                                      {editingAdId === ad.id ? (
+                                        <AdEditForm />
+                                      ) : (
+                                        <>
+                                          <div className="flex items-center justify-between">
+                                            <Badge variant="outline">{ad.variantName}</Badge>
+                                            <div className="flex gap-2">
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => setEditingAdId(ad.id)}
+                                                data-testid={`button-edit-ad-${idx}`}
+                                              >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Edit
+                                              </Button>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => copyToClipboard(
+                                                  `Headline: ${ad.headline}\n\nBody: ${ad.bodyText}\n\nCTA: ${ad.ctaText}`,
+                                                  'Ad copy'
+                                                )}
+                                                data-testid={`button-copy-ad-${idx}`}
+                                              >
+                                                <Copy className="h-4 w-4 mr-2" />
+                                                Copy All
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Headline</h4>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => copyToClipboard(ad.headline, 'Headline')}
+                                                data-testid={`button-copy-headline-${platform}-${idx}`}
+                                              >
+                                                <Copy className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                            <p className="font-semibold">{ad.headline}</p>
+                                          </div>
+                                          <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Body</h4>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => copyToClipboard(ad.bodyText, 'Body text')}
+                                                data-testid={`button-copy-body-${platform}-${idx}`}
+                                              >
+                                                <Copy className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                            <p className="text-sm text-gray-700 dark:text-gray-300">{ad.bodyText}</p>
+                                          </div>
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <div>
+                                                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">CTA</h4>
+                                                <Badge variant="default">{ad.ctaText}</Badge>
+                                              </div>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => copyToClipboard(ad.ctaText, 'CTA text')}
+                                                data-testid={`button-copy-cta-${platform}-${idx}`}
+                                              >
+                                                <Copy className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                            <div className="flex gap-2 text-xs text-gray-500">
+                                              <div className="flex items-center gap-1">
+                                                <MousePointerClick className="h-3 w-3" />
+                                                <span>0 clicks</span>
+                                              </div>
+                                              <div className="flex items-center gap-1">
+                                                <Eye className="h-3 w-3" />
+                                                <span>0 views</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </>
+                                      )}
                                     </div>
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1">
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Headline</h4>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="sm"
-                                          onClick={() => copyToClipboard(ad.headline, 'Headline')}
-                                          data-testid={`button-copy-headline-${platform}-${idx}`}
-                                        >
-                                          <Copy className="h-3 w-3" />
-                                        </Button>
-                                      </div>
-                                      <p className="font-semibold">{ad.headline}</p>
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1">
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Body</h4>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="sm"
-                                          onClick={() => copyToClipboard(ad.bodyText, 'Body text')}
-                                          data-testid={`button-copy-body-${platform}-${idx}`}
-                                        >
-                                          <Copy className="h-3 w-3" />
-                                        </Button>
-                                      </div>
-                                      <p className="text-sm text-gray-700 dark:text-gray-300">{ad.bodyText}</p>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <div>
-                                          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">CTA</h4>
-                                          <Badge variant="default">{ad.ctaText}</Badge>
-                                        </div>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="sm"
-                                          onClick={() => copyToClipboard(ad.ctaText, 'CTA text')}
-                                          data-testid={`button-copy-cta-${platform}-${idx}`}
-                                        >
-                                          <Copy className="h-3 w-3" />
-                                        </Button>
-                                      </div>
-                                      <div className="flex gap-2 text-xs text-gray-500">
-                                        <div className="flex items-center gap-1">
-                                          <MousePointerClick className="h-3 w-3" />
-                                          <span>0 clicks</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <Eye className="h-3 w-3" />
-                                          <span>0 views</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </CardContent>
                             </Card>
                           );
@@ -962,105 +1167,251 @@ export default function FunnelBuilderPage() {
                         <div className="space-y-4" data-testid="list-email-sequences">
                           {selectedFunnel.emails
                             .sort((a: any, b: any) => a.sequenceOrder - b.sequenceOrder)
-                            .map((email: any, idx: number) => (
-                              <Card key={email.id} data-testid={`card-email-${idx}`}>
-                                <CardHeader>
-                                  <div className="flex items-center justify-between">
-                                    <CardTitle className="flex items-center">
-                                      <Mail className="h-5 w-5 mr-2 text-blue-600" />
-                                      {email.sequenceName}
-                                    </CardTitle>
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="outline">Day {email.delayDays}</Badge>
-                                      <Badge variant="secondary">Email #{email.sequenceOrder}</Badge>
-                                    </div>
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                  <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Subject Line</h4>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm"
-                                        onClick={() => copyToClipboard(email.subject, 'Subject line')}
-                                        data-testid={`button-copy-subject-${idx}`}
-                                      >
-                                        <Copy className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                    <p className="font-semibold">{email.subject}</p>
-                                  </div>
-                                  {email.preheader && (
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1">
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Preview Text</h4>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="sm"
-                                          onClick={() => copyToClipboard(email.preheader, 'Preview text')}
-                                          data-testid={`button-copy-preheader-${idx}`}
+                            .map((email: any, idx: number) => {
+                              const EmailEditForm = () => {
+                                const emailForm = useForm({
+                                  resolver: zodResolver(insertFunnelEmailSchema.partial()),
+                                  defaultValues: {
+                                    subjectLine: email.subjectLine || '',
+                                    previewText: email.previewText || '',
+                                    bodyHtml: email.bodyHtml || '',
+                                    ctaText: email.ctaText || '',
+                                  },
+                                });
+
+                                const handleSaveEmail = (data: any) => {
+                                  updateEmailMutation.mutate({
+                                    funnelId: selectedFunnel.funnel.id,
+                                    emailId: email.id,
+                                    data,
+                                  });
+                                };
+
+                                const handleCancelEdit = () => {
+                                  emailForm.reset();
+                                  setEditingEmailId(null);
+                                };
+
+                                return (
+                                  <Form {...emailForm}>
+                                    <form onSubmit={emailForm.handleSubmit(handleSaveEmail)} className="space-y-4">
+                                      <FormField
+                                        control={emailForm.control}
+                                        name="subjectLine"
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Subject Line</FormLabel>
+                                            <FormControl>
+                                              <Input 
+                                                {...field} 
+                                                data-testid={`input-email-subject-${idx}`}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      <FormField
+                                        control={emailForm.control}
+                                        name="previewText"
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Preview Text (Optional)</FormLabel>
+                                            <FormControl>
+                                              <Input 
+                                                {...field} 
+                                                data-testid={`input-email-preheader-${idx}`}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      <FormField
+                                        control={emailForm.control}
+                                        name="bodyHtml"
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Email Content (HTML)</FormLabel>
+                                            <FormControl>
+                                              <Textarea 
+                                                {...field} 
+                                                rows={6}
+                                                data-testid={`textarea-email-body-${idx}`}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      <FormField
+                                        control={emailForm.control}
+                                        name="ctaText"
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Call to Action (Optional)</FormLabel>
+                                            <FormControl>
+                                              <Input 
+                                                {...field} 
+                                                data-testid={`input-email-cta-${idx}`}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      <div className="flex gap-2 justify-end pt-4">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          onClick={handleCancelEdit}
+                                          disabled={updateEmailMutation.isPending}
+                                          data-testid={`button-cancel-email-${idx}`}
                                         >
-                                          <Copy className="h-3 w-3" />
+                                          <X className="h-4 w-4 mr-2" />
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          type="submit"
+                                          disabled={updateEmailMutation.isPending}
+                                          className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                                          data-testid={`button-save-email-${idx}`}
+                                        >
+                                          {updateEmailMutation.isPending ? (
+                                            <>
+                                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                              Saving...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <CheckCircle className="h-4 w-4 mr-2" />
+                                              Save Changes
+                                            </>
+                                          )}
                                         </Button>
                                       </div>
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">{email.preheader}</p>
-                                    </div>
-                                  )}
-                                  <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Content</h4>
-                                      <div className="flex gap-2">
-                                        <Button 
-                                          variant="ghost" 
-                                          size="sm"
-                                          onClick={() => setEmailPreviewId(email.id)}
-                                          data-testid={`button-preview-email-${idx}`}
-                                        >
-                                          <Eye className="h-3 w-3 mr-1" />
-                                          Preview
-                                        </Button>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="sm"
-                                          onClick={() => copyToClipboard(email.bodyHtml, 'Email content')}
-                                          data-testid={`button-copy-body-${idx}`}
-                                        >
-                                          <Copy className="h-3 w-3" />
-                                        </Button>
+                                    </form>
+                                  </Form>
+                                );
+                              };
+
+                              return (
+                                <Card key={email.id} data-testid={`card-email-${idx}`}>
+                                  <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                      <CardTitle className="flex items-center">
+                                        <Mail className="h-5 w-5 mr-2 text-blue-600" />
+                                        {email.sequenceName}
+                                      </CardTitle>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline">Day {email.delayDays}</Badge>
+                                        <Badge variant="secondary">Email #{email.sequenceOrder}</Badge>
+                                        {editingEmailId !== email.id && (
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => setEditingEmailId(email.id)}
+                                            data-testid={`button-edit-email-${idx}`}
+                                          >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit
+                                          </Button>
+                                        )}
                                       </div>
                                     </div>
-                                    <div 
-                                      className="prose prose-sm dark:prose-invert max-w-none p-4 bg-gray-50 dark:bg-gray-900 rounded-lg max-h-40 overflow-hidden relative"
-                                      dangerouslySetInnerHTML={{ __html: email.bodyHtml }}
-                                      data-testid={`email-body-${idx}`}
-                                    />
-                                  </div>
-                                  <div className="flex items-center justify-between pt-2 border-t">
-                                    {email.ctaText && (
-                                      <div>
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Call to Action</h4>
-                                        <Badge variant="default">{email.ctaText}</Badge>
-                                      </div>
+                                  </CardHeader>
+                                  <CardContent className="space-y-4">
+                                    {editingEmailId === email.id ? (
+                                      <EmailEditForm />
+                                    ) : (
+                                      <>
+                                        <div>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Subject Line</h4>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm"
+                                              onClick={() => copyToClipboard(email.subjectLine, 'Subject line')}
+                                              data-testid={`button-copy-subject-${idx}`}
+                                            >
+                                              <Copy className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                          <p className="font-semibold">{email.subjectLine}</p>
+                                        </div>
+                                        {email.previewText && (
+                                          <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Preview Text</h4>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => copyToClipboard(email.previewText, 'Preview text')}
+                                                data-testid={`button-copy-preheader-${idx}`}
+                                              >
+                                                <Copy className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">{email.previewText}</p>
+                                          </div>
+                                        )}
+                                        <div>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Content</h4>
+                                            <div className="flex gap-2">
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => setEmailPreviewId(email.id)}
+                                                data-testid={`button-preview-email-${idx}`}
+                                              >
+                                                <Eye className="h-3 w-3 mr-1" />
+                                                Preview
+                                              </Button>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => copyToClipboard(email.bodyHtml, 'Email content')}
+                                                data-testid={`button-copy-body-${idx}`}
+                                              >
+                                                <Copy className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          <div 
+                                            className="prose prose-sm dark:prose-invert max-w-none p-4 bg-gray-50 dark:bg-gray-900 rounded-lg max-h-40 overflow-hidden relative"
+                                            dangerouslySetInnerHTML={{ __html: email.bodyHtml }}
+                                            data-testid={`email-body-${idx}`}
+                                          />
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t">
+                                          {email.ctaText && (
+                                            <div>
+                                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Call to Action</h4>
+                                              <Badge variant="default">{email.ctaText}</Badge>
+                                            </div>
+                                          )}
+                                          <div className="flex gap-3 text-xs text-gray-500">
+                                            <div className="flex items-center gap-1">
+                                              <Send className="h-3 w-3" />
+                                              <span>0 sent</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <Eye className="h-3 w-3" />
+                                              <span>0% open rate</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <MousePointerClick className="h-3 w-3" />
+                                              <span>0% click rate</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </>
                                     )}
-                                    <div className="flex gap-3 text-xs text-gray-500">
-                                      <div className="flex items-center gap-1">
-                                        <Send className="h-3 w-3" />
-                                        <span>0 sent</span>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <Eye className="h-3 w-3" />
-                                        <span>0% open rate</span>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <MousePointerClick className="h-3 w-3" />
-                                        <span>0% click rate</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
                         </div>
                       </>
                     ) : (
@@ -1077,102 +1428,290 @@ export default function FunnelBuilderPage() {
                   <TabsContent value="automations" className="space-y-4">
                     {selectedFunnel.workflows && selectedFunnel.workflows.length > 0 ? (
                       <div className="space-y-4" data-testid="list-workflows">
-                        {selectedFunnel.workflows.map((workflow: any, idx: number) => (
-                          <Card key={workflow.id} data-testid={`card-workflow-${idx}`} className="relative">
-                            <CardHeader>
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="flex items-center">
-                                  <Zap className="h-5 w-5 mr-2 text-purple-600" />
-                                  {workflow.name}
-                                </CardTitle>
-                                <div className="flex items-center gap-3">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                                      {workflow.isActive !== false ? 'Active' : 'Inactive'}
-                                    </span>
-                                    <Switch 
-                                      checked={workflow.isActive !== false}
-                                      onCheckedChange={(checked) => {
-                                        updateWorkflowMutation.mutate({
-                                          funnelId: selectedFunnel.funnel.id,
-                                          workflowId: workflow.id,
-                                          isActive: checked,
-                                        });
-                                      }}
-                                      disabled={updateWorkflowMutation.isPending}
-                                      data-testid={`switch-workflow-active-${idx}`}
-                                    />
+                        {selectedFunnel.workflows.map((workflow: any, idx: number) => {
+                          const WorkflowEditForm = () => {
+                            const workflowForm = useForm({
+                              resolver: zodResolver(insertAutomationWorkflowSchema.partial()),
+                              defaultValues: {
+                                name: workflow.name || '',
+                                description: workflow.description || '',
+                                triggerType: workflow.triggerType || 'form_submission',
+                                actions: workflow.actions || [],
+                              },
+                            });
+
+                            const handleSaveWorkflow = (data: any) => {
+                              updateWorkflowFullMutation.mutate({
+                                funnelId: selectedFunnel.funnel.id,
+                                workflowId: workflow.id,
+                                data,
+                              });
+                            };
+
+                            const handleCancelEdit = () => {
+                              workflowForm.reset();
+                              setEditingWorkflowId(null);
+                            };
+
+                            const actions = workflowForm.watch('actions') || [];
+
+                            const addAction = () => {
+                              const currentActions = workflowForm.getValues('actions') || [];
+                              workflowForm.setValue('actions', [...currentActions, 'send_email']);
+                            };
+
+                            const removeAction = (indexToRemove: number) => {
+                              const currentActions = workflowForm.getValues('actions') || [];
+                              workflowForm.setValue('actions', currentActions.filter((_, i) => i !== indexToRemove));
+                            };
+
+                            return (
+                              <Form {...workflowForm}>
+                                <form onSubmit={workflowForm.handleSubmit(handleSaveWorkflow)} className="space-y-4">
+                                  <FormField
+                                    control={workflowForm.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Workflow Name</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            {...field} 
+                                            data-testid={`input-workflow-name-${idx}`}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={workflowForm.control}
+                                    name="description"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Description (Optional)</FormLabel>
+                                        <FormControl>
+                                          <Textarea 
+                                            {...field} 
+                                            rows={3}
+                                            data-testid={`textarea-workflow-description-${idx}`}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={workflowForm.control}
+                                    name="triggerType"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Trigger Event</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                          <FormControl>
+                                            <SelectTrigger data-testid={`select-workflow-trigger-${idx}`}>
+                                              <SelectValue placeholder="Select trigger type" />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="form_submission">Form Submission</SelectItem>
+                                            <SelectItem value="email_opened">Email Opened</SelectItem>
+                                            <SelectItem value="link_clicked">Link Clicked</SelectItem>
+                                            <SelectItem value="page_viewed">Page Viewed</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <div className="space-y-2">
+                                    <FormLabel>Actions</FormLabel>
+                                    <div className="flex flex-wrap gap-2">
+                                      {actions.map((action: string, actionIdx: number) => (
+                                        <Badge 
+                                          key={actionIdx} 
+                                          variant="secondary" 
+                                          className="capitalize flex items-center gap-1"
+                                        >
+                                          {action.replace('_', ' ')}
+                                          <button
+                                            type="button"
+                                            onClick={() => removeAction(actionIdx)}
+                                            className="ml-1 hover:text-destructive"
+                                            data-testid={`button-remove-action-${idx}-${actionIdx}`}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </Badge>
+                                      ))}
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={addAction}
+                                        data-testid={`button-add-action-${idx}`}
+                                      >
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Add Action
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => exportAsJSON(workflow, `workflow-${workflow.name}.json`)}
-                                    data-testid={`button-export-workflow-${idx}`}
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trigger Event</h4>
-                                  <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                    <Play className="h-4 w-4 text-purple-600" />
-                                    <span className="text-sm font-medium capitalize">
-                                      {workflow.triggerType.replace('_', ' ')}
-                                    </span>
+                                  <div className="flex gap-2 justify-end pt-4">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={handleCancelEdit}
+                                      disabled={updateWorkflowFullMutation.isPending}
+                                      data-testid={`button-cancel-workflow-${idx}`}
+                                    >
+                                      <X className="h-4 w-4 mr-2" />
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      type="submit"
+                                      disabled={updateWorkflowFullMutation.isPending}
+                                      className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                                      data-testid={`button-save-workflow-${idx}`}
+                                    >
+                                      {updateWorkflowFullMutation.isPending ? (
+                                        <>
+                                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                          Saving...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CheckCircle className="h-4 w-4 mr-2" />
+                                          Save Changes
+                                        </>
+                                      )}
+                                    </Button>
                                   </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Actions ({workflow.actions.length})</h4>
-                                  <div className="flex flex-wrap gap-2">
-                                    {workflow.actions.slice(0, 3).map((action: string, actionIdx: number) => (
-                                      <Badge key={actionIdx} variant="secondary" className="capitalize">
-                                        {action.replace('_', ' ')}
-                                      </Badge>
-                                    ))}
-                                    {workflow.actions.length > 3 && (
-                                      <Badge variant="outline">+{workflow.actions.length - 3} more</Badge>
+                                </form>
+                              </Form>
+                            );
+                          };
+
+                          return (
+                            <Card key={workflow.id} data-testid={`card-workflow-${idx}`} className="relative">
+                              <CardHeader>
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="flex items-center">
+                                    <Zap className="h-5 w-5 mr-2 text-purple-600" />
+                                    {workflow.name}
+                                  </CardTitle>
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                                        {workflow.isActive !== false ? 'Active' : 'Inactive'}
+                                      </span>
+                                      <Switch 
+                                        checked={workflow.isActive !== false}
+                                        onCheckedChange={(checked) => {
+                                          updateWorkflowMutation.mutate({
+                                            funnelId: selectedFunnel.funnel.id,
+                                            workflowId: workflow.id,
+                                            isActive: checked,
+                                          });
+                                        }}
+                                        disabled={updateWorkflowMutation.isPending}
+                                        data-testid={`switch-workflow-active-${idx}`}
+                                      />
+                                    </div>
+                                    {editingWorkflowId !== workflow.id && (
+                                      <>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => setEditingWorkflowId(workflow.id)}
+                                          data-testid={`button-edit-workflow-${idx}`}
+                                        >
+                                          <Edit className="h-4 w-4 mr-2" />
+                                          Edit
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          onClick={() => exportAsJSON(workflow, `workflow-${workflow.name}.json`)}
+                                          data-testid={`button-export-workflow-${idx}`}
+                                        >
+                                          <Download className="h-4 w-4" />
+                                        </Button>
+                                      </>
                                     )}
                                   </div>
                                 </div>
-                              </div>
-                              <Separator />
-                              <div className="flex items-center justify-between text-xs text-gray-500">
-                                <div className="flex gap-4">
-                                  <div className="flex items-center gap-1">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    <span>0 completed</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <BarChart2 className="h-3 w-3" />
-                                    <span>0% success rate</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>Last run: Never</span>
-                                  </div>
-                                </div>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => {
-                                    toast({
-                                      title: "Workflow Details",
-                                      description: "Full workflow visualization coming soon",
-                                    });
-                                  }}
-                                  data-testid={`button-view-workflow-${idx}`}
-                                >
-                                  <Eye className="h-3 w-3 mr-1" />
-                                  View Flow
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                {editingWorkflowId === workflow.id ? (
+                                  <WorkflowEditForm />
+                                ) : (
+                                  <>
+                                    {workflow.description && (
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        {workflow.description}
+                                      </p>
+                                    )}
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trigger Event</h4>
+                                        <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                                          <Play className="h-4 w-4 text-purple-600" />
+                                          <span className="text-sm font-medium capitalize">
+                                            {workflow.triggerType.replace('_', ' ')}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Actions ({workflow.actions.length})</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                          {workflow.actions.slice(0, 3).map((action: string, actionIdx: number) => (
+                                            <Badge key={actionIdx} variant="secondary" className="capitalize">
+                                              {action.replace('_', ' ')}
+                                            </Badge>
+                                          ))}
+                                          {workflow.actions.length > 3 && (
+                                            <Badge variant="outline">+{workflow.actions.length - 3} more</Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <Separator />
+                                    <div className="flex items-center justify-between text-xs text-gray-500">
+                                      <div className="flex gap-4">
+                                        <div className="flex items-center gap-1">
+                                          <CheckCircle2 className="h-3 w-3" />
+                                          <span>0 completed</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <BarChart2 className="h-3 w-3" />
+                                          <span>0% success rate</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <Clock className="h-3 w-3" />
+                                          <span>Last run: Never</span>
+                                        </div>
+                                      </div>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => {
+                                          toast({
+                                            title: "Workflow Details",
+                                            description: "Full workflow visualization coming soon",
+                                          });
+                                        }}
+                                        data-testid={`button-view-workflow-${idx}`}
+                                      >
+                                        <Eye className="h-3 w-3 mr-1" />
+                                        View Flow
+                                      </Button>
+                                    </div>
+                                  </>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
                       </div>
                     ) : (
                       <Card>
