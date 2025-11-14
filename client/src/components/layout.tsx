@@ -109,9 +109,13 @@ export default function Layout({ children }: LayoutProps) {
       >
         <div className="p-6 md:p-8 lg:p-12">
           <div className="max-w-7xl mx-auto">
-            <PageTranslator context="main-content">
-              {children}
-            </PageTranslator>
+            {isFunnelBuilder ? (
+              children
+            ) : (
+              <PageTranslator context="main-content">
+                {children}
+              </PageTranslator>
+            )}
           </div>
         </div>
       </main>
