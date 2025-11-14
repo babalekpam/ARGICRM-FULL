@@ -662,6 +662,58 @@ router.patch('/:funnelId/landing-page/:landingPageId', async (req: TenantRequest
   }
 });
 
+// PUT /api/funnels/:funnelId/landing-pages/:pageId - Update landing page (frontend-expected endpoint)
+router.put('/:funnelId/landing-pages/:pageId', async (req: TenantRequest, res: Response) => {
+  try {
+    const storage = getUserStorage(req);
+    const { funnelId, pageId } = req.params;
+
+    // SECURITY: Verify funnel ownership
+    const funnel = await storage.getFunnelProject(funnelId);
+    if (!funnel) {
+      return res.status(404).json({
+        error: 'Funnel not found',
+      });
+    }
+
+    // Validate and parse landing page data using partial schema (stepId is preserved automatically)
+    const updateData = insertLandingPageSchema.partial().parse(req.body);
+
+    // Update landing page - stepId is preserved from existing record
+    const updatedLandingPage = await storage.updateLandingPage(pageId, updateData);
+
+    if (!updatedLandingPage) {
+      return res.status(404).json({
+        error: 'Landing page not found',
+      });
+    }
+
+    // Transform to camelCase for frontend
+    const transformed = transformLandingPage(updatedLandingPage);
+
+    res.status(200).json({
+      success: true,
+      landingPage: transformed,
+      message: 'Landing page updated successfully',
+    });
+
+  } catch (error: any) {
+    console.error('❌ Update landing page error:', error);
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Invalid landing page data',
+        details: error.errors,
+      });
+    }
+    
+    res.status(500).json({
+      error: 'Failed to update landing page',
+      details: error.message,
+    });
+  }
+});
+
 // DELETE /api/funnels/:id - Delete funnel
 router.delete('/:id', async (req: TenantRequest, res: Response) => {
   try {

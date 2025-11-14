@@ -70,7 +70,7 @@ export default function LandingPageEditor({ landingPage, funnelId }: LandingPage
 
   const saveMutation = useMutation({
     mutationFn: async (data: Partial<LandingPageData>) => {
-      return await apiRequest('PATCH', `/api/funnels/${funnelId}/landing-page/${landingPage.id}`, data);
+      return await apiRequest('PUT', `/api/funnels/${funnelId}/landing-pages/${landingPage.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels', funnelId] });
