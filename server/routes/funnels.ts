@@ -193,11 +193,19 @@ function transformFunnelProject(db: any) {
 function transformCompleteFunnel(db: any) {
   if (!db) return null;
   
+  // Handle landingPages array from getCompleteFunnel or single landingPage from generate
+  let landingPage = null;
+  if (db.landing_page || db.landingPage) {
+    landingPage = transformLandingPage(db.landing_page || db.landingPage);
+  } else if (Array.isArray(db.landingPages) && db.landingPages.length > 0) {
+    landingPage = transformLandingPage(db.landingPages[0]);
+  }
+  
   return {
     funnel: transformFunnelProject(db.funnel_project || db.funnel),
     version: db.version ? transformFunnelVersion(db.version) : null,
     steps: Array.isArray(db.steps) ? db.steps.map(transformFunnelStep) : [],
-    landingPage: transformLandingPage(db.landing_page || db.landingPage),
+    landingPage,
     ads: Array.isArray(db.ad_assets || db.ads) 
       ? (db.ad_assets || db.ads).map(transformFunnelAd) 
       : [],
