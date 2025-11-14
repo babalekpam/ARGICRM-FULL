@@ -163,7 +163,8 @@ export default function FunnelBuilderPage() {
   // AI Generate funnel mutation
   const generateFunnelMutation = useMutation({
     mutationFn: async (data: GenerateFunnelFormData) => {
-      return await apiRequest('POST', '/api/funnels/generate', data) as Promise<any>;
+      const response = await apiRequest('POST', '/api/funnels/generate', data);
+      return await response.json();
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
