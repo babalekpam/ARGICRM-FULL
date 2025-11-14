@@ -146,7 +146,7 @@ export default function FunnelBuilderPage() {
     queryKey: ['/api/funnels'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/funnels');
-      return response;
+      return await response.json();
     },
   });
 
@@ -156,7 +156,7 @@ export default function FunnelBuilderPage() {
     enabled: !!selectedFunnelId,
     queryFn: async () => {
       const response = await apiRequest('GET', `/api/funnels/${selectedFunnelId}`);
-      return response;
+      return await response.json();
     },
   });
 
