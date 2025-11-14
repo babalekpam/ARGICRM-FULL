@@ -56,6 +56,7 @@ function transformLandingPage(db: any) {
     headline: db.headline,
     subheadline: db.subheadline,
     heroContent: db.hero_content || db.heroContent,
+    heroImageUrl: db.hero_image_url || db.heroImageUrl,
     benefits: db.benefits || [],
     testimonials: db.testimonials || [],
     ctaText: db.cta_text || db.ctaText,
@@ -400,12 +401,34 @@ Return the response as valid JSON in this exact format:
 
     const landingPageStep = funnelSteps[0];
 
+    // 5.5. Fetch stock image based on industry type
+    // Map industryType to pre-downloaded profession-specific images
+    let heroImageUrl = null;
+    try {
+      const industryImageMap: Record<string, string> = {
+        'healthcare': '/attached_assets/stock_images/professional_medical_47d6250c.jpg',
+        'saas': '/attached_assets/stock_images/modern_software_team_e2234a1d.jpg',
+        'ecommerce': '/attached_assets/stock_images/online_shopping_ecom_4b0a5bc4.jpg',
+        'consulting': '/attached_assets/stock_images/professional_busines_9415b1d1.jpg',
+        'coaching': '/attached_assets/stock_images/professional_coachin_408c9914.jpg',
+      };
+      
+      // Select image based on industry type or use default
+      heroImageUrl = industryImageMap[validatedData.industryType] || '/attached_assets/stock_images/professional_busines_b1ee20bc.jpg';
+      
+      console.log(`📸 Selected stock image for industry "${validatedData.industryType}": ${heroImageUrl}`);
+    } catch (error) {
+      console.error('Failed to set stock image:', error);
+      // Continue without image - heroImageUrl remains null
+    }
+
     // 6. Create landing page
     const landingPage = await storage.createLandingPage({
       stepId: landingPageStep.id,
       headline: parsedOutput.landingPage.headline,
       subheadline: parsedOutput.landingPage.subheadline,
       heroContent: parsedOutput.landingPage.heroContent,
+      heroImageUrl,
       benefits: parsedOutput.landingPage.benefits,
       testimonials: parsedOutput.landingPage.testimonials,
       ctaText: parsedOutput.landingPage.ctaText,

@@ -4873,6 +4873,7 @@ export const landingPages = pgTable("landing_pages", {
   headline: text("headline").notNull(),
   subheadline: text("subheadline"),
   heroContent: text("hero_content"),
+  heroImageUrl: text("hero_image_url"),
   benefits: jsonb("benefits").$type<Array<{
     title: string;
     description: string;

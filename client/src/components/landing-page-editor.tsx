@@ -20,7 +20,8 @@ import {
   Quote,
   HelpCircle,
   Loader2,
-  Undo2
+  Undo2,
+  ExternalLink
 } from "lucide-react";
 
 interface Benefit {
@@ -44,6 +45,7 @@ interface LandingPageData {
   headline: string;
   subheadline: string;
   heroContent: string;
+  heroImageUrl?: string;
   benefits: Benefit[];
   testimonials: Testimonial[];
   ctaText: string;
@@ -216,6 +218,14 @@ export default function LandingPageEditor({ landingPage, funnelId }: LandingPage
               {mode === 'preview' ? (
                 <>
                   <Button
+                    onClick={() => window.open(`/funnels/${funnelId}/preview`, '_blank', 'noopener,noreferrer')}
+                    variant="outline"
+                    data-testid="button-view-landing-page"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View Landing Page
+                  </Button>
+                  <Button
                     onClick={handleEdit}
                     variant={previewingEdits ? "outline" : "default"}
                     data-testid="button-enter-edit-mode"
@@ -295,6 +305,14 @@ export default function LandingPageEditor({ landingPage, funnelId }: LandingPage
           {/* Hero Section */}
           <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/10 dark:to-red-900/10 border-2">
             <CardContent className="py-12 px-6 lg:px-12 text-center">
+              {currentData.heroImageUrl && (
+                <img 
+                  src={currentData.heroImageUrl} 
+                  alt={currentData.headline}
+                  className="w-full h-64 object-cover rounded-lg mb-6"
+                  data-testid="preview-hero-image"
+                />
+              )}
               <h1 
                 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent"
                 data-testid="preview-headline"
