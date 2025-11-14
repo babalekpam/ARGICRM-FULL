@@ -3501,6 +3501,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(automationWorkflows.versionId, versionId));
   }
   
+  async updateAutomationWorkflow(id: string, data: Partial<InsertAutomationWorkflow>): Promise<AutomationWorkflow> {
+    const [updated] = await db.update(automationWorkflows)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(automationWorkflows.id, id))
+      .returning();
+    
+    return updated;
+  }
+  
   // Funnel Publishing
   async publishFunnel(data: InsertFunnelPublication): Promise<FunnelPublication> {
     const [publication] = await db.insert(funnelPublications).values(data).returning();

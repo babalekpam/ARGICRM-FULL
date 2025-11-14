@@ -291,6 +291,57 @@ export default function FunnelBuilderPage() {
     },
   });
 
+  // Update workflow active state mutation
+  const updateWorkflowMutation = useMutation({
+    mutationFn: async ({ funnelId, workflowId, isActive }: { funnelId: string; workflowId: string; isActive: boolean }) => {
+      return await apiRequest('PATCH', `/api/funnels/${funnelId}/workflows/${workflowId}`, { isActive });
+    },
+    onMutate: async ({ workflowId, isActive }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
+      
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['/api/funnels', selectedFunnelId]);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(['/api/funnels', selectedFunnelId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          workflows: old.workflows?.map((workflow: any) =>
+            workflow.id === workflowId
+              ? { ...workflow, isActive }
+              : workflow
+          ),
+        };
+      });
+      
+      // Return a context object with the snapshotted value
+      return { previousData };
+    },
+    onError: (error: any, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousData) {
+        queryClient.setQueryData(['/api/funnels', selectedFunnelId], context.previousData);
+      }
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update workflow status.",
+        variant: "destructive",
+      });
+    },
+    onSuccess: (data: any, { isActive }) => {
+      toast({
+        title: isActive ? "Workflow Activated" : "Workflow Deactivated",
+        description: `The workflow is now ${isActive ? 'active' : 'inactive'}`,
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
+    },
+  });
+
   const handleGenerateFunnel = (data: GenerateFunnelFormData) => {
     generateFunnelMutation.mutate(data);
   };
@@ -826,6 +877,7 @@ export default function FunnelBuilderPage() {
                                           variant="ghost" 
                                           size="sm"
                                           onClick={() => copyToClipboard(ad.headline, 'Headline')}
+                                          data-testid={`button-copy-headline-${platform}-${idx}`}
                                         >
                                           <Copy className="h-3 w-3" />
                                         </Button>
@@ -839,6 +891,7 @@ export default function FunnelBuilderPage() {
                                           variant="ghost" 
                                           size="sm"
                                           onClick={() => copyToClipboard(ad.bodyText, 'Body text')}
+                                          data-testid={`button-copy-body-${platform}-${idx}`}
                                         >
                                           <Copy className="h-3 w-3" />
                                         </Button>
@@ -846,9 +899,19 @@ export default function FunnelBuilderPage() {
                                       <p className="text-sm text-gray-700 dark:text-gray-300">{ad.bodyText}</p>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                      <div>
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">CTA</h4>
-                                        <Badge variant="default">{ad.ctaText}</Badge>
+                                      <div className="flex items-center gap-2">
+                                        <div>
+                                          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">CTA</h4>
+                                          <Badge variant="default">{ad.ctaText}</Badge>
+                                        </div>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => copyToClipboard(ad.ctaText, 'CTA text')}
+                                          data-testid={`button-copy-cta-${platform}-${idx}`}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
                                       </div>
                                       <div className="flex gap-2 text-xs text-gray-500">
                                         <div className="flex items-center gap-1">
@@ -921,6 +984,7 @@ export default function FunnelBuilderPage() {
                                         variant="ghost" 
                                         size="sm"
                                         onClick={() => copyToClipboard(email.subject, 'Subject line')}
+                                        data-testid={`button-copy-subject-${idx}`}
                                       >
                                         <Copy className="h-3 w-3" />
                                       </Button>
@@ -935,6 +999,7 @@ export default function FunnelBuilderPage() {
                                           variant="ghost" 
                                           size="sm"
                                           onClick={() => copyToClipboard(email.preheader, 'Preview text')}
+                                          data-testid={`button-copy-preheader-${idx}`}
                                         >
                                           <Copy className="h-3 w-3" />
                                         </Button>
@@ -959,6 +1024,7 @@ export default function FunnelBuilderPage() {
                                           variant="ghost" 
                                           size="sm"
                                           onClick={() => copyToClipboard(email.bodyHtml, 'Email content')}
+                                          data-testid={`button-copy-body-${idx}`}
                                         >
                                           <Copy className="h-3 w-3" />
                                         </Button>
@@ -1027,11 +1093,13 @@ export default function FunnelBuilderPage() {
                                     <Switch 
                                       checked={workflow.isActive !== false}
                                       onCheckedChange={(checked) => {
-                                        toast({
-                                          title: checked ? "Workflow Activated" : "Workflow Deactivated",
-                                          description: `${workflow.name} is now ${checked ? 'active' : 'inactive'}`,
+                                        updateWorkflowMutation.mutate({
+                                          funnelId: selectedFunnel.funnel.id,
+                                          workflowId: workflow.id,
+                                          isActive: checked,
                                         });
                                       }}
+                                      disabled={updateWorkflowMutation.isPending}
                                       data-testid={`switch-workflow-active-${idx}`}
                                     />
                                   </div>
@@ -1120,6 +1188,65 @@ export default function FunnelBuilderPage() {
             ) : null}
           </div>
         </div>
+
+        {/* Email Preview Dialog */}
+        <Dialog open={!!emailPreviewId} onOpenChange={(open) => !open && setEmailPreviewId(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh]" data-testid="dialog-email-preview">
+            <DialogHeader>
+              <DialogTitle className="flex items-center text-xl">
+                <Mail className="h-5 w-5 mr-2 text-blue-600" />
+                Email Preview
+              </DialogTitle>
+              <DialogDescription>
+                Full preview of the email content
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-[70vh] w-full rounded-md border p-6">
+              {selectedFunnel?.emails?.find((email: any) => email.id === emailPreviewId) && (
+                <div className="space-y-4" data-testid="email-preview-content">
+                  <div className="border-b pb-4">
+                    <h3 className="text-lg font-semibold mb-2">
+                      {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).subject}
+                    </h3>
+                    {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).preheader && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).preheader}
+                      </p>
+                    )}
+                  </div>
+                  <div 
+                    className="prose prose-sm dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ 
+                      __html: selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).bodyHtml 
+                    }}
+                    data-testid="email-preview-body"
+                  />
+                </div>
+              )}
+            </ScrollArea>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button 
+                variant="outline"
+                onClick={() => setEmailPreviewId(null)}
+                data-testid="button-close-preview"
+              >
+                Close
+              </Button>
+              {selectedFunnel?.emails?.find((email: any) => email.id === emailPreviewId) && (
+                <Button 
+                  onClick={() => {
+                    const email = selectedFunnel.emails.find((email: any) => email.id === emailPreviewId);
+                    copyToClipboard(email.bodyHtml, 'Email content');
+                  }}
+                  data-testid="button-copy-preview"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy HTML
+                </Button>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

@@ -745,6 +745,53 @@ router.delete('/:id', async (req: TenantRequest, res: Response) => {
   }
 });
 
+// PATCH /api/funnels/:funnelId/workflows/:workflowId - Update automation workflow
+router.patch('/:funnelId/workflows/:workflowId', async (req: TenantRequest, res: Response) => {
+  try {
+    const storage = getUserStorage(req);
+    const { funnelId, workflowId } = req.params;
+
+    // SECURITY: Verify funnel ownership
+    const funnel = await storage.getFunnelProject(funnelId);
+    if (!funnel) {
+      return res.status(404).json({
+        error: 'Funnel not found',
+      });
+    }
+
+    // Validate request body - only accept isActive for now
+    const updateSchema = z.object({
+      isActive: z.boolean(),
+    });
+    const updateData = updateSchema.parse(req.body);
+
+    // Update workflow
+    const updatedWorkflow = await storage.updateAutomationWorkflow(workflowId, updateData);
+
+    if (!updatedWorkflow) {
+      return res.status(404).json({
+        error: 'Workflow not found',
+      });
+    }
+
+    // Transform to camelCase
+    const transformed = transformAutomationWorkflow(updatedWorkflow);
+
+    res.json({
+      success: true,
+      workflow: transformed,
+      message: 'Workflow updated successfully',
+    });
+
+  } catch (error: any) {
+    console.error('❌ Update workflow error:', error);
+    res.status(error instanceof z.ZodError ? 400 : 500).json({
+      error: error instanceof z.ZodError ? 'Invalid workflow data' : 'Failed to update workflow',
+      details: error instanceof z.ZodError ? error.errors : error.message,
+    });
+  }
+});
+
 // GET /api/funnels/:id/analytics - Get funnel analytics
 router.get('/:id/analytics', async (req: TenantRequest, res: Response) => {
   try {
