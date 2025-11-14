@@ -163,10 +163,22 @@ export default function FunnelBuilderPage() {
   // AI Generate funnel mutation
   const generateFunnelMutation = useMutation({
     mutationFn: async (data: GenerateFunnelFormData) => {
-      return await apiRequest('POST', '/api/funnels/generate', data);
+      return await apiRequest('POST', '/api/funnels/generate', data) as Promise<any>;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
+      
+      // Check if response has the expected structure
+      if (!data || !data.funnel || !data.funnel.name) {
+        console.error('Unexpected response structure:', data);
+        toast({
+          title: "Generation Completed",
+          description: "Funnel generated, but response structure was unexpected. Please refresh the page.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
         title: "✨ Funnel Generated Successfully!",
         description: `Your funnel "${data.funnel.name}" has been created with AI-powered content.`,
@@ -180,6 +192,7 @@ export default function FunnelBuilderPage() {
       }
     },
     onError: (error: any) => {
+      console.error('Funnel generation error:', error);
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate funnel. Please try again.",
