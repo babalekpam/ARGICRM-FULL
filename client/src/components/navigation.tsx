@@ -383,7 +383,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
   return (
     <nav 
       id="main-navigation"
-      className="fixed left-0 top-0 h-full w-64 pointer-events-none z-30"
+      className="fixed left-0 top-0 h-full w-64 pointer-events-none z-10"
       role="navigation"
       aria-label="Main navigation"
     >
