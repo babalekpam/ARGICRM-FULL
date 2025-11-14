@@ -503,7 +503,7 @@ export default function FunnelBuilderPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[600px]">
+                <div className="h-[600px] overflow-y-auto">
                   <div className="space-y-1 p-4">
                     {isLoadingFunnels ? (
                       <>
@@ -573,7 +573,7 @@ export default function FunnelBuilderPage() {
                       ))
                     )}
                   </div>
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </div>
