@@ -30,6 +30,7 @@ export default function Layout({ children }: LayoutProps) {
   // Get current location to conditionally hide floating elements
   const [location] = useLocation();
   const isSuperAdminDashboard = location?.startsWith('/super-admin-dashboard');
+  const isFunnelBuilder = location === '/funnel-builder';
   
   // Initialize behavior tracking for the current user
   useBehaviorTracking({ 
@@ -80,11 +81,13 @@ export default function Layout({ children }: LayoutProps) {
         </>
       )}
 
-      {/* Desktop Navigation & Header */}
-      <div className="hidden md:block">
-        <Navigation />
-        <Header />
-      </div>
+      {/* Desktop Navigation & Header - Hidden on Funnel Builder */}
+      {!isFunnelBuilder && (
+        <div className="hidden md:block">
+          <Navigation />
+          <Header />
+        </div>
+      )}
 
       {/* Mobile Header */}
       <PageTranslator context="mobile-header">
@@ -93,7 +96,7 @@ export default function Layout({ children }: LayoutProps) {
       
       <main 
         id="main-content"
-        className="md:ml-64 md:pt-16 pt-0 min-h-screen transition-all-smooth relative z-40"
+        className={`${isFunnelBuilder ? '' : 'md:ml-64 md:pt-16'} pt-0 min-h-screen transition-all-smooth relative z-40`}
         role="main"
         aria-label="Main content area"
         tabIndex={-1}
@@ -107,7 +110,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </main>
 
-      <footer className="md:ml-64 bg-card/95 backdrop-blur-md shadow-card border-t border-border">
+      <footer className={`${isFunnelBuilder ? '' : 'md:ml-64'} bg-card/95 backdrop-blur-md shadow-card border-t border-border`}>
         <div className="px-4 md:px-8 py-6">
           <div className="max-w-7xl mx-auto">
             <PageTranslator context="footer">
