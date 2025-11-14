@@ -141,18 +141,18 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </footer>
 
-      {/* Desktop Quick Actions Floating Menu (hidden on super admin dashboard) */}
-      {!isSuperAdminDashboard && (
+      {/* Desktop Quick Actions Floating Menu (hidden on super admin dashboard and funnel builder) */}
+      {!isSuperAdminDashboard && !isFunnelBuilder && (
         <div className="hidden md:block">
           <QuickActionsMenu />
         </div>
       )}
 
-      {/* Mobile Floating Action Button (hidden on super admin dashboard) */}
-      {!isSuperAdminDashboard && <MobileFAB />}
+      {/* Mobile Floating Action Button (hidden on super admin dashboard and funnel builder) */}
+      {!isSuperAdminDashboard && !isFunnelBuilder && <MobileFAB />}
 
-      {/* Accessibility Floating Button (hidden on super admin dashboard) */}
-      {!isSuperAdminDashboard && <AccessibilityFloatingButton />}
+      {/* Accessibility Floating Button (hidden on super admin dashboard and funnel builder) */}
+      {!isSuperAdminDashboard && !isFunnelBuilder && <AccessibilityFloatingButton />}
 
       {/* Command Palette */}
       <CommandPalette 
@@ -160,11 +160,11 @@ export default function Layout({ children }: LayoutProps) {
         onClose={() => setIsCommandPaletteOpen(false)}
       />
       
-      {/* Chatbot Trigger (hidden on super admin dashboard) */}
-      {!isSuperAdminDashboard && <ChatbotTrigger />}
+      {/* Chatbot Trigger (hidden on super admin dashboard and funnel builder) */}
+      {!isSuperAdminDashboard && !isFunnelBuilder && <ChatbotTrigger />}
       
-      {/* Live Chat Widget (hidden on super admin dashboard) */}
-      {!isSuperAdminDashboard && <LiveChatWidget />}
+      {/* Live Chat Widget (hidden on super admin dashboard and funnel builder) */}
+      {!isSuperAdminDashboard && !isFunnelBuilder && <LiveChatWidget />}
 
     </div>
   );
