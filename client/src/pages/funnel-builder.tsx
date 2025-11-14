@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import Layout from "@/components/layout";
 import Logo from "@/components/logo";
 import LandingPageEditor from "@/components/landing-page-editor";
@@ -42,7 +43,15 @@ import {
   Globe,
   Send,
   Calendar,
-  Clock
+  Clock,
+  Copy,
+  Download,
+  Eye,
+  Play,
+  Pause,
+  BarChart2,
+  MousePointerClick,
+  CheckCircle2
 } from "lucide-react";
 
 // Form validation schema
@@ -125,6 +134,42 @@ export default function FunnelBuilderPage() {
   const { toast } = useToast();
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
+  const [emailPreviewId, setEmailPreviewId] = useState<string | null>(null);
+  
+  // Utility: Copy to clipboard
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${label} copied to clipboard`,
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Utility: Export as JSON
+  const exportAsJSON = (data: any, filename: string) => {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({
+      title: "Exported!",
+      description: `${filename} downloaded successfully`,
+    });
+  };
 
   // Form for AI generation
   const form = useForm<GenerateFunnelFormData>({
@@ -735,35 +780,86 @@ export default function FunnelBuilderPage() {
                           return (
                             <Card key={platform} data-testid={`card-ads-${platform}`}>
                               <CardHeader>
-                                <CardTitle className="flex items-center capitalize">
-                                  {getPlatformIcon(platform)}
-                                  <span className="ml-2">{platform} Ads</span>
-                                  <Badge className="ml-2" variant="secondary">{platformAds.length} variants</Badge>
-                                </CardTitle>
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="flex items-center capitalize">
+                                    {getPlatformIcon(platform)}
+                                    <span className="ml-2">{platform} Ads</span>
+                                    <Badge className="ml-2" variant="secondary">{platformAds.length} variants</Badge>
+                                  </CardTitle>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => exportAsJSON(platformAds, `${platform}-ads-${selectedFunnel.funnel.name}.json`)}
+                                    data-testid={`button-export-${platform}-ads`}
+                                  >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export
+                                  </Button>
+                                </div>
                               </CardHeader>
                               <CardContent className="space-y-4">
                                 {platformAds.map((ad: any, idx: number) => (
                                   <div 
                                     key={ad.id} 
-                                    className="p-4 border rounded-lg space-y-3"
+                                    className="p-4 border rounded-lg space-y-3 bg-gray-50 dark:bg-gray-900"
                                     data-testid={`ad-variant-${platform}-${idx}`}
                                   >
                                     <div className="flex items-center justify-between">
                                       <Badge variant="outline">{ad.variantName}</Badge>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => copyToClipboard(
+                                          `Headline: ${ad.headline}\n\nBody: ${ad.bodyText}\n\nCTA: ${ad.ctaText}`,
+                                          'Ad copy'
+                                        )}
+                                        data-testid={`button-copy-ad-${idx}`}
+                                      >
+                                        <Copy className="h-4 w-4 mr-2" />
+                                        Copy All
+                                      </Button>
                                     </div>
                                     <div>
-                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Headline</h4>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Headline</h4>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => copyToClipboard(ad.headline, 'Headline')}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
+                                      </div>
                                       <p className="font-semibold">{ad.headline}</p>
                                     </div>
                                     <div>
-                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Body</h4>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Body</h4>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => copyToClipboard(ad.bodyText, 'Body text')}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
+                                      </div>
                                       <p className="text-sm text-gray-700 dark:text-gray-300">{ad.bodyText}</p>
                                     </div>
-                                    <div>
-                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">CTA</h4>
-                                      <Button variant="outline" size="sm" disabled data-testid={`button-ad-cta-${idx}`}>
-                                        {ad.ctaText}
-                                      </Button>
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">CTA</h4>
+                                        <Badge variant="default">{ad.ctaText}</Badge>
+                                      </div>
+                                      <div className="flex gap-2 text-xs text-gray-500">
+                                        <div className="flex items-center gap-1">
+                                          <MousePointerClick className="h-3 w-3" />
+                                          <span>0 clicks</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <Eye className="h-3 w-3" />
+                                          <span>0 views</span>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
@@ -785,55 +881,122 @@ export default function FunnelBuilderPage() {
                   {/* Emails Tab */}
                   <TabsContent value="emails" className="space-y-4">
                     {selectedFunnel.emails && selectedFunnel.emails.length > 0 ? (
-                      <div className="space-y-4" data-testid="list-email-sequences">
-                        {selectedFunnel.emails
-                          .sort((a: any, b: any) => a.sequenceOrder - b.sequenceOrder)
-                          .map((email: any, idx: number) => (
-                            <Card key={email.id} data-testid={`card-email-${idx}`}>
-                              <CardHeader>
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="flex items-center">
-                                    <Mail className="h-5 w-5 mr-2 text-blue-600" />
-                                    {email.sequenceName}
-                                  </CardTitle>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline">Day {email.delayDays}</Badge>
-                                    <Badge variant="secondary">Email #{email.sequenceOrder}</Badge>
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {selectedFunnel.emails.length} email sequence{selectedFunnel.emails.length !== 1 ? 's' : ''}
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => exportAsJSON(selectedFunnel.emails, `email-sequences-${selectedFunnel.funnel.name}.json`)}
+                            data-testid="button-export-all-emails"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Export All
+                          </Button>
+                        </div>
+                        <div className="space-y-4" data-testid="list-email-sequences">
+                          {selectedFunnel.emails
+                            .sort((a: any, b: any) => a.sequenceOrder - b.sequenceOrder)
+                            .map((email: any, idx: number) => (
+                              <Card key={email.id} data-testid={`card-email-${idx}`}>
+                                <CardHeader>
+                                  <div className="flex items-center justify-between">
+                                    <CardTitle className="flex items-center">
+                                      <Mail className="h-5 w-5 mr-2 text-blue-600" />
+                                      {email.sequenceName}
+                                    </CardTitle>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline">Day {email.delayDays}</Badge>
+                                      <Badge variant="secondary">Email #{email.sequenceOrder}</Badge>
+                                    </div>
                                   </div>
-                                </div>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                <div>
-                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Subject Line</h4>
-                                  <p className="font-semibold">{email.subject}</p>
-                                </div>
-                                {email.preheader && (
+                                </CardHeader>
+                                <CardContent className="space-y-4">
                                   <div>
-                                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Preview Text</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{email.preheader}</p>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Subject Line</h4>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => copyToClipboard(email.subject, 'Subject line')}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                    <p className="font-semibold">{email.subject}</p>
                                   </div>
-                                )}
-                                <div>
-                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Email Content</h4>
-                                  <div 
-                                    className="prose prose-sm dark:prose-invert max-w-none p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
-                                    dangerouslySetInnerHTML={{ __html: email.bodyHtml }}
-                                    data-testid={`email-body-${idx}`}
-                                  />
-                                </div>
-                                {email.ctaText && (
+                                  {email.preheader && (
+                                    <div>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Preview Text</h4>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => copyToClipboard(email.preheader, 'Preview text')}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">{email.preheader}</p>
+                                    </div>
+                                  )}
                                   <div>
-                                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Call to Action</h4>
-                                    <Button variant="default" disabled data-testid={`button-email-cta-${idx}`}>
-                                      <Send className="h-4 w-4 mr-2" />
-                                      {email.ctaText}
-                                    </Button>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Content</h4>
+                                      <div className="flex gap-2">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => setEmailPreviewId(email.id)}
+                                          data-testid={`button-preview-email-${idx}`}
+                                        >
+                                          <Eye className="h-3 w-3 mr-1" />
+                                          Preview
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => copyToClipboard(email.bodyHtml, 'Email content')}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div 
+                                      className="prose prose-sm dark:prose-invert max-w-none p-4 bg-gray-50 dark:bg-gray-900 rounded-lg max-h-40 overflow-hidden relative"
+                                      dangerouslySetInnerHTML={{ __html: email.bodyHtml }}
+                                      data-testid={`email-body-${idx}`}
+                                    />
                                   </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
-                      </div>
+                                  <div className="flex items-center justify-between pt-2 border-t">
+                                    {email.ctaText && (
+                                      <div>
+                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Call to Action</h4>
+                                        <Badge variant="default">{email.ctaText}</Badge>
+                                      </div>
+                                    )}
+                                    <div className="flex gap-3 text-xs text-gray-500">
+                                      <div className="flex items-center gap-1">
+                                        <Send className="h-3 w-3" />
+                                        <span>0 sent</span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Eye className="h-3 w-3" />
+                                        <span>0% open rate</span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <MousePointerClick className="h-3 w-3" />
+                                        <span>0% click rate</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                        </div>
+                      </>
                     ) : (
                       <Card>
                         <CardContent className="py-12 text-center" data-testid="empty-state-emails">
@@ -849,29 +1012,95 @@ export default function FunnelBuilderPage() {
                     {selectedFunnel.workflows && selectedFunnel.workflows.length > 0 ? (
                       <div className="space-y-4" data-testid="list-workflows">
                         {selectedFunnel.workflows.map((workflow: any, idx: number) => (
-                          <Card key={workflow.id} data-testid={`card-workflow-${idx}`}>
+                          <Card key={workflow.id} data-testid={`card-workflow-${idx}`} className="relative">
                             <CardHeader>
-                              <CardTitle className="flex items-center">
-                                <Zap className="h-5 w-5 mr-2 text-purple-600" />
-                                {workflow.name}
-                              </CardTitle>
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center">
+                                  <Zap className="h-5 w-5 mr-2 text-purple-600" />
+                                  {workflow.name}
+                                </CardTitle>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                      {workflow.isActive !== false ? 'Active' : 'Inactive'}
+                                    </span>
+                                    <Switch 
+                                      checked={workflow.isActive !== false}
+                                      onCheckedChange={(checked) => {
+                                        toast({
+                                          title: checked ? "Workflow Activated" : "Workflow Deactivated",
+                                          description: `${workflow.name} is now ${checked ? 'active' : 'inactive'}`,
+                                        });
+                                      }}
+                                      data-testid={`switch-workflow-active-${idx}`}
+                                    />
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => exportAsJSON(workflow, `workflow-${workflow.name}.json`)}
+                                    data-testid={`button-export-workflow-${idx}`}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                              <div>
-                                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Trigger</h4>
-                                <Badge variant="outline" className="capitalize">
-                                  {workflow.triggerType.replace('_', ' ')}
-                                </Badge>
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Actions</h4>
-                                <div className="flex flex-wrap gap-2">
-                                  {workflow.actions.map((action: string, actionIdx: number) => (
-                                    <Badge key={actionIdx} variant="secondary" className="capitalize">
-                                      {action.replace('_', ' ')}
-                                    </Badge>
-                                  ))}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trigger Event</h4>
+                                  <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                                    <Play className="h-4 w-4 text-purple-600" />
+                                    <span className="text-sm font-medium capitalize">
+                                      {workflow.triggerType.replace('_', ' ')}
+                                    </span>
+                                  </div>
                                 </div>
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Actions ({workflow.actions.length})</h4>
+                                  <div className="flex flex-wrap gap-2">
+                                    {workflow.actions.slice(0, 3).map((action: string, actionIdx: number) => (
+                                      <Badge key={actionIdx} variant="secondary" className="capitalize">
+                                        {action.replace('_', ' ')}
+                                      </Badge>
+                                    ))}
+                                    {workflow.actions.length > 3 && (
+                                      <Badge variant="outline">+{workflow.actions.length - 3} more</Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <Separator />
+                              <div className="flex items-center justify-between text-xs text-gray-500">
+                                <div className="flex gap-4">
+                                  <div className="flex items-center gap-1">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    <span>0 completed</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <BarChart2 className="h-3 w-3" />
+                                    <span>0% success rate</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>Last run: Never</span>
+                                  </div>
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    toast({
+                                      title: "Workflow Details",
+                                      description: "Full workflow visualization coming soon",
+                                    });
+                                  }}
+                                  data-testid={`button-view-workflow-${idx}`}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  View Flow
+                                </Button>
                               </div>
                             </CardContent>
                           </Card>
