@@ -229,12 +229,12 @@ export default function FunnelBuilderPage() {
     mutationFn: async (funnelId: string) => {
       return await apiRequest('POST', `/api/funnels/${funnelId}/publish`, {});
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
       queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
       toast({
         title: "🚀 Funnel Published!",
-        description: `Your funnel is now live at: ${data.publishedUrl}`,
+        description: data?.publishedUrl ? `Your funnel is now live at: ${data.publishedUrl}` : "Your funnel has been published successfully!",
       });
     },
     onError: (error: any) => {
@@ -721,7 +721,7 @@ export default function FunnelBuilderPage() {
                     {selectedFunnel.ads && selectedFunnel.ads.length > 0 ? (
                       <>
                         {['facebook', 'google', 'linkedin'].map((platform) => {
-                          const platformAds = selectedFunnel.ads.filter(ad => ad.platform === platform);
+                          const platformAds = selectedFunnel.ads.filter((ad: any) => ad.platform === platform);
                           if (platformAds.length === 0) return null;
 
                           const getPlatformIcon = (platform: string) => {
@@ -742,7 +742,7 @@ export default function FunnelBuilderPage() {
                                 </CardTitle>
                               </CardHeader>
                               <CardContent className="space-y-4">
-                                {platformAds.map((ad, idx) => (
+                                {platformAds.map((ad: any, idx: number) => (
                                   <div 
                                     key={ad.id} 
                                     className="p-4 border rounded-lg space-y-3"
@@ -787,8 +787,8 @@ export default function FunnelBuilderPage() {
                     {selectedFunnel.emails && selectedFunnel.emails.length > 0 ? (
                       <div className="space-y-4" data-testid="list-email-sequences">
                         {selectedFunnel.emails
-                          .sort((a, b) => a.sequenceOrder - b.sequenceOrder)
-                          .map((email, idx) => (
+                          .sort((a: any, b: any) => a.sequenceOrder - b.sequenceOrder)
+                          .map((email: any, idx: number) => (
                             <Card key={email.id} data-testid={`card-email-${idx}`}>
                               <CardHeader>
                                 <div className="flex items-center justify-between">
@@ -848,7 +848,7 @@ export default function FunnelBuilderPage() {
                   <TabsContent value="automations" className="space-y-4">
                     {selectedFunnel.workflows && selectedFunnel.workflows.length > 0 ? (
                       <div className="space-y-4" data-testid="list-workflows">
-                        {selectedFunnel.workflows.map((workflow, idx) => (
+                        {selectedFunnel.workflows.map((workflow: any, idx: number) => (
                           <Card key={workflow.id} data-testid={`card-workflow-${idx}`}>
                             <CardHeader>
                               <CardTitle className="flex items-center">
@@ -866,7 +866,7 @@ export default function FunnelBuilderPage() {
                               <div>
                                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Actions</h4>
                                 <div className="flex flex-wrap gap-2">
-                                  {workflow.actions.map((action, actionIdx) => (
+                                  {workflow.actions.map((action: string, actionIdx: number) => (
                                     <Badge key={actionIdx} variant="secondary" className="capitalize">
                                       {action.replace('_', ' ')}
                                     </Badge>
