@@ -526,7 +526,10 @@ export default function FunnelBuilderPage() {
                       funnels.map((funnel: FunnelProject) => (
                         <div
                           key={funnel.id}
-                          onClick={() => setSelectedFunnelId(funnel.id)}
+                          onClick={() => {
+                            console.log('Clicked funnel:', funnel.id, funnel.name);
+                            setSelectedFunnelId(funnel.id);
+                          }}
                           className={`p-4 cursor-pointer rounded-lg transition-colors hover-elevate ${
                             selectedFunnelId === funnel.id 
                               ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' 

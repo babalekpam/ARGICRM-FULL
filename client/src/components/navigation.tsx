@@ -383,11 +383,11 @@ export default function Navigation({ onLogout }: NavigationProps) {
   return (
     <nav 
       id="main-navigation"
-      className="fixed left-0 top-0 h-full w-64 bg-card/95 backdrop-blur-md shadow-2xl border-r border-border overflow-y-auto z-30"
+      className="fixed left-0 top-0 h-full w-64 pointer-events-none z-30"
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full bg-card/95 backdrop-blur-md shadow-2xl border-r border-border overflow-y-auto pointer-events-auto">
         <div className="p-6 border-b border-border bg-accent/50">
           <div className="flex items-center">
             <div className="relative">
