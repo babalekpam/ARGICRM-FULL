@@ -25,7 +25,6 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Eye, 
   ArrowDown,
   Users,
   Target,
@@ -126,7 +125,6 @@ export default function FunnelBuilderPage() {
   const { toast } = useToast();
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
   // Form for AI generation
   const form = useForm<GenerateFunnelFormData>({
@@ -553,19 +551,6 @@ export default function FunnelBuilderPage() {
                               </p>
                             )}
                             <div className="flex items-center space-x-2 pt-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedFunnelId(funnel.id);
-                                  setViewDialogOpen(true);
-                                }}
-                                className="h-7 px-2"
-                                data-testid={`button-view-${funnel.id}`}
-                              >
-                                <Eye className="h-3 w-3" />
-                              </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
