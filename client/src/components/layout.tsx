@@ -93,7 +93,7 @@ export default function Layout({ children }: LayoutProps) {
       
       <main 
         id="main-content"
-        className="md:ml-64 md:pt-16 pt-0 min-h-screen transition-all-smooth"
+        className="md:ml-64 md:pt-16 pt-0 min-h-screen transition-all-smooth relative z-40"
         role="main"
         aria-label="Main content area"
         tabIndex={-1}
