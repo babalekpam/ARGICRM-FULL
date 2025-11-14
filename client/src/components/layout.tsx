@@ -93,10 +93,12 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       )}
 
-      {/* Mobile Header */}
-      <PageTranslator context="mobile-header">
-        <MobileHeader />
-      </PageTranslator>
+      {/* Mobile Header (hidden on funnel builder) */}
+      {!isFunnelBuilder && (
+        <PageTranslator context="mobile-header">
+          <MobileHeader />
+        </PageTranslator>
+      )}
       
       <main 
         id="main-content"
