@@ -64,6 +64,7 @@ const generateFunnelSchema = z.object({
   pricePoint: z.string().optional(),
   industryType: z.enum(['ecommerce', 'saas', 'consulting', 'coaching', 'agency', 'local_business', 'other']).default('other'),
   funnelGoal: z.enum(['lead_generation', 'product_sales', 'appointment_booking', 'webinar_signup', 'demo_request']).default('lead_generation'),
+  websiteUrl: z.string().url("Please enter a valid URL").optional().or(z.literal('')),
 });
 
 type GenerateFunnelFormData = z.infer<typeof generateFunnelSchema>;
@@ -188,6 +189,7 @@ export default function FunnelBuilderPage() {
       pricePoint: '',
       industryType: 'other',
       funnelGoal: 'lead_generation',
+      websiteUrl: '',
     },
   });
 
@@ -621,6 +623,31 @@ export default function FunnelBuilderPage() {
                             data-testid="input-price-point"
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="websiteUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          Website URL (Optional)
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="url"
+                            placeholder="https://yourbusiness.com (optional)" 
+                            {...field} 
+                            data-testid="input-website-url"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          We'll extract professional images from your website
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -228,6 +228,7 @@ const generateFunnelSchema = z.object({
   pricePoint: z.string().optional(),
   industryType: z.enum(['ecommerce', 'saas', 'consulting', 'coaching', 'agency', 'local_business', 'other']).default('other'),
   funnelGoal: z.enum(['lead_generation', 'product_sales', 'appointment_booking', 'webinar_signup', 'demo_request']).default('lead_generation'),
+  websiteUrl: z.string().url("Please enter a valid URL").optional().or(z.literal('')),
 });
 
 // POST /api/funnels/generate - AI-powered complete funnel generation with database persistence
@@ -401,25 +402,39 @@ Return the response as valid JSON in this exact format:
 
     const landingPageStep = funnelSteps[0];
 
-    // 5.5. Fetch stock image based on industry type
-    // Map industryType to pre-downloaded profession-specific images
+    // 5.5. Fetch hero image - prioritize user's website, fallback to stock images
     let heroImageUrl = null;
     try {
-      const industryImageMap: Record<string, string> = {
-        'healthcare': '/attached_assets/stock_images/professional_medical_47d6250c.jpg',
-        'saas': '/attached_assets/stock_images/modern_software_team_e2234a1d.jpg',
-        'ecommerce': '/attached_assets/stock_images/online_shopping_ecom_4b0a5bc4.jpg',
-        'consulting': '/attached_assets/stock_images/professional_busines_9415b1d1.jpg',
-        'coaching': '/attached_assets/stock_images/professional_coachin_408c9914.jpg',
-      };
+      // First, try to extract images from user's website if provided
+      if (validatedData.websiteUrl) {
+        console.log(`🌐 Attempting to extract images from: ${validatedData.websiteUrl}`);
+        const { extractImagesFromWebsite } = await import('../services/web-image-extractor');
+        const websiteImages = await extractImagesFromWebsite(validatedData.websiteUrl);
+        
+        if (websiteImages && websiteImages.length > 0) {
+          heroImageUrl = websiteImages[0]; // Use first (highest priority) image
+          console.log(`✅ Using website image: ${heroImageUrl}`);
+        } else {
+          console.log('⚠️ No suitable images found on website, falling back to stock images');
+        }
+      }
       
-      // Select image based on industry type or use default
-      heroImageUrl = industryImageMap[validatedData.industryType] || '/attached_assets/stock_images/professional_busines_b1ee20bc.jpg';
-      
-      console.log(`📸 Selected stock image for industry "${validatedData.industryType}": ${heroImageUrl}`);
+      // Fallback to stock images if no website provided or extraction failed
+      if (!heroImageUrl) {
+        const industryImageMap: Record<string, string> = {
+          'healthcare': '/attached_assets/stock_images/professional_medical_47d6250c.jpg',
+          'saas': '/attached_assets/stock_images/modern_software_team_e2234a1d.jpg',
+          'ecommerce': '/attached_assets/stock_images/online_shopping_ecom_4b0a5bc4.jpg',
+          'consulting': '/attached_assets/stock_images/professional_busines_9415b1d1.jpg',
+          'coaching': '/attached_assets/stock_images/professional_coachin_408c9914.jpg',
+        };
+        
+        heroImageUrl = industryImageMap[validatedData.industryType] || '/attached_assets/stock_images/professional_busines_b1ee20bc.jpg';
+        console.log(`📸 Using stock image for industry "${validatedData.industryType}": ${heroImageUrl}`);
+      }
     } catch (error) {
-      console.error('Failed to set stock image:', error);
-      // Continue without image - heroImageUrl remains null
+      console.error('Failed to set hero image:', error);
+      // Continue without image
     }
 
     // 6. Create landing page
