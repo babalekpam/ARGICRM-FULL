@@ -530,7 +530,7 @@ export default function FunnelBuilderPage() {
                             console.log('Clicked funnel:', funnel.id, funnel.name);
                             setSelectedFunnelId(funnel.id);
                           }}
-                          className={`p-4 cursor-pointer rounded-lg transition-colors hover-elevate ${
+                          className={`p-4 cursor-pointer rounded-lg transition-colors ${
                             selectedFunnelId === funnel.id 
                               ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' 
                               : 'hover:bg-gray-50 dark:hover:bg-gray-800'
