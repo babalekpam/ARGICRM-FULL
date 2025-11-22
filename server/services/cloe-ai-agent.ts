@@ -560,12 +560,10 @@ Focus on re-engagement and conversion optimization. Return detailed JSON campaig
     const hasValidConsent = requiredConsents.every(consent => userData.consents?.[consent] === true);
     
     if (!hasValidConsent) {
-      console.log(`GDPR: Missing consent for action: ${action}`);
       return false;
     }
 
     // Log data processing activity for audit trail
-    console.log(`GDPR: Compliant data processing for action: ${action}, user: ${userData.email}`);
     return true;
   }
 }

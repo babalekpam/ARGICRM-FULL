@@ -564,7 +564,6 @@ export function registerInventoryRoutes(app: Express) {
         data.push(...jsonData);
       }
 
-      console.log(`Starting AI inventory analysis for ${data.length} items...`);
       
       // Use AI Inventory Analyzer for comprehensive analysis
       const analysisResults: InventoryAnalysisResult[] = await aiInventoryAnalyzer.batchAnalyzeInventory(data);
@@ -604,7 +603,6 @@ export function registerInventoryRoutes(app: Express) {
       const totalConfidence = processedInventoryItems.reduce((sum, item) => sum + item.confidence, 0);
       const averageConfidence = processedInventoryItems.length > 0 ? Math.round(totalConfidence / processedInventoryItems.length) : 0;
       
-      console.log(`AI inventory analysis complete: ${processedInventoryItems.length} items analyzed with ${averageConfidence}% average confidence`);
 
       // Save transformed inventory items to the inventory/products system instead of operations
       try {
@@ -612,7 +610,6 @@ export function registerInventoryRoutes(app: Express) {
         const userEmail = req.headers['x-auth-email'] as string;
         const tenantId = userEmail === 'abel@argilette.com' ? 'platform-tenant' : `tenant-${userEmail?.split('@')[0]}`;
         
-        console.log(`Saving ${processedInventoryItems.length} AI-analyzed inventory items for tenant: ${tenantId}`);
         
         // Transform AI inventory items to proper product format for database storage
         const inventoryProductsForDB = processedInventoryItems.map(item => ({
@@ -661,7 +658,6 @@ export function registerInventoryRoutes(app: Express) {
         // Save directly to products table using database operations
         const createdProducts = await db.insert(products).values(inventoryProductsForDB).returning();
         
-        console.log(`✅ Successfully saved ${createdProducts.length} inventory items with AI analysis to products table:`, createdProducts.map(p => ({ id: p.id, name: p.name, sku: p.sku })));
         
       } catch (saveError) {
         console.error('❌ Error saving AI inventory analysis to database:', saveError);
@@ -860,7 +856,6 @@ export function registerInventoryRoutes(app: Express) {
       // Store operations in memory storage
       operationsStorage.push(...processedOperations);
 
-      console.log(`Stored ${processedOperations.length} operations. Total operations: ${operationsStorage.length}`);
 
       res.json({
         success: true,

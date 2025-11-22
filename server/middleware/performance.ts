@@ -69,7 +69,6 @@ export function performanceMiddleware(req: Request, res: Response, next: NextFun
     
     // Log slow requests
     if (responseTime > 1000) {
-      console.warn(`Slow request: ${req.method} ${req.path} took ${responseTime}ms`);
     }
     
     // Skip headers to avoid conflicts with static file serving

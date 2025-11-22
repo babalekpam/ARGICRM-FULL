@@ -41,7 +41,6 @@ export class PageIntegrityTestSuite {
   
   // 4.1 End-to-End Test Suite Execution
   async executeEndToEndTests(): Promise<TestResult[]> {
-    console.log('🚀 Starting End-to-End Test Suite Execution...');
     
     // Test core CRM functionality
     await this.testCRMWorkflows();
@@ -63,7 +62,6 @@ export class PageIntegrityTestSuite {
   
   // 4.2 Inter-page Navigation Validation
   async validateInterPageNavigation(): Promise<TestResult[]> {
-    console.log('🔄 Testing Inter-page Navigation...');
     
     const navigationTests: NavigationTest[] = [
       // Tenant admin → Reports → Billing
@@ -88,7 +86,6 @@ export class PageIntegrityTestSuite {
   
   // 4.3 Subscription Gate Enforcement Verification
   async verifySubscriptionGates(): Promise<TestResult[]> {
-    console.log('🔒 Verifying Subscription Gate Enforcement...');
     
     const subscriptionTests: SubscriptionGateTest[] = [
       // Starter plan restrictions
@@ -115,7 +112,6 @@ export class PageIntegrityTestSuite {
   
   // 4.4 Cross-tenant Data Isolation Audit
   async auditCrossTenantDataIsolation(): Promise<TestResult[]> {
-    console.log('🏢 Auditing Cross-tenant Data Isolation...');
     
     const isolationTests: TenantIsolationTest[] = [
       { tenant1: 'tenant-1', tenant2: 'tenant-2', dataType: 'contacts', endpoint: '/api/contacts' },
@@ -138,7 +134,6 @@ export class PageIntegrityTestSuite {
   private async testCRMWorkflows(): Promise<void> {
     // Test lead creation → contact conversion → deal creation → task assignment
     try {
-      console.log('Testing CRM workflow: Lead → Contact → Deal → Task');
       
       // Create lead
       const lead = await storage.createLead({
@@ -188,7 +183,6 @@ export class PageIntegrityTestSuite {
   
   private async testMarketingWorkflows(): Promise<void> {
     try {
-      console.log('Testing Marketing workflow: Campaign → Email → Analytics');
       
       // Create marketing campaign
       const campaign = await storage.createCampaign({
@@ -210,7 +204,6 @@ export class PageIntegrityTestSuite {
   
   private async testAnalyticsWorkflows(): Promise<void> {
     try {
-      console.log('Testing Analytics workflow: Report → Export → Dashboard');
       
       // Create analytics report
       const report = await storage.createReport({
@@ -233,7 +226,6 @@ export class PageIntegrityTestSuite {
   
   private async testFinancialWorkflows(): Promise<void> {
     try {
-      console.log('Testing Financial workflow: Invoice → Payment → Tax');
       
       // Create invoice
       const invoice = await storage.createInvoice({
@@ -256,7 +248,6 @@ export class PageIntegrityTestSuite {
   
   private async testUserManagementWorkflows(): Promise<void> {
     try {
-      console.log('Testing User Management workflow: Employee → Role → Permissions');
       
       // Create employee
       const employee = await storage.createEmployee({

@@ -393,7 +393,6 @@ export class FeatureToggleService extends EventEmitter {
       this.auditLogs.splice(0, this.auditLogs.length - 1000);
     }
 
-    console.log(`[FEATURE_TOGGLE_AUDIT] ${log.action.toUpperCase()} ${log.toggleId} by ${log.userEmail}`);
   }
 
   getAuditLogs(toggleId?: string, limit: number = 100): FeatureToggleAuditLog[] {

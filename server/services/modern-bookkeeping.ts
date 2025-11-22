@@ -147,7 +147,6 @@ ${JSON.stringify(categoryContext, null, 2)}`
 
           aiResult = JSON.parse(response.choices[0].message.content || '{}');
         } catch (aiError) {
-          console.warn('AI categorization failed, using fallback:', aiError);
         }
       }
 
@@ -284,7 +283,6 @@ ${JSON.stringify(categoryContext, null, 2)}`
 
           aiAnalysis = JSON.parse(response.choices[0].message.content || '{}');
         } catch (aiError) {
-          console.warn('AI receipt analysis failed, using fallback:', aiError);
         }
       }
 

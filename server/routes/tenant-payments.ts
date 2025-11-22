@@ -9,7 +9,6 @@ import {
 export function registerTenantPaymentRoutes(app: Express) {
   // Add test endpoint to verify route registration
   app.get('/api/tenant-payments/test', (req, res) => {
-    console.log('TEST ENDPOINT REACHED - tenant-payments routes are working');
     res.json({ message: 'Tenant payment routes are registered and working' });
   });
 
@@ -19,11 +18,6 @@ export function registerTenantPaymentRoutes(app: Express) {
     const token = authHeader ? authHeader.replace('Bearer ', '') : '';
     const userEmail = req.headers['x-auth-email'];
     
-    console.log('TENANT PAYMENT AUTH DEBUG:');
-    console.log('- Authorization header:', req.headers.authorization);
-    console.log('- x-auth-token header:', req.headers['x-auth-token']);
-    console.log('- Token extracted:', token);
-    console.log('- User email:', userEmail);
     
     if (!userEmail) {
       return res.status(401).json({ error: 'User email header required' });
@@ -35,7 +29,6 @@ export function registerTenantPaymentRoutes(app: Express) {
                         token.startsWith('demo-auth-token-') ||
                         token.length > 10;
     
-    console.log('- Token validation result:', isValidToken);
     
     if (isValidToken) {
       // Determine user data based on email - STRICT EMAIL CHECK

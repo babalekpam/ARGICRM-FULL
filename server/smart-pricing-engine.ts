@@ -457,7 +457,6 @@ Provide a JSON response with:
       await this.storage.updateProduct(productId.toString(), { price: newPrice });
       
       // Log pricing change
-      console.log(`Price updated for product ${productId}: $${newPrice}`);
       
       return true;
     } catch (error) {

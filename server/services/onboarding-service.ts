@@ -163,7 +163,6 @@ export class OnboardingService {
       };
 
       // In a real implementation, this would update the user record in database
-      console.log('Updated user profile for:', userId, userProfile);
       return true;
     } catch (error) {
       console.error('Error updating user profile:', error);
@@ -192,7 +191,6 @@ export class OnboardingService {
       
       global.__COMPANY_SETTINGS_STORAGE__.set(tenantId, companyInfo);
       
-      console.log('Updated company info for tenant:', tenantId, companyInfo);
       return true;
     } catch (error) {
       console.error('Error updating company info:', error);
@@ -229,7 +227,6 @@ export class OnboardingService {
           global.__TEAM_INVITATIONS_STORAGE__.push(invitation);
           invitesSent++;
           
-          console.log('Team invitation created for:', member.email);
         }
       }
 
@@ -259,7 +256,6 @@ export class OnboardingService {
       
       global.__USER_PREFERENCES_STORAGE__.set(`${userId}-${tenantId}`, preferences);
       
-      console.log('Applied user preferences for:', userId, preferences);
       return true;
     } catch (error) {
       console.error('Error applying user preferences:', error);
@@ -328,7 +324,6 @@ export class OnboardingService {
         try {
           await this.storage.createContact(contact);
         } catch (error) {
-          console.log('Sample contact creation skipped - storage may already have data');
         }
       }
     } catch (error) {
@@ -357,7 +352,6 @@ export class OnboardingService {
         try {
           await this.storage.createDeal(deal);
         } catch (error) {
-          console.log('Sample deal creation skipped - storage may already have data');
         }
       }
     } catch (error) {
@@ -395,7 +389,6 @@ export class OnboardingService {
         try {
           await this.storage.createTask(task);
         } catch (error) {
-          console.log('Sample task creation skipped - storage may already have data');
         }
       }
     } catch (error) {

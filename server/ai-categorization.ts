@@ -286,7 +286,6 @@ export class TransactionCategorizationAI {
   private async adjustRules(transactionId: string, correctCategory: string) {
     // Create or adjust rules based on incorrect predictions
     // This would be expanded with more sophisticated ML algorithms
-    console.log(`Learning from incorrect prediction for transaction ${transactionId}, correct category: ${correctCategory}`);
   }
 
   public getCategoryStatistics() {

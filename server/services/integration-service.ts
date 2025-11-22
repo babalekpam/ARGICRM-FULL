@@ -289,7 +289,6 @@ export class IntegrationService {
 
   // Sync Methods
   async syncPlatformData(integrationId: string): Promise<{ success: boolean; message: string; data?: any }> {
-    console.log(`🔄 Sync request received for: ${integrationId}`);
     
     // Comprehensive platform sync data for Marketing Hub
     const syncResults: Record<string, any> = {
@@ -345,7 +344,6 @@ export class IntegrationService {
       status: 'sync_completed'
     };
 
-    console.log(`🔄 Successfully synced ${integrationId}:`, platformData);
 
     return {
       success: true,
@@ -437,7 +435,6 @@ export class IntegrationService {
 
   // Webhook handlers for real-time updates
   async handleWebhook(platformId: string, payload: any): Promise<{ success: boolean; message: string }> {
-    console.log(`Received webhook from ${platformId}:`, payload);
     
     // Process webhook based on platform
     switch (platformId) {

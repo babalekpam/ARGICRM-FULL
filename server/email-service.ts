@@ -28,27 +28,19 @@ class EmailService {
       this.isConfigured = !!this.transporter;
       
       if (this.isConfigured) {
-        console.log('✅ Email service initialized with SMTP');
       } else {
-        console.log('⚠️ Email service not configured - SMTP credentials missing');
       }
     } catch (error) {
-      console.log('⚠️ Email service initialization failed:', (error as Error).message);
     }
   }
 
   async sendVerificationEmail(data: EmailVerificationData): Promise<boolean> {
     // Force email initialization if not configured
     if (!this.isConfigured || !this.transporter) {
-      console.log('🔄 Re-initializing email service for verification email...');
       await this.initializeService();
     }
     
     if (!this.isConfigured || !this.transporter) {
-      console.log('📧 EMAIL NOT SENT - SMTP not configured');
-      console.log('📪 Would send verification email to:', data.email);
-      console.log('🔗 Verification link:', data.verificationUrl);
-      console.log('🚨 User account created but email verification required!');
       return false; // Return false to indicate email wasn't sent
     }
 
@@ -74,8 +66,6 @@ The NODE CRM Team`
       };
 
       await this.transporter.sendMail(mailOptions);
-      console.log('✅ Verification email sent successfully to:', data.email);
-      console.log('📧 Sent from:', fromEmail);
       return true;
     } catch (error) {
       console.error('❌ Failed to send verification email:', error);
@@ -137,14 +127,10 @@ The NODE CRM Team`
   async sendPasswordResetEmail(data: PasswordResetData): Promise<boolean> {
     // Force email initialization if not configured
     if (!this.isConfigured || !this.transporter) {
-      console.log('🔄 Re-initializing email service for password reset email...');
       await this.initializeService();
     }
     
     if (!this.isConfigured || !this.transporter) {
-      console.log('📧 EMAIL NOT SENT - SMTP not configured');
-      console.log('📪 Would send password reset email to:', data.email);
-      console.log('🔗 Reset link:', data.resetUrl);
       return false;
     }
 
@@ -170,8 +156,6 @@ The NODE CRM Team`
       };
 
       await this.transporter.sendMail(mailOptions);
-      console.log('✅ Password reset email sent successfully to:', data.email);
-      console.log('📧 Sent from:', fromEmail);
       return true;
     } catch (error) {
       console.error('❌ Failed to send password reset email:', error);
@@ -181,7 +165,6 @@ The NODE CRM Team`
 
   async sendWelcomeEmail(email: string, firstName: string): Promise<boolean> {
     if (!this.isConfigured || !this.transporter) {
-      console.log('📧 Welcome email would be sent to:', email);
       return true;
     }
 
@@ -205,8 +188,6 @@ The NODE CRM Team`
       };
 
       await this.transporter.sendMail(mailOptions);
-      console.log('✅ Welcome email sent successfully to:', email);
-      console.log('📧 Sent from:', fromEmail);
       return true;
     } catch (error) {
       console.error('❌ Failed to send welcome email:', error);

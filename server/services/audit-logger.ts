@@ -119,7 +119,6 @@ export class AuditLogger {
           entry.category, entry.reason, entry.metadata
         ]);
       } catch (error) {
-        console.warn('Failed to insert audit log entry:', error);
       }
     }
   }

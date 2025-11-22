@@ -123,9 +123,7 @@ export class CustomerJourneyService {
       
       if (existingStages.length === 0) {
         await db.insert(customerJourneyStages).values(this.defaultStages);
-        console.log("✅ Default customer journey stages initialized");
       } else {
-        console.log("ℹ️ Customer journey stages already exist");
       }
     } catch (error) {
       console.error("❌ Error initializing journey stages:", error);

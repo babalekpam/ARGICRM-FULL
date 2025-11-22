@@ -439,7 +439,6 @@ export class DatabaseStorage implements IStorage {
       return newTenant;
     } catch (error) {
       // Fallback to ID-only returning if column mismatch occurs
-      console.warn('⚠️  Tenant creation fallback - using ID-only returning:', error);
       const [tenantWithId] = await db.insert(tenants).values(tenant).returning({ id: tenants.id });
       // Fetch full tenant data after successful insert
       const fullTenant = await db.select().from(tenants).where(eq(tenants.id, tenantWithId.id));
@@ -472,7 +471,6 @@ export class DatabaseStorage implements IStorage {
       throw new Error('tenantId missing in createUser');
     }
     
-    console.log('🔍 createUser keys:', Object.keys(userWithTenant));
     const [newUser] = await db.insert(users).values(userWithTenant).returning();
     return newUser;
   }
@@ -516,11 +514,8 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       
       if (!user) {
-        console.log(`User not found in database: ${userId}`);
         return null;
       }
-      
-      console.log(`Found user in database: ${user.email}, active: ${user.isActive}`);
       
       // Check if this is the platform owner
       if (user.email === 'abel@argilette.com') {
@@ -1678,7 +1673,6 @@ export class DatabaseStorage implements IStorage {
       };
 
       const [newUser] = await db.insert(users).values(userToInsert).returning();
-      console.log('✅ Database user created:', newUser.email);
       
       // Return the user in the expected format for compatibility
       return {
@@ -1711,11 +1705,9 @@ export class DatabaseStorage implements IStorage {
         .where(eq(users.emailVerificationToken, token));
       
       if (!user) {
-        console.log('❌ No user found with verification token:', token?.substring(0, 15) + '...');
         return null;
       }
       
-      console.log('✅ Found user for verification token:', user.email);
       return user;
     } catch (error) {
       console.error('Error fetching user by verification token:', error);
@@ -1736,7 +1728,6 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       if (updatedUser) {
-        console.log('✅ User verified in database:', updatedUser.email);
       }
     } catch (error) {
       console.error('Error verifying user:', error);

@@ -1,6 +1,5 @@
 export async function extractImagesFromWebsite(websiteUrl: string): Promise<string[]> {
   try {
-    console.log(`🌐 Fetching website HTML from: ${websiteUrl}`);
     
     const response = await fetch(websiteUrl, {
       headers: {
@@ -14,7 +13,6 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
     }
     
     const html = await response.text();
-    console.log(`✅ Successfully fetched HTML (${html.length} characters)`);
     
     const imageUrls: string[] = [];
     
@@ -23,7 +21,6 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
     const ogMatch = html.match(ogImageRegex);
     if (ogMatch) {
       imageUrls.push(ogMatch[1]);
-      console.log(`🎯 Found Open Graph image: ${ogMatch[1]}`);
     }
     
     // Alternative OG image format (content before property)
@@ -31,7 +28,6 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
     const ogMatch2 = html.match(ogImageRegex2);
     if (ogMatch2 && !imageUrls.includes(ogMatch2[1])) {
       imageUrls.push(ogMatch2[1]);
-      console.log(`🎯 Found Open Graph image (alt format): ${ogMatch2[1]}`);
     }
     
     // 2. Extract Twitter card image
@@ -39,7 +35,6 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
     const twitterMatch = html.match(twitterImageRegex);
     if (twitterMatch && !imageUrls.includes(twitterMatch[1])) {
       imageUrls.push(twitterMatch[1]);
-      console.log(`🐦 Found Twitter card image: ${twitterMatch[1]}`);
     }
     
     // 3. Extract regular <img> tags
@@ -53,7 +48,6 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
         imgCount++;
       }
     }
-    console.log(`📸 Found ${imgCount} image tags`);
     
     // 4. Convert relative URLs to absolute
     const absoluteUrls = imageUrls.map(url => {
@@ -70,7 +64,6 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
         }
         return new URL(url, websiteUrl).href;
       } catch (error) {
-        console.warn(`⚠️ Failed to convert URL: ${url}`);
         return null;
       }
     }).filter((url): url is string => url !== null);
@@ -104,13 +97,10 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
       return true;
     });
     
-    console.log(`✨ Filtered to ${filteredUrls.length} suitable images`);
     
     const topImages = filteredUrls.slice(0, 3);
     if (topImages.length > 0) {
-      console.log(`🎉 Returning top ${topImages.length} images:`, topImages);
     } else {
-      console.log(`⚠️ No suitable images found after filtering`);
     }
     
     return topImages;

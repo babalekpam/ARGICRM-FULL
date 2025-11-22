@@ -63,9 +63,7 @@ export class RedisFeatureToggleService {
         };
         await this.setCacheToggle(toggle.feature, config);
       }
-      console.log(`✅ Initialized Redis feature toggle cache with ${toggles.length} toggles`);
     } catch (error) {
-      console.warn('Failed to initialize Redis cache, using database fallback');
     }
   }
 
@@ -89,7 +87,6 @@ export class RedisFeatureToggleService {
       try {
         return JSON.parse(redisValue);
       } catch (error) {
-        console.warn('Failed to parse Redis toggle value');
       }
     }
     

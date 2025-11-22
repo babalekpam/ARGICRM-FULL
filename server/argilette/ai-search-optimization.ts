@@ -424,7 +424,6 @@ export async function trackBrandMentions(
         setTimeout(() => reject(new Error('Overall timeout')), 30000)
       )
     ]).catch(() => {
-      console.log('Some platforms timed out, but continuing...');
     });
 
     return {

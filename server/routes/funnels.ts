@@ -407,15 +407,12 @@ Return the response as valid JSON in this exact format:
     try {
       // First, try to extract images from user's website if provided
       if (validatedData.websiteUrl) {
-        console.log(`🌐 Attempting to extract images from: ${validatedData.websiteUrl}`);
         const { extractImagesFromWebsite } = await import('../services/web-image-extractor');
         const websiteImages = await extractImagesFromWebsite(validatedData.websiteUrl);
         
         if (websiteImages && websiteImages.length > 0) {
           heroImageUrl = websiteImages[0]; // Use first (highest priority) image
-          console.log(`✅ Using website image: ${heroImageUrl}`);
         } else {
-          console.log('⚠️ No suitable images found on website, falling back to stock images');
         }
       }
       
@@ -430,7 +427,6 @@ Return the response as valid JSON in this exact format:
         };
         
         heroImageUrl = industryImageMap[validatedData.industryType] || '/attached_assets/stock_images/professional_busines_b1ee20bc.jpg';
-        console.log(`📸 Using stock image for industry "${validatedData.industryType}": ${heroImageUrl}`);
       }
     } catch (error) {
       console.error('Failed to set hero image:', error);

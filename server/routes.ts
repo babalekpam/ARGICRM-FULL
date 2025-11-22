@@ -199,7 +199,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.use(speedLimiter);
   } else {
     // DEVELOPMENT MODE: NO RATE LIMITING AT ALL
-    console.log('\ud83d\udeab Rate limiting completely disabled in development for Vite compatibility');
     
     // Create no-op limiters for development
     const noOpLimiter = (req: any, res: any, next: any) => next();
@@ -218,7 +217,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.use('/api/login', authLimiter!);
     app.use('/api/signup', authLimiter!);
   } else {
-    console.log('🚫 Auth rate limiting disabled in development');
   }
   
   // FIX: Add cache control headers to prevent stale page serving
@@ -265,7 +263,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // BULLETPROOF: Root URL - NEVER redirect to lander
   app.get('/', (req, res, next) => {
-    console.log('ROOT ACCESS: Serving React app');
     // CRITICAL: Anti-caching headers to prevent DNS/caching issues
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
@@ -278,7 +275,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // CRITICAL: Landing page serves React app - NO REDIRECTS
   app.get('/landing', (req, res, next) => {
-    console.log('LANDING PAGE: Serving React app directly');
     // Anti-loop headers
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('X-Landing-Direct', 'true');
@@ -288,27 +284,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ULTIMATE DNS-LEVEL NUCLEAR OVERRIDE - MAXIMUM STRENGTH
   // Catches ALL requests and redirects /lander at the highest priority level
   app.use((req, res, next) => {
-    // Log all requests for debugging
-    // Add debug logging for 429 errors
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 REQUEST: ${req.method} ${req.originalUrl} (${req.get('Host')})`);
-      
-      // Log potential rate limiting issues
-      if (req.headers['x-ratelimit-remaining']) {
-        console.log(`⚠️ Rate limit headers detected:`, {
-          remaining: req.headers['x-ratelimit-remaining'],
-          limit: req.headers['x-ratelimit-limit'],
-          reset: req.headers['x-ratelimit-reset']
-        });
-      }
-    }
     
     if (req.path === '/lander' || req.path.startsWith('/lander/') || req.originalUrl.includes('/lander')) {
       const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
       const redirectUrl = '/' + queryString;
       
-      console.log(`🚀 ULTIMATE NUCLEAR OVERRIDE: ${req.method} ${req.originalUrl} -> ${redirectUrl}`);
-      console.log(`⚡ DNS-LEVEL INTERCEPT: ${req.path}`);
       
       // ULTIMATE ANTI-CACHE HEADERS - Maximum possible strength
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, proxy-revalidate, no-transform');
@@ -420,7 +400,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userWithPermissions = permissionsUser;
           }
         } catch (e) {
-          console.log('getUserWithPermissions not available, using default permissions');
         }
 
         // Ensure permissions exist with defaults for platform owner
@@ -439,7 +418,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await authStorage.updateUserLastLogin(user.id);
         } catch (e) {
           // Silently ignore if method doesn't exist 
-          console.log('updateUserLastLogin not available:', e instanceof Error ? e.message : 'Unknown error');
         }
 
         // CRITICAL FIX: Simple token generation for MemStorage
@@ -553,7 +531,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'default-secret-key') as { email: string };
         const sessionEmail = decoded.email;
         const isPlatformOwner = sessionEmail === 'abel@argilette.com';
-        console.log('GET /api/me called with authenticated email:', sessionEmail);
       
       // Handle specific tenant accounts
       let firstName = 'Demo';
@@ -673,8 +650,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Log password strength for monitoring
-      console.log(`New signup - Password strength: ${passwordValidation.strength} (${passwordValidation.score}/100)`);
-      console.log('Processing signup for email:', email);
 
       // Hash password securely with bcrypt
       const bcrypt = await import('bcrypt');
@@ -779,7 +754,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let createdTenant;
         if (isPlatformOwner) {
           // Platform owner uses the platform tenant
-          console.log('✅ Using platform tenant for platform owner:', normalizedEmail);
           createdTenant = {
             id: '00000000-0000-0000-0000-000000000001',
             name: 'ARGILETTE Platform',
@@ -788,13 +762,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         } else {
           // Regular users get their own tenant
-          console.log('🔄 Creating tenant in database:', company);
           createdTenant = await platformStorage.createTenant({
             name: company,
             domain: `tenant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             settings: {}
           });
-          console.log('✅ Tenant created with UUID:', createdTenant.id);
         }
         
         // Step 2: Create user with tenant-scoped storage (CRITICAL FIX)
@@ -809,7 +781,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updatedAt: now
         };
         
-        console.log('🔄 Creating user in database:', normalizedEmail);
         const createdUser = await tenantStorage.createUser({
           email: normalizedEmail,
           firstName,
@@ -819,7 +790,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdAt: now,
           updatedAt: now
         }); // Let tenant-scoped storage handle tenantId automatically
-        console.log('✅ User created with UUID:', createdUser.id);
         
         // Update response with actual database IDs
         user.id = createdUser.id;
@@ -886,7 +856,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Log the upgrade for audit purposes
-      console.log(`ADMIN UPGRADE: ${currentUserEmail} upgraded ${userEmail} to ${newPackage} package. Reason: ${reason || 'Not specified'}`);
 
       // In a real implementation, you would update the database here
       // For now, we'll return a success response
@@ -914,7 +883,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
         // RBAC middleware handles authentication, get current user email for logging
         const currentUserEmail = req.user.email;
-        console.log(`ADMIN REQUEST: ${currentUserEmail} requested user list`);
 
         // RBAC: Only platform owners can access user list
         const adminEmails = ['abel@argilette.com'];
@@ -939,7 +907,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           trialDaysRemaining: user.emailVerified ? 0 : 14 // Trial period for unverified users
         }));
 
-        console.log(`✅ ADMIN: Returning ${registeredUsers.length} real users from database`);
 
         res.json({
           success: true,
@@ -957,10 +924,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { token, email } = req.query;
 
-      console.log(`🔍 Email verification attempt: token=***${(token as string).slice(-4)}, email=${email}`);
 
       if (!token || !email) {
-        console.log('❌ Missing token or email');
         return res.status(400).json({ 
           error: 'Missing verification token or email',
           success: false 
@@ -972,10 +937,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Find user by verification token
       const user = await dbStorage.getUserByVerificationToken(token as string);
-      console.log(`🔍 User found for token: ${user ? 'YES' : 'NO'}`);
       
       if (!user) {
-        console.log('❌ Invalid verification token');
         return res.status(400).json({
           error: 'Invalid or expired verification token',
           success: false
@@ -984,7 +947,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if the email matches the token
       if (user.email !== email) {
-        console.log(`❌ Email mismatch: expected ${user.email}, got ${email}`);
         return res.status(400).json({
           error: 'Email does not match verification token',
           success: false
@@ -993,7 +955,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if token has expired (24 hours)
       if (user.emailVerificationExpiry && new Date(user.emailVerificationExpiry) < new Date()) {
-        console.log('❌ Token expired');
         return res.status(400).json({
           error: 'Verification token has expired',
           success: false
@@ -1005,7 +966,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userStorage = new DatabaseStorage(user.email, user.tenantId, user.email === 'abel@argilette.com');
       await userStorage.updateUserEmailVerification(user.id, true);
       
-      console.log(`✅ Email verification successful for: ${email}`);
 
       // Send welcome email after verification
       const { emailService } = await import('./email-service.js');
@@ -1228,7 +1188,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       user.verificationToken = verificationToken;
       await storage.updateUser(user.id, user);
 
-      console.log(`🔄 Updated verification token for user: ${email}, token: ${verificationToken.substring(0, 10)}...`);
 
       // Send verification email
       const { emailService } = await import('./email-service.js');
@@ -1242,7 +1201,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (emailSent) {
-        console.log(`✅ Verification email sent successfully to: ${email}`);
       }
 
       res.json({
@@ -1296,7 +1254,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(users.id, user.id));
 
-      console.log(`🔐 Password reset token generated and hashed for: ${email}`);
 
       // ISSUE 3: Send UNHASHED token in the email (user needs the plain token to reset)
       const { emailService } = await import('./email-service.js');
@@ -1310,7 +1267,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (emailSent) {
-        console.log(`✅ Password reset email sent successfully to: ${email}`);
       }
 
       res.json({
@@ -1393,7 +1349,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(users.id, matchedUser.id));
 
-      console.log(`✅ Password reset successful for: ${email}`);
 
       res.json({
         success: true,
@@ -1417,10 +1372,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contacts", authenticate, async (req, res) => {
     try {
       const userStorage = getUserStorage(req);
-      console.log(`[API] User contacts request for: ${userStorage.userEmail}, tenant: ${userStorage.tenantId}`);
       
       const contacts = await userStorage.getContacts();
-      console.log(`[API] Retrieved ${contacts.length} contacts for user ${userStorage.userEmail}`);
       
       res.json(contacts);
     } catch (err: any) {
@@ -1432,7 +1385,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // RBAC Demo: Requires 'contacts.create' permission
   app.post("/api/contacts", authenticate, requirePermission('contacts.create'), async (req, res) => {
     try {
-      console.log('Received contact data:', req.body);
       
       const { name, email, phone, company, jobTitle, leadSource, status, tags } = req.body;
       
@@ -1462,7 +1414,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: undefined
       };
       
-      console.log('Creating contact with:', contactData);
       const contact = await getUserStorage(req).createContact(contactData as any);
       res.status(201).json(contact);
     } catch (err: any) {
@@ -1531,7 +1482,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/accounts", authenticate, async (req, res) => {
     try {
-      console.log('Received account data:', req.body);
       
       const { name, email, phone, industry, website, billingAddress, shippingAddress, accountType, annualRevenue, employees } = req.body;
       
@@ -1566,7 +1516,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parentAccountId: undefined
       };
       
-      console.log('Creating account with:', accountData);
       const account = await getUserStorage(req).createAccount(accountData as any);
       res.status(201).json(account);
     } catch (err: any) {
@@ -1698,7 +1647,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'active'
       };
 
-      console.log(`New bank account added: ${name} (${bank}) - Routing: ${routingNumber}, Account: ${maskedAccountNumber}`);
 
       res.json({ success: true, account: newAccount });
     } catch (err: any) {
@@ -1756,7 +1704,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/financial-transactions", async (req, res) => {
     try {
       const transactions = getTransactionStorage();
-      console.log(`Returning ${transactions.length} financial transactions from global storage`);
       res.json(transactions);
     } catch (err: any) {
       console.error('Storage error:', err);
@@ -1797,7 +1744,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       currentTransactions.push(newTransaction);
       (global as any).__TRANSACTION_STORAGE__ = currentTransactions;
       
-      console.log(`Created financial transaction: ${newTransaction.description} - ${newTransaction.amount}, total transactions: ${currentTransactions.length}`);
       res.status(201).json(newTransaction);
     } catch (err: any) {
       console.error('Transaction creation error:', err);
@@ -1890,7 +1836,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Landing Page Template APIs
   app.post('/api/templates/lead-generation/submit', async (req, res) => {
     try {
-      console.log('Lead generation request body:', req.body);
       const { firstName, lastName, email, company, phone, message } = req.body;
       
       // Create lead from template submission
@@ -1908,7 +1853,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: 'system'
       });
       
-      console.log('Lead created from template:', lead);
       
       res.json({ 
         success: true, 
@@ -1940,7 +1884,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: 'system'
       });
       
-      console.log('Pre-order lead created:', lead);
       
       res.json({ 
         success: true, 
@@ -1973,7 +1916,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: 'system'
       });
       
-      console.log('Event registration lead created:', lead);
       
       res.json({ 
         success: true, 
@@ -2199,7 +2141,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Store user and tenant in database
       try {
-        console.log('Creating new tenant and user for:', email);
         const { DatabaseStorage } = await import('./database-storage.js');
         const dbStorage = new DatabaseStorage('abel@argilette.com', '00000000-0000-0000-0000-000000000001', true);
 
@@ -2207,7 +2148,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tenant = await dbStorage.createTenant({
           name: company || `${firstName} ${lastName}'s Organization`
         });
-        console.log('✅ Tenant created:', tenant.id);
 
         // Hash the password before storing
         const bcrypt = await import('bcrypt');
@@ -2232,9 +2172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionPlan: 'trial'
         };
 
-        console.log('Creating registered user with data:', { ...newUser, passwordHash: '[REDACTED]' });
         const createdUser = await dbStorage.createRegisteredUser(newUser);
-        console.log('✅ New user registered:', email, 'User ID:', createdUser.id);
 
       // Send verification email
       try {
@@ -2246,9 +2184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           verificationToken,
           verificationUrl
         });
-        console.log('📧 Verification email sent to:', email);
       } catch (emailError) {
-        console.log('⚠️ Failed to send verification email:', (emailError as Error).message);
         // Continue with registration even if email fails in development
       }
 
@@ -2344,8 +2280,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Failed to verify user - database update returned no rows');
       }
       
-      console.log('✅ User verified:', user.email);
-      console.log('✅ Database updated: email_verified=true, token cleared');
 
       res.send(`
         <!DOCTYPE html>
@@ -2377,7 +2311,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
         // RBAC middleware handles authentication, get current user email for logging
         const currentUserEmail = req.user.email;
-        console.log(`ADMIN DASHBOARD REQUEST: ${currentUserEmail} requested dashboard stats`);
 
         // RBAC: Only platform owners can access dashboard
         const adminEmails = ['abel@argilette.com'];
@@ -2402,7 +2335,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: user.createdAt?.toISOString() || new Date().toISOString()
         }));
 
-        console.log(`✅ ADMIN DASHBOARD: Users=${userCount.count}, Contacts=${contactCount.count}, Deals=${dealCount.count}`);
 
         // Return real admin dashboard data
         res.json({
@@ -2572,12 +2504,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { userId, email } = req.body;
-      console.log('🔧 ADMIN: Manually activating user:', email);
       
       // Update user email verification status
       await getUserStorage(req).updateUserEmailVerification(userId, true);
       
-      console.log('✅ User manually activated:', email);
       res.json({
         success: true,
         message: 'User activated successfully'
@@ -2606,7 +2536,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { tenantId, email } = req.body;
-      console.log('🔧 ADMIN: Activating tenant:', tenantId, 'for user:', email);
       
       // Find user by email to get userId
       const user = await getUserStorage(req).getUserByEmail(email);
@@ -2620,7 +2549,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user status to active
       await getUserStorage(req).updateUserSubscriptionStatus(user.id, 'active');
       
-      console.log('✅ Tenant activated:', tenantId);
       res.json({
         success: true,
         message: 'Tenant activated successfully'
@@ -2649,7 +2577,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { tenantId, email } = req.body;
-      console.log('🔧 ADMIN: Deactivating tenant:', tenantId, 'for user:', email);
       
       // Find user by email to get userId
       const user = await getUserStorage(req).getUserByEmail(email);
@@ -2663,7 +2590,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user status to inactive
       await getUserStorage(req).updateUserSubscriptionStatus(user.id, 'inactive');
       
-      console.log('✅ Tenant deactivated:', tenantId);
       res.json({
         success: true,
         message: 'Tenant deactivated successfully'
@@ -2680,7 +2606,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Super Admin Dashboard Implementation - 1.1 Global tenant overview endpoint
   app.get('/api/superadmin/tenants', async (req: any, res: any) => {
     try {
-      console.log('🏢 Fetching global tenant overview...');
       
       // Get registered users and create tenant data from them
       const registeredUsers = await getUserStorage(req).getAllRegisteredUsers();
@@ -2776,7 +2701,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tenantId: user.tenantId
         }));
       } catch (error) {
-        console.log('Failed to fetch registered users, using sample data');
         registrations = [
         {
           id: 'reg-001',
@@ -2904,7 +2828,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Super Admin Dashboard Implementation - 1.2 Cross-tenant report generation
   app.post('/api/superadmin/reports', async (req, res) => {
     try {
-      console.log('📊 Generating cross-tenant report...');
       const { reportType, dateRange, tenantIds, includeMetrics } = req.body as any;
       
       const startDate = dateRange?.start ? new Date(dateRange.start) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -2977,7 +2900,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Super Admin Dashboard Implementation - 1.3 Audit log aggregation system
   app.get('/api/superadmin/logs', async (req, res) => {
     try {
-      console.log('📝 Fetching audit log aggregation...');
       
       const { 
         tenantId, 
@@ -3049,7 +2971,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Super Admin Dashboard Implementation - 1.5 Subscription compliance matrix
   app.get('/api/superadmin/compliance-matrix', async (req: Request, res: Response) => {
     try {
-      console.log('🔒 Generating subscription compliance matrix...');
       
       const getPlanFeatures = (plan: string) => {
         const planFeatures: Record<string, string[]> = {
@@ -3211,16 +3132,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Sentiment analysis routes
   app.get("/api/sentiment", async (req, res) => {
-    console.log(`[API] GET /api/sentiment - Request received`);
-    console.log(`[API] Headers:`, req.headers);
-    console.log(`[API] Authorization:`, req.headers.authorization);
-    console.log(`[API] x-auth-email:`, req.headers['x-auth-email']);
     
     try {
-      console.log(`[API] Calling storage.getSentimentAnalyses()`);
       const analyses = await getUserStorage(req).getSentimentAnalyses();
-      console.log(`[API] Retrieved ${analyses.length} sentiment analyses from storage`);
-      console.log(`[API] First sentiment sample:`, analyses[0] ? {
         id: analyses[0].id,
         sentiment: analyses[0].sentiment,
         confidence: analyses[0].confidence
@@ -3291,20 +3205,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Simple built-in sentiment analysis
     // Enhanced sentiment analysis with Google AI
   app.post('/api/sentiment/analyze', async (req, res) => {
-    console.log(`[API] POST /api/sentiment/analyze - Request received`);
-    console.log(`[API] Request body:`, req.body);
-    console.log(`[API] Headers:`, req.headers);
     
     try {
       const { text, contactId } = req.body as any;
       
-      console.log(`[API] Extracted text field:`, text);
-      console.log(`[API] Extracted contactId:`, contactId);
-      console.log(`[API] Text type:`, typeof text);
-      console.log(`[API] Text length:`, text ? text.length : 'N/A');
       
       if (!text) {
-        console.log(`[API] Error: Text is missing or empty`);
         return res.status(400).json({ error: 'Text is required' });
       }
       
@@ -3331,7 +3237,6 @@ Text: "${text}"`;
         const response = await result.response;
         analysisResult = JSON.parse(response.text());
       } catch (aiError) {
-        console.log('Google AI unavailable, using fallback analysis');
         analysisResult = performSimpleSentimentAnalysis(text);
       }
       
@@ -3361,10 +3266,7 @@ Text: "${text}"`;
             urgencyLevel: analysisResult.urgency?.toUpperCase() || 'LOW'
           };
           
-          console.log(`[API] Saving sentiment analysis to storage:`, sentimentToSave);
-          console.log(`[API] Contact ID type:`, typeof contactIdToSave, 'Value:', contactIdToSave);
           const savedSentiment = await getUserStorage(req).createSentimentAnalysis(sentimentToSave);
-          console.log(`[API] Sentiment analysis saved successfully:`, savedSentiment);
         } catch (saveError) {
           console.error('Failed to save sentiment analysis:', saveError);
           console.error('Save error details:', saveError);
@@ -3605,7 +3507,6 @@ function performSimpleSentimentAnalysis(text: string) {
         return res.status(400).json({ error: 'Message is required' });
       }
       
-      console.log(`Simple messaging request:`, { type, recipients: recipients.length, messageType });
       
       const response = {
         success: true,
@@ -3721,7 +3622,6 @@ function performSimpleSentimentAnalysis(text: string) {
 
   app.post("/api/leads", authenticate, async (req, res) => {
     try {
-      console.log('Received lead data:', req.body);
       
       const { name, firstName, lastName, email, phone, company, jobTitle, leadSource, status, score } = req.body;
       
@@ -3733,7 +3633,6 @@ function performSimpleSentimentAnalysis(text: string) {
         fullName = `${firstName || ''} ${lastName || ''}`.trim();
       }
       
-      console.log('Name processing:', { name, firstName, lastName, fullName });
       
       // Basic validation
       if (!fullName || !email) {
@@ -3778,7 +3677,6 @@ function performSimpleSentimentAnalysis(text: string) {
         convertedDealId: undefined
       };
       
-      console.log('Creating lead with:', leadData);
       const lead = await getUserStorage(req).createLead(leadData as any);
       res.status(201).json(lead);
     } catch (err: any) {
@@ -3794,7 +3692,6 @@ function performSimpleSentimentAnalysis(text: string) {
     }
     
     try {
-      console.log('Received lead update data:', req.body);
       
       const { name, email, phone, company, jobTitle, leadSource, status, score } = req.body;
       
@@ -3833,7 +3730,6 @@ function performSimpleSentimentAnalysis(text: string) {
         }
       });
       
-      console.log('Updating lead with:', updateData);
       const lead = await getUserStorage(req).updateLead(id, updateData as any);
       
       if (!lead) {
@@ -3897,7 +3793,6 @@ function performSimpleSentimentAnalysis(text: string) {
 
   app.post("/api/deals", authenticate, async (req, res) => {
     try {
-      console.log('Received deal data:', req.body);
       
       const { name, value, amount, stage, contactId, accountId, closeDate, probability, description } = req.body;
       
@@ -3925,7 +3820,6 @@ function performSimpleSentimentAnalysis(text: string) {
         nextStep: null
       };
       
-      console.log('Creating deal with:', dealData);
       const deal = await getUserStorage(req).createDeal(dealData);
       res.status(201).json(deal);
     } catch (err: any) {
@@ -4018,7 +3912,6 @@ function performSimpleSentimentAnalysis(text: string) {
 
   app.post("/api/tasks", authenticate, async (req, res) => {
     try {
-      console.log('Received task data:', req.body);
       
       const { title, description, priority, status, dueDate, assignedTo, contactId, dealId } = req.body;
       
@@ -4042,7 +3935,6 @@ function performSimpleSentimentAnalysis(text: string) {
         completedBy: undefined
       };
       
-      console.log('Creating task with:', taskData);
       const task = await getUserStorage(req).createTask(taskData as any);
       res.status(201).json(task);
     } catch (err: any) {
@@ -4076,11 +3968,9 @@ function performSimpleSentimentAnalysis(text: string) {
   app.get("/api/campaigns", async (req, res) => {
     try {
       const email = req.headers['x-auth-email'] as string;
-      console.log(`[CAMPAIGNS] Retrieving campaigns for user: ${email}`);
       
       // Get real campaigns from database using direct query
       const realCampaigns = await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
-      console.log(`[CAMPAIGNS] Found ${realCampaigns.length} campaigns in database`);
       
       // Add mock metrics for display (in real implementation, these would come from campaign analytics)
       const campaignsWithMetrics = realCampaigns.map(campaign => ({
@@ -4113,7 +4003,6 @@ function performSimpleSentimentAnalysis(text: string) {
       // Combine mock campaigns with real AI-generated campaigns
       const allCampaigns = [...mockCampaigns, ...campaignsWithMetrics];
       
-      console.log(`[CAMPAIGNS] Returning ${allCampaigns.length} total campaigns (${mockCampaigns.length} mock + ${campaignsWithMetrics.length} real)`);
       res.json({ success: true, campaigns: allCampaigns });
     } catch (err: any) {
       console.error('[CAMPAIGNS] API error:', err);
@@ -4312,13 +4201,11 @@ function performSimpleSentimentAnalysis(text: string) {
   if (!global.__EMPLOYEE_STORAGE__) {
     global.__EMPLOYEE_STORAGE__ = [];
     global.__EMPLOYEE_ID_COUNTER__ = 1;
-    console.log('Initialized global employee storage');
   }
 
   if (!global.__TRANSACTION_STORAGE__) {
     global.__TRANSACTION_STORAGE__ = [];
     global.__TRANSACTION_ID_COUNTER__ = 1;
-    console.log('Initialized global transaction storage (empty)');
   }
 
   if (!global.__TEAM_MEMBERS_STORAGE__) {
@@ -4397,7 +4284,6 @@ function performSimpleSentimentAnalysis(text: string) {
       }
     ];
     global.__TEAM_MEMBERS_ID_COUNTER__ = 7;
-    console.log('Initialized global team members storage with sample data');
   }
 
   if (!global.__COLLABORATION_EVENTS_STORAGE__) {
@@ -4457,7 +4343,6 @@ function performSimpleSentimentAnalysis(text: string) {
       }
     ];
     global.__COLLABORATION_EVENTS_ID_COUNTER__ = 6;
-    console.log('Initialized global collaboration events storage with sample data');
   }
 
   function getEmployeeStorage() {
@@ -4500,8 +4385,6 @@ function performSimpleSentimentAnalysis(text: string) {
   app.get("/api/employees", async (req, res) => {
     try {
       const employees = getEmployeeStorage();
-      console.log(`GET /api/employees - storage size: ${employees.length}`);
-      console.log(`Employee data:`, employees);
       res.json(employees);
     } catch (err: any) {
       console.error('Employee fetch error:', err);
@@ -4535,7 +4418,6 @@ function performSimpleSentimentAnalysis(text: string) {
       const currentEmployees = getEmployeeStorage();
       currentEmployees.push(newEmployee);
       global.__EMPLOYEE_STORAGE__ = currentEmployees;
-      console.log(`Employee created: ${newEmployee.firstName} ${newEmployee.lastName}, total employees: ${currentEmployees.length}`);
       
       res.status(201).json(newEmployee);
     } catch (err: any) {
@@ -4593,10 +4475,6 @@ function performSimpleSentimentAnalysis(text: string) {
         testMode: testMode
       };
       
-      console.log(`SMS Campaign: ${results.campaignName}`);
-      console.log(`Message: ${message}`);
-      console.log(`Recipients: ${contactsToSend.length}`);
-      console.log(`Test Mode: ${testMode}`);
       
       res.json({
         success: true,
@@ -5607,7 +5485,6 @@ Your ARGILETTE Team
             ]
           };
         } catch (openaiError) {
-          console.log('OpenAI API unavailable, using fallback response');
           response = {
             message: "I'm Cloe, your AI CRM assistant. I can help you with onboarding, e-commerce automation, SEO optimization, advertising campaigns, and email recovery. What would you like me to help you with today?",
             suggestions: [
@@ -5686,15 +5563,12 @@ Your ARGILETTE Team
   // Contact import - process validated data
   app.post("/api/contacts/import", authenticate, async (req, res) => {
     try {
-      console.log('Starting contact import process');
       const { contacts } = req.body;
       
       if (!contacts || !Array.isArray(contacts)) {
-        console.log('Invalid contacts data received');
         return res.status(400).json({ error: "Invalid contacts data" });
       }
 
-      console.log(`Processing ${contacts.length} contacts for import`);
 
       const results = {
         success: 0,
@@ -5705,7 +5579,6 @@ Your ARGILETTE Team
       // Process contacts directly using storage
       for (const contactData of contacts) {
         try {
-          console.log('Processing contact:', JSON.stringify(contactData, null, 2));
 
           // Extract data from nested structure if it exists
           const data = contactData.mappedData || contactData;
@@ -5737,7 +5610,6 @@ Your ARGILETTE Team
             status: (data.status && data.status.trim()) || 'active'
           };
 
-          console.log('Creating contact:', newContact);
           await getUserStorage(req).createContact(newContact);
           results.success++;
 
@@ -5750,7 +5622,6 @@ Your ARGILETTE Team
         }
       }
 
-      console.log(`Import completed: ${results.success} successful, ${results.failed} failed`);
 
       res.json({
         success: true,
@@ -5986,7 +5857,6 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
     const { subscriptionService } = await import("./subscription-service.js");
     await subscriptionService.initializeDefaultPlans();
     await subscriptionService.initializePackageFeatures();
-    console.log("✅ Subscription system initialized");
   } catch (error) {
     console.error("❌ Failed to initialize subscription system:", error);
   }
@@ -6001,7 +5871,6 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
     const token = authHeader.substring(7);
     try {
       const decoded = verifyToken(token);
-      console.log('SIMPLE AUTH: Valid JWT token for:', decoded.email);
       
       // SECURITY: Use only verified JWT data, never trust headers
       const userEmail = decoded.email;
@@ -6016,7 +5885,6 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
           lastName: userEmail === 'abel@argilette.com' ? 'Gutierrez' : 'Smith',
           tenantId: '00000000-0000-0000-0000-000000000001'
         };
-        console.log('SIMPLE AUTH: Set PLATFORM OWNER user');
       } else {
         // Extract name from email for regular users
         const emailParts = userEmail.split('@')[0].split('.');
@@ -6042,7 +5910,6 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
           lastName: lastName,
           tenantId: tenantUuid
         };
-        console.log('SIMPLE AUTH: Set REGULAR USER:', userEmail);
       }
       next();
     } catch (tokenError) {
@@ -6606,8 +6473,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         const decoded = verifyToken(token);
         // SECURITY: Use only verified JWT data, never trust headers
         const sessionEmail = decoded.email;
-        console.log('GET /api/me called');
-        console.log('Email from JWT:', sessionEmail);
         const isPlatformOwner = sessionEmail === 'abel@argilette.com';
       
       // Handle specific tenant accounts
@@ -6657,7 +6522,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         ]
       };
 
-        console.log('Returning user:', user);
         res.json(user);
         
       } catch (tokenError) {
@@ -6706,7 +6570,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
       // For now, just acknowledge the save
       // In a real implementation, this would save to user's profile in database
-      console.log(`Saving language preference for ${userEmail}: ${language}`);
       
       res.json({ 
         success: true, 
@@ -6745,7 +6608,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   // Page Integrity Verification API Endpoints
   app.get('/api/integrity/validate-all', async (req: Request, res: Response) => {
     try {
-      console.log('🚀 Starting Complete Page Integrity Validation...');
       const validationResults = await integrityValidator.runCompleteValidation();
       
       res.json({
@@ -6765,7 +6627,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
   app.get('/api/integrity/e2e-tests', async (req: Request, res: Response) => {
     try {
-      console.log('🔧 Executing End-to-End Tests...');
       const e2eResults = await integrityValidator.executeEndToEndTests();
       
       res.json({
@@ -6791,7 +6652,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
   app.get('/api/integrity/navigation-tests', async (req: Request, res: Response) => {
     try {
-      console.log('🧭 Validating Inter-page Navigation...');
       const navResults = await integrityValidator.validateInterPageNavigation();
       
       res.json({
@@ -6816,7 +6676,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
   app.get('/api/integrity/subscription-gates', async (req: Request, res: Response) => {
     try {
-      console.log('🔐 Verifying Subscription Gate Enforcement...');
       const gateResults = await integrityValidator.verifySubscriptionGates();
       
       res.json({
@@ -6841,7 +6700,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
   app.get('/api/integrity/tenant-isolation', async (req: Request, res: Response) => {
     try {
-      console.log('🏢 Auditing Cross-tenant Data Isolation...');
       const isolationResults = await integrityValidator.auditCrossTenantDataIsolation();
       
       res.json({
@@ -7030,17 +6888,14 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
   wss.on('connection', (ws) => {
-    console.log('New WebSocket connection established');
     
     // Add connection to bank feed service for real-time updates
     bankFeedService.addConnection(ws);
     
     ws.on('message', (message) => {
-      console.log('Received WebSocket message:', message.toString());
     });
     
     ws.on('close', () => {
-      console.log('WebSocket connection closed');
     });
     
     // Store client connection
@@ -7088,7 +6943,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       };
 
       const subscription = subscriptionMap[tenantId] || subscriptionMap['1'];
-      console.log(`📦 Retrieved subscription for tenant ${tenantId}: ${subscription.planId}`);
 
       res.json({
         success: true,
@@ -7133,7 +6987,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       const syncResult = await subscriptionSyncService.syncTenantSubscription(tenantId);
       const hasFeature = syncResult.featuresUpdated.includes(feature);
 
-      console.log(`🔍 Feature check for ${feature} on tenant ${tenantId}: ${hasFeature ? 'ALLOWED' : 'DENIED'}`);
 
       res.json({
         success: true,
@@ -7161,7 +7014,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       const tenantId = req.user?.tenantId || '1';
       const { force = false } = req.body;
 
-      console.log(`🔄 Manual subscription sync triggered for tenant ${tenantId}${force ? ' (forced)' : ''}`);
 
       const syncResult = await subscriptionSyncService.syncTenantSubscription(tenantId);
       
@@ -7202,7 +7054,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         });
       }
 
-      console.log(`🔧 Platform owner toggling feature '${feature}' for tenant ${tenantId}: ${enabled}`);
 
       const success = await subscriptionSyncService.toggleCustomFeature(tenantId, feature, enabled);
       
@@ -7229,7 +7080,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   // Testing & Deployment Routes (Section 6)
   app.get('/api/testing/metrics',  async (req: AuthRequest, res) => {
     try {
-      console.log('🔍 Fetching testing metrics for Testing & Deployment Dashboard');
       
       const metrics = await testingDeploymentService.getTestingMetrics();
       
@@ -7260,7 +7110,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         });
       }
 
-      console.log(`🧪 Running test suite: ${type}`);
       
       await testingDeploymentService.runTests(type);
       
@@ -7282,7 +7131,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
   app.post('/api/testing/validate-deployment',  async (req: AuthRequest, res) => {
     try {
-      console.log('🚀 Running deployment validation checks');
       
       await testingDeploymentService.validateDeployment();
       
@@ -7303,7 +7151,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
   app.get('/api/testing/system-health',  async (req: AuthRequest, res) => {
     try {
-      console.log('📊 Fetching system health metrics for testing dashboard');
       
       const healthData = testingDeploymentService.getSystemHealth();
       
@@ -7459,9 +7306,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
   app.post('/api/onboarding/save-progress',  async (req: AuthRequest, res) => {
     try {
-      console.log('[ONBOARDING] Save progress request received');
-      console.log('[ONBOARDING] Request body:', JSON.stringify(req.body, null, 2));
-      console.log('[ONBOARDING] User:', req.user);
       
       const { OnboardingService } = await import('./services/onboarding-service.js');
       const onboardingService = new OnboardingService(storage);
@@ -7470,11 +7314,9 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       const userId = req.user?.id || 'demo-user-1';
       const tenantId = 'default-tenant';
       
-      console.log('[ONBOARDING] Saving progress for user:', userId, 'step:', step);
       
       const progress = await onboardingService.saveOnboardingProgress(userId, tenantId, step, data);
       
-      console.log('[ONBOARDING] Progress saved successfully:', progress);
       
       res.json({
         success: true,
@@ -7493,9 +7335,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
 
   app.post('/api/onboarding/complete',  async (req: AuthRequest, res) => {
     try {
-      console.log('[ONBOARDING] Complete request received');
-      console.log('[ONBOARDING] Request body:', JSON.stringify(req.body, null, 2));
-      console.log('[ONBOARDING] User:', req.user);
       
       const { OnboardingService } = await import('./services/onboarding-service.js');
       const onboardingService = new OnboardingService(storage);
@@ -7504,11 +7343,9 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       const userId = req.user?.id || 'demo-user-1';
       const tenantId = 'default-tenant';
       
-      console.log('[ONBOARDING] Completing onboarding for user:', userId);
       
       const result = await onboardingService.completeOnboarding(userId, tenantId, data);
       
-      console.log('[ONBOARDING] Onboarding completed successfully:', result);
       
       res.json({
         success: true,
@@ -7564,7 +7401,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       };
       
       // You could store this in database - for now we'll log it
-      console.log('Early Access Request:', earlyAccessRequest);
       
       // Send confirmation email (if SendGrid is configured)
       if (process.env.SENDGRID_API_KEY) {
@@ -7621,7 +7457,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       };
       
       // You could store this in database - for now we'll log it
-      console.log('Launch Notification Request:', notificationRequest);
       
       // Send confirmation email (if SendGrid is configured)
       if (process.env.SENDGRID_API_KEY) {
@@ -7671,7 +7506,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       // BACKEND GUARD: Platform owners should never get personalized data
       const userEmail = req.user?.email || 'abel@argilette.com';
       if (['abel@argilette.com'].includes(userEmail.toLowerCase())) {
-        console.warn('PersonalizedWelcome API blocked for platform owner:', userEmail);
         return res.status(204).send(); // No content - prevents UI blocking
       }
       
@@ -7724,7 +7558,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
       // BACKEND GUARD: Platform owners should never get upcoming events
       const userEmail = req.user?.email || 'abel@argilette.com';
       if (['abel@argilette.com'].includes(userEmail.toLowerCase())) {
-        console.warn('PersonalizedWelcome upcoming-events blocked for platform owner:', userEmail);
         return res.status(204).send(); // No content - prevents UI blocking
       }
       
@@ -8093,7 +7926,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
   app.get("/api/products", async (req, res) => {
     try {
       const userEmail = req.headers['x-auth-email'] as string;
-      console.log(`📊 Products API: Getting products for email: ${userEmail}`);
       
       // Comprehensive sample products for e-commerce platform with all required fields
       const sampleProducts = [
@@ -8201,7 +8033,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         }
       ];
       
-      console.log(`📊 Returning ${sampleProducts.length} sample products`);
       res.json(sampleProducts);
     } catch (error: any) {
       console.error('Error getting products:', error);
@@ -8246,7 +8077,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         updatedAt: new Date().toISOString()
       };
       
-      console.log(`📊 Created new product: ${newProduct.name} (${newProduct.sku})`);
       res.status(201).json(newProduct);
     } catch (error: any) {
       console.error('Error creating product:', error);
@@ -8289,7 +8119,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         updatedAt: new Date().toISOString()
       };
       
-      console.log(`📊 Updated product: ${updatedProduct.name} (ID: ${productId})`);
       res.json(updatedProduct);
     } catch (error: any) {
       console.error('Error updating product:', error);
@@ -8301,7 +8130,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
     try {
       const productId = req.params.id;
       
-      console.log(`📊 Deleted product with ID: ${productId}`);
       res.status(204).send();
     } catch (error: any) {
       console.error('Error deleting product:', error);
@@ -8353,7 +8181,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         }
       ];
       
-      console.log(`📊 Returning ${orders.length} sample orders`);
       res.json(orders);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -8376,7 +8203,6 @@ Urgency: ${consultationData.urgency || 'Not specified'}`,
         createdAt: new Date().toISOString()
       };
       
-      console.log(`📊 Created order: ${order.orderNumber}`);
       res.status(201).json(order);
     } catch (error: any) {
       console.error('Error creating order:', error);
@@ -9055,7 +8881,6 @@ Global Enterprise Team`,
           expectedRevenue: null,
           ownerId: null
         });
-        console.log('AI Campaign saved to database successfully:', savedCampaign);
       } catch (campaignSaveError) {
         console.error('Error saving AI campaign to database:', campaignSaveError);
         // Continue without saving to database, return the generated content
@@ -9662,7 +9487,6 @@ ${req.body.companyName} Team`;
       // 2. Personalize it for each contact
       // 3. Send via email service (SendGrid, AWS SES, etc.)
       
-      console.log(`Sending template ${templateId} to ${sentCount} contacts`);
       
       res.json({
         success: true,
@@ -9797,7 +9621,6 @@ ${req.body.companyName} Team`;
     try {
       const { integrationId } = req.params;
       
-      console.log(`🔄 Sync request received for: ${integrationId}`);
       
       // Comprehensive platform sync data for Marketing Hub
       const syncResults: Record<string, any> = {
@@ -9853,7 +9676,6 @@ ${req.body.companyName} Team`;
         status: 'sync_completed'
       };
 
-      console.log(`🔄 Successfully synced ${integrationId}:`, platformData);
 
       res.json({
         success: true,
@@ -10896,7 +10718,6 @@ ${req.body.companyName} Team`;
     try {
       const { integrationId } = req.params;
       
-      console.log(`🔄 Sync request received for: ${integrationId}`);
       
       // Comprehensive platform sync data
       const syncResults: Record<string, any> = {
@@ -10952,7 +10773,6 @@ ${req.body.companyName} Team`;
         status: 'sync_completed'
       };
 
-      console.log(`🔄 Syncing ${integrationId}:`, platformData);
 
       res.json({
         success: true,
@@ -10977,7 +10797,6 @@ ${req.body.companyName} Team`;
       const { integrationId } = req.params;
       const credentials = req.body;
       
-      console.log(`🔗 Connecting ${integrationId} with credentials:`, Object.keys(credentials));
       
       // Simulate connection validation
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call delay
@@ -11004,7 +10823,6 @@ ${req.body.companyName} Team`;
     try {
       const { integrationId } = req.params;
       
-      console.log(`🔌 Disconnecting ${integrationId}`);
       
       res.json({
         success: true,
@@ -11225,7 +11043,6 @@ ${req.body.companyName} Team`;
 
       // Here you would typically send an email notification
       // For now, we'll just log it and return success
-      console.log(`Trial warning sent to user ${userId}: ${remainingDays} days remaining`);
 
       res.json({
         success: true,
@@ -11256,7 +11073,6 @@ ${req.body.companyName} Team`;
       
       // Log the analysis for future reference (simplified without database)
       if (customerId) {
-        console.log(`Emotional analysis for customer ${customerId}:`, {
           sentiment: analysis.sentiment,
           confidence: analysis.confidence,
           urgencyLevel: analysis.urgencyLevel
@@ -12520,7 +12336,6 @@ ${req.body.companyName} Team`;
       const { classifyReplyForNodeCRM } = await import('./ai/classify.js');
       const result = await classifyReplyForNodeCRM(text);
       
-      console.log('✅ Qwen AI classification result:', result);
       
       res.json({
         success: true,
@@ -12686,10 +12501,8 @@ ${req.body.companyName} Team`;
 
       // Store user in database (use platform storage for unauthenticated registration)
       try {
-        console.log('🔐 Creating new user registration:', normalizedEmail);
         const platformStorage = storage; // Use global platform storage for signup
         const createdUser = await platformStorage.createRegisteredUser(newUser);
-        console.log('✅ User registered successfully:', normalizedEmail, 'ID:', createdUser.id);
 
         res.status(201).json({
           success: true,
@@ -12747,7 +12560,6 @@ ${req.body.companyName} Team`;
         .set({ passwordHash })
         .where(eq(users.email, email));
 
-      console.log(`✅ Emergency password reset for: ${email}`);
       
       res.json({ 
         success: true, 
@@ -12856,7 +12668,6 @@ ${req.body.companyName} Team`;
 
       // TODO: Send email with magic link
       // For now, just return success
-      console.log(`Magic link for ${email}: /client-portal/auth/verify?token=${magicToken}`);
 
       res.json({ 
         message: "If an account exists, a magic link has been sent"

@@ -7,7 +7,6 @@ export async function registerAppointmentsRoutes(app: any) {
   app.get('/api/appointments', async (req: Request, res: Response) => {
     try {
       const appointments = await storage.getAppointments();
-      console.log(`Fetching appointments from database: ${appointments.length}`);
       res.json(appointments);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -59,7 +58,6 @@ export async function registerAppointmentsRoutes(app: any) {
       };
       
       const newAppointment = await storage.createAppointment(appointmentData);
-      console.log(`Created new appointment in database: ${newAppointment.title}`);
       res.json(newAppointment);
     } catch (error) {
       console.error('Error creating appointment:', error);
@@ -114,7 +112,6 @@ export async function registerAppointmentsRoutes(app: any) {
         return res.status(404).json({ error: 'Appointment not found' });
       }
 
-      console.log(`Updated appointment in database: ${updatedAppointment.title}`);
       res.json(updatedAppointment);
     } catch (error) {
       console.error('Error updating appointment:', error);
@@ -131,7 +128,6 @@ export async function registerAppointmentsRoutes(app: any) {
         return res.status(404).json({ error: 'Appointment not found' });
       }
 
-      console.log(`Deleted appointment from database: ${appointmentId}`);
       res.json({ message: 'Appointment deleted successfully' });
     } catch (error) {
       console.error('Error deleting appointment:', error);
@@ -199,7 +195,6 @@ export async function registerAppointmentsRoutes(app: any) {
         for (const appointment of sampleAppointments) {
           await storage.createAppointment(appointment);
         }
-        console.log('Initialized database with sample appointments');
       }
     } catch (error) {
       console.error('Error initializing sample appointments:', error);

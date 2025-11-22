@@ -349,7 +349,6 @@ Provide optimization recommendations in JSON format:
   }
 
   private async executeWorkflow(workflow: AutoWorkflowRule, triggerData: any): Promise<void> {
-    console.log(`Executing autonomous workflow: ${workflow.name}`);
     
     for (const action of workflow.actions) {
       if (action.delay) {
@@ -380,7 +379,6 @@ Provide optimization recommendations in JSON format:
           await this.escalateToManager(triggerData, action.parameters);
           break;
         default:
-          console.log(`Executing action: ${action.type}`);
       }
       
       // Record successful action
@@ -423,7 +421,6 @@ Create a compelling, personalized message that drives engagement.`;
       if (!message) {
         return `Hello ${data.name}, following up on our recent conversation...`;
       }
-      console.log(`Generated personalized outreach: ${message.substring(0, 100)}...`);
       return message;
     } catch (error) {
       console.error('Outreach generation error:', error);
@@ -432,17 +429,14 @@ Create a compelling, personalized message that drives engagement.`;
   }
 
   private async createAutomaticTask(data: any, parameters: any): Promise<void> {
-    console.log(`Creating automatic task: ${parameters.title} for ${data.name || 'contact'}`);
     // Integration with task creation API would go here
   }
 
   private async scheduleAutomaticCall(data: any, parameters: any): Promise<void> {
-    console.log(`Scheduling ${parameters.duration}min ${parameters.type} call for ${data.name || 'contact'}`);
     // Integration with scheduling API would go here
   }
 
   private async escalateToManager(data: any, parameters: any): Promise<void> {
-    console.log(`Escalating to manager: ${parameters.reason} for ${data.name || 'contact'}`);
     // Integration with escalation system would go here
   }
 
@@ -557,7 +551,6 @@ Create a compelling, personalized message that drives engagement.`;
     // Analyze performance and optimize workflows
     for (const [id, workflow] of Array.from(this.workflows.entries())) {
       if (workflow.learningData.successRate < 0.7) {
-        console.log(`Optimizing low-performing workflow: ${workflow.name}`);
         // AI-powered workflow optimization would go here
         workflow.learningData.lastOptimized = new Date();
       }

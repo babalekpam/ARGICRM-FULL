@@ -63,7 +63,6 @@ export class BankFeedService {
   // Sync bank account transactions
   private async syncBankAccount(bankAccountId: number): Promise<void> {
     try {
-      console.log(`Starting sync for bank account ${bankAccountId}`);
       
       // Fetch bank account details
       const account = await db
@@ -105,7 +104,6 @@ export class BankFeedService {
           timestamp: new Date().toISOString()
         });
 
-        console.log(`Synced ${newTransactions.length} new transactions for account ${bankAccountId}`);
       }
 
     } catch (error) {
@@ -220,7 +218,6 @@ export class BankFeedService {
             )
           );
 
-        console.log(`Auto-matched transaction: ${bankTxn.reference}`);
       }
     } catch (error) {
       console.error('Error in auto-matching:', error);

@@ -402,7 +402,6 @@ export function getAvailableFeatures(subscription: any): string[] {
 export async function incrementUsage(tenantId: string, resource: string, amount: number = 1) {
   try {
     // In a real implementation, this would update the database
-    console.log(`Incrementing ${resource} usage for tenant ${tenantId} by ${amount}`);
     // TODO: Implement database update
   } catch (error) {
     console.error('Error incrementing usage:', error);

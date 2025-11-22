@@ -131,7 +131,6 @@ export class TaxCalculationService {
       const cacheKey = this.generateCacheKey(request);
       this.cache.set(cacheKey, result);
 
-      console.log(`💰 Tax calculated: $${request.amount} + $${taxAmount.toFixed(2)} (${(taxRateInfo.rate * 100).toFixed(2)}%) = $${totalAmount.toFixed(2)} [${detectedRegion.regionCode}]`);
       
       return result;
 
@@ -386,7 +385,6 @@ export class TaxCalculationService {
   // Initialize default tax rates in database using existing schema
   async initializeDefaultTaxRates(): Promise<void> {
     try {
-      console.log('🏛️ Initializing default tax rates...');
       
       for (const [regionCode, info] of Object.entries(DEFAULT_TAX_RATES)) {
         if (regionCode === 'DEFAULT') continue; // Skip the fallback entry
@@ -403,7 +401,6 @@ export class TaxCalculationService {
 
         try {
           await this.storage.createTaxRate(taxRateData);
-          console.log(`✅ Created tax rate for ${regionCode}: ${(info.rate * 100).toFixed(2)}%`);
         } catch (error: any) {
           // Ignore duplicate errors, log others
           if (!error.message?.includes('duplicate') && !error.message?.includes('unique')) {
@@ -412,7 +409,6 @@ export class TaxCalculationService {
         }
       }
       
-      console.log('🏛️ Default tax rates initialization completed');
     } catch (error) {
       console.error('Error initializing default tax rates:', error);
     }

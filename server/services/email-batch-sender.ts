@@ -61,7 +61,6 @@ export class BatchEmailSender {
     if (this.lastResetDate !== today) {
       this.dailySentCount = 0;
       this.lastResetDate = today;
-      console.log(`[Batch Sender] Daily count reset for ${today}`);
     }
   }
 
@@ -74,7 +73,6 @@ export class BatchEmailSender {
       .reverse()
       .find(s => daysSinceStart >= s.day) || this.warmupSchedule[0];
     
-    console.log(`[Batch Sender] Day ${daysSinceStart} warm-up: max ${schedule.maxEmails} emails`);
     return schedule;
   }
 
@@ -113,18 +111,15 @@ export class BatchEmailSender {
 
     // Check daily limit
     if (batchConfig.maxDailyLimit && this.dailySentCount >= batchConfig.maxDailyLimit) {
-      console.warn(`[Batch Sender] Daily limit reached: ${this.dailySentCount}/${batchConfig.maxDailyLimit}`);
       result.success = false;
       return result;
     }
 
-    console.log(`[Batch Sender] Starting batch send: ${emails.length} emails, ${batchConfig.batchSize} per batch`);
 
     // Process in batches
     for (let i = 0; i < emails.length; i += batchConfig.batchSize) {
       const batch = emails.slice(i, i + batchConfig.batchSize);
       
-      console.log(`[Batch Sender] Processing batch ${Math.floor(i / batchConfig.batchSize) + 1}: ${batch.length} emails`);
 
       // Send batch concurrently
       const batchResults = await Promise.allSettled(
@@ -183,20 +178,17 @@ export class BatchEmailSender {
 
       // Delay between batches (except for last batch)
       if (i + batchConfig.batchSize < emails.length) {
-        console.log(`[Batch Sender] Waiting ${batchConfig.delayBetweenBatches}ms before next batch...`);
         await this.delay(batchConfig.delayBetweenBatches);
       }
 
       // Check if we hit daily limit
       if (batchConfig.maxDailyLimit && this.dailySentCount >= batchConfig.maxDailyLimit) {
-        console.warn(`[Batch Sender] Daily limit reached mid-send: ${this.dailySentCount}/${batchConfig.maxDailyLimit}`);
         break;
       }
     }
 
     result.duration = Date.now() - startTime;
     
-    console.log(`[Batch Sender] Batch complete: ${result.sent} sent, ${result.failed} failed, ${result.bounced} bounced (${result.duration}ms)`);
     
     return result;
   }

@@ -68,7 +68,6 @@ router.post('/confirm', async (req: Request, res: Response) => {
     // 1. Update the contact's email preferences in database
     // 2. Mark them as unsubscribed
     // For now, we'll just log it
-    console.log(`[Unsubscribe] Email unsubscribed: ${email}`);
 
     // You could add this to your storage:
     // const storage = new DatabaseStorage('system@default.com', 'default-tenant', false);

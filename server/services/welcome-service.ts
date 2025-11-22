@@ -140,7 +140,6 @@ export class WelcomeService {
     try {
       // Validate UUID format before making database calls - but allow platform owner access
       if (!tenantId || (tenantId.length !== 36 || !tenantId.includes('-'))) {
-        console.log('Invalid tenantId format, using fallback stats for:', tenantId);
         return {
           contacts: 0,
           deals: 0,
@@ -200,7 +199,6 @@ export class WelcomeService {
     try {
       // Validate UUID format before making database calls - but allow platform owner access  
       if (!tenantId || (tenantId.length !== 36 || !tenantId.includes('-'))) {
-        console.log('Invalid tenantId format in getRecentActivities, using fallback for:', tenantId);
         return {
           recentContacts: [],
           upcomingTasks: [],

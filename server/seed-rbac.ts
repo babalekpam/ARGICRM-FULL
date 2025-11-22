@@ -27,7 +27,6 @@ import { eq, sql } from 'drizzle-orm';
  */
 export async function seedPermissions(): Promise<void> {
   try {
-    console.log('🌱 Seeding system permissions...');
     
     // Get all permissions from PERMISSIONS constant
     const permissionEntries = Object.entries(PERMISSIONS).map(([key, value]) => {
@@ -55,7 +54,6 @@ export async function seedPermissions(): Promise<void> {
         });
     }
 
-    console.log(`✅ Seeded ${permissionEntries.length} system permissions`);
   } catch (error) {
     console.error('❌ Error seeding permissions:', error);
     throw error;
@@ -70,7 +68,6 @@ export async function seedPermissions(): Promise<void> {
  */
 export async function seedSystemRoles(tenantId: string): Promise<void> {
   try {
-    console.log(`🌱 Seeding system roles for tenant ${tenantId}...`);
 
     const systemRoles = [
       {
@@ -118,7 +115,6 @@ export async function seedSystemRoles(tenantId: string): Promise<void> {
         .limit(1);
 
       if (existingRole.length > 0) {
-        console.log(`  ⏭️  Role "${role.name}" already exists for tenant ${tenantId}`);
         continue;
       }
 
@@ -132,10 +128,8 @@ export async function seedSystemRoles(tenantId: string): Promise<void> {
       });
 
       createdCount++;
-      console.log(`  ✅ Created system role: ${role.name}`);
     }
 
-    console.log(`✅ Seeded ${createdCount} system roles for tenant ${tenantId}`);
   } catch (error) {
     console.error(`❌ Error seeding system roles for tenant ${tenantId}:`, error);
     throw error;
@@ -149,7 +143,6 @@ export async function seedSystemRoles(tenantId: string): Promise<void> {
  */
 export async function initializeRBAC(): Promise<void> {
   try {
-    console.log('🔧 Initializing RBAC system...');
 
     // Check if permissions table is empty
     const existingPermissions = await db
@@ -159,10 +152,8 @@ export async function initializeRBAC(): Promise<void> {
     const permissionCount = Number(existingPermissions[0]?.count || 0);
 
     if (permissionCount === 0) {
-      console.log('📝 Permissions table is empty, seeding permissions...');
       await seedPermissions();
     } else {
-      console.log(`✅ RBAC already initialized (${permissionCount} permissions found)`);
     }
 
     // Note: System roles are seeded per-tenant when tenants are created
@@ -180,7 +171,6 @@ export async function initializeRBAC(): Promise<void> {
  */
 export async function seedRBACForNewTenant(tenantId: string): Promise<void> {
   try {
-    console.log(`🌱 Setting up RBAC for new tenant ${tenantId}...`);
 
     // Ensure permissions are seeded globally (idempotent)
     const existingPermissions = await db
@@ -196,7 +186,6 @@ export async function seedRBACForNewTenant(tenantId: string): Promise<void> {
     // Seed system roles for this tenant
     await seedSystemRoles(tenantId);
 
-    console.log(`✅ RBAC setup complete for tenant ${tenantId}`);
   } catch (error) {
     console.error(`❌ Error setting up RBAC for tenant ${tenantId}:`, error);
     throw error;
@@ -211,7 +200,6 @@ export async function seedRBACForNewTenant(tenantId: string): Promise<void> {
  */
 export async function updateSystemRolePermissions(tenantId?: string): Promise<void> {
   try {
-    console.log('🔄 Updating system role permissions...');
 
     const systemRolesConfig = [
       { name: 'Platform Owner', permissions: DEFAULT_ROLE_PERMISSIONS[SYSTEM_ROLES.PLATFORM_OWNER] },
@@ -234,10 +222,8 @@ export async function updateSystemRolePermissions(tenantId?: string): Promise<vo
         })
         .where(query);
 
-      console.log(`  ✅ Updated ${roleConfig.name} role permissions`);
     }
 
-    console.log('✅ System role permissions updated');
   } catch (error) {
     console.error('❌ Error updating system role permissions:', error);
     throw error;

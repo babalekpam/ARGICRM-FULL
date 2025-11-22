@@ -317,7 +317,6 @@ export class AIRecommendationService {
 
   async trackTemplateUsage(userId: string, templateId: string, action: 'view' | 'use' | 'convert') {
     // In a real app, this would update a template_analytics table
-    console.log(`User ${userId} performed ${action} on template ${templateId}`);
     
     // This data would be used to improve future recommendations
   }

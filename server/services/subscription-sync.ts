@@ -29,7 +29,6 @@ export class SubscriptionSyncService {
    */
   async syncTenantSubscription(tenantId: string): Promise<SubscriptionSyncResult> {
     try {
-      console.log(`🔄 Synchronizing subscription for tenant ${tenantId}...`);
 
       // Get current subscription
       const subscription = await this.getSubscriptionData(tenantId);
@@ -63,7 +62,6 @@ export class SubscriptionSyncService {
         lastSyncedAt: new Date()
       });
 
-      console.log(`✅ Subscription sync completed for tenant ${tenantId}`);
 
       return {
         success: true,
@@ -92,7 +90,6 @@ export class SubscriptionSyncService {
    */
   async syncAllTenantSubscriptions(): Promise<SubscriptionSyncResult[]> {
     try {
-      console.log('🔄 Starting bulk subscription synchronization...');
 
       // Get all tenants
       const tenants = await this.getAllTenants();
@@ -105,7 +102,6 @@ export class SubscriptionSyncService {
       }
 
       const successCount = results.filter(r => r.success).length;
-      console.log(`✅ Bulk sync completed: ${successCount}/${results.length} successful`);
 
       return results;
     } catch (error) {
@@ -127,7 +123,6 @@ export class SubscriptionSyncService {
     }, intervalMinutes * 60 * 1000);
 
     this.syncQueue.set(tenantId, interval);
-    console.log(`📅 Scheduled sync for tenant ${tenantId} every ${intervalMinutes} minutes`);
   }
 
   /**
@@ -138,7 +133,6 @@ export class SubscriptionSyncService {
     if (existingInterval) {
       clearInterval(existingInterval);
       this.syncQueue.delete(tenantId);
-      console.log(`🗑️ Cleared sync schedule for tenant ${tenantId}`);
     }
   }
 
@@ -147,7 +141,6 @@ export class SubscriptionSyncService {
    */
   async handlePlanChange(tenantId: string, newPlanId: string, oldPlanId?: string): Promise<SubscriptionSyncResult> {
     try {
-      console.log(`📈 Processing plan change for tenant ${tenantId}: ${oldPlanId} → ${newPlanId}`);
 
       // Update plan in subscription
       await this.updateSubscriptionPlan(tenantId, newPlanId);
@@ -163,10 +156,8 @@ export class SubscriptionSyncService {
         const removedFeatures = oldFeatures.filter(f => !newFeatures.includes(f));
 
         if (addedFeatures.length > 0) {
-          console.log(`✨ Features added: ${addedFeatures.join(', ')}`);
         }
         if (removedFeatures.length > 0) {
-          console.log(`🚫 Features removed: ${removedFeatures.join(', ')}`);
         }
       }
 
@@ -189,7 +180,6 @@ export class SubscriptionSyncService {
    */
   async toggleCustomFeature(tenantId: string, feature: string, enabled: boolean): Promise<boolean> {
     try {
-      console.log(`🔧 Toggling custom feature '${feature}' for tenant ${tenantId}: ${enabled}`);
 
       // Get current subscription
       const subscription = await this.getSubscriptionData(tenantId);
@@ -214,7 +204,6 @@ export class SubscriptionSyncService {
       // Trigger sync
       await this.syncTenantSubscription(tenantId);
 
-      console.log(`✅ Custom feature '${feature}' ${enabled ? 'enabled' : 'disabled'} for tenant ${tenantId}`);
       return true;
     } catch (error) {
       console.error('Custom feature toggle error:', error);
@@ -304,7 +293,6 @@ export class SubscriptionSyncService {
    */
   private async updateSubscriptionFeatures(tenantId: string, updates: any): Promise<any> {
     // Mock implementation - replace with actual database update
-    console.log(`💾 Updating subscription features for tenant ${tenantId}:`, updates);
     return { success: true };
   }
 
@@ -313,7 +301,6 @@ export class SubscriptionSyncService {
    */
   private async updateSubscriptionPlan(tenantId: string, planId: string): Promise<any> {
     // Mock implementation - replace with actual database update
-    console.log(`💾 Updating subscription plan for tenant ${tenantId} to ${planId}`);
     return { success: true };
   }
 

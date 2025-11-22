@@ -19,17 +19,14 @@ export class RedisCache {
     });
 
     this.redis.on('connect', () => {
-      console.log('✅ Redis connected successfully');
       this.isConnected = true;
     });
 
     this.redis.on('error', (error) => {
-      console.warn('⚠️ Redis connection error, falling back to in-memory cache:', error.message);
       this.isConnected = false;
     });
 
     this.redis.on('close', () => {
-      console.log('Redis connection closed');
       this.isConnected = false;
     });
   }
@@ -46,7 +43,6 @@ export class RedisCache {
       await this.redis.connect();
       return true;
     } catch (error) {
-      console.warn('Redis connection failed, using in-memory fallback');
       return false;
     }
   }
@@ -56,7 +52,6 @@ export class RedisCache {
       if (!this.isConnected) return null;
       return await this.redis.get(key);
     } catch (error) {
-      console.warn('Redis GET error:', error);
       return null;
     }
   }
@@ -71,7 +66,6 @@ export class RedisCache {
       }
       return true;
     } catch (error) {
-      console.warn('Redis SET error:', error);
       return false;
     }
   }
@@ -82,7 +76,6 @@ export class RedisCache {
       await this.redis.del(key);
       return true;
     } catch (error) {
-      console.warn('Redis DEL error:', error);
       return false;
     }
   }
@@ -93,7 +86,6 @@ export class RedisCache {
       const result = await this.redis.exists(key);
       return result === 1;
     } catch (error) {
-      console.warn('Redis EXISTS error:', error);
       return false;
     }
   }
@@ -104,7 +96,6 @@ export class RedisCache {
       await this.redis.hset(key, field, value);
       return true;
     } catch (error) {
-      console.warn('Redis HSET error:', error);
       return false;
     }
   }
@@ -114,7 +105,6 @@ export class RedisCache {
       if (!this.isConnected) return null;
       return await this.redis.hget(key, field);
     } catch (error) {
-      console.warn('Redis HGET error:', error);
       return null;
     }
   }
@@ -124,7 +114,6 @@ export class RedisCache {
       if (!this.isConnected) return null;
       return await this.redis.hgetall(key);
     } catch (error) {
-      console.warn('Redis HGETALL error:', error);
       return null;
     }
   }
@@ -135,7 +124,6 @@ export class RedisCache {
       await this.redis.zadd(key, score, member);
       return true;
     } catch (error) {
-      console.warn('Redis ZADD error:', error);
       return false;
     }
   }
@@ -145,7 +133,6 @@ export class RedisCache {
       if (!this.isConnected) return [];
       return await this.redis.zrange(key, start, stop);
     } catch (error) {
-      console.warn('Redis ZRANGE error:', error);
       return [];
     }
   }
@@ -156,7 +143,6 @@ export class RedisCache {
       await this.redis.expire(key, seconds);
       return true;
     } catch (error) {
-      console.warn('Redis EXPIRE error:', error);
       return false;
     }
   }
@@ -167,7 +153,6 @@ export class RedisCache {
       await this.redis.flushall();
       return true;
     } catch (error) {
-      console.warn('Redis FLUSHALL error:', error);
       return false;
     }
   }
@@ -180,7 +165,6 @@ export class RedisCache {
     try {
       await this.redis.disconnect();
     } catch (error) {
-      console.warn('Redis disconnect error:', error);
     }
   }
 }

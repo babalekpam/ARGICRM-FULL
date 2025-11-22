@@ -121,13 +121,11 @@ class AIFailoverService {
     }
 
     // Initialize ARGILETTE AI (Replit AI Integrations) - PRIMARY PROVIDER
-    console.log('🔍 Checking Argilette AI environment variables:', {
       hasApiKey: !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
       hasBaseURL: !!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
     });
     
     if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-      console.log('✅ Initializing Argilette AI as PRIMARY provider');
       this.providers.set('argilette', {
         name: 'Argilette AI',
         priority: 1, // PRIMARY PROVIDER
@@ -143,7 +141,6 @@ class AIFailoverService {
       }));
       this.circuitBreakers.set('argilette', { isOpen: false, failures: 0, lastFailure: 0 });
     } else {
-      console.log('⚠️ Argilette AI NOT initialized - missing API key');
     }
 
     // Initialize Google Gemini
@@ -182,21 +179,17 @@ class AIFailoverService {
       this.circuitBreakers.set('qwen', { isOpen: false, failures: 0, lastFailure: 0 });
     }
 
-    console.log(`🤖 AI Failover Service initialized with ${this.providers.size} providers:`, Array.from(this.providers.keys()).join(', '));
     
     // Log Argilette AI status specifically
     if (this.providers.has('argilette')) {
-      console.log('✅ Argilette AI activated as PRIMARY provider with intelligent failover');
     }
     
     // Log You.com status
     if (this.providers.has('you')) {
-      console.log('✅ You.com AI activated as tertiary provider');
     }
     
     // Log QWEN status specifically
     if (this.providers.has('qwen')) {
-      console.log('✅ QWEN AI activated in Marketing Hub with intelligent failover');
     }
   }
 
@@ -223,7 +216,6 @@ class AIFailoverService {
     // Try each provider in order
     for (const providerName of availableProviders) {
       try {
-        console.log(`🔄 Attempting AI request with ${providerName}`);
         const startTime = Date.now();
         
         const response = await this.makeRequest(providerName, request);
@@ -245,12 +237,10 @@ class AIFailoverService {
           this.cacheResponse(cacheKey, aiResponse);
         }
 
-        console.log(`✅ AI request successful with ${providerName} in ${responseTime}ms`);
         return aiResponse;
 
       } catch (error) {
         lastError = error as Error;
-        console.warn(`❌ AI request failed with ${providerName}:`, error);
         
         // Update provider statistics and circuit breaker
         this.updateProviderStats(providerName, false, 0);
@@ -263,7 +253,6 @@ class AIFailoverService {
 
     // If all providers failed, return fallback response
     if (this.config.fallbackEnabled) {
-      console.log('🔄 All AI providers failed, using fallback response');
       return {
         content: this.generateFallbackResponse(request),
         provider: 'fallback',
@@ -397,7 +386,6 @@ class AIFailoverService {
         if (now - circuitBreaker.lastFailure > this.config.circuitBreakerResetTimeMs) {
           circuitBreaker.isOpen = false;
           circuitBreaker.failures = 0;
-          console.log(`🔄 Circuit breaker reset for ${providerName}`);
         } else {
           return false;
         }
@@ -430,7 +418,6 @@ class AIFailoverService {
 
     if (circuitBreaker.failures >= this.config.circuitBreakerThreshold) {
       circuitBreaker.isOpen = true;
-      console.log(`⚠️ Circuit breaker opened for ${providerName} due to ${circuitBreaker.failures} failures`);
     }
   }
 
@@ -505,7 +492,6 @@ class AIFailoverService {
       circuitBreaker.lastFailure = 0;
       provider.isAvailable = true;
       provider.lastError = undefined;
-      console.log(`🔄 Provider ${providerName} has been reset`);
       return true;
     }
     
@@ -514,12 +500,10 @@ class AIFailoverService {
 
   clearCache(): void {
     this.responseCache.clear();
-    console.log('🧹 AI response cache cleared');
   }
 
   updateConfig(newConfig: Partial<FailoverConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('⚙️ AI failover configuration updated');
   }
 }
 

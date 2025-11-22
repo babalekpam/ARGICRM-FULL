@@ -144,7 +144,6 @@ ${content}
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       try {
-        console.log(`Sending batch ${batchIndex + 1}/${batches.length} (${batch.length} emails)`);
         
         const messages = batch.map((contact: Contact) => {
           const personalizedSubject = this.personalizeContent(emailBatch.template.subject, contact);
@@ -195,7 +194,6 @@ ${content}
         
         // Send batch
         const response = await sgMail.send(messages);
-        console.log(`Batch ${batchIndex + 1} sent successfully`);
         totalSent += batch.length;
         
         // Delay between batches to avoid rate limiting
@@ -280,10 +278,6 @@ ${content}
     let failed = 0;
     const errors: string[] = [];
 
-    console.log(`\n🎯 [EMAIL SIMULATION STARTED] Campaign: ${emailBatch.template.subject}`);
-    console.log(`📧 From: ${emailBatch.fromName} <${emailBatch.fromEmail}>`);
-    console.log(`👥 Recipients: ${validContacts.length} contacts`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     for (const contact of validContacts) {
       try {
@@ -298,11 +292,6 @@ ${content}
         );
 
         // Log the simulated email
-        console.log(`✅ [EMAIL SENT] To: ${contact.email}`);
-        console.log(`   Subject: ${personalizedSubject}`);
-        console.log(`   Preview: ${personalizedContent.replace(/<[^>]*>/g, '').substring(0, 80)}...`);
-        console.log(`   Company: ${contact.company || 'N/A'} | Role: ${contact.jobTitle || 'N/A'}`);
-        console.log('---');
 
         sent++;
         
@@ -312,13 +301,9 @@ ${content}
       } catch (error: any) {
         failed++;
         errors.push(`Failed to send to ${contact.email}: ${error.message}`);
-        console.log(`❌ [EMAIL FAILED] To: ${contact.email} - ${error.message}`);
       }
     }
 
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📊 [CAMPAIGN COMPLETE] Sent: ${sent} | Failed: ${failed} | Total: ${validContacts.length}`);
-    console.log(`🎉 Campaign "${emailBatch.template.subject}" simulation completed successfully!\n`);
 
     return {
       success: true,

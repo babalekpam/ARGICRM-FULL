@@ -7,7 +7,6 @@ export async function registerReportsRoutes(app: any) {
   app.get('/api/reports', async (req: Request, res: Response) => {
     try {
       const reports = await storage.getReports();
-      console.log(`Fetching reports from database: ${reports.length}`);
       res.json(reports);
     } catch (error) {
       console.error('Error fetching reports:', error);
@@ -35,7 +34,6 @@ export async function registerReportsRoutes(app: any) {
       };
       
       const newReport = await storage.createReport(reportData);
-      console.log(`Created new report in database: ${newReport.name}`);
       res.json(newReport);
     } catch (error) {
       console.error('Error creating report:', error);
@@ -148,7 +146,6 @@ export async function registerReportsRoutes(app: any) {
   async function initializeReportsIfEmpty() {
     try {
       const existingReports = await storage.getReports();
-      console.log('Reports storage initialized (empty)');
     } catch (error) {
       console.error('Error checking reports storage:', error);
     }

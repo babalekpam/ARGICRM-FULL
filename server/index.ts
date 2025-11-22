@@ -54,8 +54,6 @@ app.use((req, res, next) => {
     const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
     const redirectUrl = '/' + queryString;
     
-    console.log(`🛡️ TOP-LEVEL PROTECTION: ${req.originalUrl} -> ${redirectUrl}`);
-    
     // IMMEDIATE permanent redirect
     res.writeHead(301, {
       'Location': redirectUrl,
@@ -116,7 +114,6 @@ if (process.env.NODE_ENV === 'development') {
         req.path.match(/\.(ts|tsx|js|jsx|css|scss|sass|less|styl|stylus|vue|svelte)$/) ||
         req.headers.upgrade === 'websocket' ||
         req.headers['sec-websocket-key']) {
-      console.log('🚀 Vite bypass:', req.path);
       return next();
     }
     next();
@@ -236,7 +233,6 @@ app.use((req, res, next) => {
   
   // ADDITIONAL SAFETY: Catch any remaining lander requests at the very end
   app.use('/lander*', (req, res) => {
-    console.log(`🚨 FINAL SAFETY NET: Redirecting ${req.originalUrl} to /`);
     res.redirect(301, '/');
   });
 

@@ -194,48 +194,36 @@ router.post('/generate-emails', async (req: TenantRequest, res: Response) => {
     const tenantId = req.tenant!.id;
     const userId = req.user!.id;
 
-    console.log('[AI Campaigns] Generate emails request body:', JSON.stringify(req.body, null, 2));
 
     const validatedData = generateEmailsSchema.parse(req.body);
 
-    console.log('[AI Campaigns] Validated data - contactIds:', validatedData.contactIds?.length || 0, 'contacts:', validatedData.contacts?.length || 0);
 
     // Handle both contactIds (from CRM) and direct contact objects (from CSV upload)
     let validContacts: any[] = [];
 
     if (validatedData.contactIds && validatedData.contactIds.length > 0) {
-      console.log('[AI Campaigns] Fetching CRM contacts from database:', validatedData.contactIds);
-      console.log('[AI Campaigns] Current tenant ID:', tenantId);
       // Fetch contacts from database with tenant validation - CRITICAL SECURITY: Prevent cross-tenant data access
       const contacts = await Promise.all(
         validatedData.contactIds.map(async (id) => {
           const contact = await storage.getContact(id);
           if (!contact) {
-            console.warn(`[AI Campaigns] Contact ${id} not found in database (storage.getContact returned ${contact})`);
             return undefined;
           }
           // Verify tenant ownership
           if (contact.tenantId !== tenantId) {
-            console.warn(`SECURITY: Attempted cross-tenant contact access - contact ${id} belongs to ${contact.tenantId}, requested by ${tenantId}`);
             return undefined;
           }
-          console.log(`[AI Campaigns] Found CRM contact: ${contact.name} (${contact.email}) - tenantId: ${contact.tenantId}`);
           return contact;
         })
       );
       validContacts = contacts.filter(c => c !== undefined);
-      console.log('[AI Campaigns] Valid CRM contacts after filtering:', validContacts.length);
     }
 
     if (validatedData.contacts && validatedData.contacts.length > 0) {
-      console.log('[AI Campaigns] Adding CSV contacts:', validatedData.contacts.length);
-      console.log('[AI Campaigns] CSV contact data:', JSON.stringify(validatedData.contacts, null, 2));
       // Add CSV-uploaded contacts (direct contact objects from client)
       validContacts = [...validContacts, ...validatedData.contacts];
-      console.log('[AI Campaigns] Total valid contacts after adding CSV:', validContacts.length);
     }
 
-    console.log('[AI Campaigns] Final validContacts count:', validContacts.length);
 
     if (validContacts.length === 0) {
       const errorDetails = {
@@ -444,7 +432,6 @@ router.post('/send-personalized-emails', async (req: TenantRequest, res: Respons
         contactIds.map(async (id: string) => {
           const contact = await storage.getContact(id);
           if (contact && contact.tenantId !== tenantId) {
-            console.warn(`SECURITY: Cross-tenant contact access blocked - ${id}`);
             return undefined;
           }
           return contact;
@@ -743,7 +730,6 @@ router.post('/send-automated', async (req: TenantRequest, res: Response) => {
     const data = schema.parse(req.body);
 
     // Step 1: Validate and clean email list
-    console.log(`[Automated Send] Validating ${data.recipients.length} recipients...`);
     const validation = emailValidator.validateBulk(data.recipients);
     
     if (validation.valid.length === 0) {
@@ -761,7 +747,6 @@ router.post('/send-automated', async (req: TenantRequest, res: Response) => {
     }
 
     // Step 2: Check content for spam
-    console.log('[Automated Send] Checking content for spam triggers...');
     const spamCheck = spamChecker.checkContent(data.subject, data.textContent, data.htmlContent);
     
     if (spamCheck.isSpammy && spamCheck.risk === 'high') {
@@ -783,7 +768,6 @@ router.post('/send-automated', async (req: TenantRequest, res: Response) => {
       ? validation.valid.slice(0, warmupConfig.maxEmails)
       : validation.valid;
 
-    console.log(`[Automated Send] Sending to ${recipientsToSend.length} recipients (warm-up: ${data.warmupMode})`);
 
     // Step 4: Send in batches
     const emailBatch = recipientsToSend.map(email => ({

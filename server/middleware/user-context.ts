@@ -28,7 +28,6 @@ export function userContextMiddleware(req: AuthenticatedRequest, res: Response, 
   // Create user-specific storage instance
   req.storage = new DatabaseStorage(userEmail, tenantId, isPlatformOwner);
   
-  console.log(`Request from user: ${userEmail}, tenant: ${tenantId}, platform owner: ${isPlatformOwner}`);
   
   next();
 }

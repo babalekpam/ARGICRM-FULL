@@ -11,9 +11,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool);
 
 async function seed() {
-  console.log("Seeding database...");
 
-  console.log("Clearing existing data...");
   await db.delete(seoIssues);
   await db.delete(competitors);
   await db.delete(backlinkGrowth);
@@ -43,7 +41,6 @@ async function seed() {
     totalKeywords: 89,
   }).returning();
 
-  console.log("Created projects:", project1.id, project2.id);
 
   await db.insert(keywordRankings).values([
     { projectId: project1.id, top3: 12, top10: 34, top20: 48, top50: 42, over50: 20 },
@@ -137,7 +134,6 @@ async function seed() {
   }
   await db.insert(backlinkGrowth).values(backlinkGrowthRecords);
 
-  console.log("Database seeded successfully!");
   await pool.end();
 }
 

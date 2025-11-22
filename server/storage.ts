@@ -491,7 +491,6 @@ export class MemStorage implements IStorage {
   private currentTaxRateId: number;
 
   constructor() {
-    console.log('MemStorage constructor called');
     // Initialize core data maps
     this.contacts = new Map();
     this.accounts = new Map();
@@ -570,7 +569,6 @@ export class MemStorage implements IStorage {
 
   private initializeChartOfAccounts() {
     // Initialize empty chart of accounts - users should create their own accounts
-    console.log('Initialized empty chart of accounts');
   }
 
   private initializeDefaultCurrencies(): void {
@@ -632,7 +630,6 @@ export class MemStorage implements IStorage {
       updatedAt: new Date(),
     };
     this.contacts.set(id, contact);
-    console.log('Contact created successfully:', contact);
     return contact;
   }
 
@@ -725,7 +722,6 @@ export class MemStorage implements IStorage {
       // Store the linking relationship
       this.bankAccountLinks.set(bankAccountId, chartAccountId);
       
-      console.log(`Successfully linked bank account ${bankAccountId} to chart account ${chartAccountId} (${chartAccount.name})`);
       return true;
     } catch (error) {
       console.error('Error linking bank account:', error);
@@ -738,10 +734,8 @@ export class MemStorage implements IStorage {
       const wasLinked = this.bankAccountLinks.has(bankAccountId);
       if (wasLinked) {
         this.bankAccountLinks.delete(bankAccountId);
-        console.log(`Successfully unlinked bank account ${bankAccountId}`);
         return true;
       }
-      console.warn(`Bank account ${bankAccountId} was not linked`);
       return false;
     } catch (error) {
       console.error('Error unlinking bank account:', error);
@@ -903,8 +897,6 @@ export class MemStorage implements IStorage {
     };
 
     this.accounts.set(id.toString(), newAccount);
-    console.log('Account created successfully:', newAccount);
-    console.log('Accounts map size:', this.accounts.size);
     return newAccount;
   }
 
@@ -955,7 +947,6 @@ export class MemStorage implements IStorage {
     };
 
     this.leads.set(newLead.id.toString(), newLead);
-    console.log('Lead created successfully:', newLead);
     return newLead;
   }
   async updateLead(id: number, updateData: Partial<InsertLead>): Promise<Lead | undefined> {
@@ -970,7 +961,6 @@ export class MemStorage implements IStorage {
     };
 
     this.leads.set(id.toString(), updatedLead);
-    console.log('Lead updated successfully:', updatedLead);
     return updatedLead;
   }
 
@@ -1039,7 +1029,6 @@ export class MemStorage implements IStorage {
         convertedDealId: result.deal?.id
       });
 
-      console.log('Lead converted successfully:', result);
       return result;
 
     } catch (error) {
@@ -1586,11 +1575,9 @@ export class MemStorage implements IStorage {
   }
 
   async getEmployees(): Promise<Employee[]> { 
-    console.log(`Getting employees - map size: ${this.employees.size}`);
     const employees = Array.from(this.employees.values()).sort((a, b) => 
       new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
     );
-    console.log(`Returning employees: ${JSON.stringify(employees)}`);
     return employees;
   }
   async getEmployee(id: number): Promise<Employee | undefined> { 
@@ -1616,9 +1603,6 @@ export class MemStorage implements IStorage {
       updatedAt: new Date() 
     };
     this.employees.set(newEmployee.id, newEmployee);
-    console.log(`Employee created: ${newEmployee.firstName} ${newEmployee.lastName} (ID: ${newEmployee.id})`);
-    console.log(`Employees map size: ${this.employees.size}`);
-    console.log(`All employees: ${JSON.stringify(Array.from(this.employees.values()))}`);
     return newEmployee;
   }
   async updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined> { 
@@ -1811,25 +1795,19 @@ export class MemStorage implements IStorage {
     // Verification token is already stored directly on the user object
     // No need for separate mapping that gets lost on server restart
     
-    console.log('✅ Registered user created:', user.email);
     return user;
   }
 
   async getUserByVerificationToken(token: string): Promise<any> {
-    console.log(`🔍 DEBUG: Searching for token: ${token.substring(0, 15)}...`);
-    console.log(`🔍 DEBUG: Total registered users: ${this.registeredUsers.size}`);
     
     // Search through registered users directly by their verification token
     for (const user of this.registeredUsers.values()) {
-      console.log(`🔍 DEBUG: Checking user ${user.email}, verificationToken: ${user.verificationToken?.substring(0, 15) || 'NULL'}..., emailVerificationToken: ${user.emailVerificationToken?.substring(0, 15) || 'NULL'}...`);
       
       // CRITICAL FIX: Check both field names for compatibility
       if (user.verificationToken === token || user.emailVerificationToken === token) {
-        console.log(`✅ DEBUG: FOUND MATCHING USER: ${user.email}`);
         return user;
       }
     }
-    console.log(`❌ DEBUG: No user found with token: ${token.substring(0, 15)}...`);
     return null;
   }
 

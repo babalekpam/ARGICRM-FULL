@@ -356,7 +356,6 @@ export class GoogleAPIService {
     // For now, we'll return a simulated event ID
     const eventId = `crm_event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    console.log('Calendar event created (simulated):', {
       id: eventId,
       summary: event.summary,
       start: event.start,
@@ -380,7 +379,6 @@ export class GoogleAPIService {
         results.services.push('Google Maps');
       }
     } catch (error) {
-      console.log('Google Maps test failed:', error);
     }
 
     // Test Google Translate
@@ -390,7 +388,6 @@ export class GoogleAPIService {
         results.services.push('Google Translate');
       }
     } catch (error) {
-      console.log('Google Translate test failed:', error);
     }
 
     // Test Google Gemini AI
@@ -404,7 +401,6 @@ export class GoogleAPIService {
         results.services.push('Google Gemini AI');
       }
     } catch (error) {
-      console.log('Google Gemini AI test failed:', error);
     }
 
     results.success = results.services.length > 0;

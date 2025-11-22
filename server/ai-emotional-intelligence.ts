@@ -486,7 +486,6 @@ export class EmotionalIntelligenceEngine {
 
   // OpenRouter fallback analysis method
   async analyzeWithOpenRouter(text: string, customerId?: string): Promise<EmotionalAnalysis> {
-    console.log('📡 Using OpenRouter AI fallback for emotional analysis...');
     
     // Check cache first
     const cacheKey = this.generateCacheKey(text);

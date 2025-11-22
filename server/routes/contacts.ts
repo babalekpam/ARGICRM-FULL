@@ -111,18 +111,14 @@ router.post('/:id/analyze', async (req, res) => {
       );
       sentiment = response.data;
     } catch (apiError) {
-      console.log('External AI API not available, using built-in analysis');
       // Fallback to simple sentiment analysis
       sentiment = performSimpleSentimentAnalysis(message);
     }
 
     // Add Qwen AI reply classification
     try {
-      console.log('🤖 Classifying reply with Qwen AI...');
       qwenClassification = await classifyReplyForNodeCRM(message);
-      console.log('✅ Qwen classification result:', qwenClassification);
     } catch (qwenError) {
-      console.log('⚠️ Qwen AI classification failed, using fallback');
       qwenClassification = {
         classification: 'negative',
         score: 20,
@@ -146,7 +142,6 @@ router.post('/:id/analyze', async (req, res) => {
       try {
         await mongoDb.collection('emotion_logs').insertOne(emotionLog);
       } catch (mongoError) {
-        console.log('MongoDB insert failed, using in-memory storage');
         emotionStorage.push(emotionLog);
       }
     } else {

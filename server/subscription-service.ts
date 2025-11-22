@@ -172,9 +172,7 @@ class SubscriptionService {
       if (existingPlans.length === 0) {
         // Insert default plans
         await db.insert(subscriptionPlans).values(this.defaultPlans);
-        console.log("✅ Default subscription plans initialized");
       } else {
-        console.log("ℹ️ Subscription plans already exist");
       }
     } catch (error) {
       console.error("❌ Error initializing subscription plans:", error);
@@ -189,9 +187,7 @@ class SubscriptionService {
       if (existingFeatures.length === 0) {
         // Insert default features
         await db.insert(packageFeatures).values(this.defaultFeatures);
-        console.log("✅ Default package features initialized");
       } else {
-        console.log("ℹ️ Package features already exist");
       }
     } catch (error) {
       console.error("❌ Error initializing package features:", error);
@@ -246,7 +242,6 @@ class SubscriptionService {
   async changePlan(userId: string, newPlanId: string): Promise<boolean> {
     try {
       // For now, just return success - real implementation would handle payment processing
-      console.log(`User ${userId} changing to plan ${newPlanId}`);
       return true;
     } catch (error) {
       console.error("Error changing plan:", error);
@@ -306,7 +301,6 @@ class SubscriptionService {
         })
         .where(eq(userSubscriptions.userId, userId));
 
-      console.log(`Account locked for user ${userId} due to trial expiration`);
       return true;
     } catch (error) {
       console.error("Error locking account:", error);
@@ -331,7 +325,6 @@ class SubscriptionService {
         })
         .where(eq(userSubscriptions.userId, userId));
 
-      console.log(`Account unlocked for user ${userId} with payment method`);
       return true;
     } catch (error) {
       console.error("Error unlocking account:", error);

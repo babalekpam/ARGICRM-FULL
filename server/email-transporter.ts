@@ -6,7 +6,6 @@ export async function createTransporter() {
   const sendgridApiKey = process.env.SENDGRID_API_KEY;
   
   if (sendgridApiKey) {
-    console.log('🔧 Configuring SendGrid Mail Service...');
     try {
       // Use official SendGrid Mail Service
       const mailService = new MailService();
@@ -19,7 +18,6 @@ export async function createTransporter() {
         throw new Error('Invalid SendGrid API key format');
       }
       
-      console.log('✅ SendGrid Mail Service configured successfully');
       
       // Return a nodemailer-compatible transporter interface
       return {
@@ -90,17 +88,11 @@ export async function createTransporter() {
             
             return true;
           } catch (error: any) {
-            console.log('❌ SendGrid verification failed:', error.message);
             throw error;
           }
         }
       };
     } catch (error) {
-      console.log('❌ SendGrid Mail Service configuration failed:', (error as Error).message);
-      console.log('🔍 Please check:');
-      console.log('   1. SendGrid API key is valid and not expired');
-      console.log('   2. Domain authentication is completed for argilette.org');
-      console.log('   3. Sender identity is verified in SendGrid dashboard');
     }
   }
   // Check for Gmail SMTP credentials
@@ -115,7 +107,6 @@ export async function createTransporter() {
   
   // Try Gmail SMTP first
   if (gmailUser && gmailPass) {
-    console.log('🔧 Configuring Gmail SMTP...');
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -126,20 +117,13 @@ export async function createTransporter() {
     
     try {
       await transporter.verify();
-      console.log('✅ Gmail SMTP configured successfully');
       return transporter;
     } catch (error) {
-      console.log('❌ Gmail SMTP verification failed:', (error as Error).message);
     }
   }
   
   // Try generic SMTP
   if (smtpHost && smtpPort && smtpUser && smtpPass) {
-    console.log('🔧 Configuring IONOS SMTP...');
-    console.log(`📧 SMTP Host: ${smtpHost}`);
-    console.log(`📧 SMTP Port: ${smtpPort}`);
-    console.log(`📧 SMTP User: ${smtpUser}`);
-    console.log(`📧 From Email: ${process.env.SMTP_FROM_EMAIL || 'not configured'}`);
     
     const transporter = nodemailer.createTransport({
       host: smtpHost,
@@ -153,15 +137,8 @@ export async function createTransporter() {
     
     try {
       await transporter.verify();
-      console.log('✅ IONOS SMTP configured successfully and verified!');
-      console.log('📬 Email system ready to send from:', process.env.SMTP_FROM_EMAIL || smtpUser);
       return transporter;
     } catch (error) {
-      console.log('❌ IONOS SMTP verification failed:', (error as Error).message);
-      console.log('🔍 Please check:');
-      console.log('   1. SMTP credentials are correct');
-      console.log('   2. IONOS allows SMTP connections from this server');
-      console.log('   3. Port and security settings are correct');
     }
   }
   
@@ -170,7 +147,6 @@ export async function createTransporter() {
   const outlookPass = process.env.OUTLOOK_PASSWORD;
   
   if (outlookUser && outlookPass) {
-    console.log('🔧 Configuring Outlook SMTP...');
     const transporter = nodemailer.createTransport({
       service: 'hotmail',
       auth: {
@@ -181,34 +157,21 @@ export async function createTransporter() {
     
     try {
       await transporter.verify();
-      console.log('✅ Outlook SMTP configured successfully');
       return transporter;
     } catch (error) {
-      console.log('❌ Outlook SMTP verification failed:', (error as Error).message);
     }
   }
   
-  console.log('⚠️ No working SMTP configuration found.');
-  console.log('🔍 DNS propagation may still be in progress for SendGrid domain verification.');
-  console.log('🧪 Creating development email simulator...');
   
   // Development fallback: Create a mock transporter that simulates sending emails
   if (process.env.NODE_ENV === 'development') {
-    console.log('📧 Development mode: emails will be simulated and logged');
     return {
       sendMail: async (mailOptions: any) => {
-        console.log('\n📧 ===== SIMULATED EMAIL SENT =====');
-        console.log('📬 To:', mailOptions.to);
-        console.log('📋 Subject:', mailOptions.subject);
-        console.log('👤 From:', mailOptions.from);
         if (mailOptions.text) {
-          console.log('📄 Text Content Preview:', mailOptions.text.substring(0, 200) + '...');
           const urlMatch = mailOptions.text.match(/https?:\/\/[^\s]+/);
           if (urlMatch) {
-            console.log('🔗 Verification URL:', urlMatch[0]);
           }
         }
-        console.log('📧 ===== END EMAIL SIMULATION =====\n');
         return { messageId: 'simulated-' + Date.now() };
       },
       verify: async () => true // Always return true for verification

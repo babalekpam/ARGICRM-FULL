@@ -22,7 +22,6 @@ export class ZapierIntegrationService {
     try {
       const webhookUrl = this.webhookEndpoints.get(trigger);
       if (!webhookUrl) {
-        console.log(`No webhook registered for trigger: ${trigger}`);
         return false;
       }
 

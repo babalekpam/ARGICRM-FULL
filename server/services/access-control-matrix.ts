@@ -143,7 +143,6 @@ export class AccessControlMatrixService {
       this.matrixCache = tenantMatrices;
       this.lastCacheUpdate = Date.now();
       
-      console.log(`✅ Loaded ${sampleMatrices.length} access control matrices for ${tenantMatrices.size} tenants`);
     } catch (error) {
       console.error('Failed to load access control matrix:', error);
     }
@@ -415,7 +414,6 @@ export class AccessControlMatrixService {
       const result = await db.execute(query, [resourceId, userId, userId]);
       return result.rows.length > 0;
     } catch (error) {
-      console.warn('Failed to check resource ownership:', error);
       return false;
     }
   }
@@ -468,7 +466,6 @@ export class AccessControlMatrixService {
 
       return true;
     } catch (error) {
-      console.warn('Failed to check request limits:', error);
       return true; // Allow on error to prevent system lockout
     }
   }

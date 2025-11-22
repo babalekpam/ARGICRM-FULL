@@ -100,7 +100,6 @@ export class StoreAutomationEngine {
 
   private initializeDefaultRules() {
     // Initialize with common automation rule templates
-    console.log('🤖 Store Automation Engine initialized');
   }
 
   async createAutomationRule(tenantId: string, rule: Partial<AutomationRule>): Promise<AutomationRule> {
@@ -221,32 +220,26 @@ export class StoreAutomationEngine {
 
   private async sendRestockAlert(tenantId: string, parameters: any, data: any): Promise<void> {
     // Implementation for restock alerts
-    console.log(`📦 Restock alert sent for tenant ${tenantId}:`, data);
   }
 
   private async adjustPrice(tenantId: string, parameters: any, data: any): Promise<void> {
     // Implementation for price adjustments
-    console.log(`💰 Price adjusted for tenant ${tenantId}:`, data);
   }
 
   private async sendAutomatedEmail(tenantId: string, parameters: any, data: any): Promise<void> {
     // Implementation for automated emails
-    console.log(`📧 Automated email sent for tenant ${tenantId}:`, data);
   }
 
   private async createAutomatedCoupon(tenantId: string, parameters: any, data: any): Promise<void> {
     // Implementation for automated coupon creation
-    console.log(`🎟️ Automated coupon created for tenant ${tenantId}:`, data);
   }
 
   private async updateInventory(tenantId: string, parameters: any, data: any): Promise<void> {
     // Implementation for inventory updates
-    console.log(`📊 Inventory updated for tenant ${tenantId}:`, data);
   }
 
   private async createSocialMediaPost(tenantId: string, parameters: any, data: any): Promise<void> {
     // Implementation for social media posts
-    console.log(`📱 Social media post created for tenant ${tenantId}:`, data);
   }
 
   private async generateAIResponse(rule: AutomationRule, parameters: any, data: any): Promise<void> {
@@ -295,17 +288,14 @@ export class StoreAutomationEngine {
 
   private async processAIResponse(tenantId: string, aiResponse: string, data: any): Promise<void> {
     // Process and execute the AI-generated response
-    console.log(`🤖 AI response processed for tenant ${tenantId}:`, aiResponse);
   }
 
   private async generateFallbackResponse(tenantId: string, data: any): Promise<void> {
     // Fallback response when AI is unavailable
-    console.log(`🔄 Fallback response generated for tenant ${tenantId}`);
   }
 
   private async sendNotification(tenantId: string, parameters: any, data: any): Promise<void> {
     // Implementation for notifications
-    console.log(`🔔 Notification sent for tenant ${tenantId}:`, data);
   }
 
   async getAutomationInsights(tenantId: string): Promise<AutomationInsights> {

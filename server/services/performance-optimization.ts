@@ -315,7 +315,6 @@ export class PerformanceOptimizationService {
     // Preload in priority order
     for (const query of criticalQueries) {
       // This would integrate with actual data loading logic
-      console.log(`Preloading ${query.key} with priority: ${query.priority}`);
     }
   }
 

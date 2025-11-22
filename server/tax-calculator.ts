@@ -82,7 +82,6 @@ export class TaxCalculator {
       const storedRates = await storage.getTaxRates();
       return storedRates || [];
     } catch (error) {
-      console.log("No tax rates configured in tax settings - taxes will not be applied");
       return [];
     }
   }

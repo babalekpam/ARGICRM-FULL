@@ -285,22 +285,18 @@ export class EcommerceHealthService {
 
   async acknowledgeAlert(alertId: string, userId: string): Promise<void> {
     // In a real implementation, this would update the alert in the database
-    console.log(`Alert ${alertId} acknowledged by user ${userId}`);
   }
 
   async resolveAlert(alertId: string, userId: string, resolution: string): Promise<void> {
     // In a real implementation, this would update the alert in the database
-    console.log(`Alert ${alertId} resolved by user ${userId} with resolution: ${resolution}`);
   }
 
   async recordHealthMetric(metric: InsertEcommerceHealthMetric): Promise<void> {
     // In a real implementation, this would insert the metric into the database
-    console.log('Recording health metric:', metric);
   }
 
   async createSnapshot(snapshot: InsertEcommercePerformanceSnapshot): Promise<void> {
     // In a real implementation, this would insert the snapshot into the database
-    console.log('Creating performance snapshot:', snapshot);
   }
 }
 

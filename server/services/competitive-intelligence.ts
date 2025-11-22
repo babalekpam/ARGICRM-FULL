@@ -347,7 +347,6 @@ export class CompetitiveIntelligence {
 
           aiInsights = JSON.parse(response.choices[0].message.content || '{}');
         } catch (aiError) {
-          console.warn('AI analysis failed, using fallback analysis:', aiError);
         }
       }
 

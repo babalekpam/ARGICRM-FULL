@@ -14,9 +14,7 @@ const salesChannelService = SalesChannelService.getInstance();
 router.get('/debug/platform-owner-channels', async (req: any, res: any) => {
   try {
     const platformOwnerTenantId = '00000000-0000-0000-0000-000000000001';
-    console.log('DEBUG: Fetching channels for platform owner tenant:', platformOwnerTenantId);
     const channels = await salesChannelService.getChannelsByTenant(platformOwnerTenantId);
-    console.log('DEBUG: Found', channels.length, 'channels');
     res.json({
       success: true,
       channels,
@@ -50,11 +48,7 @@ router.use('/connect', validateUserTenant);
 // Get all sales channels for current tenant
 router.get('/channels', requirePermission('marketing.read'), async (req: TenantRequest, res) => {
   try {
-    console.log('🚀 GET /channels - tenant ID:', req.tenant!.id);
-    console.log('🚀 GET /channels - user email:', req.user?.email);
-    console.log('🚀 GET /channels - platform owner tenant:', '00000000-0000-0000-0000-000000000001');
     const channels = await salesChannelService.getChannelsByTenant(req.tenant!.id);
-    console.log('🚀 GET /channels - found channels:', channels.length);
     res.json({
       success: true,
       channels,
@@ -130,9 +124,7 @@ router.get('/platforms', async (req: any, res: any) => {
 router.get('/debug/platform-owner-channels', async (req: any, res: any) => {
   try {
     const platformOwnerTenantId = '00000000-0000-0000-0000-000000000001';
-    console.log('DEBUG: Fetching channels for platform owner tenant:', platformOwnerTenantId);
     const channels = await salesChannelService.getChannelsByTenant(platformOwnerTenantId);
-    console.log('DEBUG: Found', channels.length, 'channels');
     res.json({
       success: true,
       channels,

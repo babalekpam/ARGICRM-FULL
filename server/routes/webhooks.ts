@@ -480,7 +480,4 @@ export function registerWebhookRoutes(app: Express) {
   app.post("/api/webhooks/email", handleEmailWebhook as any);
   app.post("/api/webhooks/chat", handleChatWebhook as any);
   
-  console.log("✅ AI Employee webhook routes registered:");
-  console.log("   POST /api/webhooks/email");
-  console.log("   POST /api/webhooks/chat");
 }

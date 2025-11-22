@@ -332,7 +332,6 @@ export class IntelligentTicketRouting {
   ): Promise<void> {
     try {
       // Log for analytics and continuous improvement
-      console.log('Ticket routing decision:', {
         ticketId,
         priority: decision.priority,
         assignedAgent: decision.assignedAgent,

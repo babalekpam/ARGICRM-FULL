@@ -27,7 +27,6 @@ declare global {
 if (!global.__REPORTS_STORAGE__) {
   global.__REPORTS_STORAGE__ = [];
   global.__REPORTS_ID_COUNTER__ = 1;
-  console.log('Initialized global reports storage (empty)');
 }
 
 export function registerAdvancedRoutes(app: Express) {
@@ -370,7 +369,6 @@ export function registerAdvancedRoutes(app: Express) {
   // Reports Routes
   app.get("/api/reports", async (req, res) => {
     try {
-      console.log('Fetching reports from storage:', global.__REPORTS_STORAGE__?.length);
       res.json(global.__REPORTS_STORAGE__ || []);
     } catch (error: any) {
       console.error('Reports fetch error:', error);
@@ -380,7 +378,6 @@ export function registerAdvancedRoutes(app: Express) {
 
   app.post("/api/reports", async (req, res) => {
     try {
-      console.log('Received report data:', req.body);
       
       const { name, description, reportType, accounts, dateRange, includeMetrics } = req.body;
       
@@ -413,8 +410,6 @@ export function registerAdvancedRoutes(app: Express) {
       global.__REPORTS_STORAGE__ = global.__REPORTS_STORAGE__ || [];
       global.__REPORTS_STORAGE__.push(report);
       
-      console.log('Created and stored report:', report);
-      console.log('Total reports in storage:', global.__REPORTS_STORAGE__.length);
       res.status(201).json(report);
     } catch (err: any) {
       console.error('Report creation error:', err);
@@ -492,7 +487,6 @@ export function registerAdvancedRoutes(app: Express) {
       global.__REPORTS_STORAGE__ = global.__REPORTS_STORAGE__ || [];
       global.__REPORTS_STORAGE__.push(importedReport);
       
-      console.log('Imported report:', importedReport);
       res.status(201).json(importedReport);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -686,9 +680,7 @@ export function registerAdvancedRoutes(app: Express) {
       const tenantId = isPlatformOwner ? 'platform-tenant' : `tenant-${userEmail.replace('@', '-').replace('.', '-')}`;
       const userStorage = new DatabaseStorage(userEmail, tenantId, isPlatformOwner);
       
-      console.log(`🔧 Advanced Products API: Getting products for email: ${userEmail}, tenantId: ${tenantId}, isPlatformOwner: ${isPlatformOwner}`);
       const products = await userStorage.getProducts();
-      console.log(`🔧 Advanced API Found ${products.length} products in database`);
       res.json(products);
     } catch (error: any) {
       console.error('Error getting products in advanced.ts:', error);
@@ -707,8 +699,6 @@ export function registerAdvancedRoutes(app: Express) {
       const productId = req.params.id;
       const updates = req.body;
       
-      console.log(`🔧 Update Product: Updating product ${productId} for user: ${userEmail}`);
-      console.log(`🔧 Update data:`, updates);
       
       // Update the product
       const updatedProduct = await userStorage.updateProduct(productId, updates);
@@ -717,7 +707,6 @@ export function registerAdvancedRoutes(app: Express) {
         return res.status(404).json({ error: "Product not found" });
       }
       
-      console.log(`🔧 Product updated successfully:`, updatedProduct);
       res.json(updatedProduct);
     } catch (error: any) {
       console.error('Error updating product:', error);
@@ -739,7 +728,6 @@ export function registerAdvancedRoutes(app: Express) {
         return res.status(400).json({ error: "Product IDs array is required" });
       }
 
-      console.log(`🔧 Bulk Delete: Deleting ${productIds.length} products for user: ${userEmail}`);
       
       // Delete each product
       let deletedCount = 0;
@@ -755,7 +743,6 @@ export function registerAdvancedRoutes(app: Express) {
         }
       }
       
-      console.log(`🔧 Bulk Delete: Successfully deleted ${deletedCount} products, ${errors.length} errors`);
       
       res.json({
         success: true,

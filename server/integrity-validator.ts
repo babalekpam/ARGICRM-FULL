@@ -31,7 +31,6 @@ export class PageIntegrityValidator {
 
   // 4.1 End-to-End Test Suite Execution
   async executeEndToEndTests(): Promise<ValidationResult[]> {
-    console.log('Starting End-to-End Test Suite...');
     
     await this.testCRMDataFlow();
     await this.testMarketingAutomation();
@@ -44,7 +43,6 @@ export class PageIntegrityValidator {
 
   // 4.2 Inter-page Navigation Validation
   async validateInterPageNavigation(): Promise<ValidationResult[]> {
-    console.log('Validating Inter-page Navigation...');
     
     const navigationPaths = [
       { path: 'Dashboard → Reports → Billing', steps: ['/', '/reports', '/bookkeeping'] },
@@ -63,7 +61,6 @@ export class PageIntegrityValidator {
 
   // 4.3 Subscription Gate Enforcement Verification
   async verifySubscriptionGates(): Promise<ValidationResult[]> {
-    console.log('Verifying Subscription Gate Enforcement...');
     
     const subscriptionTests = [
       { plan: 'starter', feature: 'Advanced Analytics', endpoint: '/advanced-analytics', shouldAllow: false },
@@ -85,7 +82,6 @@ export class PageIntegrityValidator {
 
   // 4.4 Cross-tenant Data Isolation Audit
   async auditCrossTenantDataIsolation(): Promise<ValidationResult[]> {
-    console.log('Auditing Cross-tenant Data Isolation...');
     
     // Create test data for each tenant
     await this.setupTenantTestData();
@@ -355,7 +351,6 @@ export class PageIntegrityValidator {
     results: ValidationResult[];
     recommendations: string[];
   }> {
-    console.log('🚀 Starting Complete Page Integrity Validation...');
     
     // Execute all validation categories
     await this.executeEndToEndTests();
