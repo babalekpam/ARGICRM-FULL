@@ -1,0 +1,210 @@
+#### Quick context
+It’s Saturday, November 22, 2025 (UTC). You chose Option B: build your own “AI employee” on top of your CRM at ARGILETTE.org. Below is a concise, deploy‑tonight blueprint that handles social posting, prospect engagement, emails, replies, meeting booking, and deal progression.
+
+#### What this AI employee will do
+- Social: draft, tailor, and schedule posts per platform; analyze performance to inform next posts. AI can meaningfully accelerate captions, posts, competitor analysis, and scheduling workflows [[1]](https://metricool.com/ai-social-media-marketing/).  
+- Prospecting: identify and qualify leads, then engage them via email/social per your ICP and pipeline stages (identify → qualify → engage) [[2]](https://www.artisan.co/blog/ai-for-sales-prospecting).  
+- Smart outreach: use past interactions to suggest best messaging/timing and analyze social signals; watch for trigger events and rank prospects by conversion likelihood for lead scoring [[3]](https://www.ibm.com/think/topics/ai-sales-prospecting) [[4]](https://www.ringcentral.com/us/en/blog/ai-outreach/).  
+- Email at scale: personalize content using CRM data to boost relevance and engagement; handle replies, objections, and unsubscribes automatically [[5]](https://encharge.io/ai-email-tools/).  
+- Pipeline moves: update contact/deal records, log every touch, and propose next‑best action (pattern used by modern AI CRMs/agents) [[6]](https://www.hubspot.com/products/artificial-intelligence) [[3]](https://www.ibm.com/think/topics/ai-sales-prospecting).
+
+---
+
+#### High‑level architecture for ARGILETTE.org
+- LLM service: your preferred model (hosted or API) for generation, classification, summarization.
+- Job runner: schedules social posts and follow‑ups (cron/worker).
+- Inbound webhooks:
+  - /webhooks/email for reply handling (via SMTP/Inbound Parse).
+  - /webhooks/chat for site/WhatsApp chat.
+- Outbound connectors:
+  - Email via your SMTP/SendGrid.
+  - Social APIs: LinkedIn Marketing, Meta Graph (FB/IG), X API.
+- CRM adapter: thin client that creates/updates Contacts, Deals, Activities inside ARGILETTE.
+- Storage: your CRM DB plus a small “ai_ops” table for queues, rate limiting, and audit logs.
+
+---
+
+#### Tonight’s setup checklist (2–6 hours)
+1) Credentials
+   - Email: SMTP (or SendGrid API key) + inbound parse/webhook URL.  
+   - Social: app tokens for LinkedIn, Meta (FB/IG), X.  
+   - Optional chat: WhatsApp Business Cloud API or your site widget.
+2) CRM endpoints (confirm or add)
+   - POST /api/contacts, POST /api/deals, POST /api/activities, PATCH /api/deals/{id}.  
+   - Optional: POST /api/leads/score to store lead_score, intent.
+3) Deploy a lightweight service (Docker) with:
+   - FastAPI/Express app for webhooks and cron tasks.
+   - An LLM wrapper module.
+   - A CRM client module.
+4) Add the chat widget to ARGILETTE.org:
+   - One script tag that posts messages to /webhooks/chat and displays bot responses.
+5) Connect inbound email
+   - Configure an inbound parse (e.g., SendGrid) to POST MIME to /webhooks/email.
+6) Schedule jobs
+   - Cron for daily social generation/scheduling and follow‑up sequences.
+
+---
+
+#### Minimal API you can expose in your CRM
+- POST /api/contacts {email, name, phone, fields} → {id}
+- POST /api/deals {contact_id, stage, value, source, context} → {id}
+- PATCH /api/deals/{id} {stage, score, next_action, notes}
+- POST /api/activities {contact_id, deal_id, type, channel, direction, content, meta}
+
+Add fields: contact.lead_score, contact.last_intent, deal.next_best_action.
+
+---
+
+#### Core agent behaviors and prompts
+- Social Author (system): “You are ARGILETTE’s social marketer. Create platform‑specific posts with strong hooks and clear CTAs. Keep brand voice: concise, helpful, confident. Offer 1 actionable tip per post.”
+- SDR Outreach (system): “Qualify by pain, budget, authority, and timing. Personalize with CRM fields. Use a friendly, concise tone. End with 2 time slots.”
+- Reply Handler (system): “Classify intent: positive, neutral, objection, pricing, unsubscribe, OOO, bounce. Propose next_best_action and email_draft under 120 words.”
+- Closer (system): “Draft proposals/recaps with clear value, scope bullets, next steps, and scheduling link.”
+
+---
+
+#### Code: skeleton service (FastAPI, Python)
+
+```python
+# app.py
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+from llm import generate
+from crm import upsert_contact, create_deal, update_deal, log_activity
+from mailer import send_email
+from scheduler import schedule_post
+
+app = FastAPI()
+
+class EmailEvent(BaseModel):
+    from_addr: str
+    name: str | None = None
+    subject: str
+    body: str
+    thread_id: str | None = None
+
+@app.post("/webhooks/email")
+async def on_email(event: EmailEvent):
+    contact = upsert_contact(email=event.from_addr, name=event.name or "")
+    deal_id = create_deal(contact_id=contact.id, source="email", context={}).id
+
+    analysis = generate(
+        system="Classify: positive, neutral, objection, pricing, unsubscribe, ooo, bounce. "
+               "Return JSON with {intent, score:0-100, summary, next_stage, next_action}.",
+        user=event.body
+    )
+
+    if analysis["intent"] == "unsubscribe":
+        log_activity(contact.id, deal_id, "email", "inbound", event.body, {"intent":"unsubscribe"})
+        return {"ok": True}
+
+    reply = generate(
+        system="Write a concise, friendly sales reply under 120 words that advances the deal. "
+               "Offer two meeting slots, ask one qualifying question.",
+        user=event.body
+    )
+
+    send_email(to=event.from_addr, subject=f"Re: {event.subject}", body=reply)
+    update_deal(deal_id, stage=analysis["next_stage"], score=analysis["score"],
+                notes=analysis["summary"], next_action=analysis["next_action"])
+    log_activity(contact.id, deal_id, "email", "outbound", reply, {"intent":analysis["intent"]})
+    return {"ok": True}
+
+class ChatMsg(BaseModel):
+    session_id: str
+    message: str
+
+@app.post("/webhooks/chat")
+async def on_chat(msg: ChatMsg):
+    # Qualify quickly: pain, goal, timeframe, budget, contact
+    bot = generate(
+        system="You are ARGILETTE’s site assistant. Ask focused questions to qualify lead in <=4 turns. "
+               "Be helpful; if qualified, offer booking link.",
+        user=msg.message
+    )
+    # Persist transcript, create/update contact and deal
+    return {"reply": bot}
+
+@app.post("/cron/social/generate")
+async def cron_social():
+    brief = "ICP: B2B SaaS founders; Topics: CRM automation, AI outreach, deal acceleration."
+    ideas = generate(system="Create 5 post ideas with hooks + CTA for LinkedIn, X, IG.", user=brief)
+    for idea in ideas if isinstance(ideas, list) else [ideas]:
+        post = generate(system="Rewrite for LinkedIn; add 2 relevant hashtags; 220-260 words max.", user=idea)
+        post_id = schedule_post(platform="linkedin", content=post)
+        # log to CRM
+    return {"scheduled": True}
+```
+
+Placeholders: implement llm.generate, crm.*, mailer.*, scheduler.* to match your stack.
+
+---
+
+#### Website widget (paste before </body> on ARGILETTE.org)
+
+```html
+<script>
+(function(){
+  const box = document.createElement('div'); box.id='argilette-bot';
+  box.style="position:fixed;bottom:20px;right:20px;width:360px;max-width:90vw;"+
+            "height:520px;box-shadow:0 8px 32px rgba(0,0,0,.25);border-radius:12px;"+
+            "background:#fff;display:flex;flex-direction:column;overflow:hidden;font-family:sans-serif";
+  const head = document.createElement('div'); head.style="padding:12px 14px;background:#111;color:#fff";
+  head.innerText="ARGILETTE Assistant";
+  const msgs = document.createElement('div'); msgs.style="flex:1;padding:12px;overflow:auto";
+  const input = document.createElement('input'); input.placeholder="Ask us…"; input.style="border:0;border-top:1px solid #eee;padding:12px";
+  input.addEventListener('keydown', async e=>{
+    if(e.key==='Enter' && input.value.trim()){
+      const user = input.value; input.value='';
+      const u = document.createElement('div'); u.innerText=user; u.style="margin:6px 0;text-align:right"; msgs.appendChild(u);
+      const r = await fetch('/webhooks/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({session_id:crypto.randomUUID(), message:user})});
+      const data = await r.json();
+      const b = document.createElement('div'); b.innerText=data.reply; b.style="margin:6px 0;text-align:left"; msgs.appendChild(b);
+      msgs.scrollTop=msgs.scrollHeight;
+    }
+  });
+  box.append(head,msgs,input); document.body.appendChild(box);
+})();
+</script>
+```
+
+---
+
+#### Social + outreach workflow (how it runs)
+- Daily, the Social Author generates 3–5 posts and schedules them with platform APIs; results (post_id, impressions, CTR) feed back to your CRM for analytics and next‑post guidance. AI‑assisted social improves speed, consistency, and analytics‑driven iteration [[1]](https://metricool.com/ai-social-media-marketing/).  
+- Prospecting sequences are created per ICP and pipeline: identify → qualify → engage, with automated follow‑ups [[2]](https://www.artisan.co/blog/ai-for-sales-prospecting). The system times messages using past interaction analysis and social cues [[3]](https://www.ibm.com/think/topics/ai-sales-prospecting), watches for trigger events (job changes, funding), and ranks prospects to prioritize reps [[4]](https://www.ringcentral.com/us/en/blog/ai-outreach/).  
+- Emails are personalized with contact fields and behavioral data to increase relevance and engagement [[5]](https://encharge.io/ai-email-tools/).  
+- Every inbound reply is classified, responded to, and logged; deals advance stages automatically with next‑best action suggestions [[3]](https://www.ibm.com/think/topics/ai-sales-prospecting).
+
+---
+
+#### Data model additions
+- Contact: lead_score (0–100), last_intent, last_channel, opt_in (bool), locale.
+- Deal: stage, value, score, next_best_action, last_touch, owner_id.
+- Activity: type (email, chat, social, call), direction, content, meta (post_id, thread_id, sentiment).
+
+---
+
+#### Compliance and deliverability
+- Include one‑click unsubscribe in all outreach; honor and log “unsubscribe” intent immediately [[5]](https://encharge.io/ai-email-tools/).  
+- Respect regional consent (GDPR/PECR); store lawful basis and timestamp for email opt‑ins.  
+- Warm sender domains and monitor bounce/complaint rates; specialized outreach platforms highlight deliverability as a first‑class concern.
+
+---
+
+#### Go‑live KPIs
+- Social: weekly impressions, engagement rate, profile click‑through, lead forms started [[1]](https://metricool.com/ai-social-media-marketing/).
+- Outreach: open rate, positive‑reply rate, meeting rate, spam/bounce rate.
+- Pipeline: AI‑qualified leads, average time to first meeting, SQL→Closed‑Won conversion [[2]](https://www.artisan.co/blog/ai-for-sales-prospecting) [[4]](https://www.ringcentral.com/us/en/blog/ai-outreach/).
+
+---
+
+#### What I need from you to finalize integration on ARGILETTE.org
+1) SMTP/SendGrid credentials and the inbound parse domain → route to /webhooks/email.  
+2) Social app tokens (LinkedIn, Meta, X) and which platforms to start with.  
+3) Your ICP and 2–3 offers to seed the first campaigns.  
+4) CRM API paths (if different from those above) and any required auth headers.  
+5) Do you want human approval for first week’s social posts and outbound emails?
+
+Once you share these, I’ll adapt the endpoints, provide exact environment variables, and tailor prompts to Argilette’s brand so the AI employee can start working tonight.

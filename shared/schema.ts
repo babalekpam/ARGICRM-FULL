@@ -1906,11 +1906,18 @@ export const contacts = pgTable("contacts", {
   tags: jsonb("tags").$type<string[]>().default([]),
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").references(() => users.id),
+  // AI Employee fields
+  leadScore: integer("lead_score").default(0), // 0-100 AI-calculated score
+  lastIntent: text("last_intent"), // positive, neutral, objection, pricing, unsubscribe, ooo, bounce
+  lastChannel: text("last_channel"), // email, chat, social, call, linkedin, twitter
+  optIn: boolean("opt_in").default(false), // Email/marketing consent
+  locale: text("locale").default("en"), // Language/region preference
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_contacts_tenant").on(table.tenantId),
   index("idx_contacts_assigned").on(table.assignedTo),
+  index("idx_contacts_lead_score").on(table.leadScore),
 ]);
 
 export const accounts = pgTable("accounts", {
@@ -1973,6 +1980,12 @@ export const deals = pgTable("deals", {
   notes: text("notes"),
   createdBy: text("created_by"),
   tenantId: text("tenant_id"), // Multi-tenant support
+  // AI Employee fields
+  score: integer("score").default(0), // AI-calculated deal score 0-100
+  nextBestAction: text("next_best_action"), // AI-suggested next action
+  lastTouch: timestamp("last_touch"), // Last contact timestamp
+  ownerId: varchar("owner_id"), // Assigned sales rep
+  source: text("source"), // email, chat, social, referral
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -5207,4 +5220,166 @@ export {
   type MultiPlatformPerformance,
   type InsertMultiPlatformPerformance
 } from "../server/argilette/seo-schema";
+
+// ========================================
+// AI EMPLOYEE SYSTEM
+// ========================================
+
+// Activities - Log all customer interactions across channels
+export const activities = pgTable("activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  dealId: varchar("deal_id"), // Note: deals.id is actually VARCHAR in database
+  type: text("type").notNull(), // email, chat, social, call, linkedin, twitter, facebook
+  channel: text("channel").notNull(), // inbound, outbound
+  direction: text("direction").notNull(), // inbound, outbound
+  content: text("content").notNull(),
+  meta: jsonb("meta").$type<{
+    postId?: string;
+    threadId?: string;
+    sentiment?: string;
+    intent?: string;
+    platform?: string;
+    attachments?: string[];
+  }>().default({}),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_activities_tenant").on(table.tenantId),
+  index("idx_activities_contact").on(table.contactId),
+  index("idx_activities_deal").on(table.dealId),
+  index("idx_activities_type").on(table.type),
+]);
+
+// AI Operations - Track AI jobs, rate limiting, and audit logs
+export const aiOperations = pgTable("ai_operations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  operationType: text("operation_type").notNull(), // social_post, email_reply, lead_score, chat_response
+  status: text("status").default("pending"), // pending, processing, completed, failed
+  priority: integer("priority").default(5), // 1-10, higher = more urgent
+  input: jsonb("input").$type<Record<string, any>>().default({}),
+  output: jsonb("output").$type<Record<string, any>>(),
+  error: text("error"),
+  tokensUsed: integer("tokens_used"),
+  processingTime: integer("processing_time"), // milliseconds
+  scheduledFor: timestamp("scheduled_for"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_ai_ops_tenant").on(table.tenantId),
+  index("idx_ai_ops_status").on(table.status),
+  index("idx_ai_ops_type").on(table.operationType),
+  index("idx_ai_ops_scheduled").on(table.scheduledFor),
+]);
+
+// Social Posts - AI-generated and scheduled social media content
+export const socialPosts = pgTable("social_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  platform: text("platform").notNull(), // linkedin, twitter, facebook, instagram
+  content: text("content").notNull(),
+  mediaUrls: text("media_urls").array().default([]),
+  hashtags: text("hashtags").array().default([]),
+  status: text("status").default("draft"), // draft, scheduled, published, failed
+  scheduledFor: timestamp("scheduled_for"),
+  publishedAt: timestamp("published_at"),
+  externalPostId: text("external_post_id"), // Platform's post ID
+  analytics: jsonb("analytics").$type<{
+    impressions?: number;
+    engagement?: number;
+    clicks?: number;
+    shares?: number;
+    comments?: number;
+    likes?: number;
+  }>().default({}),
+  aiGenerationId: varchar("ai_generation_id").references(() => aiOperations.id),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_social_posts_tenant").on(table.tenantId),
+  index("idx_social_posts_platform").on(table.platform),
+  index("idx_social_posts_status").on(table.status),
+  index("idx_social_posts_scheduled").on(table.scheduledFor),
+]);
+
+// Email Threads - Track email conversations for context
+export const emailThreads = pgTable("email_threads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id).notNull(),
+  dealId: varchar("deal_id"), // Note: deals.id is actually VARCHAR in database
+  subject: text("subject").notNull(),
+  fromEmail: text("from_email").notNull(),
+  toEmail: text("to_email").notNull(),
+  ccEmails: text("cc_emails").array().default([]),
+  body: text("body").notNull(),
+  direction: text("direction").notNull(), // inbound, outbound
+  intent: text("intent"), // positive, neutral, objection, pricing, unsubscribe, ooo, bounce
+  sentiment: text("sentiment"), // positive, neutral, negative
+  aiProcessed: boolean("ai_processed").default(false),
+  aiResponse: text("ai_response"),
+  threadId: text("thread_id"), // External email thread ID
+  inReplyTo: varchar("in_reply_to").references(() => emailThreads.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_email_threads_tenant").on(table.tenantId),
+  index("idx_email_threads_contact").on(table.contactId),
+  index("idx_email_threads_deal").on(table.dealId),
+  index("idx_email_threads_intent").on(table.intent),
+  index("idx_email_threads_thread").on(table.threadId),
+]);
+
+// Chat Sessions - Track website chat conversations
+export const chatSessions = pgTable("chat_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  sessionId: text("session_id").notNull().unique(),
+  status: text("status").default("active"), // active, qualified, converted, abandoned
+  leadQuality: integer("lead_quality").default(0), // 0-100 AI score
+  messages: jsonb("messages").$type<Array<{
+    role: 'user' | 'bot';
+    content: string;
+    timestamp: string;
+  }>>().default([]),
+  qualificationData: jsonb("qualification_data").$type<{
+    pain?: string;
+    goal?: string;
+    timeframe?: string;
+    budget?: string;
+    authority?: string;
+  }>().default({}),
+  lastMessageAt: timestamp("last_message_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  closedAt: timestamp("closed_at"),
+}, (table) => [
+  index("idx_chat_sessions_tenant").on(table.tenantId),
+  index("idx_chat_sessions_contact").on(table.contactId),
+  index("idx_chat_sessions_status").on(table.status),
+]);
+
+// AI Employee Schemas
+export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
+export const insertAiOperationSchema = createInsertSchema(aiOperations).omit({ id: true, createdAt: true });
+export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEmailThreadSchema = createInsertSchema(emailThreads).omit({ id: true, createdAt: true });
+export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({ id: true, createdAt: true });
+
+// AI Employee Types
+export type Activity = typeof activities.$inferSelect;
+export type AiOperation = typeof aiOperations.$inferSelect;
+export type SocialPost = typeof socialPosts.$inferSelect;
+export type EmailThread = typeof emailThreads.$inferSelect;
+export type ChatSession = typeof chatSessions.$inferSelect;
+
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type InsertAiOperation = z.infer<typeof insertAiOperationSchema>;
+export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
+export type InsertEmailThread = z.infer<typeof insertEmailThreadSchema>;
+export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
 
