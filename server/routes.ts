@@ -3135,10 +3135,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const analyses = await getUserStorage(req).getSentimentAnalyses();
-        id: analyses[0].id,
-        sentiment: analyses[0].sentiment,
-        confidence: analyses[0].confidence
-      } : 'No sentiment analyses found');
       
       res.json(analyses);
     } catch (err: any) {
@@ -11071,14 +11067,6 @@ ${req.body.companyName} Team`;
 
       const analysis = await emotionalIntelligenceEngine.analyzeCustomerCommunication(text, customerId);
       
-      // Log the analysis for future reference (simplified without database)
-      if (customerId) {
-          sentiment: analysis.sentiment,
-          confidence: analysis.confidence,
-          urgencyLevel: analysis.urgencyLevel
-        });
-      }
-
       res.json({
         success: true,
         analysis,

@@ -332,18 +332,7 @@ export class IntelligentTicketRouting {
   ): Promise<void> {
     try {
       // Log for analytics and continuous improvement
-        ticketId,
-        priority: decision.priority,
-        assignedAgent: decision.assignedAgent,
-        emotionalFactors: {
-          sentiment: emotionalAnalysis.sentiment,
-          primaryEmotion: Object.keys(emotionalAnalysis.emotions).reduce((a, b) => 
-            emotionalAnalysis.emotions[a as keyof typeof emotionalAnalysis.emotions] > 
-            emotionalAnalysis.emotions[b as keyof typeof emotionalAnalysis.emotions] ? a : b
-          ),
-          urgency: emotionalAnalysis.urgencyLevel
-        }
-      });
+      // Logging functionality removed
     } catch (error) {
       console.error('Error logging routing decision:', error);
     }

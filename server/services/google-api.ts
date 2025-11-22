@@ -356,12 +356,6 @@ export class GoogleAPIService {
     // For now, we'll return a simulated event ID
     const eventId = `crm_event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-      id: eventId,
-      summary: event.summary,
-      start: event.start,
-      end: event.end
-    });
-    
     return eventId;
   }
 

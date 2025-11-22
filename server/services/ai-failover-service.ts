@@ -121,10 +121,6 @@ class AIFailoverService {
     }
 
     // Initialize ARGILETTE AI (Replit AI Integrations) - PRIMARY PROVIDER
-      hasApiKey: !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-      hasBaseURL: !!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
-    });
-    
     if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
       this.providers.set('argilette', {
         name: 'Argilette AI',
