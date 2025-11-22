@@ -302,7 +302,8 @@ ${params.previousContext ? `Previous context: ${params.previousContext}` : ''}`;
     try {
       const jsonMatch = classificationResponse.match(/\{[\s\S]*\}/);
       classification = JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
-    } catch {
+    } catch (error) {
+      console.error('Email classification JSON parsing failed:', error, 'Response:', classificationResponse);
       classification = {
         intent: 'neutral',
         score: 50,
@@ -445,7 +446,8 @@ Provide your scoring analysis now.`;
     try {
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       return JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
-    } catch {
+    } catch (error) {
+      console.error('Lead scoring JSON parsing failed:', error, 'Response:', response);
       return {
         score: 50,
         reasoning: 'Unable to parse scoring data',

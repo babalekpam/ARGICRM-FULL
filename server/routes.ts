@@ -66,6 +66,7 @@ import { registerSubscriptionRoutes } from "./routes/subscription.js";
 import { registerReportsRoutes } from "./routes/reports.js";
 import { registerAppointmentsRoutes } from "./routes/appointments.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
+import { registerAIEmployeeRoutes } from "./routes/ai-employee.js";
 
 import voiceEmotionRoutes from "./routes/voice-emotion.js";
 import { googleServicesRouter } from "./routes/google-services.js";
@@ -6056,6 +6057,7 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
   await registerReportsRoutes(app);
   await registerAppointmentsRoutes(app);
   registerWebhookRoutes(app);
+  registerAIEmployeeRoutes(app);
 
   // Add analytics routes directly without any middleware  
   app.get("/api/analytics/overview", async (req, res) => {
