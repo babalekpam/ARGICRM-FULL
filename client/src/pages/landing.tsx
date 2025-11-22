@@ -225,41 +225,41 @@ export default function SimpleLanding() {
         "offers": {
           "@type": "AggregateOffer",
           "priceCurrency": "USD",
-          "lowPrice": "49.99",
-          "highPrice": "799.99",
+          "lowPrice": "69.99",
+          "highPrice": "899.99",
           "offerCount": "4",
           "offers": [
             {
               "@type": "Offer",
               "name": "Starter Plan",
-              "price": "49.99",
+              "price": "69.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
-              "description": "Monthly subscription - Perfect for startups and small businesses"
+              "description": "Monthly subscription - Perfect for startups and small businesses - Includes 1,000 AI Employee operations/month"
             },
             {
               "@type": "Offer",
               "name": "Professional Plan",
-              "price": "149.99",
+              "price": "179.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
-              "description": "Monthly subscription - Advanced features for growing businesses"
+              "description": "Monthly subscription - Advanced features for growing businesses - Includes 5,000 AI Employee operations/month"
             },
             {
               "@type": "Offer",
               "name": "Business Plan",
-              "price": "299.99",
+              "price": "349.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
-              "description": "Monthly subscription - Complete solution for established companies"
+              "description": "Monthly subscription - Complete solution for established companies - Includes 15,000 AI Employee operations/month"
             },
             {
               "@type": "Offer",
               "name": "Enterprise Plan",
-              "price": "799.99",
+              "price": "899.99",
               "priceCurrency": "USD",
               "priceValidUntil": "2025-12-31",
-              "description": "Monthly subscription - Ultimate platform for large enterprises"
+              "description": "Monthly subscription - Ultimate platform for large enterprises - UNLIMITED AI Employee operations"
             }
           ]
         },
@@ -271,7 +271,8 @@ export default function SimpleLanding() {
           "worstRating": "1"
         },
         "featureList": [
-          "AI-Powered CRM with Sentiment Analysis",
+          "6 AI Employees - Social Media, SDR, Email, Chat, Closer, Lead Scorer",
+          "AI-Powered CRM with Intelligent Predictions",
           "Complete E-commerce Store Builder",
           "SEO Tools - Keyword Research & Site Audit",
           "Multi-Platform Search Optimization (11 Platforms)",
@@ -279,7 +280,7 @@ export default function SimpleLanding() {
           "Financial Management & Bookkeeping",
           "Multi-Language Support (20+ Languages)",
           "Multi-Currency Support (54+ African Currencies)",
-          "AI Campaign Generation",
+          "AI Campaign & Funnel Generation",
           "Real-Time Analytics Dashboard",
           "Team Collaboration Tools",
           "White-Label Branding Options"
@@ -317,7 +318,7 @@ export default function SimpleLanding() {
             "name": "What are the ARGILETTE pricing plans?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "ARGILETTE offers flexible monthly subscription plans starting at $49.99/month for Starter, $149.99/month for Professional, $299.99/month for Business, and $799.99/month for Enterprise. All plans include CRM, SEO, E-commerce, Link Building, and 11-platform tracking. Much more affordable than buying Semrush + HubSpot + Shopify separately!"
+              "text": "ARGILETTE offers flexible monthly subscription plans with AI Employee automation: $69.99/month for Starter (1,000 AI operations), $179.99/month for Professional (5,000 AI operations), $349.99/month for Business (15,000 AI operations), and $899.99/month for Enterprise (unlimited AI operations). All plans include CRM, SEO, E-commerce, Link Building, 11-platform tracking, and 6 AI Employees. 90% cheaper than buying Semrush + HubSpot + Drift + Copy.ai separately!"
             }
           }
         ]
@@ -352,9 +353,9 @@ export default function SimpleLanding() {
     <PageTranslator context="landing-page">
       <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <SEO
-          title="ARGILETTE - AI Business Platform | CRM + E-commerce + SEO Tools"
-          description="All-in-one AI-powered business platform with CRM, e-commerce builder, SEO tools, Link Building, and marketing automation. Track your brand across 11 platforms. Monthly subscription from $49.99. 20+ languages, 195+ countries."
-          keywords="AI business platform, CRM software, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software, monthly subscription CRM"
+          title="ARGILETTE - AI Business Platform | CRM + 6 AI Employees + E-commerce + SEO"
+          description="All-in-one AI-powered business platform with CRM, 6 AI Employees (social media, lead scoring, email automation, chat bot), e-commerce builder, SEO tools, and Link Building. Track your brand across 11 platforms. Monthly subscription from $69.99. 90% cheaper than Semrush + HubSpot + Drift combined."
+          keywords="AI employees, autonomous AI agents, AI business platform, CRM software, AI chatbot, lead scoring, social media automation, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software"
           canonical="https://argilette.org/"
           structuredData={structuredData}
         />
@@ -420,7 +421,7 @@ export default function SimpleLanding() {
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-lg">
-                All-in-one CRM software + E-commerce builder + SEO tools + Link Building + Marketing automation. Track your brand across 11 platforms. Monthly subscription starting at $49.99.
+                All-in-one CRM software + E-commerce builder + SEO tools + Link Building + 6 AI Employees. Track your brand across 11 platforms. Monthly subscription starting at $69.99.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
