@@ -1,0 +1,128 @@
+#### Quick context
+It’s Saturday, November 22, 2025 (UTC). Since ARGILETTE.org is a multi-tenant SaaS, we’ll design your “AI employee” so it learns from each tenant’s data and behaviors while keeping strict tenant isolation.
+
+#### Core design principles for multi‑tenant AI agents
+- **Strict tenant isolation by default**: Scope every retrieve, write, and tool-call by tenant_id; prevent cross-tenant data access at the app, data, and model layers. This is the recommended approach in cloud guidance for AI/ML multitenant solutions [[1]](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/approaches/ai-ml). If you use managed agent services (e.g., Amazon Bedrock Agents), there are established patterns to enforce tenant isolation end-to-end [[2]](https://aws.amazon.com/blogs/machine-learning/implementing-tenant-isolation-using-agents-for-amazon-bedrock-in-a-multi-tenant-environment/).  
+- **Per-tenant RAG + re-ranking**: Keep each tenant’s knowledge base and embeddings in its own namespace/index, and use a re-ranker to boost answer quality when multiple docs match—this is a standard step in robust RAG designs [[3]](https://aws.amazon.com/blogs/machine-learning/build-a-multi-tenant-generative-ai-environment-for-your-enterprise-on-aws/).  
+- **Tenant-aware orchestration**: Route every agent/tool call with an explicit Tenant-ID and Authorization so the right tools, prompts, and indices are used per tenant; you can enforce this via a gateway/MCP server pattern that injects these headers and routes securely [[4]](https://www.novumlogic.com/blog/build-a-dynamic-multi-tenant-saas-platform-with-ai-agents-and-a-custom-mcp-server-client).  
+- **Adaptive learning loops per tenant**: Capture outcomes (opens, replies, meetings, wins) and feed them back to update prompts, playbooks, and next-best-actions—agents improve using closed-loop feedback over time [[5]](https://www.aalpha.net/blog/how-to-integrate-ai-agents-into-a-saas-platform/).  
+- **Multi-tenant agent posture**: The goal is one deployment serving many customers with strict data and operation isolation across tenants, which is the defining property of production-grade multi-tenant AI agents [[6]](https://ingenimax.ai/blog/building-multi-tenant-ai-agent).  
+- **Workload isolation and scaling**: Use predictive autoscaling/queues to avoid tenant “noisy neighbor” issues; research proposes AI-orchestrated workload isolation with predictive analytics and RL to keep performance predictable under load [[7]](https://journalwjaets.com/sites/default/files/fulltext_pdf/WJAETS-2025-1310.pdf).
+
+#### High-level architecture for ARGILETTE.org
+- API gateway with tenant routing
+  - Injects Tenant-ID, enforces authz, and selects per-tenant policies, tools, and indices (MCP/gateway pattern) [[4]](https://www.novumlogic.com/blog/build-a-dynamic-multi-tenant-saas-platform-with-ai-agents-and-a-custom-mcp-server-client).
+- Agent runtime
+  - Orchestrator (your code or frameworks like Bedrock Agents, LangChain, LlamaIndex) with per-tenant tool registries [[3]](https://aws.amazon.com/blogs/machine-learning/build-a-multi-tenant-generative-ai-environment-for-your-enterprise-on-aws/).
+  - Sub-agents: Social Author, SDR Outreach, Reply Handler, Closer, Support Bot.
+- Data planes (all tenant-scoped)
+  - Operational DB: row-level security or per-tenant DB/schema.
+  - Vector store: per-tenant namespace/index for embeddings; RAG with re-ranker [[3]](https://aws.amazon.com/blogs/machine-learning/build-a-multi-tenant-generative-ai-environment-for-your-enterprise-on-aws/).
+  - Object store: per-tenant buckets/prefixes for files.
+  - Feature store + events: captures signals for lead scoring/next-best action.
+- Connectors
+  - Email (SMTP/SendGrid inbound parse), Social APIs (LinkedIn, Meta, X), Chat (web widget/WhatsApp).
+- Observability and guardrails
+  - Per-tenant rate limits/quotas, audit logs, red-teaming/evals.
+
+#### What “learning per tenant” looks like
+- Per-tenant memory
+  - Knowledge: product docs, FAQs, playbooks, prior proposals (embedded into a tenant namespace).
+  - Interaction memory: conversation snippets, email threads, objections/resolutions.
+  - Outcomes: meetings booked, win/loss reasons, top-performing posts/templates.
+- Adaptive loop
+  1) Log each action + outcome (e.g., reply intent, meeting, won/lost).
+  2) Update per-tenant scoring models/rules and regenerate “best templates” and “next-best actions.”
+  3) Refresh RAG snippets and summaries nightly; promote well-performing variants. This is the “adaptive learning loop” pattern for agent efficiency [[5]](https://www.aalpha.net/blog/how-to-integrate-ai-agents-into-a-saas-platform/).
+- Safety boundary
+  - No cross-tenant sharing unless you opt-in to an aggregated, anonymized global model; otherwise, keep learning purely tenant-local (also a standard multitenant AI posture [[1]](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/approaches/ai-ml) [[6]](https://ingenimax.ai/blog/building-multi-tenant-ai-agent)).
+
+#### Tenant-aware data model (add these fields)
+- All tables: tenant_id (indexed).
+- Contact: lead_score, last_intent, locale, opt_in.
+- Deal: stage, value, score, next_best_action, last_touch.
+- Activity: type, channel, direction, content, meta, outcome.
+- AI_KB: doc_id, source, embedding_id, tenant_id, tags, updated_at.
+- AI_Config: per-tenant system prompts, tone, tools enabled, rate limits.
+
+#### Minimal multi-tenant routing middleware (pseudo-code)
+```ts
+// Node/Express example
+app.use(async (req, res, next) => {
+  const tenantId = req.header('Tenant-ID');
+  const token = req.header('Authorization');
+  if (!tenantId || !token) return res.status(401).send('Missing tenant or auth');
+  const claims = await auth.verify(token, tenantId); // ensures token grants access to tenantId
+  req.ctx = {
+    tenantId,
+    vectorNamespace: `vec_${tenantId}`,
+    s3Prefix: `tenants/${tenantId}/`,
+    modelProfile: await loadModelProfile(tenantId), // which model, temperature, system prompts
+    rateLimiter: getLimiter(tenantId)
+  };
+  next();
+});
+```
+
+#### Per-tenant RAG + re-ranking (skeleton)
+```python
+def answer_question(tenant_id, query, k=12):
+    # 1) Retrieve from tenant's namespace
+    cands = vectordb.search(namespace=tenant_id, query=query, top_k=k)
+    # 2) Re-rank for relevance (e.g., cross-encoder)
+    reranked = reranker.rank(query, cands)  # improves context quality [[1]]
+    # 3) Compose prompt with tenant system prompt
+    sys = ai_config.system_prompt(tenant_id)
+    ctx = "\n\n".join([r.text for r in reranked[:5]])
+    return llm.generate(system=sys, user=f"Question: {query}\n\nContext:\n{ctx}")
+```
+
+#### Agent roles and per-tenant prompts
+- Social Author
+  - Goal: platform-specific posts, hooks, CTA; uses tenant brand voice and calendar.
+- SDR Outreach
+  - Goal: qualify prospects; uses tenant ICP, sequences, and CRM data.
+- Reply Handler
+  - Goal: classify intents (positive/neutral/objection/pricing/unsubscribe/OOO/bounce) and propose next-best action.
+- Closer
+  - Goal: draft proposals/recaps; push deal to next stage; offer booking link.
+- Support Bot
+  - Goal: answer product questions from tenant KB; escalate to human.
+
+You can register different tools and guardrails per tenant (e.g., enable WhatsApp for A, disable cold outreach for B).
+
+#### Multi-tenant ops and scaling
+- Isolation strategies
+  - Data: per-tenant namespaces/row-level security; secrets per tenant; scoped connectors [[1]](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/approaches/ai-ml) [[2]](https://aws.amazon.com/blogs/machine-learning/implementing-tenant-isolation-using-agents-for-amazon-bedrock-in-a-multi-tenant-environment/).
+  - Runtime: per-tenant queues and rate limits; optional worker pools to prevent noisy-neighbor effects; AI-orchestrated isolation can improve predictability [[7]](https://journalwjaets.com/sites/default/files/fulltext_pdf/WJAETS-2025-1310.pdf).
+- Deployment options
+  - Build-your-own agents with LangChain/LlamaIndex or use managed agents (Amazon Bedrock Agents) and still enforce tenant isolation and RAG tool access per tenant [[3]](https://aws.amazon.com/blogs/machine-learning/build-a-multi-tenant-generative-ai-environment-for-your-enterprise-on-aws/) [[2]](https://aws.amazon.com/blogs/machine-learning/implementing-tenant-isolation-using-agents-for-amazon-bedrock-in-a-multi-tenant-environment/).
+- Chat/messaging layer
+  - If you need a ready-made, multi-tenant chat/messaging API scaffold to embed into each tenant’s workspace, there are vendor APIs positioned for multi-tenant agent chat in SaaS apps [[8]](https://www.mirrorfly.com/multi-tenant-chat-for-saas.php).
+
+#### Security, privacy, and compliance
+- Hard-scope every retrieval/tool call with tenant_id (deny-by-default).
+- Encrypt data at rest/in transit; per-tenant KMS keys for sensitive stores.
+- Content governance: default unsubscribe handling, consent capture, regional compliance logging.
+- Audit: store prompts, tool calls, outputs, and training signals per tenant for traceability [[1]](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/approaches/ai-ml).
+
+#### What you’ll get functionally per tenant
+- Social: AI-planned calendar, post generation, scheduling, and per-tenant performance learning.
+- Prospecting: ICP-aware sequences, automated follow-ups, objection handling, meeting booking.
+- Email: personalization with tenant fields; reply intent detection; automatic CRM updates.
+- Closing: proposal/recap drafting; next-best action nudges.
+- Support: KB-grounded chat with escalation.
+
+#### Phased rollout (fast)
+- Week 1: Tenant routing, per-tenant RAG with re-ranker, Reply Handler + Social Author. Connect email in/out and one social network. [[4]](https://www.novumlogic.com/blog/build-a-dynamic-multi-tenant-saas-platform-with-ai-agents-and-a-custom-mcp-server-client)
+- Week 2: SDR Outreach + Closer; add WhatsApp/site chat; start adaptive loop from outcomes [[5]](https://www.aalpha.net/blog/how-to-integrate-ai-agents-into-a-saas-platform/).
+- Week 3+: Lead scoring and next-best-action tuning; per-tenant dashboards; autoscaling/quotas [[7]](https://journalwjaets.com/sites/default/files/fulltext_pdf/WJAETS-2025-1310.pdf).
+
+#### What I need from you to finalize for ARGILETTE.org
+1) Your tenancy model (DB-per-tenant vs shared DB with RLS) and current API paths.  
+2) Vector store choice (Pinecone, Qdrant, pgvector, etc.) so I can define namespaces.  
+3) Which agent tools to enable per tenant (Email, LinkedIn, X, IG, WhatsApp, web chat).  
+4) Desired “learning loop” frequency (nightly, weekly) and any approval gates per tenant.  
+5) If you prefer managed agents (e.g., Bedrock Agents) or a framework-first approach (LangChain/LlamaIndex) [[3]](https://aws.amazon.com/blogs/machine-learning/build-a-multi-tenant-generative-ai-environment-for-your-enterprise-on-aws/).
+
+If you want, I can deliver a starter repo with the tenant gateway, per-tenant RAG + re-ranker, and the Reply Handler agent wired to your CRM in 1–2 days, then layer in the rest of the agents.
