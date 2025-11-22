@@ -7,10 +7,9 @@ interface AuthenticatedRequest extends Request {
 }
 
 // SECURITY: JWT_SECRET is required - fail fast if not set
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
-if (!JWT_SECRET) {
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || (() => {
   throw new Error('CRITICAL SECURITY ERROR: JWT_SECRET or SESSION_SECRET environment variable must be set');
-}
+})();
 const SECURE_COOKIE_NAME = 'auth_token';
 
 // Secure cookie options

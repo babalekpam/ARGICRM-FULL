@@ -5,10 +5,9 @@ import { storage } from '../storage.js';
 import { TenantRequest } from './tenant.js';
 
 // SECURITY: JWT_SECRET is required - fail fast if not set
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
-if (!JWT_SECRET) {
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || (() => {
   throw new Error('CRITICAL SECURITY ERROR: JWT_SECRET or SESSION_SECRET environment variable must be set');
-}
+})();
 
 export interface AuthUser {
   id: string;
