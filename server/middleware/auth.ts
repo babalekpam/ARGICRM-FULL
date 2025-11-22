@@ -4,7 +4,11 @@ import bcrypt from 'bcrypt';
 import { storage } from '../storage.js';
 import { TenantRequest } from './tenant.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key';
+// SECURITY: JWT_SECRET is required - fail fast if not set
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('CRITICAL SECURITY ERROR: JWT_SECRET or SESSION_SECRET environment variable must be set');
+}
 
 export interface AuthUser {
   id: string;
@@ -62,21 +66,15 @@ export async function authenticate(req: TenantRequest, res: Response, next: Next
     }
 
     const decoded = verifyToken(token);
-    console.log('Auth middleware - decoded JWT:', { id: decoded.id, email: decoded.email });
 
     // Get user details with permissions  
     let user = await storage.getUserWithPermissions(decoded.id);
-    console.log('Auth middleware - getUserWithPermissions result:', user ? { id: user.id, email: user.email, isActive: user.isActive } : 'null');
     
     // FALLBACK for platform owners: If user not found by ID (outdated token), try by email
     if (!user && decoded.email) {
       const platformOwnerEmails = ['abel@argilette.com'];
       if (platformOwnerEmails.includes(decoded.email)) {
-        console.log('Auth middleware - Platform owner with outdated token, trying email lookup:', decoded.email);
         user = await storage.getUserByEmail(decoded.email);
-        if (user) {
-          console.log('Auth middleware - Found platform owner by email:', { id: user.id, email: user.email });
-        }
       }
     }
     
@@ -240,7 +238,7 @@ export async function registerTenant(req: Request, res: Response) {
     await storage.createDefaultRoles(tenant.id);
 
     // Seed RBAC permissions and system roles for new tenant
-    const { seedRBACForNewTenant } = await import('./seed-rbac.js');
+    const { seedRBACForNewTenant } = await import('../seed-rbac.js');
     await seedRBACForNewTenant(tenant.id);
 
     res.status(201).json({

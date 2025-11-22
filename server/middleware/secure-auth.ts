@@ -6,7 +6,11 @@ interface AuthenticatedRequest extends Request {
   user?: AuthUser;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// SECURITY: JWT_SECRET is required - fail fast if not set
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('CRITICAL SECURITY ERROR: JWT_SECRET or SESSION_SECRET environment variable must be set');
+}
 const SECURE_COOKIE_NAME = 'auth_token';
 
 // Secure cookie options
@@ -65,8 +69,6 @@ export function secureAuthenticate(req: AuthenticatedRequest, res: Response, nex
 
     next();
   } catch (error) {
-    console.error('Secure authentication error:', error);
-    
     // Clear invalid cookie
     clearAuthCookie(res);
     
