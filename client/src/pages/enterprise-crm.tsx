@@ -23,7 +23,7 @@ export default function EnterpriseCrmPage() {
       <SEO 
         title="Enterprise CRM Solution - Scalable Business Management | NODE CRM"
         description="Power your enterprise with NODE CRM's advanced AI automation, unlimited scalability, and enterprise-grade security. Custom solutions for large organizations."
-        canonicalUrl="https://argilette.org/enterprise-crm"
+        canonical="https://argilette.org/enterprise-crm"
       />
       
       {/* Navigation */}
