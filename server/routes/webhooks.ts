@@ -354,7 +354,7 @@ async function handleChatWebhook(req: TenantRequest, res: Response) {
           messages: updatedMessages,
           qualificationData: updatedQualificationData,
           leadQuality,
-          status: isQualified ? 'qualified' : session.status,
+          status: isQualified ? 'qualified' : 'active',
           lastMessageAt: new Date(),
         })
         .where(eq(chatSessions.id, session.id));

@@ -181,6 +181,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
       modules: [
         { path: "/ai-campaign-studio", label: "AI Campaign Studio", icon: Sparkles, permission: "ai.read" },
         { path: "/cloe-ai-agent", label: "Cloe AI Agent", icon: Bot, permission: "ai.read" },
+        { path: "/ai-employee-dashboard", label: "AI Employee", icon: UserCog, permission: "ai.read" },
         { path: "/ai-autonomous", label: "AI Automation", icon: Brain, permission: "ai.read" },
         { path: "/unified-inbox", label: "Unified Communications", icon: Mail, permission: "communications.read" },
         { path: "/forms-surveys", label: "Forms & Surveys", icon: FileText, permission: "forms.read" },

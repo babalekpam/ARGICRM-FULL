@@ -1,9 +1,10 @@
 import type { Express } from 'express';
 import { z } from 'zod';
 import { AIEmployeeService } from '../services/ai-employee';
-import { socialPosts, aiOperations } from '@shared/schema';
+import { socialPosts, aiOperations, contacts, chatSessions, emailThreads } from '@shared/schema';
 import { db } from '../db';
 import { DatabaseStorage } from '../database-storage';
+import { desc, gte, sql, eq } from 'drizzle-orm';
 
 const aiEmployeeService = new AIEmployeeService();
 
@@ -307,5 +308,183 @@ export function registerAIEmployeeRoutes(app: Express) {
     }
   });
 
+  /**
+   * GET /api/ai-employee/stats
+   * Get overview statistics for AI Employee dashboard
+   */
+  app.get('/api/ai-employee/stats', async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      // Get counts for each stat
+      const [
+        totalSocialPosts,
+        leadsScored,
+        activeChatSessions,
+        emailThreadsProcessed
+      ] = await Promise.all([
+        db.select({ count: sql<number>`count(*)::int` })
+          .from(socialPosts)
+          .where(eq(socialPosts.tenantId, user.tenantId)),
+        db.select({ count: sql<number>`count(*)::int` })
+          .from(contacts)
+          .where(
+            sql`${contacts.tenantId} = ${user.tenantId} AND ${contacts.leadScore} IS NOT NULL AND ${contacts.updatedAt} >= ${startOfMonth}`
+          ),
+        db.select({ count: sql<number>`count(*)::int` })
+          .from(chatSessions)
+          .where(
+            sql`${chatSessions.tenantId} = ${user.tenantId} AND ${chatSessions.status} = 'active'`
+          ),
+        db.select({ count: sql<number>`count(*)::int` })
+          .from(emailThreads)
+          .where(
+            sql`${emailThreads.tenantId} = ${user.tenantId} AND ${emailThreads.aiProcessed} = true`
+          )
+      ]);
+
+      res.json({
+        totalSocialPosts: totalSocialPosts[0]?.count || 0,
+        leadsScored: leadsScored[0]?.count || 0,
+        activeChatSessions: activeChatSessions[0]?.count || 0,
+        emailThreadsProcessed: emailThreadsProcessed[0]?.count || 0
+      });
+    } catch (error) {
+      console.error('Stats fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+  });
+
+  /**
+   * GET /api/ai-employee/social-posts
+   * Get recent social posts
+   */
+  app.get('/api/ai-employee/social-posts', async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      const posts = await db.select()
+        .from(socialPosts)
+        .where(eq(socialPosts.tenantId, user.tenantId))
+        .orderBy(desc(socialPosts.createdAt))
+        .limit(limit);
+
+      res.json(posts);
+    } catch (error) {
+      console.error('Social posts fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch social posts' });
+    }
+  });
+
+  /**
+   * GET /api/ai-employee/leads
+   * Get top scored leads
+   */
+  app.get('/api/ai-employee/leads', async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const minScore = parseInt(req.query.minScore as string) || 70;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      const leads = await db.select()
+        .from(contacts)
+        .where(
+          sql`${contacts.tenantId} = ${user.tenantId} AND ${contacts.leadScore} >= ${minScore}`
+        )
+        .orderBy(desc(contacts.leadScore))
+        .limit(limit);
+
+      res.json(leads);
+    } catch (error) {
+      console.error('Leads fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch leads' });
+    }
+  });
+
+  /**
+   * GET /api/ai-employee/operations
+   * Get recent AI operations
+   */
+  app.get('/api/ai-employee/operations', async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const operationType = req.query.type as string;
+      const limit = parseInt(req.query.limit as string) || 100;
+
+      let query = db.select()
+        .from(aiOperations)
+        .where(eq(aiOperations.tenantId, user.tenantId))
+        .orderBy(desc(aiOperations.createdAt))
+        .limit(limit);
+
+      // Filter by operation type if provided
+      if (operationType) {
+        query = db.select()
+          .from(aiOperations)
+          .where(
+            sql`${aiOperations.tenantId} = ${user.tenantId} AND ${aiOperations.operationType} = ${operationType}`
+          )
+          .orderBy(desc(aiOperations.createdAt))
+          .limit(limit);
+      }
+
+      const operations = await query;
+      res.json(operations);
+    } catch (error) {
+      console.error('Operations fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch operations' });
+    }
+  });
+
+  /**
+   * GET /api/ai-employee/chat-sessions
+   * Get active chat sessions
+   */
+  app.get('/api/ai-employee/chat-sessions', async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const status = req.query.status as string || 'active';
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      const sessions = await db.select()
+        .from(chatSessions)
+        .where(
+          sql`${chatSessions.tenantId} = ${user.tenantId} AND ${chatSessions.status} = ${status}`
+        )
+        .orderBy(desc(chatSessions.lastMessageAt))
+        .limit(limit);
+
+      res.json(sessions);
+    } catch (error) {
+      console.error('Chat sessions fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch chat sessions' });
+    }
+  });
+
   console.log('✅ AI Employee routes registered: POST /api/ai-employee/social/generate, /api/ai-employee/outreach/generate, /api/ai-employee/leads/score, /api/ai-employee/proposals/generate');
+  console.log('✅ AI Employee GET routes registered: GET /api/ai-employee/stats, /api/ai-employee/social-posts, /api/ai-employee/leads, /api/ai-employee/operations, /api/ai-employee/chat-sessions');
 }
