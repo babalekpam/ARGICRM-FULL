@@ -127,7 +127,7 @@ export default function EnterpriseCrmPage() {
                 <CardTitle className="text-3xl font-bold text-gray-900">Enterprise Package</CardTitle>
                 <CardDescription className="text-xl text-gray-600">For organizations with 50+ users</CardDescription>
                 <div className="text-center mt-6">
-                  <div className="text-4xl font-bold text-purple-600">$149.99-199.99</div>
+                  <div className="text-4xl font-bold text-purple-600">$179.99-249.99</div>
                   <div className="text-gray-600">per user/month</div>
                   <div className="text-sm text-gray-500 mt-2">Custom pricing available for 500+ users</div>
                 </div>

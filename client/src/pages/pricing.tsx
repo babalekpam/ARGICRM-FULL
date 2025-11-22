@@ -9,24 +9,24 @@ import Logo from "@/components/logo";
 const plans = [
   {
     name: "Starter",
-    price: "$49.99",
+    price: "$69.99",
     period: "/month",
     description: "Perfect for freelancers and solo entrepreneurs",
     popular: false,
     icon: Star,
     color: "blue",
     features: [
+      { name: "6 AI Employees (1,000 AI operations/month)", included: true },
       { name: "Full CRM (up to 1,000 contacts)", included: true },
       { name: "5 SEO projects", included: true },
       { name: "100 keywords tracked", included: true },
-      { name: "Track all 7 platforms (Google, YouTube, Instagram, TikTok, Pinterest, Amazon, ChatGPT)", included: true },
+      { name: "Track all 11 platforms (Google, YouTube, Instagram, TikTok, Pinterest, Amazon, ChatGPT, Perplexity, Gemini, Copilot, Claude)", included: true },
       { name: "AI-powered insights & analysis (Argilette AI)", included: true },
       { name: "SEO audit + backlink monitoring", included: true },
       { name: "Email marketing", included: true },
       { name: "E-commerce (up to 50 products)", included: true },
-      { name: "Landing page builder", included: true },
+      { name: "AI Funnel Builder", included: true },
       { name: "Standard support", included: true },
-      { name: "Multi-platform sentiment analysis", included: false },
       { name: "White-label branding", included: false },
       { name: "API access", included: false },
       { name: "Multi-user access", included: false }
@@ -36,7 +36,7 @@ const plans = [
   },
   {
     name: "Professional",
-    price: "$149.99",
+    price: "$179.99",
     period: "/month",
     description: "Ideal for small businesses and marketing agencies",
     popular: true,
@@ -44,14 +44,15 @@ const plans = [
     color: "purple",
     features: [
       { name: "Everything in Starter plus:", included: true },
+      { name: "6 AI Employees (5,000 AI operations/month)", included: true },
       { name: "Advanced CRM (up to 10,000 contacts)", included: true },
       { name: "25 SEO projects", included: true },
       { name: "500 keywords tracked", included: true },
-      { name: "Multi-platform sentiment analysis", included: true },
+      { name: "Link Building & Backlink Analysis", included: true },
       { name: "Competitive benchmarking", included: true },
       { name: "Advanced marketing automation", included: true },
       { name: "SMS marketing", included: true },
-      { name: "AI campaign generation", included: true },
+      { name: "AI campaign & funnel generation", included: true },
       { name: "Full e-commerce (unlimited products)", included: true },
       { name: "Multi-currency support (54 African currencies)", included: true },
       { name: "Custom reports", included: true },
@@ -64,7 +65,7 @@ const plans = [
   },
   {
     name: "Business",
-    price: "$299.99",
+    price: "$349.99",
     period: "/month",
     description: "Comprehensive solution for growing agencies",
     popular: false,
@@ -72,6 +73,7 @@ const plans = [
     color: "gold",
     features: [
       { name: "Everything in Professional plus:", included: true },
+      { name: "6 AI Employees (15,000 AI operations/month)", included: true },
       { name: "Enterprise CRM (unlimited contacts)", included: true },
       { name: "100 SEO projects", included: true },
       { name: "2,000 keywords tracked", included: true },
@@ -91,7 +93,7 @@ const plans = [
   },
   {
     name: "Enterprise",
-    price: "$799.99",
+    price: "$899.99",
     period: "/month",
     description: "Ultimate solution for large organizations",
     popular: false,
@@ -99,10 +101,11 @@ const plans = [
     color: "gradient",
     features: [
       { name: "Everything in Business plus:", included: true },
+      { name: "6 AI Employees (UNLIMITED AI operations)", included: true },
       { name: "Unlimited projects, keywords, contacts", included: true },
       { name: "Unlimited users", included: true },
       { name: "Dedicated infrastructure", included: true },
-      { name: "Custom features development", included: true },
+      { name: "Custom AI agent training", included: true },
       { name: "White-glove onboarding", included: true },
       { name: "24/7 priority support", included: true },
       { name: "SLA guarantee", included: true },
@@ -272,8 +275,8 @@ const comparisons = [
   },
   {
     feature: "Monthly Cost Comparison",
-    competitors: "$422+ per month (separate tools)",
-    argilette: "$149.99/month (all included)"
+    competitors: "$3,500+ per month (separate tools)",
+    argilette: "$179.99/month (all included)"
   }
 ];
 
@@ -281,9 +284,9 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <SEO
-        title="ARGILETTE Pricing - Affordable Monthly Plans | All-in-One CRM, SEO & E-commerce"
-        description="Flexible monthly subscription plans starting at $49.99/month. ARGILETTE combines CRM, SEO tools, e-commerce, and unique 7-platform tracking in one platform. Cancel anytime."
-        keywords="CRM pricing, SEO tool pricing, white-label CRM, multi-platform tracking, affordable CRM, SaaS pricing, ChatGPT tracking, social media SEO"
+        title="ARGILETTE Pricing - AI Employee Automation Plans | CRM + SEO + E-commerce"
+        description="Flexible monthly subscription plans starting at $69.99/month with 6 AI Employees included. ARGILETTE combines CRM, SEO tools, e-commerce, AI automation, and 11-platform tracking. 90% cheaper than Semrush + HubSpot + Drift + Copy.ai."
+        keywords="AI employee pricing, AI automation pricing, CRM pricing, SEO tool pricing, white-label CRM, multi-platform tracking, affordable CRM, SaaS pricing, ChatGPT tracking, AI chatbot, lead scoring"
         canonical="https://argilette.org/pricing"
       />
       
@@ -381,7 +384,7 @@ export default function PricingPage() {
                 </div>
                 <div className="border-t pt-2 mt-2 flex justify-between">
                   <span className="font-bold">Monthly Cost:</span>
-                  <span className="font-bold text-blue-600">$149.99/month</span>
+                  <span className="font-bold text-blue-600">$179.99/month</span>
                 </div>
               </div>
             </div>
@@ -559,7 +562,7 @@ export default function PricingPage() {
           <div className="text-center mt-8">
             <Link href="/signup">
               <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" data-testid="button-comparison-signup">
-                Start With Professional ($149.99/month)
+                Start With Professional ($179.99/month)
               </Button>
             </Link>
             <Link href="/contact">

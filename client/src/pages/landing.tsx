@@ -850,7 +850,7 @@ export default function SimpleLanding() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    ARGILETTE offers flexible monthly subscription plans starting at just $49.99/month for the Starter tier up to $799.99/month for Enterprise. All plans include CRM, SEO, E-commerce, Link Building, and 11-platform tracking. Much more affordable than buying Semrush + HubSpot + Shopify separately!
+                    ARGILETTE offers flexible monthly subscription plans with AI Employee automation: $69.99/month for Starter (1,000 AI operations), $179.99/month for Professional (5,000 AI operations), $349.99/month for Business (15,000 AI operations), and $899.99/month for Enterprise (unlimited AI operations). All plans include CRM, SEO, E-commerce, Link Building, 11-platform tracking, and 6 AI Employees. 90% cheaper than buying Semrush + HubSpot + Drift + Copy.ai separately!
                   </p>
                 </CardContent>
               </Card>
