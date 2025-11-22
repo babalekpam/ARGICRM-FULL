@@ -771,28 +771,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Step 2: Create user with tenant-scoped storage (CRITICAL FIX)
         const tenantStorage = new DatabaseStorage('abel@argilette.com', createdTenant.id, true);
-        const userData = {
-          email: normalizedEmail,
-          firstName,
-          lastName, 
-          passwordHash,
-          role: isPlatformOwner ? 'platform_owner' : 'admin',
-          createdAt: now,
-          updatedAt: now
-        };
         
         const createdUser = await tenantStorage.createUser({
           email: normalizedEmail,
           firstName,
           lastName, 
           passwordHash,
-          role: isPlatformOwner ? 'platform_owner' : 'admin',
-          createdAt: now,
-          updatedAt: now
+          role: isPlatformOwner ? 'platform_owner' : 'admin'
         }); // Let tenant-scoped storage handle tenantId automatically
         
         // Update response with actual database IDs
-        user.id = createdUser.id;
+        user.id = createdUser[0]?.id || createdUser.id;
         tenant.id = createdTenant.id;
         
       } catch (error) {
@@ -839,7 +828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Super Admin: Manual Package Upgrade - SECURED with RBAC
-  app.post("/api/admin/upgrade-user", authenticate, async (req: any, res) => {
+  app.post("/api/admin/upgrade-user", authenticate, async (req, res) => {
     try {
       const currentUserEmail = req.user.email;
 
@@ -879,7 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Super Admin: Get All Registered Users - SECURED with RBAC
-  app.get("/api/admin/users", authenticate, async (req: any, res) => {
+  app.get("/api/admin/users", authenticate, async (req, res) => {
     try {
         // RBAC middleware handles authentication, get current user email for logging
         const currentUserEmail = req.user.email;
@@ -899,7 +888,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: user.email,
           firstName: user.firstName || 'N/A',
           lastName: user.lastName || 'N/A',
-          company: user.company || 'N/A',
           selectedPackage: 'starter', // Default package - could be enhanced to read from subscriptions
           subscriptionStatus: user.emailVerified ? 'active' : 'trial',
           registeredAt: user.createdAt?.toISOString() || new Date().toISOString(),
@@ -1111,20 +1099,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName,
         email,
-        company,
-        jobTitle: jobTitle || '',
-        industry: industry || '',
-        companySize: companySize || '',
-        country: country || '',
-        selectedPackage,
         passwordHash,
-        verificationToken,
-        isVerified: false,
-        stripeCustomerId: customer.id,
-        stripeSubscriptionId: subscriptionId,
-        stripePaymentMethodId: paymentMethodId,
-        trialEndsAt: trialEndDate.toISOString(),
-        subscriptionStatus: 'trialing'
+        role: 'user'
       });
 
       // Send verification email
@@ -2307,7 +2283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Dashboard Endpoint - Get overview stats
-  app.get("/api/admin/dashboard", authenticate, async (req: any, res) => {
+  app.get("/api/admin/dashboard", authenticate, async (req, res) => {
     try {
         // RBAC middleware handles authentication, get current user email for logging
         const currentUserEmail = req.user.email;
@@ -2471,7 +2447,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          company: user.company,
           phone: user.phone,
           registrationDate: user.registrationDate,
           status: user.status,
@@ -11586,7 +11561,7 @@ ${req.body.companyName} Team`;
   // Test Management Routes
   
   // GET /api/ab-testing/tests - List all tests for tenant with filters
-  app.get("/api/ab-testing/tests", authenticate, async (req: any, res) => {
+  app.get("/api/ab-testing/tests", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { status, type } = req.query;
@@ -11633,7 +11608,7 @@ ${req.body.companyName} Team`;
   });
   
   // POST /api/ab-testing/tests - Create new test
-  app.post("/api/ab-testing/tests", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/tests", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const userId = req.user.id;
@@ -11658,7 +11633,7 @@ ${req.body.companyName} Team`;
   });
   
   // GET /api/ab-testing/tests/:id - Get test details with variants
-  app.get("/api/ab-testing/tests/:id", authenticate, async (req: any, res) => {
+  app.get("/api/ab-testing/tests/:id", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -11680,7 +11655,7 @@ ${req.body.companyName} Team`;
   });
   
   // PATCH /api/ab-testing/tests/:id - Update test
-  app.patch("/api/ab-testing/tests/:id", authenticate, async (req: any, res) => {
+  app.patch("/api/ab-testing/tests/:id", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -11706,7 +11681,7 @@ ${req.body.companyName} Team`;
   });
   
   // DELETE /api/ab-testing/tests/:id - Delete test
-  app.delete("/api/ab-testing/tests/:id", authenticate, async (req: any, res) => {
+  app.delete("/api/ab-testing/tests/:id", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -11730,7 +11705,7 @@ ${req.body.companyName} Team`;
   });
   
   // POST /api/ab-testing/tests/:id/start - Start test
-  app.post("/api/ab-testing/tests/:id/start", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/tests/:id/start", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -11755,7 +11730,7 @@ ${req.body.companyName} Team`;
   });
   
   // POST /api/ab-testing/tests/:id/pause - Pause test
-  app.post("/api/ab-testing/tests/:id/pause", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/tests/:id/pause", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -11780,7 +11755,7 @@ ${req.body.companyName} Team`;
   });
   
   // POST /api/ab-testing/tests/:id/complete - Complete test and set winner
-  app.post("/api/ab-testing/tests/:id/complete", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/tests/:id/complete", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -11813,7 +11788,7 @@ ${req.body.companyName} Team`;
   // Variant Management Routes
   
   // POST /api/ab-testing/tests/:testId/variants - Add variant to test
-  app.post("/api/ab-testing/tests/:testId/variants", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/tests/:testId/variants", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { testId } = req.params;
@@ -11840,7 +11815,7 @@ ${req.body.companyName} Team`;
   });
   
   // GET /api/ab-testing/tests/:testId/variants - List variants
-  app.get("/api/ab-testing/tests/:testId/variants", authenticate, async (req: any, res) => {
+  app.get("/api/ab-testing/tests/:testId/variants", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { testId } = req.params;
@@ -11862,7 +11837,7 @@ ${req.body.companyName} Team`;
   });
   
   // PATCH /api/ab-testing/variants/:id - Update variant
-  app.patch("/api/ab-testing/variants/:id", authenticate, async (req: any, res) => {
+  app.patch("/api/ab-testing/variants/:id", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -11893,7 +11868,7 @@ ${req.body.companyName} Team`;
   });
   
   // DELETE /api/ab-testing/variants/:id - Delete variant
-  app.delete("/api/ab-testing/variants/:id", authenticate, async (req: any, res) => {
+  app.delete("/api/ab-testing/variants/:id", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -11980,7 +11955,7 @@ ${req.body.companyName} Team`;
   });
   
   // POST /api/ab-testing/events - Record event
-  app.post("/api/ab-testing/events", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/events", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { sessionId, testId, variantId, eventType, eventData } = req.body;
@@ -12027,7 +12002,7 @@ ${req.body.companyName} Team`;
   });
   
   // POST /api/ab-testing/conversions - Record conversion
-  app.post("/api/ab-testing/conversions", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/conversions", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { sessionId, testId, variantId, conversionType, conversionValue, metadata } = req.body;
@@ -12075,7 +12050,7 @@ ${req.body.companyName} Team`;
   });
   
   // POST /api/ab-testing/tests/:id/conversions - Record conversion for specific test
-  app.post("/api/ab-testing/tests/:id/conversions", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/tests/:id/conversions", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id: testId } = req.params;
@@ -12132,7 +12107,7 @@ ${req.body.companyName} Team`;
   });
   
   // GET /api/ab-testing/tests/:id/metrics - Get test analytics
-  app.get("/api/ab-testing/tests/:id/metrics", authenticate, async (req: any, res) => {
+  app.get("/api/ab-testing/tests/:id/metrics", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -12232,7 +12207,7 @@ ${req.body.companyName} Team`;
   }
   
   // POST /api/ab-testing/tests/:id/calculate-metrics - Trigger metrics calculation
-  app.post("/api/ab-testing/tests/:id/calculate-metrics", authenticate, async (req: any, res) => {
+  app.post("/api/ab-testing/tests/:id/calculate-metrics", authenticate, async (req, res) => {
     try {
       const tenantId = req.user.tenantId;
       const { id } = req.params;
@@ -13025,7 +13000,7 @@ ${req.body.companyName} Team`;
   // ==================== RESOURCE MANAGEMENT ROUTES ====================
   
   // Team Capacity Routes
-  app.post("/api/resources/capacity", authenticate, async (req: any, res) => {
+  app.post("/api/resources/capacity", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const validatedData = insertTeamCapacitySchema.parse(req.body);
@@ -13041,7 +13016,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.get("/api/resources/capacity", authenticate, async (req: any, res) => {
+  app.get("/api/resources/capacity", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { weekStartDate, userId, startDate, endDate } = req.query;
@@ -13062,7 +13037,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.get("/api/resources/capacity/:userId", authenticate, async (req: any, res) => {
+  app.get("/api/resources/capacity/:userId", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { userId } = req.params;
@@ -13076,7 +13051,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.patch("/api/resources/capacity/:id", authenticate, async (req: any, res) => {
+  app.patch("/api/resources/capacity/:id", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { id } = req.params;
@@ -13098,7 +13073,7 @@ ${req.body.companyName} Team`;
   });
 
   // Employee Skills Routes
-  app.post("/api/resources/skills", authenticate, async (req: any, res) => {
+  app.post("/api/resources/skills", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const validatedData = insertEmployeeSkillSchema.parse(req.body);
@@ -13114,7 +13089,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.get("/api/resources/skills/:userId", authenticate, async (req: any, res) => {
+  app.get("/api/resources/skills/:userId", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { userId } = req.params;
@@ -13127,7 +13102,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.patch("/api/resources/skills/:id", authenticate, async (req: any, res) => {
+  app.patch("/api/resources/skills/:id", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { id } = req.params;
@@ -13148,7 +13123,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.delete("/api/resources/skills/:id", authenticate, async (req: any, res) => {
+  app.delete("/api/resources/skills/:id", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { id } = req.params;
@@ -13165,7 +13140,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.get("/api/resources/skills/category/:category", authenticate, async (req: any, res) => {
+  app.get("/api/resources/skills/category/:category", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { category } = req.params;
@@ -13178,7 +13153,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.get("/api/resources/skills", authenticate, async (req: any, res) => {
+  app.get("/api/resources/skills", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { userId } = req.query;
@@ -13194,7 +13169,7 @@ ${req.body.companyName} Team`;
   });
 
   // Resource Allocations Routes
-  app.get("/api/resources/allocations", authenticate, async (req: any, res) => {
+  app.get("/api/resources/allocations", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { projectId, userId, startDate, endDate } = req.query;
@@ -13212,7 +13187,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.post("/api/resources/allocations", authenticate, async (req: any, res) => {
+  app.post("/api/resources/allocations", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const validatedData = insertResourceAllocationSchema.parse({
@@ -13231,7 +13206,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.patch("/api/resources/allocations/:id", authenticate, async (req: any, res) => {
+  app.patch("/api/resources/allocations/:id", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { id } = req.params;
@@ -13252,7 +13227,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.delete("/api/resources/allocations/:id", authenticate, async (req: any, res) => {
+  app.delete("/api/resources/allocations/:id", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { id } = req.params;
@@ -13270,7 +13245,7 @@ ${req.body.companyName} Team`;
   });
 
   // Resource Forecasts Routes
-  app.post("/api/resources/forecasts", authenticate, async (req: any, res) => {
+  app.post("/api/resources/forecasts", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const validatedData = insertResourceForecastSchema.parse({
@@ -13289,7 +13264,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.get("/api/resources/forecasts", authenticate, async (req: any, res) => {
+  app.get("/api/resources/forecasts", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { status } = req.query;
@@ -13302,7 +13277,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.get("/api/resources/forecasts/:id", authenticate, async (req: any, res) => {
+  app.get("/api/resources/forecasts/:id", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { id } = req.params;
@@ -13319,7 +13294,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.patch("/api/resources/forecasts/:id", authenticate, async (req: any, res) => {
+  app.patch("/api/resources/forecasts/:id", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { id } = req.params;
@@ -13340,7 +13315,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.delete("/api/resources/forecasts/:id", authenticate, async (req: any, res) => {
+  app.delete("/api/resources/forecasts/:id", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { id } = req.params;
@@ -13358,7 +13333,7 @@ ${req.body.companyName} Team`;
   });
 
   // Workload Snapshots Routes
-  app.get("/api/resources/workload", authenticate, async (req: any, res) => {
+  app.get("/api/resources/workload", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const { userId, startDate, endDate, days } = req.query;
@@ -13381,7 +13356,7 @@ ${req.body.companyName} Team`;
     }
   });
 
-  app.post("/api/resources/workload", authenticate, async (req: any, res) => {
+  app.post("/api/resources/workload", authenticate, async (req, res) => {
     try {
       const storage = getUserStorage(req);
       const validatedData = insertWorkloadSnapshotSchema.parse(req.body);
