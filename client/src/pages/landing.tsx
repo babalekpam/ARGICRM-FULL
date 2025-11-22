@@ -25,7 +25,10 @@ import {
   Smartphone,
   Lock,
   ShoppingCart,
-  Sparkles
+  Sparkles,
+  Bot,
+  Mail,
+  Target
 } from "lucide-react";
 import Logo from "@/components/logo";
 import { SEO } from "@/components/SEO";
@@ -116,11 +119,18 @@ export default function SimpleLanding() {
 
   const comprehensiveFeatures = [
     {
+      icon: Bot,
+      title: "AI Employees",
+      description: "6 autonomous AI agents for social media, lead qualification, email automation, and sales proposals",
+      color: "from-violet-500 to-purple-500",
+      image: aiImage,
+      altText: "AI employee autonomous agents for CRM automation, social media, and lead qualification"
+    },
+    {
       icon: Brain,
       title: "AI-Powered CRM",
       description: "Advanced AI insights and automated customer interactions with intelligent predictions",
       color: "from-purple-500 to-pink-500",
-      image: aiImage,
       altText: "AI-powered CRM software with artificial intelligence automation and customer relationship management features"
     },
     {
@@ -150,12 +160,6 @@ export default function SimpleLanding() {
       title: "Financial Operations",
       description: "Multi-currency invoicing, expense tracking, and automated bookkeeping",
       color: "from-indigo-500 to-purple-500"
-    },
-    {
-      icon: Users,
-      title: "Project Management",
-      description: "Team collaboration, task tracking, and comprehensive project oversight",
-      color: "from-pink-500 to-rose-500"
     }
   ];
 
@@ -513,6 +517,123 @@ export default function SimpleLanding() {
                 </form>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Employee Showcase Section - NEW */}
+      <section className="py-24 lg:py-32 bg-gradient-to-b from-violet-500/5 via-purple-500/5 to-background relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent_85%)]" />
+        <div className="container relative mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-4xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 px-4 py-2 mb-6">
+              <Bot className="h-4 w-4 text-violet-500" />
+              <span className="text-sm font-medium bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                AI Autonomous Workforce
+              </span>
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+              Meet Your{" "}
+              <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                AI Employees
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground mb-12">
+              6 specialized AI agents working 24/7 to automate your CRM operations, social media, lead qualification, and sales—powered by GPT-5
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {/* Social Media Author */}
+            <Card className="border-2 border-violet-500/20 hover:border-violet-500/40 transition-all hover:shadow-xl bg-gradient-to-br from-violet-500/5 to-transparent">
+              <CardHeader>
+                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-3 shadow-lg">
+                  <MessageSquare className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">Social Media Author</CardTitle>
+                <CardDescription className="text-sm">
+                  Generates platform-specific posts for LinkedIn, Twitter, Facebook & Instagram with engaging hooks and CTAs
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            {/* SDR Outreach */}
+            <Card className="border-2 border-purple-500/20 hover:border-purple-500/40 transition-all hover:shadow-xl bg-gradient-to-br from-purple-500/5 to-transparent">
+              <CardHeader>
+                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-3 shadow-lg">
+                  <Mail className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">SDR Outreach Agent</CardTitle>
+                <CardDescription className="text-sm">
+                  Creates personalized prospecting emails using BANT qualification framework for higher response rates
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            {/* Reply Handler */}
+            <Card className="border-2 border-pink-500/20 hover:border-pink-500/40 transition-all hover:shadow-xl bg-gradient-to-br from-pink-500/5 to-transparent">
+              <CardHeader>
+                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center mb-3 shadow-lg">
+                  <Zap className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">Reply Handler</CardTitle>
+                <CardDescription className="text-sm">
+                  Classifies email intent and generates smart auto-responses for positive replies, objections, and pricing questions
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            {/* Closer */}
+            <Card className="border-2 border-blue-500/20 hover:border-blue-500/40 transition-all hover:shadow-xl bg-gradient-to-br from-blue-500/5 to-transparent">
+              <CardHeader>
+                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-3 shadow-lg">
+                  <Target className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">Closer Agent</CardTitle>
+                <CardDescription className="text-sm">
+                  Drafts winning proposals, meeting recaps, and closing emails to advance deals through your pipeline
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            {/* Chat Qualifier */}
+            <Card className="border-2 border-green-500/20 hover:border-green-500/40 transition-all hover:shadow-xl bg-gradient-to-br from-green-500/5 to-transparent">
+              <CardHeader>
+                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-3 shadow-lg">
+                  <MessageSquare className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">Chat Qualifier Bot</CardTitle>
+                <CardDescription className="text-sm">
+                  Website chat widget with 4-turn qualification flow that identifies hot leads and offers meeting booking
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            {/* Lead Scorer */}
+            <Card className="border-2 border-orange-500/20 hover:border-orange-500/40 transition-all hover:shadow-xl bg-gradient-to-br from-orange-500/5 to-transparent">
+              <CardHeader>
+                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center mb-3 shadow-lg">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-lg">Lead Scorer</CardTitle>
+                <CardDescription className="text-sm">
+                  AI-powered scoring analyzing fit (40%), engagement (35%), and readiness (25%) to prioritize your hottest leads
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <div className="text-center">
+            <div className="inline-flex flex-col sm:flex-row gap-4 items-center justify-center">
+              <Button asChild size="lg" className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                <Link href="/signup">
+                  Get Your AI Team <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Powered by GPT-5 • Multi-tenant isolated • Privacy-safe logging
+              </p>
+            </div>
           </div>
         </div>
       </section>
