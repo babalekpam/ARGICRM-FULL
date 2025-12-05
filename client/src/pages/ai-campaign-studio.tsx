@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Type definitions
 interface Contact {
   id: string;
   name: string;
@@ -41,14 +40,12 @@ export default function AICampaignStudio() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("ads");
 
-  // Ad Generator State
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [productName, setProductName] = useState("");
   const [productDescription, setProductDescription] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [adPlatform, setAdPlatform] = useState("facebook");
 
-  // Email Generator State
   const [campaignName, setCampaignName] = useState("");
   const [emailSubjectTemplate, setEmailSubjectTemplate] = useState("");
   const [emailGoal, setEmailGoal] = useState("");
@@ -57,12 +54,10 @@ export default function AICampaignStudio() {
   const [senderEmail, setSenderEmail] = useState("noreply@argilette.org");
   const [senderName, setSenderName] = useState("NODE CRM");
 
-  // Generated content preview
   const [generatedAd, setGeneratedAd] = useState<any>(null);
   const [generatedEmails, setGeneratedEmails] = useState<any[]>([]);
   const [generatedEmailContentId, setGeneratedEmailContentId] = useState<string | null>(null);
 
-  // CSV Upload Handler
   const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -72,7 +67,6 @@ export default function AICampaignStudio() {
       const text = e.target?.result as string;
       const lines = text.split('\n').filter(line => line.trim());
       
-      // Parse CSV (simple comma-separated parsing)
       const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
       const newContacts: Contact[] = [];
       
@@ -113,19 +107,16 @@ export default function AICampaignStudio() {
     reader.readAsText(file);
   };
 
-  // Fetch contacts for email generation
   const { data: contactsData } = useQuery<Contact[]>({
     queryKey: ["/api/contacts"],
     enabled: activeTab === "emails",
   });
   const contacts = contactsData || [];
 
-  // Fetch generated content library
   const { data: contentLibrary = [] } = useQuery<GeneratedContent[]>({
     queryKey: ["/api/ai-campaigns/contents"],
   });
 
-  // Generate Ad Mutation
   const generateAdMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/ai-campaigns/generate-ad", {
@@ -155,10 +146,8 @@ export default function AICampaignStudio() {
     },
   });
 
-  // Generate Emails Mutation
   const generateEmailsMutation = useMutation({
     mutationFn: async () => {
-      // Separate CRM contacts (IDs only) and CSV contacts (full objects)
       const allContacts = [...contacts, ...uploadedContacts];
       const crmContactIds = selectedContactIds.filter(id => !id.startsWith('csv-'));
       const csvContacts = allContacts.filter(c => selectedContactIds.includes(c.id) && c.id.startsWith('csv-'));
@@ -190,10 +179,8 @@ export default function AICampaignStudio() {
       return await response.json();
     },
     onSuccess: (data) => {
-      // Extract individual emails from AI response
       const aiEmails = data.emails || [];
       
-      // Map AI-generated emails to display format
       const personalizedEmails = aiEmails.map((email: any) => {
         const allContacts = [...contacts, ...uploadedContacts];
         const contact = allContacts.find((c) => c.id === email.contactId);
@@ -223,14 +210,12 @@ export default function AICampaignStudio() {
     },
   });
 
-  // Send Personalized Emails Mutation
   const sendEmailsMutation = useMutation({
     mutationFn: async () => {
       if (!generatedEmailContentId) {
         throw new Error('No email content to send');
       }
       
-      // Separate CRM contacts (IDs only) and CSV contacts (full objects)
       const allContacts = [...contacts, ...uploadedContacts];
       const crmContactIds = selectedContactIds.filter(id => !id.startsWith('csv-'));
       const csvContacts = allContacts.filter(c => selectedContactIds.includes(c.id) && c.id.startsWith('csv-'));
@@ -257,7 +242,6 @@ export default function AICampaignStudio() {
         title: "Emails Sent Successfully!",
         description: `${data.sent} emails delivered${data.failed > 0 ? `, ${data.failed} failed` : ''}`,
       });
-      // Clear generated emails after sending
       setGeneratedEmails([]);
       setGeneratedEmailContentId(null);
       setSelectedContactIds([]);
@@ -314,82 +298,88 @@ export default function AICampaignStudio() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-[hsl(228,47%,8%)]">
       <Navigation />
       
       <main className="flex-1 ml-64 p-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                <Sparkles className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  AI Campaign Studio
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Generate high-converting ads and personalized emails with AI
-                </p>
-              </div>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-[hsl(210,17%,98%)] tracking-tight">
+                AI Campaign Studio
+              </h1>
+              <p className="text-sm text-[hsl(215,20%,65%)]">
+                Generate AI-powered ads and email campaigns
+              </p>
             </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
-              <TabsTrigger value="ads" data-testid="tab-ads">
+            <TabsList className="bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] p-1 w-full max-w-md grid grid-cols-3 mb-6">
+              <TabsTrigger 
+                value="ads" 
+                data-testid="tab-ads"
+                className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
+              >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Ad Generator
               </TabsTrigger>
-              <TabsTrigger value="emails" data-testid="tab-emails">
+              <TabsTrigger 
+                value="emails" 
+                data-testid="tab-emails"
+                className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
+              >
                 <Mail className="h-4 w-4 mr-2" />
                 Email Campaigns
               </TabsTrigger>
-              <TabsTrigger value="library" data-testid="tab-library">
+              <TabsTrigger 
+                value="library" 
+                data-testid="tab-library"
+                className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
+              >
                 Content Library
               </TabsTrigger>
             </TabsList>
 
-            {/* Ad Generator Tab */}
             <TabsContent value="ads" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Input Form */}
-                <Card data-testid="card-ad-generator">
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg" data-testid="card-ad-generator">
                   <CardHeader>
-                    <CardTitle>Create AI-Powered Ads</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg font-semibold text-[hsl(210,17%,98%)]">Create AI-Powered Ads</CardTitle>
+                    <CardDescription className="text-[hsl(215,20%,65%)]">
                       Enter your product details and let AI generate optimized ad copy
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="website-url">Website URL (Optional)</Label>
+                      <Label htmlFor="website-url" className="text-[hsl(215,20%,65%)]">Website URL (Optional)</Label>
                       <Input
                         id="website-url"
                         data-testid="input-website-url"
                         placeholder="https://yourwebsite.com"
                         value={websiteUrl}
                         onChange={(e) => setWebsiteUrl(e.target.value)}
+                        className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)] focus:ring-[hsl(227,89%,63%)]"
                       />
-                      <p className="text-xs text-gray-500">AI will analyze your website for context</p>
+                      <p className="text-xs text-[hsl(215,16%,47%)]">AI will analyze your website for context</p>
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-[hsl(217,33%,17%)]" />
 
                     <div className="space-y-2">
-                      <Label htmlFor="product-name">Product/Service Name *</Label>
+                      <Label htmlFor="product-name" className="text-[hsl(215,20%,65%)]">Product/Service Name *</Label>
                       <Input
                         id="product-name"
                         data-testid="input-product-name"
                         placeholder="Premium CRM Software"
                         value={productName}
                         onChange={(e) => setProductName(e.target.value)}
+                        className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)] focus:ring-[hsl(227,89%,63%)]"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="product-description">Description *</Label>
+                      <Label htmlFor="product-description" className="text-[hsl(215,20%,65%)]">Description *</Label>
                       <Textarea
                         id="product-description"
                         data-testid="textarea-product-description"
@@ -397,32 +387,34 @@ export default function AICampaignStudio() {
                         value={productDescription}
                         onChange={(e) => setProductDescription(e.target.value)}
                         rows={4}
+                        className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="target-audience">Target Audience</Label>
+                      <Label htmlFor="target-audience" className="text-[hsl(215,20%,65%)]">Target Audience</Label>
                       <Input
                         id="target-audience"
                         data-testid="input-target-audience"
                         placeholder="Small business owners, entrepreneurs..."
                         value={targetAudience}
                         onChange={(e) => setTargetAudience(e.target.value)}
+                        className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)] focus:ring-[hsl(227,89%,63%)]"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="ad-platform">Platform</Label>
+                      <Label htmlFor="ad-platform" className="text-[hsl(215,20%,65%)]">Platform</Label>
                       <Select value={adPlatform} onValueChange={setAdPlatform}>
-                        <SelectTrigger id="ad-platform" data-testid="select-ad-platform">
+                        <SelectTrigger id="ad-platform" data-testid="select-ad-platform" className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)]">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="facebook">Facebook/Instagram</SelectItem>
-                          <SelectItem value="google">Google Ads</SelectItem>
-                          <SelectItem value="linkedin">LinkedIn</SelectItem>
-                          <SelectItem value="twitter">Twitter/X</SelectItem>
-                          <SelectItem value="tiktok">TikTok</SelectItem>
+                        <SelectContent className="bg-[hsl(228,47%,12%)] border-[hsl(217,33%,17%)]">
+                          <SelectItem value="facebook" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Facebook/Instagram</SelectItem>
+                          <SelectItem value="google" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Google Ads</SelectItem>
+                          <SelectItem value="linkedin" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">LinkedIn</SelectItem>
+                          <SelectItem value="twitter" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Twitter/X</SelectItem>
+                          <SelectItem value="tiktok" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">TikTok</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -431,7 +423,7 @@ export default function AICampaignStudio() {
                       data-testid="button-generate-ad"
                       onClick={handleGenerateAd}
                       disabled={generateAdMutation.isPending}
-                      className="w-full"
+                      className="w-full bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                     >
                       {generateAdMutation.isPending ? (
                         <>
@@ -448,11 +440,10 @@ export default function AICampaignStudio() {
                   </CardContent>
                 </Card>
 
-                {/* Preview Panel */}
-                <Card data-testid="card-ad-preview">
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg" data-testid="card-ad-preview">
                   <CardHeader>
-                    <CardTitle>Generated Ad Variants</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg font-semibold text-[hsl(210,17%,98%)]">Generated Ad Variants</CardTitle>
+                    <CardDescription className="text-[hsl(215,20%,65%)]">
                       {generatedAd ? "Review and use your AI-generated ads" : "Your ads will appear here"}
                     </CardDescription>
                   </CardHeader>
@@ -460,22 +451,23 @@ export default function AICampaignStudio() {
                     {generatedAd ? (
                       <div className="space-y-4">
                         {generatedAd.variants?.map((variant: any, index: number) => (
-                          <div key={index} className="p-4 border rounded-lg space-y-3">
-                            <div className="flex items-start justify-between">
-                              <Badge variant="secondary">Variant {index + 1}</Badge>
+                          <div key={index} className="p-4 border border-[hsl(217,33%,17%)] rounded-lg space-y-3 bg-[hsl(229,41%,16%)]">
+                            <div className="flex items-start justify-between gap-2">
+                              <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">Variant {index + 1}</Badge>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => copyToClipboard(`${variant.headline}\n\n${variant.body}\n\n${variant.cta}`)}
                                 data-testid={`button-copy-ad-${index}`}
+                                className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
                             </div>
                             <div>
-                              <h4 className="font-bold text-lg mb-2">{variant.headline}</h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{variant.body}</p>
-                              <Button size="sm" variant="default">
+                              <h4 className="font-bold text-lg mb-2 text-[hsl(210,17%,98%)]">{variant.headline}</h4>
+                              <p className="text-sm text-[hsl(215,20%,65%)] mb-3">{variant.body}</p>
+                              <Button size="sm" className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white">
                                 {variant.cta}
                               </Button>
                             </div>
@@ -483,7 +475,7 @@ export default function AICampaignStudio() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-12 text-gray-500">
+                      <div className="text-center py-12 text-[hsl(215,20%,65%)]">
                         <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
                         <p>Fill in the form and generate your first AI ad</p>
                       </div>
@@ -493,31 +485,30 @@ export default function AICampaignStudio() {
               </div>
             </TabsContent>
 
-            {/* Email Campaign Tab */}
             <TabsContent value="emails" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Email Form */}
-                <Card data-testid="card-email-generator">
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg" data-testid="card-email-generator">
                   <CardHeader>
-                    <CardTitle>AI Email Campaigns</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg font-semibold text-[hsl(210,17%,98%)]">AI Email Campaigns</CardTitle>
+                    <CardDescription className="text-[hsl(215,20%,65%)]">
                       Generate personalized emails for your contacts
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="campaign-name">Campaign Name *</Label>
+                      <Label htmlFor="campaign-name" className="text-[hsl(215,20%,65%)]">Campaign Name *</Label>
                       <Input
                         id="campaign-name"
                         data-testid="input-campaign-name"
                         placeholder="Product Launch Q4 2025"
                         value={campaignName}
                         onChange={(e) => setCampaignName(e.target.value)}
+                        className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)] focus:ring-[hsl(227,89%,63%)]"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email-goal">Email Goal *</Label>
+                      <Label htmlFor="email-goal" className="text-[hsl(215,20%,65%)]">Email Goal *</Label>
                       <Textarea
                         id="email-goal"
                         data-testid="textarea-email-goal"
@@ -525,24 +516,26 @@ export default function AICampaignStudio() {
                         value={emailGoal}
                         onChange={(e) => setEmailGoal(e.target.value)}
                         rows={3}
+                        className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="subject-template">Subject Line Template</Label>
+                      <Label htmlFor="subject-template" className="text-[hsl(215,20%,65%)]">Subject Line Template</Label>
                       <Input
                         id="subject-template"
                         data-testid="input-subject-template"
                         placeholder="{{name}}, exclusive offer just for you"
                         value={emailSubjectTemplate}
                         onChange={(e) => setEmailSubjectTemplate(e.target.value)}
+                        className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)] focus:ring-[hsl(227,89%,63%)]"
                       />
-                      <p className="text-xs text-gray-500">Use {"{"}&#123;name&#125;{"}"}, {"{"}&#123;company&#125;{"}"} for personalization</p>
+                      <p className="text-xs text-[hsl(215,16%,47%)]">Use {"{"}&#123;name&#125;{"}"}, {"{"}&#123;company&#125;{"}"} for personalization</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="sender-email">Sender Email *</Label>
+                        <Label htmlFor="sender-email" className="text-[hsl(215,20%,65%)]">Sender Email *</Label>
                         <Input
                           id="sender-email"
                           data-testid="input-sender-email"
@@ -550,27 +543,29 @@ export default function AICampaignStudio() {
                           placeholder="support@argilette.org"
                           value={senderEmail}
                           onChange={(e) => setSenderEmail(e.target.value)}
+                          className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)] focus:ring-[hsl(227,89%,63%)]"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="sender-name">Sender Name *</Label>
+                        <Label htmlFor="sender-name" className="text-[hsl(215,20%,65%)]">Sender Name *</Label>
                         <Input
                           id="sender-name"
                           data-testid="input-sender-name"
                           placeholder="NODE CRM Team"
                           value={senderName}
                           onChange={(e) => setSenderName(e.target.value)}
+                          className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)] focus:ring-[hsl(227,89%,63%)]"
                         />
                       </div>
                     </div>
 
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                      <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold mb-2">💡 Professional Email Suggestions:</p>
+                    <div className="bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] rounded-lg p-3">
+                      <p className="text-xs text-[hsl(227,89%,63%)] font-semibold mb-2">Professional Email Suggestions:</p>
                       <div className="flex flex-wrap gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs h-7"
+                          className="text-xs border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                           onClick={() => {
                             setSenderEmail("support@argilette.org");
                             setSenderName("NODE CRM Support");
@@ -581,7 +576,7 @@ export default function AICampaignStudio() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs h-7"
+                          className="text-xs border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                           onClick={() => {
                             setSenderEmail("hello@argilette.org");
                             setSenderName("NODE CRM Team");
@@ -592,7 +587,7 @@ export default function AICampaignStudio() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs h-7"
+                          className="text-xs border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                           onClick={() => {
                             setSenderEmail("sales@argilette.org");
                             setSenderName("NODE CRM Sales");
@@ -603,7 +598,7 @@ export default function AICampaignStudio() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs h-7"
+                          className="text-xs border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                           onClick={() => {
                             setSenderEmail("marketing@argilette.org");
                             setSenderName("NODE CRM Marketing");
@@ -614,11 +609,11 @@ export default function AICampaignStudio() {
                       </div>
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-[hsl(217,33%,17%)]" />
 
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Select Contacts ({selectedContactIds.length} selected)</Label>
+                      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                        <Label className="text-[hsl(215,20%,65%)]">Select Contacts ({selectedContactIds.length} selected)</Label>
                         <div className="flex gap-2">
                           <input
                             type="file"
@@ -632,16 +627,16 @@ export default function AICampaignStudio() {
                             size="sm"
                             onClick={() => document.getElementById('csv-upload')?.click()}
                             data-testid="button-upload-csv"
+                            className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                           >
-                            📁 Upload CSV
+                            Upload CSV
                           </Button>
                         </div>
                       </div>
-                      <div className="border rounded-lg max-h-64 overflow-y-auto p-4 space-y-2">
-                        {/* Database Contacts */}
+                      <div className="border border-[hsl(217,33%,17%)] rounded-lg max-h-64 overflow-y-auto p-4 space-y-2 bg-[hsl(229,41%,16%)]">
                         {contacts.length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-xs font-semibold text-gray-500 uppercase">From CRM</p>
+                            <p className="text-xs font-semibold text-[hsl(215,16%,47%)] uppercase">From CRM</p>
                             {contacts.map((contact) => (
                             <div key={contact.id} className="flex items-center space-x-2">
                               <Checkbox
@@ -655,15 +650,16 @@ export default function AICampaignStudio() {
                                     setSelectedContactIds(selectedContactIds.filter(id => id !== contact.id));
                                   }
                                 }}
+                                className="border-[hsl(217,33%,17%)] data-[state=checked]:bg-[hsl(227,89%,63%)]"
                               />
                               <label
                                 htmlFor={`contact-${contact.id}`}
-                                className="text-sm flex-1 cursor-pointer"
+                                className="text-sm flex-1 cursor-pointer text-[hsl(210,17%,98%)]"
                               >
                                 <span className="font-medium">{contact.name}</span>
-                                <span className="text-gray-500 ml-2">{contact.email}</span>
+                                <span className="text-[hsl(215,20%,65%)] ml-2">{contact.email}</span>
                                 {contact.company && (
-                                  <span className="text-gray-400 ml-2">• {contact.company}</span>
+                                  <span className="text-[hsl(215,16%,47%)] ml-2">• {contact.company}</span>
                                 )}
                               </label>
                             </div>
@@ -671,12 +667,11 @@ export default function AICampaignStudio() {
                           </div>
                         )}
                         
-                        {/* Uploaded CSV Contacts */}
                         {uploadedContacts.length > 0 && (
                           <div className="space-y-2 mt-4">
-                            <p className="text-xs font-semibold text-green-600 uppercase">From CSV Upload</p>
+                            <p className="text-xs font-semibold text-[hsl(142,71%,45%)] uppercase">From CSV Upload</p>
                             {uploadedContacts.map((contact) => (
-                            <div key={contact.id} className="flex items-center space-x-2 bg-green-50 dark:bg-green-900/20 p-2 rounded">
+                            <div key={contact.id} className="flex items-center space-x-2 bg-[hsl(142,71%,45%)/10%] p-2 rounded border border-[hsl(142,71%,45%)/20%]">
                               <Checkbox
                                 id={`contact-${contact.id}`}
                                 data-testid={`checkbox-contact-${contact.id}`}
@@ -688,15 +683,16 @@ export default function AICampaignStudio() {
                                     setSelectedContactIds(selectedContactIds.filter(id => id !== contact.id));
                                   }
                                 }}
+                                className="border-[hsl(217,33%,17%)] data-[state=checked]:bg-[hsl(227,89%,63%)]"
                               />
                               <label
                                 htmlFor={`contact-${contact.id}`}
-                                className="text-sm flex-1 cursor-pointer"
+                                className="text-sm flex-1 cursor-pointer text-[hsl(210,17%,98%)]"
                               >
                                 <span className="font-medium">{contact.name}</span>
-                                <span className="text-gray-500 ml-2">{contact.email}</span>
+                                <span className="text-[hsl(215,20%,65%)] ml-2">{contact.email}</span>
                                 {contact.company && (
-                                  <span className="text-gray-400 ml-2">• {contact.company}</span>
+                                  <span className="text-[hsl(215,16%,47%)] ml-2">• {contact.company}</span>
                                 )}
                               </label>
                             </div>
@@ -705,7 +701,7 @@ export default function AICampaignStudio() {
                         )}
                         
                         {contacts.length === 0 && uploadedContacts.length === 0 && (
-                          <div className="text-center py-6 text-gray-500">
+                          <div className="text-center py-6 text-[hsl(215,20%,65%)]">
                             <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-20" />
                             <p className="text-sm">No contacts found. Upload a CSV or add contacts in CRM.</p>
                           </div>
@@ -717,7 +713,7 @@ export default function AICampaignStudio() {
                       data-testid="button-generate-emails"
                       onClick={handleGenerateEmails}
                       disabled={generateEmailsMutation.isPending}
-                      className="w-full"
+                      className="w-full bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                     >
                       {generateEmailsMutation.isPending ? (
                         <>
@@ -734,11 +730,10 @@ export default function AICampaignStudio() {
                   </CardContent>
                 </Card>
 
-                {/* Email Preview */}
-                <Card data-testid="card-email-preview">
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg" data-testid="card-email-preview">
                   <CardHeader>
-                    <CardTitle>Generated Emails</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg font-semibold text-[hsl(210,17%,98%)]">Generated Emails</CardTitle>
+                    <CardDescription className="text-[hsl(215,20%,65%)]">
                       {generatedEmails.length > 0 ? `${generatedEmails.length} personalized emails ready` : "Your emails will appear here"}
                     </CardDescription>
                   </CardHeader>
@@ -746,32 +741,33 @@ export default function AICampaignStudio() {
                     {generatedEmails.length > 0 ? (
                       <div className="space-y-4 max-h-[600px] overflow-y-auto">
                         {generatedEmails.map((email, index) => (
-                          <div key={index} className="p-4 border rounded-lg space-y-3 bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-gray-900">
-                            <div className="flex items-start justify-between">
+                          <div key={index} className="p-4 border border-[hsl(217,33%,17%)] rounded-lg space-y-3 bg-[hsl(229,41%,16%)]">
+                            <div className="flex items-start justify-between gap-2">
                               <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge className="bg-[hsl(227,89%,63%)/20%] text-[hsl(227,89%,63%)] border-0">
                                     #{index + 1}
                                   </Badge>
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                  <p className="text-sm font-medium text-[hsl(210,17%,98%)]">
                                     {email.recipientName}
                                   </p>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">{email.recipientEmail}</p>
+                                <p className="text-xs text-[hsl(215,16%,47%)] mt-1">{email.recipientEmail}</p>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => copyToClipboard(`Subject: ${email.subject}\n\n${email.body}`)}
                                 data-testid={`button-copy-email-${index}`}
+                                className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
                             </div>
                             
                             {email.personalizationNotes && (
-                              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded p-2">
-                                <p className="text-xs text-purple-700 dark:text-purple-300">
+                              <div className="bg-[hsl(271,81%,56%)/10%] border border-[hsl(271,81%,56%)/20%] rounded p-2">
+                                <p className="text-xs text-[hsl(271,81%,76%)]">
                                   <Sparkles className="h-3 w-3 inline mr-1" />
                                   AI Analysis: {email.personalizationNotes}
                                 </p>
@@ -779,24 +775,23 @@ export default function AICampaignStudio() {
                             )}
                             
                             <div>
-                              <p className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-blue-600" />
+                              <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-[hsl(210,17%,98%)]">
+                                <Mail className="h-4 w-4 text-[hsl(227,89%,63%)]" />
                                 Subject: {email.subject}
                               </p>
-                              <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap bg-white dark:bg-gray-800 p-3 rounded border">
+                              <pre className="bg-[hsl(229,41%,16%)] p-4 rounded-lg border border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] overflow-x-auto text-sm whitespace-pre-wrap">
                                 {email.body}
-                              </div>
+                              </pre>
                             </div>
                           </div>
                         ))}
                         
-                        {/* Send Emails Button */}
-                        <div className="pt-4 border-t">
+                        <div className="pt-4 border-t border-[hsl(217,33%,17%)]">
                           <Button
                             data-testid="button-send-emails"
                             onClick={() => sendEmailsMutation.mutate()}
                             disabled={sendEmailsMutation.isPending}
-                            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                            className="w-full bg-[hsl(142,71%,45%)] hover:bg-[hsl(142,71%,40%)] text-white"
                           >
                             {sendEmailsMutation.isPending ? (
                               <>
@@ -813,7 +808,7 @@ export default function AICampaignStudio() {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center py-12 text-gray-500">
+                      <div className="text-center py-12 text-[hsl(215,20%,65%)]">
                         <Mail className="h-12 w-12 mx-auto mb-3 opacity-20" />
                         <p>Configure your campaign and generate personalized emails</p>
                       </div>
@@ -823,12 +818,11 @@ export default function AICampaignStudio() {
               </div>
             </TabsContent>
 
-            {/* Content Library Tab */}
             <TabsContent value="library" className="space-y-6">
-              <Card data-testid="card-content-library">
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg" data-testid="card-content-library">
                 <CardHeader>
-                  <CardTitle>Your AI-Generated Content</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg font-semibold text-[hsl(210,17%,98%)]">Your AI-Generated Content</CardTitle>
+                  <CardDescription className="text-[hsl(215,20%,65%)]">
                     View and manage all your AI-generated ads and emails
                   </CardDescription>
                 </CardHeader>
@@ -838,24 +832,24 @@ export default function AICampaignStudio() {
                       {contentLibrary.map((content) => (
                         <div
                           key={content.id}
-                          className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          className="p-4 border border-[hsl(217,33%,17%)] rounded-lg hover:bg-[hsl(229,41%,16%)] transition-colors bg-[hsl(228,47%,12%)]"
                           data-testid={`content-item-${content.id}`}
                         >
-                          <div className="flex items-start justify-between">
+                          <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge variant={content.contentType === 'ad' ? 'default' : 'secondary'}>
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <Badge className={content.contentType === 'ad' ? 'bg-[hsl(227,89%,63%)] text-white border-0' : 'bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0'}>
                                   {content.contentType === 'ad' ? 'Ad' : 'Email'}
                                 </Badge>
                                 {content.platform && (
-                                  <Badge variant="outline">{content.platform}</Badge>
+                                  <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(215,20%,65%)] border border-[hsl(217,33%,17%)]">{content.platform}</Badge>
                                 )}
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-[hsl(215,16%,47%)]">
                                   {new Date(content.createdAt).toLocaleDateString()}
                                 </span>
                               </div>
-                              <h4 className="font-semibold mb-1">{content.title}</h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                              <h4 className="font-semibold mb-1 text-[hsl(210,17%,98%)]">{content.title}</h4>
+                              <p className="text-sm text-[hsl(215,20%,65%)] line-clamp-2">
                                 {content.content.substring(0, 150)}...
                               </p>
                             </div>
@@ -864,10 +858,11 @@ export default function AICampaignStudio() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => copyToClipboard(content.content)}
+                                className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]">
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
                             </div>
@@ -876,10 +871,10 @@ export default function AICampaignStudio() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-[hsl(215,20%,65%)]">
                       <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
                       <p>No content generated yet</p>
-                      <p className="text-sm">Create your first AI campaign to see it here</p>
+                      <p className="text-sm text-[hsl(215,16%,47%)]">Create your first AI campaign to see it here</p>
                     </div>
                   )}
                 </CardContent>

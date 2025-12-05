@@ -56,7 +56,6 @@ import {
   X
 } from "lucide-react";
 
-// Form validation schema
 const generateFunnelSchema = z.object({
   offerName: z.string().min(3, "Offer name must be at least 3 characters"),
   offerDescription: z.string().min(10, "Offer description must be at least 10 characters"),
@@ -69,7 +68,6 @@ const generateFunnelSchema = z.object({
 
 type GenerateFunnelFormData = z.infer<typeof generateFunnelSchema>;
 
-// Type definitions for API responses
 interface FunnelProject {
   id: string;
   name: string;
@@ -139,12 +137,10 @@ export default function FunnelBuilderPage() {
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [emailPreviewId, setEmailPreviewId] = useState<string | null>(null);
   
-  // Inline editing state for each tab
   const [editingAdId, setEditingAdId] = useState<string | null>(null);
   const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | null>(null);
   
-  // Utility: Copy to clipboard
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -161,7 +157,6 @@ export default function FunnelBuilderPage() {
     }
   };
   
-  // Utility: Export as JSON
   const exportAsJSON = (data: any, filename: string) => {
     const jsonString = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
@@ -179,7 +174,6 @@ export default function FunnelBuilderPage() {
     });
   };
 
-  // Form for AI generation
   const form = useForm<GenerateFunnelFormData>({
     resolver: zodResolver(generateFunnelSchema),
     defaultValues: {
@@ -193,7 +187,6 @@ export default function FunnelBuilderPage() {
     },
   });
 
-  // Fetch funnels list
   const { data: funnelsData, isLoading: isLoadingFunnels } = useQuery({
     queryKey: ['/api/funnels'],
     queryFn: async () => {
@@ -202,7 +195,6 @@ export default function FunnelBuilderPage() {
     },
   });
 
-  // Fetch complete funnel details when selected
   const { data: selectedFunnelData, isLoading: isLoadingFunnelDetails } = useQuery({
     queryKey: ['/api/funnels', selectedFunnelId],
     enabled: !!selectedFunnelId,
@@ -212,7 +204,6 @@ export default function FunnelBuilderPage() {
     },
   });
 
-  // AI Generate funnel mutation
   const generateFunnelMutation = useMutation({
     mutationFn: async (data: GenerateFunnelFormData) => {
       const response = await apiRequest('POST', '/api/funnels/generate', data);
@@ -221,7 +212,6 @@ export default function FunnelBuilderPage() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
       
-      // Check if response has the expected structure
       if (!data || !data.funnel || !data.funnel.name) {
         console.error('Unexpected response structure:', data);
         toast({
@@ -233,13 +223,12 @@ export default function FunnelBuilderPage() {
       }
       
       toast({
-        title: "✨ Funnel Generated Successfully!",
+        title: "Funnel Generated Successfully!",
         description: `Your funnel "${data.funnel.name}" has been created with AI-powered content.`,
       });
       setIsGenerateDialogOpen(false);
       form.reset();
       
-      // Auto-select the newly created funnel
       if (data.funnel?.id) {
         setSelectedFunnelId(data.funnel.id);
       }
@@ -254,7 +243,6 @@ export default function FunnelBuilderPage() {
     },
   });
 
-  // Delete funnel mutation
   const deleteFunnelMutation = useMutation({
     mutationFn: async (funnelId: string) => {
       return await apiRequest('DELETE', `/api/funnels/${funnelId}`, null);
@@ -278,7 +266,6 @@ export default function FunnelBuilderPage() {
     },
   });
 
-  // Publish funnel mutation
   const publishFunnelMutation = useMutation({
     mutationFn: async (funnelId: string) => {
       return await apiRequest('POST', `/api/funnels/${funnelId}/publish`, {});
@@ -287,7 +274,7 @@ export default function FunnelBuilderPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/funnels'] });
       queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
       toast({
-        title: "🚀 Funnel Published!",
+        title: "Funnel Published!",
         description: data?.publishedUrl ? `Your funnel is now live at: ${data.publishedUrl}` : "Your funnel has been published successfully!",
       });
     },
@@ -300,19 +287,15 @@ export default function FunnelBuilderPage() {
     },
   });
 
-  // Update workflow active state mutation
   const updateWorkflowMutation = useMutation({
     mutationFn: async ({ funnelId, workflowId, isActive }: { funnelId: string; workflowId: string; isActive: boolean }) => {
       return await apiRequest('PATCH', `/api/funnels/${funnelId}/workflows/${workflowId}`, { isActive });
     },
     onMutate: async ({ workflowId, isActive }) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
       
-      // Snapshot the previous value
       const previousData = queryClient.getQueryData(['/api/funnels', selectedFunnelId]);
       
-      // Optimistically update to the new value
       queryClient.setQueryData(['/api/funnels', selectedFunnelId], (old: any) => {
         if (!old) return old;
         return {
@@ -325,11 +308,9 @@ export default function FunnelBuilderPage() {
         };
       });
       
-      // Return a context object with the snapshotted value
       return { previousData };
     },
     onError: (error: any, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousData) {
         queryClient.setQueryData(['/api/funnels', selectedFunnelId], context.previousData);
       }
@@ -346,12 +327,10 @@ export default function FunnelBuilderPage() {
       });
     },
     onSettled: () => {
-      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/funnels', selectedFunnelId] });
     },
   });
 
-  // Update ad mutation for inline editing
   const updateAdMutation = useMutation({
     mutationFn: async ({ funnelId, adId, data }: { funnelId: string; adId: string; data: any }) => {
       const response = await apiRequest('PATCH', `/api/funnels/${funnelId}/ads/${adId}`, data);
@@ -374,7 +353,6 @@ export default function FunnelBuilderPage() {
     },
   });
 
-  // Update email mutation for inline editing
   const updateEmailMutation = useMutation({
     mutationFn: async ({ funnelId, emailId, data }: { funnelId: string; emailId: string; data: any }) => {
       const response = await apiRequest('PATCH', `/api/funnels/${funnelId}/emails/${emailId}`, data);
@@ -397,7 +375,6 @@ export default function FunnelBuilderPage() {
     },
   });
 
-  // Update workflow mutation for inline editing (full edit, not just isActive)
   const updateWorkflowFullMutation = useMutation({
     mutationFn: async ({ funnelId, workflowId, data }: { funnelId: string; workflowId: string; data: any }) => {
       const response = await apiRequest('PATCH', `/api/funnels/${funnelId}/workflows/${workflowId}`, data);
@@ -439,33 +416,32 @@ export default function FunnelBuilderPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
-      case 'paused': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
+      case 'active': return 'bg-green-500/20 text-green-400 border-0';
+      case 'draft': return 'bg-[hsl(229,41%,16%)] text-[hsl(215,20%,65%)] border-0';
+      case 'paused': return 'bg-yellow-500/20 text-yellow-400 border-0';
+      default: return 'bg-[hsl(229,41%,16%)] text-[hsl(215,20%,65%)] border-0';
     }
   };
 
   return (
     <Layout>
-      <div className="space-y-6 relative z-50">
-        {/* Header */}
+      <div className="min-h-screen bg-[hsl(228,47%,8%)] space-y-6 relative z-50 p-6">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <Logo size="md" />
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-[hsl(210,17%,98%)] tracking-tight">
                 AI-Powered Funnel Builder
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-[hsl(215,20%,65%)]">
                 Generate complete sales funnels with AI-powered landing pages, ads, and email sequences
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
-                <Badge variant="secondary" className="bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/20 dark:to-red-900/20 text-orange-800 dark:text-orange-400 border-0">
+                <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">
                   <Sparkles className="h-3 w-3 mr-1" />
                   AI-Powered
                 </Badge>
-                <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 text-blue-800 dark:text-blue-400 border-0">
+                <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">
                   <BarChart3 className="h-3 w-3 mr-1" />
                   Smart Analytics
                 </Badge>
@@ -473,25 +449,24 @@ export default function FunnelBuilderPage() {
             </div>
           </div>
           
-          {/* Primary CTA - AI Generate Funnel */}
           <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
             <DialogTrigger asChild>
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                 data-testid="button-ai-generate-funnel"
               >
                 <Sparkles className="h-5 w-5 mr-2" />
                 AI Generate Funnel
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]">
               <DialogHeader>
-                <DialogTitle className="flex items-center text-2xl">
-                  <Sparkles className="h-6 w-6 mr-2 text-orange-600" />
+                <DialogTitle className="flex items-center text-2xl text-[hsl(210,17%,98%)]">
+                  <Sparkles className="h-6 w-6 mr-2 text-[hsl(227,89%,63%)]" />
                   Generate Funnel with AI
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-[hsl(215,20%,65%)]">
                   Provide details about your offer and let AI create a complete marketing funnel with landing pages, ad copy, and email sequences.
                 </DialogDescription>
               </DialogHeader>
@@ -503,10 +478,11 @@ export default function FunnelBuilderPage() {
                     name="offerName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Offer Name *</FormLabel>
+                        <FormLabel className="text-[hsl(215,20%,65%)]">Offer Name *</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="e.g., Social Media Marketing Course" 
+                            className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                             {...field} 
                             data-testid="input-offer-name"
                           />
@@ -521,16 +497,17 @@ export default function FunnelBuilderPage() {
                     name="offerDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Offer Description *</FormLabel>
+                        <FormLabel className="text-[hsl(215,20%,65%)]">Offer Description *</FormLabel>
                         <FormControl>
                           <Textarea 
                             placeholder="Describe your offer in detail: what it includes, the value it provides, who it's for..."
                             rows={4}
+                            className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                             {...field} 
                             data-testid="textarea-offer-description"
                           />
                         </FormControl>
-                        <FormDescription>
+                        <FormDescription className="text-[hsl(215,16%,47%)]">
                           Be specific - this helps AI create better content
                         </FormDescription>
                         <FormMessage />
@@ -543,10 +520,11 @@ export default function FunnelBuilderPage() {
                     name="targetAudience"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Target Audience</FormLabel>
+                        <FormLabel className="text-[hsl(215,20%,65%)]">Target Audience</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="e.g., Small business owners, entrepreneurs" 
+                            className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                             {...field} 
                             data-testid="input-target-audience"
                           />
@@ -562,19 +540,19 @@ export default function FunnelBuilderPage() {
                       name="funnelGoal"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Main Goal *</FormLabel>
+                          <FormLabel className="text-[hsl(215,20%,65%)]">Main Goal *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-funnel-goal">
+                              <SelectTrigger className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)]" data-testid="select-funnel-goal">
                                 <SelectValue placeholder="Select goal" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
-                              <SelectItem value="lead_generation">Lead Generation</SelectItem>
-                              <SelectItem value="product_sales">Product Sales</SelectItem>
-                              <SelectItem value="appointment_booking">Appointment Booking</SelectItem>
-                              <SelectItem value="webinar_signup">Webinar Signup</SelectItem>
-                              <SelectItem value="demo_request">Demo Request</SelectItem>
+                            <SelectContent className="bg-[hsl(228,47%,12%)] border-[hsl(217,33%,17%)]">
+                              <SelectItem value="lead_generation" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Lead Generation</SelectItem>
+                              <SelectItem value="product_sales" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Product Sales</SelectItem>
+                              <SelectItem value="appointment_booking" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Appointment Booking</SelectItem>
+                              <SelectItem value="webinar_signup" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Webinar Signup</SelectItem>
+                              <SelectItem value="demo_request" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Demo Request</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -587,21 +565,21 @@ export default function FunnelBuilderPage() {
                       name="industryType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Industry Type *</FormLabel>
+                          <FormLabel className="text-[hsl(215,20%,65%)]">Industry Type *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-industry-type">
+                              <SelectTrigger className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)]" data-testid="select-industry-type">
                                 <SelectValue placeholder="Select industry" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
-                              <SelectItem value="ecommerce">E-commerce</SelectItem>
-                              <SelectItem value="saas">SaaS</SelectItem>
-                              <SelectItem value="consulting">Consulting</SelectItem>
-                              <SelectItem value="coaching">Coaching</SelectItem>
-                              <SelectItem value="agency">Agency</SelectItem>
-                              <SelectItem value="local_business">Local Business</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
+                            <SelectContent className="bg-[hsl(228,47%,12%)] border-[hsl(217,33%,17%)]">
+                              <SelectItem value="ecommerce" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">E-commerce</SelectItem>
+                              <SelectItem value="saas" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">SaaS</SelectItem>
+                              <SelectItem value="consulting" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Consulting</SelectItem>
+                              <SelectItem value="coaching" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Coaching</SelectItem>
+                              <SelectItem value="agency" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Agency</SelectItem>
+                              <SelectItem value="local_business" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Local Business</SelectItem>
+                              <SelectItem value="other" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Other</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -615,10 +593,11 @@ export default function FunnelBuilderPage() {
                     name="pricePoint"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Price Point (Optional)</FormLabel>
+                        <FormLabel className="text-[hsl(215,20%,65%)]">Price Point (Optional)</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="e.g., $497, Free, $29/month" 
+                            className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                             {...field} 
                             data-testid="input-price-point"
                           />
@@ -633,7 +612,7 @@ export default function FunnelBuilderPage() {
                     name="websiteUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="flex items-center gap-2">
+                        <FormLabel className="flex items-center gap-2 text-[hsl(215,20%,65%)]">
                           <Globe className="h-4 w-4" />
                           Website URL (Optional)
                         </FormLabel>
@@ -641,11 +620,12 @@ export default function FunnelBuilderPage() {
                           <Input 
                             type="url"
                             placeholder="https://yourbusiness.com (optional)" 
+                            className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                             {...field} 
                             data-testid="input-website-url"
                           />
                         </FormControl>
-                        <FormDescription>
+                        <FormDescription className="text-[hsl(215,16%,47%)]">
                           We'll extract professional images from your website
                         </FormDescription>
                         <FormMessage />
@@ -659,6 +639,7 @@ export default function FunnelBuilderPage() {
                       variant="outline" 
                       onClick={() => setIsGenerateDialogOpen(false)}
                       disabled={generateFunnelMutation.isPending}
+                      className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                       data-testid="button-cancel-generate"
                     >
                       Cancel
@@ -666,7 +647,7 @@ export default function FunnelBuilderPage() {
                     <Button 
                       type="submit" 
                       disabled={generateFunnelMutation.isPending}
-                      className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                      className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                       data-testid="button-submit-generate"
                     >
                       {generateFunnelMutation.isPending ? (
@@ -688,15 +669,13 @@ export default function FunnelBuilderPage() {
           </Dialog>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Funnel List Sidebar */}
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+                <CardTitle className="flex items-center justify-between text-lg font-semibold text-[hsl(210,17%,98%)]">
                   <span>Your Funnels</span>
-                  <Badge variant="secondary" data-testid="badge-funnel-count">
+                  <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0" data-testid="badge-funnel-count">
                     {funnels.length}
                   </Badge>
                 </CardTitle>
@@ -708,16 +687,16 @@ export default function FunnelBuilderPage() {
                       <>
                         {[1, 2, 3].map((i) => (
                           <div key={i} className="p-4 space-y-2">
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-3 w-2/3" />
+                            <Skeleton className="h-4 w-full bg-[hsl(229,41%,16%)]" />
+                            <Skeleton className="h-3 w-2/3 bg-[hsl(229,41%,16%)]" />
                           </div>
                         ))}
                       </>
                     ) : funnels.length === 0 ? (
                       <div className="text-center py-12 px-4" data-testid="empty-state-funnels">
-                        <Target className="h-16 w-16 mx-auto mb-4 text-gray-400 opacity-50" />
-                        <p className="text-gray-600 dark:text-gray-400 font-medium mb-2">No funnels yet</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-500">
+                        <Target className="h-16 w-16 mx-auto mb-4 text-[hsl(215,16%,47%)] opacity-50" />
+                        <p className="text-[hsl(210,17%,98%)] font-medium mb-2">No funnels yet</p>
+                        <p className="text-sm text-[hsl(215,20%,65%)]">
                           Click "AI Generate Funnel" to create your first conversion funnel
                         </p>
                       </div>
@@ -731,24 +710,23 @@ export default function FunnelBuilderPage() {
                           }}
                           className={`p-4 cursor-pointer rounded-lg transition-colors ${
                             selectedFunnelId === funnel.id 
-                              ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' 
-                              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                              ? 'bg-[hsl(227,89%,63%)]/20 border-l-4 border-l-[hsl(227,89%,63%)]' 
+                              : 'hover:bg-[hsl(229,41%,16%)]'
                           }`}
                           data-testid={`funnel-item-${funnel.id}`}
                         >
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
-                              <span className="font-medium text-sm line-clamp-2">{funnel.name}</span>
+                              <span className="font-medium text-sm text-[hsl(210,17%,98%)] line-clamp-2">{funnel.name}</span>
                               <Badge 
                                 className={getStatusColor(funnel.status)} 
-                                variant="secondary"
                                 data-testid={`badge-status-${funnel.id}`}
                               >
                                 {funnel.status}
                               </Badge>
                             </div>
                             {funnel.description && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                              <p className="text-xs text-[hsl(215,20%,65%)] line-clamp-2">
                                 {funnel.description}
                               </p>
                             )}
@@ -760,7 +738,7 @@ export default function FunnelBuilderPage() {
                                   e.stopPropagation();
                                   handleDeleteFunnel(funnel.id, funnel.name);
                                 }}
-                                className="h-7 px-2 text-red-600 hover:text-red-700 dark:text-red-400"
+                                className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/20"
                                 disabled={deleteFunnelMutation.isPending}
                                 data-testid={`button-delete-${funnel.id}`}
                               >
@@ -777,23 +755,22 @@ export default function FunnelBuilderPage() {
             </Card>
           </div>
 
-          {/* Funnel Details - Main Content Area */}
           <div className="lg:col-span-3">
             {!selectedFunnelId ? (
-              <Card className="h-full min-h-[600px]">
+              <Card className="h-full min-h-[600px] bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
                 <CardContent className="flex flex-col items-center justify-center h-full py-12">
                   <div className="text-center max-w-md" data-testid="empty-state-no-selection">
-                    <div className="bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/20 dark:to-red-900/20 rounded-full p-6 mx-auto mb-6 w-24 h-24 flex items-center justify-center">
-                      <Sparkles className="h-12 w-12 text-orange-600 dark:text-orange-400" />
+                    <div className="bg-[hsl(227,89%,63%)]/20 rounded-full p-6 mx-auto mb-6 w-24 h-24 flex items-center justify-center">
+                      <Sparkles className="h-12 w-12 text-[hsl(227,89%,63%)]" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-3">Ready to Build Your Funnel?</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    <h3 className="text-2xl font-bold text-[hsl(210,17%,98%)] mb-3">Ready to Build Your Funnel?</h3>
+                    <p className="text-[hsl(215,20%,65%)] mb-6">
                       Use AI to generate complete marketing funnels with landing pages, ad copy, and email sequences in seconds.
                     </p>
                     <Button 
                       size="lg"
                       onClick={() => setIsGenerateDialogOpen(true)}
-                      className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                      className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                       data-testid="button-get-started-generate"
                     >
                       <Sparkles className="h-5 w-5 mr-2" />
@@ -803,43 +780,41 @@ export default function FunnelBuilderPage() {
                 </CardContent>
               </Card>
             ) : isLoadingFunnelDetails ? (
-              <Card>
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
                 <CardHeader>
-                  <Skeleton className="h-8 w-2/3" />
-                  <Skeleton className="h-4 w-full mt-2" />
+                  <Skeleton className="h-8 w-2/3 bg-[hsl(229,41%,16%)]" />
+                  <Skeleton className="h-4 w-full mt-2 bg-[hsl(229,41%,16%)]" />
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Skeleton className="h-32 w-full" />
-                  <Skeleton className="h-48 w-full" />
+                  <Skeleton className="h-32 w-full bg-[hsl(229,41%,16%)]" />
+                  <Skeleton className="h-48 w-full bg-[hsl(229,41%,16%)]" />
                 </CardContent>
               </Card>
             ) : selectedFunnel ? (
               <div className="space-y-6">
-                {/* Funnel Header */}
-                <Card>
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
                   <CardHeader>
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                       <div className="flex-1">
-                        <CardTitle className="flex items-center text-2xl">
-                          <Target className="h-6 w-6 mr-2 text-orange-600" />
+                        <CardTitle className="flex items-center text-2xl text-[hsl(210,17%,98%)]">
+                          <Target className="h-6 w-6 mr-2 text-[hsl(227,89%,63%)]" />
                           {selectedFunnel.funnel.name}
                         </CardTitle>
-                        <CardDescription className="mt-2">
+                        <CardDescription className="mt-2 text-[hsl(215,20%,65%)]">
                           {selectedFunnel.funnel.description}
                         </CardDescription>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge 
                           className={getStatusColor(selectedFunnel.funnel.status)} 
-                          variant="secondary"
                           data-testid="badge-selected-funnel-status"
                         >
                           {selectedFunnel.funnel.status}
                         </Badge>
                         <Button
-                          variant="default"
                           onClick={() => handlePublishFunnel(selectedFunnel.funnel.id)}
                           disabled={publishFunnelMutation.isPending || selectedFunnel.funnel.status === 'active'}
+                          className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                           data-testid="button-publish-funnel"
                         >
                           {publishFunnelMutation.isPending ? (
@@ -859,9 +834,9 @@ export default function FunnelBuilderPage() {
                   </CardHeader>
                   {selectedFunnel.aiGeneration && (
                     <CardContent>
-                      <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-6 text-sm text-[hsl(215,20%,65%)]">
                         <div className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-orange-600" />
+                          <Sparkles className="h-4 w-4 text-[hsl(227,89%,63%)]" />
                           <span>AI Provider: {selectedFunnel.aiGeneration.provider}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -877,28 +852,26 @@ export default function FunnelBuilderPage() {
                   )}
                 </Card>
 
-                {/* Tabbed Content */}
                 <Tabs defaultValue="landing" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4" data-testid="tabs-funnel-content">
-                    <TabsTrigger value="landing" data-testid="tab-landing-page">
+                  <TabsList className="grid w-full grid-cols-4 bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] p-1" data-testid="tabs-funnel-content">
+                    <TabsTrigger value="landing" className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" data-testid="tab-landing-page">
                       <FileText className="h-4 w-4 mr-2" />
                       Landing Page
                     </TabsTrigger>
-                    <TabsTrigger value="ads" data-testid="tab-ads">
+                    <TabsTrigger value="ads" className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" data-testid="tab-ads">
                       <TrendingUp className="h-4 w-4 mr-2" />
                       Ad Copy
                     </TabsTrigger>
-                    <TabsTrigger value="emails" data-testid="tab-emails">
+                    <TabsTrigger value="emails" className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" data-testid="tab-emails">
                       <Mail className="h-4 w-4 mr-2" />
                       Emails
                     </TabsTrigger>
-                    <TabsTrigger value="automations" data-testid="tab-automations">
+                    <TabsTrigger value="automations" className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" data-testid="tab-automations">
                       <Zap className="h-4 w-4 mr-2" />
                       Automations
                     </TabsTrigger>
                   </TabsList>
 
-                  {/* Landing Page Tab */}
                   <TabsContent value="landing" className="space-y-4">
                     {selectedFunnel.landingPage ? (
                       <LandingPageEditor
@@ -906,16 +879,15 @@ export default function FunnelBuilderPage() {
                         funnelId={selectedFunnel.funnel.id}
                       />
                     ) : (
-                      <Card>
+                      <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
                         <CardContent className="py-12 text-center" data-testid="empty-state-landing-page">
-                          <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                          <p className="text-gray-600 dark:text-gray-400">No landing page content available</p>
+                          <FileText className="h-12 w-12 mx-auto mb-4 text-[hsl(215,16%,47%)]" />
+                          <p className="text-[hsl(215,20%,65%)]">No landing page content available</p>
                         </CardContent>
                       </Card>
                     )}
                   </TabsContent>
 
-                  {/* Ads Tab */}
                   <TabsContent value="ads" className="space-y-4">
                     {selectedFunnel.ads && selectedFunnel.ads.length > 0 ? (
                       <>
@@ -932,18 +904,19 @@ export default function FunnelBuilderPage() {
                           };
 
                           return (
-                            <Card key={platform} data-testid={`card-ads-${platform}`}>
+                            <Card key={platform} className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg" data-testid={`card-ads-${platform}`}>
                               <CardHeader>
                                 <div className="flex items-center justify-between">
-                                  <CardTitle className="flex items-center capitalize">
+                                  <CardTitle className="flex items-center capitalize text-lg font-semibold text-[hsl(210,17%,98%)]">
                                     {getPlatformIcon(platform)}
                                     <span className="ml-2">{platform} Ads</span>
-                                    <Badge className="ml-2" variant="secondary">{platformAds.length} variants</Badge>
+                                    <Badge className="ml-2 bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">{platformAds.length} variants</Badge>
                                   </CardTitle>
                                   <Button 
                                     variant="outline" 
                                     size="sm"
                                     onClick={() => exportAsJSON(platformAds, `${platform}-ads-${selectedFunnel.funnel.name}.json`)}
+                                    className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                                     data-testid={`button-export-${platform}-ads`}
                                   >
                                     <Download className="h-4 w-4 mr-2" />
@@ -984,9 +957,10 @@ export default function FunnelBuilderPage() {
                                             name="headline"
                                             render={({ field }) => (
                                               <FormItem>
-                                                <FormLabel>Headline</FormLabel>
+                                                <FormLabel className="text-[hsl(215,20%,65%)]">Headline</FormLabel>
                                                 <FormControl>
                                                   <Input 
+                                                    className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                                     {...field} 
                                                     data-testid={`input-ad-headline-${idx}`}
                                                   />
@@ -1000,9 +974,10 @@ export default function FunnelBuilderPage() {
                                             name="bodyText"
                                             render={({ field }) => (
                                               <FormItem>
-                                                <FormLabel>Body Text</FormLabel>
+                                                <FormLabel className="text-[hsl(215,20%,65%)]">Body Text</FormLabel>
                                                 <FormControl>
                                                   <Textarea 
+                                                    className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                                     {...field} 
                                                     rows={4}
                                                     data-testid={`textarea-ad-body-${idx}`}
@@ -1017,9 +992,10 @@ export default function FunnelBuilderPage() {
                                             name="ctaText"
                                             render={({ field }) => (
                                               <FormItem>
-                                                <FormLabel>Call to Action</FormLabel>
+                                                <FormLabel className="text-[hsl(215,20%,65%)]">Call to Action</FormLabel>
                                                 <FormControl>
                                                   <Input 
+                                                    className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                                     {...field} 
                                                     data-testid={`input-ad-cta-${idx}`}
                                                   />
@@ -1034,6 +1010,7 @@ export default function FunnelBuilderPage() {
                                               variant="outline"
                                               onClick={handleCancelEdit}
                                               disabled={updateAdMutation.isPending}
+                                              className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                                               data-testid={`button-cancel-ad-${idx}`}
                                             >
                                               <X className="h-4 w-4 mr-2" />
@@ -1042,7 +1019,7 @@ export default function FunnelBuilderPage() {
                                             <Button
                                               type="submit"
                                               disabled={updateAdMutation.isPending}
-                                              className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                                              className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                                               data-testid={`button-save-ad-${idx}`}
                                             >
                                               {updateAdMutation.isPending ? (
@@ -1066,7 +1043,7 @@ export default function FunnelBuilderPage() {
                                   return (
                                     <div 
                                       key={ad.id} 
-                                      className="p-4 border rounded-lg space-y-3 bg-gray-50 dark:bg-gray-900"
+                                      className="p-4 border border-[hsl(217,33%,17%)] rounded-lg space-y-3 bg-[hsl(229,41%,16%)]"
                                       data-testid={`ad-variant-${platform}-${idx}`}
                                     >
                                       {editingAdId === ad.id ? (
@@ -1074,12 +1051,13 @@ export default function FunnelBuilderPage() {
                                       ) : (
                                         <>
                                           <div className="flex items-center justify-between">
-                                            <Badge variant="outline">{ad.variantName}</Badge>
+                                            <Badge variant="outline" className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)]">{ad.variantName}</Badge>
                                             <div className="flex gap-2">
                                               <Button 
                                                 variant="ghost" 
                                                 size="sm"
                                                 onClick={() => setEditingAdId(ad.id)}
+                                                className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                                 data-testid={`button-edit-ad-${idx}`}
                                               >
                                                 <Edit className="h-4 w-4 mr-2" />
@@ -1092,6 +1070,7 @@ export default function FunnelBuilderPage() {
                                                   `Headline: ${ad.headline}\n\nBody: ${ad.bodyText}\n\nCTA: ${ad.ctaText}`,
                                                   'Ad copy'
                                                 )}
+                                                className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                                 data-testid={`button-copy-ad-${idx}`}
                                               >
                                                 <Copy className="h-4 w-4 mr-2" />
@@ -1101,48 +1080,51 @@ export default function FunnelBuilderPage() {
                                           </div>
                                           <div>
                                             <div className="flex items-center justify-between mb-1">
-                                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Headline</h4>
+                                              <h4 className="text-sm font-medium text-[hsl(215,16%,47%)]">Headline</h4>
                                               <Button 
                                                 variant="ghost" 
                                                 size="sm"
                                                 onClick={() => copyToClipboard(ad.headline, 'Headline')}
+                                                className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                                 data-testid={`button-copy-headline-${platform}-${idx}`}
                                               >
                                                 <Copy className="h-3 w-3" />
                                               </Button>
                                             </div>
-                                            <p className="font-semibold">{ad.headline}</p>
+                                            <p className="font-semibold text-[hsl(210,17%,98%)]">{ad.headline}</p>
                                           </div>
                                           <div>
                                             <div className="flex items-center justify-between mb-1">
-                                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Body</h4>
+                                              <h4 className="text-sm font-medium text-[hsl(215,16%,47%)]">Body</h4>
                                               <Button 
                                                 variant="ghost" 
                                                 size="sm"
                                                 onClick={() => copyToClipboard(ad.bodyText, 'Body text')}
+                                                className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                                 data-testid={`button-copy-body-${platform}-${idx}`}
                                               >
                                                 <Copy className="h-3 w-3" />
                                               </Button>
                                             </div>
-                                            <p className="text-sm text-gray-700 dark:text-gray-300">{ad.bodyText}</p>
+                                            <p className="text-sm text-[hsl(215,20%,65%)]">{ad.bodyText}</p>
                                           </div>
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                               <div>
-                                                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">CTA</h4>
-                                                <Badge variant="default">{ad.ctaText}</Badge>
+                                                <h4 className="text-sm font-medium text-[hsl(215,16%,47%)] mb-1">CTA</h4>
+                                                <Badge className="bg-[hsl(227,89%,63%)] text-white border-0">{ad.ctaText}</Badge>
                                               </div>
                                               <Button 
                                                 variant="ghost" 
                                                 size="sm"
                                                 onClick={() => copyToClipboard(ad.ctaText, 'CTA text')}
+                                                className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                                 data-testid={`button-copy-cta-${platform}-${idx}`}
                                               >
                                                 <Copy className="h-3 w-3" />
                                               </Button>
                                             </div>
-                                            <div className="flex gap-2 text-xs text-gray-500">
+                                            <div className="flex gap-2 text-xs text-[hsl(215,16%,47%)]">
                                               <div className="flex items-center gap-1">
                                                 <MousePointerClick className="h-3 w-3" />
                                                 <span>0 clicks</span>
@@ -1164,27 +1146,27 @@ export default function FunnelBuilderPage() {
                         })}
                       </>
                     ) : (
-                      <Card>
+                      <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
                         <CardContent className="py-12 text-center" data-testid="empty-state-ads">
-                          <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                          <p className="text-gray-600 dark:text-gray-400">No ad copy available</p>
+                          <TrendingUp className="h-12 w-12 mx-auto mb-4 text-[hsl(215,16%,47%)]" />
+                          <p className="text-[hsl(215,20%,65%)]">No ad copy available</p>
                         </CardContent>
                       </Card>
                     )}
                   </TabsContent>
 
-                  {/* Emails Tab */}
                   <TabsContent value="emails" className="space-y-4">
                     {selectedFunnel.emails && selectedFunnel.emails.length > 0 ? (
                       <>
                         <div className="flex items-center justify-between mb-4">
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                          <div className="text-sm text-[hsl(215,20%,65%)]">
                             {selectedFunnel.emails.length} email sequence{selectedFunnel.emails.length !== 1 ? 's' : ''}
                           </div>
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => exportAsJSON(selectedFunnel.emails, `email-sequences-${selectedFunnel.funnel.name}.json`)}
+                            className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                             data-testid="button-export-all-emails"
                           >
                             <Download className="h-4 w-4 mr-2" />
@@ -1227,9 +1209,10 @@ export default function FunnelBuilderPage() {
                                         name="subjectLine"
                                         render={({ field }) => (
                                           <FormItem>
-                                            <FormLabel>Subject Line</FormLabel>
+                                            <FormLabel className="text-[hsl(215,20%,65%)]">Subject Line</FormLabel>
                                             <FormControl>
                                               <Input 
+                                                className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                                 {...field} 
                                                 data-testid={`input-email-subject-${idx}`}
                                               />
@@ -1243,9 +1226,10 @@ export default function FunnelBuilderPage() {
                                         name="previewText"
                                         render={({ field }) => (
                                           <FormItem>
-                                            <FormLabel>Preview Text (Optional)</FormLabel>
+                                            <FormLabel className="text-[hsl(215,20%,65%)]">Preview Text (Optional)</FormLabel>
                                             <FormControl>
                                               <Input 
+                                                className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                                 {...field} 
                                                 data-testid={`input-email-preheader-${idx}`}
                                               />
@@ -1259,9 +1243,10 @@ export default function FunnelBuilderPage() {
                                         name="bodyHtml"
                                         render={({ field }) => (
                                           <FormItem>
-                                            <FormLabel>Email Content (HTML)</FormLabel>
+                                            <FormLabel className="text-[hsl(215,20%,65%)]">Email Content (HTML)</FormLabel>
                                             <FormControl>
                                               <Textarea 
+                                                className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                                 {...field} 
                                                 rows={6}
                                                 data-testid={`textarea-email-body-${idx}`}
@@ -1276,9 +1261,10 @@ export default function FunnelBuilderPage() {
                                         name="ctaText"
                                         render={({ field }) => (
                                           <FormItem>
-                                            <FormLabel>Call to Action (Optional)</FormLabel>
+                                            <FormLabel className="text-[hsl(215,20%,65%)]">Call to Action (Optional)</FormLabel>
                                             <FormControl>
                                               <Input 
+                                                className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                                 {...field} 
                                                 data-testid={`input-email-cta-${idx}`}
                                               />
@@ -1293,6 +1279,7 @@ export default function FunnelBuilderPage() {
                                           variant="outline"
                                           onClick={handleCancelEdit}
                                           disabled={updateEmailMutation.isPending}
+                                          className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                                           data-testid={`button-cancel-email-${idx}`}
                                         >
                                           <X className="h-4 w-4 mr-2" />
@@ -1301,7 +1288,7 @@ export default function FunnelBuilderPage() {
                                         <Button
                                           type="submit"
                                           disabled={updateEmailMutation.isPending}
-                                          className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                                          className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                                           data-testid={`button-save-email-${idx}`}
                                         >
                                           {updateEmailMutation.isPending ? (
@@ -1323,21 +1310,22 @@ export default function FunnelBuilderPage() {
                               };
 
                               return (
-                                <Card key={email.id} data-testid={`card-email-${idx}`}>
+                                <Card key={email.id} className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg" data-testid={`card-email-${idx}`}>
                                   <CardHeader>
                                     <div className="flex items-center justify-between">
-                                      <CardTitle className="flex items-center">
-                                        <Mail className="h-5 w-5 mr-2 text-blue-600" />
+                                      <CardTitle className="flex items-center text-lg font-semibold text-[hsl(210,17%,98%)]">
+                                        <Mail className="h-5 w-5 mr-2 text-[hsl(227,89%,63%)]" />
                                         {email.sequenceName}
                                       </CardTitle>
                                       <div className="flex items-center gap-2">
-                                        <Badge variant="outline">Day {email.delayDays}</Badge>
-                                        <Badge variant="secondary">Email #{email.sequenceOrder}</Badge>
+                                        <Badge variant="outline" className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)]">Day {email.delayDays}</Badge>
+                                        <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">Email #{email.sequenceOrder}</Badge>
                                         {editingEmailId !== email.id && (
                                           <Button 
                                             variant="ghost" 
                                             size="sm"
                                             onClick={() => setEditingEmailId(email.id)}
+                                            className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                             data-testid={`button-edit-email-${idx}`}
                                           >
                                             <Edit className="h-4 w-4 mr-2" />
@@ -1354,42 +1342,45 @@ export default function FunnelBuilderPage() {
                                       <>
                                         <div>
                                           <div className="flex items-center justify-between mb-1">
-                                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Subject Line</h4>
+                                            <h4 className="text-sm font-medium text-[hsl(215,16%,47%)]">Subject Line</h4>
                                             <Button 
                                               variant="ghost" 
                                               size="sm"
                                               onClick={() => copyToClipboard(email.subjectLine, 'Subject line')}
+                                              className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                               data-testid={`button-copy-subject-${idx}`}
                                             >
                                               <Copy className="h-3 w-3" />
                                             </Button>
                                           </div>
-                                          <p className="font-semibold">{email.subjectLine}</p>
+                                          <p className="font-semibold text-[hsl(210,17%,98%)]">{email.subjectLine}</p>
                                         </div>
                                         {email.previewText && (
                                           <div>
                                             <div className="flex items-center justify-between mb-1">
-                                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Preview Text</h4>
+                                              <h4 className="text-sm font-medium text-[hsl(215,16%,47%)]">Preview Text</h4>
                                               <Button 
                                                 variant="ghost" 
                                                 size="sm"
                                                 onClick={() => copyToClipboard(email.previewText, 'Preview text')}
+                                                className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                                 data-testid={`button-copy-preheader-${idx}`}
                                               >
                                                 <Copy className="h-3 w-3" />
                                               </Button>
                                             </div>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">{email.previewText}</p>
+                                            <p className="text-sm text-[hsl(215,20%,65%)]">{email.previewText}</p>
                                           </div>
                                         )}
                                         <div>
                                           <div className="flex items-center justify-between mb-1">
-                                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Content</h4>
+                                            <h4 className="text-sm font-medium text-[hsl(215,16%,47%)]">Email Content</h4>
                                             <div className="flex gap-2">
                                               <Button 
                                                 variant="ghost" 
                                                 size="sm"
                                                 onClick={() => setEmailPreviewId(email.id)}
+                                                className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                                 data-testid={`button-preview-email-${idx}`}
                                               >
                                                 <Eye className="h-3 w-3 mr-1" />
@@ -1399,6 +1390,7 @@ export default function FunnelBuilderPage() {
                                                 variant="ghost" 
                                                 size="sm"
                                                 onClick={() => copyToClipboard(email.bodyHtml, 'Email content')}
+                                                className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                                 data-testid={`button-copy-body-${idx}`}
                                               >
                                                 <Copy className="h-3 w-3" />
@@ -1406,19 +1398,19 @@ export default function FunnelBuilderPage() {
                                             </div>
                                           </div>
                                           <div 
-                                            className="prose prose-sm dark:prose-invert max-w-none p-4 bg-gray-50 dark:bg-gray-900 rounded-lg max-h-40 overflow-hidden relative"
+                                            className="prose prose-sm prose-invert max-w-none p-4 bg-[hsl(229,41%,16%)] rounded-lg max-h-40 overflow-hidden relative"
                                             dangerouslySetInnerHTML={{ __html: email.bodyHtml }}
                                             data-testid={`email-body-${idx}`}
                                           />
                                         </div>
-                                        <div className="flex items-center justify-between pt-2 border-t">
+                                        <div className="flex items-center justify-between pt-2 border-t border-[hsl(217,33%,17%)]">
                                           {email.ctaText && (
                                             <div>
-                                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Call to Action</h4>
-                                              <Badge variant="default">{email.ctaText}</Badge>
+                                              <h4 className="text-sm font-medium text-[hsl(215,16%,47%)] mb-2">Call to Action</h4>
+                                              <Badge className="bg-[hsl(227,89%,63%)] text-white border-0">{email.ctaText}</Badge>
                                             </div>
                                           )}
-                                          <div className="flex gap-3 text-xs text-gray-500">
+                                          <div className="flex gap-3 text-xs text-[hsl(215,16%,47%)]">
                                             <div className="flex items-center gap-1">
                                               <Send className="h-3 w-3" />
                                               <span>0 sent</span>
@@ -1442,16 +1434,15 @@ export default function FunnelBuilderPage() {
                         </div>
                       </>
                     ) : (
-                      <Card>
+                      <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
                         <CardContent className="py-12 text-center" data-testid="empty-state-emails">
-                          <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                          <p className="text-gray-600 dark:text-gray-400">No email sequences available</p>
+                          <Mail className="h-12 w-12 mx-auto mb-4 text-[hsl(215,16%,47%)]" />
+                          <p className="text-[hsl(215,20%,65%)]">No email sequences available</p>
                         </CardContent>
                       </Card>
                     )}
                   </TabsContent>
 
-                  {/* Automations Tab */}
                   <TabsContent value="automations" className="space-y-4">
                     {selectedFunnel.workflows && selectedFunnel.workflows.length > 0 ? (
                       <div className="space-y-4" data-testid="list-workflows">
@@ -1489,7 +1480,7 @@ export default function FunnelBuilderPage() {
 
                             const removeAction = (indexToRemove: number) => {
                               const currentActions = workflowForm.getValues('actions') || [];
-                              workflowForm.setValue('actions', currentActions.filter((_, i) => i !== indexToRemove));
+                              workflowForm.setValue('actions', currentActions.filter((_: string, i: number) => i !== indexToRemove));
                             };
 
                             return (
@@ -1500,9 +1491,10 @@ export default function FunnelBuilderPage() {
                                     name="name"
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>Workflow Name</FormLabel>
+                                        <FormLabel className="text-[hsl(215,20%,65%)]">Workflow Name</FormLabel>
                                         <FormControl>
                                           <Input 
+                                            className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                             {...field} 
                                             data-testid={`input-workflow-name-${idx}`}
                                           />
@@ -1516,9 +1508,10 @@ export default function FunnelBuilderPage() {
                                     name="description"
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>Description (Optional)</FormLabel>
+                                        <FormLabel className="text-[hsl(215,20%,65%)]">Description (Optional)</FormLabel>
                                         <FormControl>
                                           <Textarea 
+                                            className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)]"
                                             {...field} 
                                             rows={3}
                                             data-testid={`textarea-workflow-description-${idx}`}
@@ -1533,18 +1526,18 @@ export default function FunnelBuilderPage() {
                                     name="triggerType"
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>Trigger Event</FormLabel>
+                                        <FormLabel className="text-[hsl(215,20%,65%)]">Trigger Event</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value}>
                                           <FormControl>
-                                            <SelectTrigger data-testid={`select-workflow-trigger-${idx}`}>
+                                            <SelectTrigger className="bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)]" data-testid={`select-workflow-trigger-${idx}`}>
                                               <SelectValue placeholder="Select trigger type" />
                                             </SelectTrigger>
                                           </FormControl>
-                                          <SelectContent>
-                                            <SelectItem value="form_submission">Form Submission</SelectItem>
-                                            <SelectItem value="email_opened">Email Opened</SelectItem>
-                                            <SelectItem value="link_clicked">Link Clicked</SelectItem>
-                                            <SelectItem value="page_viewed">Page Viewed</SelectItem>
+                                          <SelectContent className="bg-[hsl(228,47%,12%)] border-[hsl(217,33%,17%)]">
+                                            <SelectItem value="form_submission" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Form Submission</SelectItem>
+                                            <SelectItem value="email_opened" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Email Opened</SelectItem>
+                                            <SelectItem value="link_clicked" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Link Clicked</SelectItem>
+                                            <SelectItem value="page_viewed" className="text-[hsl(210,17%,98%)] focus:bg-[hsl(229,41%,16%)]">Page Viewed</SelectItem>
                                           </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -1552,19 +1545,18 @@ export default function FunnelBuilderPage() {
                                     )}
                                   />
                                   <div className="space-y-2">
-                                    <FormLabel>Actions</FormLabel>
+                                    <FormLabel className="text-[hsl(215,20%,65%)]">Actions</FormLabel>
                                     <div className="flex flex-wrap gap-2">
                                       {actions.map((action: string, actionIdx: number) => (
                                         <Badge 
                                           key={actionIdx} 
-                                          variant="secondary" 
-                                          className="capitalize flex items-center gap-1"
+                                          className="capitalize flex items-center gap-1 bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0"
                                         >
                                           {action.replace('_', ' ')}
                                           <button
                                             type="button"
                                             onClick={() => removeAction(actionIdx)}
-                                            className="ml-1 hover:text-destructive"
+                                            className="ml-1 hover:text-red-400"
                                             data-testid={`button-remove-action-${idx}-${actionIdx}`}
                                           >
                                             <X className="h-3 w-3" />
@@ -1576,6 +1568,7 @@ export default function FunnelBuilderPage() {
                                         variant="outline"
                                         size="sm"
                                         onClick={addAction}
+                                        className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                                         data-testid={`button-add-action-${idx}`}
                                       >
                                         <Plus className="h-3 w-3 mr-1" />
@@ -1589,6 +1582,7 @@ export default function FunnelBuilderPage() {
                                       variant="outline"
                                       onClick={handleCancelEdit}
                                       disabled={updateWorkflowFullMutation.isPending}
+                                      className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                                       data-testid={`button-cancel-workflow-${idx}`}
                                     >
                                       <X className="h-4 w-4 mr-2" />
@@ -1597,7 +1591,7 @@ export default function FunnelBuilderPage() {
                                     <Button
                                       type="submit"
                                       disabled={updateWorkflowFullMutation.isPending}
-                                      className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                                      className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
                                       data-testid={`button-save-workflow-${idx}`}
                                     >
                                       {updateWorkflowFullMutation.isPending ? (
@@ -1619,16 +1613,16 @@ export default function FunnelBuilderPage() {
                           };
 
                           return (
-                            <Card key={workflow.id} data-testid={`card-workflow-${idx}`} className="relative">
+                            <Card key={workflow.id} className="relative bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg" data-testid={`card-workflow-${idx}`}>
                               <CardHeader>
                                 <div className="flex items-center justify-between">
-                                  <CardTitle className="flex items-center">
-                                    <Zap className="h-5 w-5 mr-2 text-purple-600" />
+                                  <CardTitle className="flex items-center text-lg font-semibold text-[hsl(210,17%,98%)]">
+                                    <Zap className="h-5 w-5 mr-2 text-[hsl(227,89%,63%)]" />
                                     {workflow.name}
                                   </CardTitle>
                                   <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                                      <span className="text-sm text-[hsl(215,20%,65%)]">
                                         {workflow.isActive !== false ? 'Active' : 'Inactive'}
                                       </span>
                                       <Switch 
@@ -1650,6 +1644,7 @@ export default function FunnelBuilderPage() {
                                           variant="ghost" 
                                           size="sm"
                                           onClick={() => setEditingWorkflowId(workflow.id)}
+                                          className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                           data-testid={`button-edit-workflow-${idx}`}
                                         >
                                           <Edit className="h-4 w-4 mr-2" />
@@ -1659,6 +1654,7 @@ export default function FunnelBuilderPage() {
                                           variant="outline" 
                                           size="sm"
                                           onClick={() => exportAsJSON(workflow, `workflow-${workflow.name}.json`)}
+                                          className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                                           data-testid={`button-export-workflow-${idx}`}
                                         >
                                           <Download className="h-4 w-4" />
@@ -1674,36 +1670,36 @@ export default function FunnelBuilderPage() {
                                 ) : (
                                   <>
                                     {workflow.description && (
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      <p className="text-sm text-[hsl(215,20%,65%)]">
                                         {workflow.description}
                                       </p>
                                     )}
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="space-y-2">
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trigger Event</h4>
-                                        <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                          <Play className="h-4 w-4 text-purple-600" />
-                                          <span className="text-sm font-medium capitalize">
+                                        <h4 className="text-sm font-medium text-[hsl(215,16%,47%)]">Trigger Event</h4>
+                                        <div className="flex items-center gap-2 p-3 bg-[hsl(227,89%,63%)]/20 rounded-lg">
+                                          <Play className="h-4 w-4 text-[hsl(227,89%,63%)]" />
+                                          <span className="text-sm font-medium text-[hsl(210,17%,98%)] capitalize">
                                             {workflow.triggerType.replace('_', ' ')}
                                           </span>
                                         </div>
                                       </div>
                                       <div className="space-y-2">
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Actions ({workflow.actions.length})</h4>
+                                        <h4 className="text-sm font-medium text-[hsl(215,16%,47%)]">Actions ({workflow.actions.length})</h4>
                                         <div className="flex flex-wrap gap-2">
                                           {workflow.actions.slice(0, 3).map((action: string, actionIdx: number) => (
-                                            <Badge key={actionIdx} variant="secondary" className="capitalize">
+                                            <Badge key={actionIdx} className="capitalize bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">
                                               {action.replace('_', ' ')}
                                             </Badge>
                                           ))}
                                           {workflow.actions.length > 3 && (
-                                            <Badge variant="outline">+{workflow.actions.length - 3} more</Badge>
+                                            <Badge variant="outline" className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)]">+{workflow.actions.length - 3} more</Badge>
                                           )}
                                         </div>
                                       </div>
                                     </div>
-                                    <Separator />
-                                    <div className="flex items-center justify-between text-xs text-gray-500">
+                                    <Separator className="bg-[hsl(217,33%,17%)]" />
+                                    <div className="flex items-center justify-between text-xs text-[hsl(215,16%,47%)]">
                                       <div className="flex gap-4">
                                         <div className="flex items-center gap-1">
                                           <CheckCircle2 className="h-3 w-3" />
@@ -1727,6 +1723,7 @@ export default function FunnelBuilderPage() {
                                             description: "Full workflow visualization coming soon",
                                           });
                                         }}
+                                        className="text-[hsl(215,20%,65%)] hover:text-[hsl(210,17%,98%)] hover:bg-[hsl(229,41%,16%)]"
                                         data-testid={`button-view-workflow-${idx}`}
                                       >
                                         <Eye className="h-3 w-3 mr-1" />
@@ -1741,10 +1738,10 @@ export default function FunnelBuilderPage() {
                         })}
                       </div>
                     ) : (
-                      <Card>
+                      <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
                         <CardContent className="py-12 text-center" data-testid="empty-state-automations">
-                          <Zap className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                          <p className="text-gray-600 dark:text-gray-400">No automation workflows available</p>
+                          <Zap className="h-12 w-12 mx-auto mb-4 text-[hsl(215,16%,47%)]" />
+                          <p className="text-[hsl(215,20%,65%)]">No automation workflows available</p>
                         </CardContent>
                       </Card>
                     )}
@@ -1755,62 +1752,39 @@ export default function FunnelBuilderPage() {
           </div>
         </div>
 
-        {/* Email Preview Dialog */}
         <Dialog open={!!emailPreviewId} onOpenChange={(open) => !open && setEmailPreviewId(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh]" data-testid="dialog-email-preview">
+          <DialogContent className="max-w-4xl max-h-[90vh] bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]" data-testid="dialog-email-preview">
             <DialogHeader>
-              <DialogTitle className="flex items-center text-xl">
-                <Mail className="h-5 w-5 mr-2 text-blue-600" />
+              <DialogTitle className="flex items-center text-xl text-[hsl(210,17%,98%)]">
+                <Mail className="h-5 w-5 mr-2 text-[hsl(227,89%,63%)]" />
                 Email Preview
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-[hsl(215,20%,65%)]">
                 Full preview of the email content
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="h-[70vh] w-full rounded-md border p-6">
+            <ScrollArea className="h-[70vh] w-full rounded-md border border-[hsl(217,33%,17%)] p-6 bg-[hsl(229,41%,16%)]">
               {selectedFunnel?.emails?.find((email: any) => email.id === emailPreviewId) && (
                 <div className="space-y-4" data-testid="email-preview-content">
-                  <div className="border-b pb-4">
-                    <h3 className="text-lg font-semibold mb-2">
-                      {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).subject}
+                  <div className="border-b border-[hsl(217,33%,17%)] pb-4">
+                    <h3 className="text-lg font-semibold text-[hsl(210,17%,98%)] mb-2">
+                      {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).subjectLine}
                     </h3>
-                    {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).preheader && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).preheader}
+                    {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).previewText && (
+                      <p className="text-sm text-[hsl(215,20%,65%)]">
+                        {selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).previewText}
                       </p>
                     )}
                   </div>
                   <div 
-                    className="prose prose-sm dark:prose-invert max-w-none"
+                    className="prose prose-sm prose-invert max-w-none"
                     dangerouslySetInnerHTML={{ 
                       __html: selectedFunnel.emails.find((email: any) => email.id === emailPreviewId).bodyHtml 
                     }}
-                    data-testid="email-preview-body"
                   />
                 </div>
               )}
             </ScrollArea>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button 
-                variant="outline"
-                onClick={() => setEmailPreviewId(null)}
-                data-testid="button-close-preview"
-              >
-                Close
-              </Button>
-              {selectedFunnel?.emails?.find((email: any) => email.id === emailPreviewId) && (
-                <Button 
-                  onClick={() => {
-                    const email = selectedFunnel.emails.find((email: any) => email.id === emailPreviewId);
-                    copyToClipboard(email.bodyHtml, 'Email content');
-                  }}
-                  data-testid="button-copy-preview"
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy HTML
-                </Button>
-              )}
-            </div>
           </DialogContent>
         </Dialog>
       </div>
