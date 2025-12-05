@@ -44,7 +44,7 @@ export default function ContactsPage() {
 
   // Calculate real statistics from API data
   const statistics = useMemo(() => {
-    if (!contacts.length) {
+    if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
       return {
         totalContacts: 0,
         activeContacts: 0,

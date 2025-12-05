@@ -32,9 +32,6 @@ export default function Layout({ children }: LayoutProps) {
   const isSuperAdminDashboard = location?.startsWith('/super-admin-dashboard');
   const isFunnelBuilder = location === '/funnel-builder';
   
-  // Debug logging
-  console.log('Layout - Current location:', location);
-  console.log('Layout - isFunnelBuilder:', isFunnelBuilder);
   
   // Initialize behavior tracking for the current user
   useBehaviorTracking({ 

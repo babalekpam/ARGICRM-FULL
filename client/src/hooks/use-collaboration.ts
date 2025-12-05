@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface CollaborationUser {
@@ -44,21 +44,26 @@ export const useCollaboration = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const queryClient = useQueryClient();
 
-  // Fetch initial data
+  // Fetch initial data - disabled by default for performance, enable only when needed
   const { data: usersData } = useQuery({
     queryKey: ['/api/collaboration/users'],
-    refetchInterval: 30000, // Refetch every 30 seconds as backup
+    refetchInterval: false, // Disabled to improve performance
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: false, // Lazy load - only fetch when explicitly needed
   });
 
   const { data: activitiesData } = useQuery({
     queryKey: ['/api/collaboration/activities'],
-    refetchInterval: 30000,
+    refetchInterval: false, // Disabled to improve performance
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: false, // Lazy load
   });
 
-  // Initialize WebSocket connection for real-time updates
-  useEffect(() => {
+  // WebSocket connection disabled for performance - enable explicitly when collaboration features are needed
+  // This prevents unnecessary WebSocket connections on every page load
+  const connectWebSocket = useCallback(() => {
     const token = localStorage.getItem('authToken');
-    if (!token) return;
+    if (!token || wsRef.current) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
@@ -69,7 +74,6 @@ export const useCollaboration = () => {
 
       wsRef.current.onopen = () => {
         setIsConnected(true);
-        console.log('Collaboration WebSocket connected');
       };
 
       wsRef.current.onmessage = (event) => {
@@ -77,32 +81,26 @@ export const useCollaboration = () => {
           const eventData: CollaborationEvent = JSON.parse(event.data);
           handleCollaborationEvent(eventData);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          // Silent fail for WebSocket parsing errors
         }
       };
 
       wsRef.current.onclose = () => {
         setIsConnected(false);
-        console.log('Collaboration WebSocket disconnected');
-        
-        // Attempt to reconnect after 5 seconds
-        setTimeout(() => {
-          if (wsRef.current?.readyState === WebSocket.CLOSED) {
-            // Re-run the effect to reconnect
-            wsRef.current = null;
-          }
-        }, 5000);
+        wsRef.current = null;
       };
 
-      wsRef.current.onerror = (error) => {
-        console.error('Collaboration WebSocket error:', error);
+      wsRef.current.onerror = () => {
         setIsConnected(false);
       };
 
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      // Silent fail for WebSocket connection errors
     }
+  }, []);
 
+  // Cleanup WebSocket on unmount
+  useEffect(() => {
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
@@ -264,6 +262,7 @@ export const useCollaboration = () => {
     onlineUsers: users.filter(u => u.status === 'online'),
     updateUserActivity,
     updateUserStatus,
-    updatePageNavigation
+    updatePageNavigation,
+    connectWebSocket // Export for explicit connection when needed
   };
 };
