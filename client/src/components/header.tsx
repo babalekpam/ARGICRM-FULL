@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Bell, Settings, User, LogOut, Crown } from "lucide-react";
+import { Bell, Settings, User, LogOut, Crown, Search, Command } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { 
@@ -10,37 +10,58 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
-import Logo from "./logo";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const { setIsCommandPaletteOpen } = useKeyboardShortcuts();
   const isPlatformOwner = user?.isPlatformOwner === true || 
                           user?.email === 'abel@argilette.com' ||
                           user?.role === 'platform_owner';
 
   return (
-    <header className="fixed top-0 right-0 left-64 bg-card/95 backdrop-blur-md border-b border-border shadow-sm z-40">
-      <div className="flex items-center justify-between h-16 px-8">
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-3">
-            <Logo size="sm" variant="colored" />
-            <h1 className="text-xl font-semibold text-foreground">
-              NODE CRM
-            </h1>
-          </div>
+    <header className="fixed top-0 right-0 left-[var(--sidebar-width,16rem)] bg-[hsl(228,47%,12%)] border-b border-[hsl(217,33%,17%)] shadow-sm z-40 transition-all duration-200">
+      <div className="flex items-center justify-between h-16 px-6">
+        <div className="flex items-center">
           {user && (
-            <span className="text-sm text-muted-foreground font-medium">
-              Welcome, {user.firstName} {user.lastName}
+            <span className="text-sm text-[hsl(215,20%,65%)]">
+              Welcome back, <span className="text-[hsl(210,17%,98%)] font-medium">{user.firstName}</span>
             </span>
           )}
         </div>
         
+        <div className="flex-1 max-w-xl mx-8">
+          <div 
+            className="relative cursor-pointer"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setIsCommandPaletteOpen(true);
+              }
+            }}
+            data-testid="button-global-search"
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(215,20%,65%)]" />
+            <div 
+              className="pl-10 pr-12 py-2 w-full bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] text-[hsl(215,16%,47%)] rounded-md text-sm"
+            >
+              Search contacts, deals, tasks...
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[hsl(215,16%,47%)]">
+              <Command className="h-3 w-3" />
+              <span className="text-xs">K</span>
+            </div>
+          </div>
+        </div>
+        
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="icon" className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]">
             <Bell className="h-4 w-4" />
           </Button>
           <ThemeToggle />
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="icon" className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]" asChild>
             <Link to="/account-settings">
               <Settings className="h-4 w-4" />
             </Link>
@@ -48,7 +69,7 @@ export default function Header() {
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" data-testid="button-user-menu">
+                <Button variant="ghost" size="icon" className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]" data-testid="button-user-menu">
                   {isPlatformOwner ? (
                     <Crown className="h-4 w-4 text-amber-500" />
                   ) : (
@@ -56,10 +77,10 @@ export default function Header() {
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-[hsl(228,47%,12%)] border-[hsl(217,33%,17%)]">
                 <div className="px-3 py-2">
-                  <div className="font-medium text-foreground">{user.firstName} {user.lastName}</div>
-                  <div className="text-xs text-muted-foreground">{user.email}</div>
+                  <div className="font-medium text-[hsl(210,17%,98%)]">{user.firstName} {user.lastName}</div>
+                  <div className="text-xs text-[hsl(215,20%,65%)]">{user.email}</div>
                   {isPlatformOwner && (
                     <div className="text-xs text-warning flex items-center gap-1 mt-1.5 bg-warning/10 px-2 py-1 rounded-md">
                       <Crown className="h-3 w-3" />
@@ -67,14 +88,14 @@ export default function Header() {
                     </div>
                   )}
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
+                <DropdownMenuSeparator className="bg-[hsl(217,33%,17%)]" />
+                <DropdownMenuItem asChild className="text-[hsl(215,20%,65%)] focus:bg-[hsl(229,41%,16%)] focus:text-[hsl(210,17%,98%)]">
                   <Link to="/account-settings" className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={logout} className="text-destructive cursor-pointer" data-testid="button-logout">
+                <DropdownMenuItem onClick={logout} className="text-destructive cursor-pointer focus:bg-[hsl(229,41%,16%)]" data-testid="button-logout">
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout
                 </DropdownMenuItem>

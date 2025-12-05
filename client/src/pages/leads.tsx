@@ -290,20 +290,22 @@ export default function LeadsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "new": return "bg-blue-100 text-blue-800";
-      case "contacted": return "bg-yellow-100 text-yellow-800";
-      case "qualified": return "bg-green-100 text-green-800";
-      case "unqualified": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "new": return "bg-[hsl(217,91%,60%)/30%] text-[hsl(217,91%,60%)] border-0";
+      case "contacted": return "bg-[hsl(38,92%,50%)/30%] text-[hsl(38,92%,50%)] border-0";
+      case "qualified": return "bg-[hsl(160,84%,39%)/30%] text-[hsl(160,84%,39%)] border-0";
+      case "unqualified": return "bg-[hsl(0,84%,60%)/30%] text-[hsl(0,84%,60%)] border-0";
+      default: return "bg-[hsl(229,41%,16%)] text-[hsl(215,20%,65%)] border-0";
     }
   };
+
+  const inputStyles = "px-3 py-2 bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] rounded-md text-[hsl(210,17%,98%)] placeholder:text-[hsl(215,16%,47%)] focus:border-[hsl(227,89%,63%)] focus:outline-none focus:ring-1 focus:ring-[hsl(227,89%,63%)]";
 
   const renderField = (field: any, value: any = '') => {
     const commonProps = {
       name: field.name,
       placeholder: field.label,
       required: field.required,
-      className: "px-3 py-2 border rounded-md",
+      className: inputStyles,
       defaultValue: value
     };
 
@@ -342,7 +344,7 @@ export default function LeadsPage() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-4 border-[hsl(227,89%,63%)] border-t-transparent rounded-full" />
         </div>
       </Layout>
     );
@@ -351,69 +353,94 @@ export default function LeadsPage() {
   return (
     <Layout>
       <div className="space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-3">
-              <Target className="h-8 w-8 text-orange-600" />
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                    AI-Powered Lead Management
-                  </h1>
-                  {!isPlatformOwner && (
-                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                      Clean Data View
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-slate-600 dark:text-slate-400 text-lg">Manage leads and use templates for efficient lead capture and qualification</p>
-              </div>
+        {/* Apollo-style Page Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl font-bold text-[hsl(210,17%,98%)] tracking-tight">
+                Leads
+              </h1>
+              {!isPlatformOwner && (
+                <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">
+                  Clean Data View
+                </Badge>
+              )}
             </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
-                <div className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></div>
+            <p className="text-sm text-[hsl(215,20%,65%)]">
+              Track and manage your sales leads
+            </p>
+            <div className="flex items-center gap-3 mt-3">
+              <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">
+                <div className="w-2 h-2 bg-[hsl(227,89%,63%)] rounded-full mr-2 animate-pulse"></div>
                 Lead Pipeline
               </Badge>
-              <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+              <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(142,71%,45%)] border-0">
                 Template Ready
               </Badge>
-              <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">
+              <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(270,60%,70%)] border-0">
                 AI Scoring
               </Badge>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            <Button onClick={() => setActiveTab('templates')} variant="outline" className="bg-white shadow-md border-slate-200">
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={() => setActiveTab('templates')} 
+              variant="outline" 
+              className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
+            >
               <FileText className="h-4 w-4 mr-2" />
               Templates
             </Button>
-            <Button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 shadow-lg">
+            <Button 
+              onClick={() => setShowForm(true)} 
+              className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Lead
             </Button>
           </div>
         </div>
 
-        {/* Tabs Layout */}
+        {/* Apollo-style Tabs Layout */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
-            <TabsTrigger value="leads" className="gap-2" data-testid="tab-leads">
+          <TabsList className="bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] p-1 w-auto inline-flex">
+            <TabsTrigger 
+              value="leads" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-leads"
+            >
               <Users className="h-4 w-4" />
               All Leads ({(leads || []).length})
             </TabsTrigger>
-            <TabsTrigger value="templates" className="gap-2" data-testid="tab-templates">
+            <TabsTrigger 
+              value="templates" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-templates"
+            >
               <FileText className="h-4 w-4" />
               Templates ({(leadTemplates || []).length})
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
+            <TabsTrigger 
+              value="analytics" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-analytics"
+            >
               <Target className="h-4 w-4" />
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="scoring" className="gap-2" data-testid="tab-scoring">
+            <TabsTrigger 
+              value="scoring" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-scoring"
+            >
               <Star className="h-4 w-4" />
               Scoring
             </TabsTrigger>
-            <TabsTrigger value="landing-pages" className="gap-2" data-testid="tab-landing-pages">
+            <TabsTrigger 
+              value="landing-pages" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-landing-pages"
+            >
               <Globe className="h-4 w-4" />
               Landing Pages
             </TabsTrigger>
@@ -424,11 +451,11 @@ export default function LeadsPage() {
             <TabsContent value="leads" className="space-y-6 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {(leads || []).map((lead: Lead) => (
-                <Card key={lead.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+                <Card key={lead.id} className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg hover:border-[hsl(227,89%,63%)/50%] transition-colors">
+                  <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
                     <div className="flex items-center space-x-2 flex-1">
-                      <UserCheck className="h-5 w-5 text-indigo-600" />
-                      <CardTitle className="text-lg">{lead.firstName} {lead.lastName}</CardTitle>
+                      <UserCheck className="h-5 w-5 text-[hsl(227,89%,63%)]" />
+                      <CardTitle className="text-lg text-[hsl(210,17%,98%)]">{lead.firstName} {lead.lastName}</CardTitle>
                     </div>
                     <Badge className={getStatusColor(lead.status || "new")}>
                       {lead.status}
@@ -436,15 +463,15 @@ export default function LeadsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{lead.email}</p>
+                      <p className="text-sm text-[hsl(215,20%,65%)]">{lead.email}</p>
                       {lead.company && (
-                        <p className="text-sm font-medium">{lead.company}</p>
+                        <p className="text-sm font-medium text-[hsl(210,17%,98%)]">{lead.company}</p>
                       )}
                       {lead.jobTitle && (
-                        <p className="text-sm text-gray-500">{lead.jobTitle}</p>
+                        <p className="text-sm text-[hsl(215,16%,47%)]">{lead.jobTitle}</p>
                       )}
                       <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center text-sm text-yellow-600">
+                        <div className="flex items-center text-sm text-[hsl(38,92%,50%)]">
                           <Star className="h-4 w-4 mr-1 fill-current" />
                           Score: {lead.score || 0}
                         </div>
@@ -452,6 +479,7 @@ export default function LeadsPage() {
                           <Button 
                             variant="outline"
                             size="sm" 
+                            className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                             onClick={() => {
                               console.log('Convert button clicked for lead:', lead.id);
                               convertMutation.mutate({ 
@@ -480,11 +508,11 @@ export default function LeadsPage() {
                           </Button>
                         )}
                       </div>
-                      <div className="flex space-x-2 pt-4 border-t">
+                      <div className="flex space-x-2 pt-4 border-t border-[hsl(217,33%,17%)]">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                           onClick={() => setEditingLead(lead)}
                         >
                           <Edit className="h-4 w-4 mr-1" />
@@ -493,7 +521,7 @@ export default function LeadsPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 bg-[hsl(0,84%,60%)/30%] text-[hsl(0,84%,60%)] hover:bg-[hsl(0,84%,60%)/40%] border-0"
                           onClick={() => {
                             if (confirm(`Are you sure you want to delete ${lead.firstName} ${lead.lastName}? This action cannot be undone.`)) {
                               deleteMutation.mutate(lead.id);
@@ -515,28 +543,35 @@ export default function LeadsPage() {
             <TabsContent value="templates" className="space-y-6 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {(leadTemplates || []).map((template) => (
-                <Card key={template.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedTemplate(template)}>
+                <Card 
+                  key={template.id} 
+                  className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg hover:border-[hsl(227,89%,63%)/50%] transition-colors cursor-pointer" 
+                  onClick={() => setSelectedTemplate(template)}
+                >
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{template.name}</CardTitle>
-                      <Badge variant="outline">{template.category}</Badge>
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-lg text-[hsl(210,17%,98%)]">{template.name}</CardTitle>
+                      <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">{template.category}</Badge>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{template.description}</p>
+                    <p className="text-sm text-[hsl(215,20%,65%)]">{template.description}</p>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Base Score:</span>
-                        <Badge className="bg-blue-100 text-blue-800">{template.scoring.baseScore}</Badge>
+                        <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Base Score:</span>
+                        <Badge className="bg-[hsl(217,91%,60%)/30%] text-[hsl(217,91%,60%)] border-0">{template.scoring.baseScore}</Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Fields:</span>
-                        <span className="text-sm text-gray-600">{template.fields.length} fields</span>
+                        <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Fields:</span>
+                        <span className="text-sm text-[hsl(215,16%,47%)]">{template.fields.length} fields</span>
                       </div>
-                      <Button className="w-full mt-4" onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTemplate(template);
-                      }}>
+                      <Button 
+                        className="w-full mt-4 bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTemplate(template);
+                        }}
+                      >
                         <Plus className="h-4 w-4 mr-2" />
                         Use Template
                       </Button>
@@ -549,54 +584,54 @@ export default function LeadsPage() {
 
             <TabsContent value="analytics" className="space-y-6 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">Total Leads</CardTitle>
+                  <Users className="h-4 w-4 text-[hsl(215,16%,47%)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{(leads || []).length}</div>
-                  <p className="text-xs text-muted-foreground">
+                  <div className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums">{(leads || []).length}</div>
+                  <p className="text-xs text-[hsl(215,16%,47%)]">
                     Active lead records
                   </p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Qualified Leads</CardTitle>
-                  <Target className="h-4 w-4 text-muted-foreground" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">Qualified Leads</CardTitle>
+                  <Target className="h-4 w-4 text-[hsl(215,16%,47%)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{(leads || []).filter(lead => lead.status === 'qualified').length}</div>
-                  <p className="text-xs text-muted-foreground">
+                  <div className="text-3xl font-bold text-[hsl(160,84%,39%)] tabular-nums">{(leads || []).filter(lead => lead.status === 'qualified').length}</div>
+                  <p className="text-xs text-[hsl(215,16%,47%)]">
                     Ready for conversion
                   </p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-                  <Star className="h-4 w-4 text-muted-foreground" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">Average Score</CardTitle>
+                  <Star className="h-4 w-4 text-[hsl(215,16%,47%)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-bold text-[hsl(38,92%,50%)] tabular-nums">
                     {(leads || []).length > 0 ? Math.round((leads || []).reduce((sum, lead) => sum + (lead.score || 0), 0) / (leads || []).length) : 0}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-[hsl(215,16%,47%)]">
                     Lead quality metric
                   </p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">Conversion Rate</CardTitle>
+                  <ArrowRight className="h-4 w-4 text-[hsl(215,16%,47%)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-bold text-[hsl(227,89%,63%)] tabular-nums">
                     {(leads || []).length > 0 ? Math.round(((leads || []).filter(lead => lead.status === 'converted').length / (leads || []).length) * 100) : 0}%
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-[hsl(215,16%,47%)]">
                     Leads to customers
                   </p>
                 </CardContent>
@@ -605,30 +640,30 @@ export default function LeadsPage() {
             </TabsContent>
 
             <TabsContent value="scoring" className="space-y-6 mt-0">
-              <Card>
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
               <CardHeader>
-                <CardTitle>Lead Scoring System</CardTitle>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <CardTitle className="text-[hsl(210,17%,98%)]">Lead Scoring System</CardTitle>
+                <p className="text-sm text-[hsl(215,20%,65%)]">
                   Understanding how lead scores are calculated based on different templates and factors
                 </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   {(leadTemplates || []).map((template) => (
-                    <div key={template.id} className="border rounded-lg p-4">
-                      <h3 className="text-lg font-semibold mb-2">{template.name}</h3>
+                    <div key={template.id} className="border border-[hsl(217,33%,17%)] rounded-lg p-4 bg-[hsl(229,41%,16%)]">
+                      <h3 className="text-lg font-semibold mb-2 text-[hsl(210,17%,98%)]">{template.name}</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <h4 className="font-medium mb-2">Base Score: {template.scoring.baseScore}</h4>
-                          <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                          <h4 className="font-medium mb-2 text-[hsl(210,17%,98%)]">Base Score: <span className="text-[hsl(227,89%,63%)]">{template.scoring.baseScore}</span></h4>
+                          <p className="text-sm text-[hsl(215,20%,65%)] mb-3">{template.description}</p>
                         </div>
                         <div>
-                          <h4 className="font-medium mb-2">Scoring Factors:</h4>
+                          <h4 className="font-medium mb-2 text-[hsl(210,17%,98%)]">Scoring Factors:</h4>
                           <div className="space-y-1">
                             {Object.entries(template.scoring.factors).map(([factor, value]) => (
                               <div key={factor} className="flex justify-between text-sm">
-                                <span className="capitalize">{factor.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                                <span className="font-medium">
+                                <span className="capitalize text-[hsl(215,20%,65%)]">{factor.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                                <span className="font-medium text-[hsl(142,71%,45%)]">
                                   {typeof value === 'number' ? `+${value}` : 'Variable'}
                                 </span>
                               </div>
@@ -645,13 +680,13 @@ export default function LeadsPage() {
 
             <TabsContent value="landing-pages" className="space-y-6 mt-0">
               <div className="grid gap-6">
-              <Card>
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-[hsl(210,17%,98%)]">
+                    <Globe className="h-5 w-5 text-[hsl(227,89%,63%)]" />
                     Lead Generation Landing Pages
                   </CardTitle>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p className="text-[hsl(215,20%,65%)]">
                     Professional landing page templates optimized for lead capture and conversion
                   </p>
                 </CardHeader>
@@ -664,7 +699,7 @@ export default function LeadsPage() {
                         description: 'Perfect for capturing leads with contact forms and compelling headlines',
                         features: ['Contact Forms', 'Call-to-Action', 'Social Proof', 'Mobile Optimized'],
                         conversionRate: '12-18%',
-                        color: 'bg-blue-500'
+                        color: 'bg-[hsl(217,91%,60%)]'
                       },
                       {
                         id: 'b2b-lead',
@@ -672,7 +707,7 @@ export default function LeadsPage() {
                         description: 'Designed for B2B companies targeting enterprise clients',
                         features: ['Lead Qualification', 'Enterprise Focus', 'Professional Design', 'Trust Indicators'],
                         conversionRate: '8-15%',
-                        color: 'bg-green-500'
+                        color: 'bg-[hsl(160,84%,39%)]'
                       },
                       {
                         id: 'saas-trial',
@@ -680,7 +715,7 @@ export default function LeadsPage() {
                         description: 'Convert visitors into trial users with compelling signup forms',
                         features: ['Free Trial Signup', 'Feature Highlights', 'Pricing Display', 'User Testimonials'],
                         conversionRate: '15-25%',
-                        color: 'bg-purple-500'
+                        color: 'bg-[hsl(270,60%,70%)]'
                       },
                       {
                         id: 'consultation',
@@ -688,7 +723,7 @@ export default function LeadsPage() {
                         description: 'Schedule consultations and strategy sessions with ease',
                         features: ['Booking Calendar', 'Service Details', 'Expert Profiles', 'Case Studies'],
                         conversionRate: '10-20%',
-                        color: 'bg-orange-500'
+                        color: 'bg-[hsl(38,92%,50%)]'
                       },
                       {
                         id: 'product-launch',
@@ -696,7 +731,7 @@ export default function LeadsPage() {
                         description: 'Announce new products with countdown timers and pre-orders',
                         features: ['Countdown Timer', 'Pre-order Forms', 'Product Gallery', 'Launch Updates'],
                         conversionRate: '18-28%',
-                        color: 'bg-red-500'
+                        color: 'bg-[hsl(0,84%,60%)]'
                       },
                       {
                         id: 'event-registration',
@@ -704,19 +739,19 @@ export default function LeadsPage() {
                         description: 'Drive event signups with compelling event details',
                         features: ['Event Details', 'Registration Forms', 'Speaker Profiles', 'Schedule Display'],
                         conversionRate: '20-30%',
-                        color: 'bg-indigo-500'
+                        color: 'bg-[hsl(227,89%,63%)]'
                       }
                     ].map((template) => (
-                      <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                      <Card key={template.id} className="bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] rounded-lg hover:border-[hsl(227,89%,63%)/50%] transition-colors">
                         <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-2">
                             <div className={`w-3 h-3 rounded-full ${template.color}`}></div>
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge className="bg-[hsl(228,47%,12%)] text-[hsl(215,20%,65%)] border-0 text-xs">
                               {template.conversionRate} conversion
                             </Badge>
                           </div>
-                          <CardTitle className="text-lg">{template.title}</CardTitle>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <CardTitle className="text-lg text-[hsl(210,17%,98%)]">{template.title}</CardTitle>
+                          <p className="text-sm text-[hsl(215,20%,65%)]">
                             {template.description}
                           </p>
                         </CardHeader>
@@ -724,7 +759,7 @@ export default function LeadsPage() {
                           <div className="space-y-3">
                             <div className="flex flex-wrap gap-1">
                               {template.features.map((feature, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs">
+                                <Badge key={idx} className="bg-[hsl(228,47%,12%)] text-[hsl(215,16%,47%)] border border-[hsl(217,33%,17%)] text-xs">
                                   {feature}
                                 </Badge>
                               ))}
@@ -732,7 +767,7 @@ export default function LeadsPage() {
                             <div className="flex gap-2">
                               <Button
                                 onClick={() => window.open(`/template/${template.id}`, '_blank')}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                className="flex-1 bg-[hsl(160,84%,39%)] hover:bg-[hsl(160,84%,35%)] text-white"
                                 size="sm"
                               >
                                 <Rocket className="h-4 w-4 mr-1" />
@@ -741,6 +776,7 @@ export default function LeadsPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
                                 onClick={() => window.open(`/template/${template.id}`, '_blank')}
                               >
                                 <Eye className="h-4 w-4" />
@@ -752,28 +788,28 @@ export default function LeadsPage() {
                     ))}
                   </div>
                   
-                  <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border">
-                    <h3 className="text-lg font-semibold mb-2">How Lead Generation Templates Work</h3>
+                  <div className="mt-8 p-6 bg-[hsl(229,41%,16%)] rounded-lg border border-[hsl(217,33%,17%)]">
+                    <h3 className="text-lg font-semibold mb-2 text-[hsl(210,17%,98%)]">How Lead Generation Templates Work</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs font-bold">1</div>
+                        <div className="w-6 h-6 bg-[hsl(217,91%,60%)/30%] rounded-full flex items-center justify-center text-[hsl(217,91%,60%)] text-xs font-bold">1</div>
                         <div>
-                          <div className="font-medium">Choose Template</div>
-                          <div className="text-gray-600 dark:text-gray-400">Select a template that matches your business needs</div>
+                          <div className="font-medium text-[hsl(210,17%,98%)]">Choose Template</div>
+                          <div className="text-[hsl(215,20%,65%)]">Select a template that matches your business needs</div>
                         </div>
                       </div>
                       <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs font-bold">2</div>
+                        <div className="w-6 h-6 bg-[hsl(270,60%,70%)/30%] rounded-full flex items-center justify-center text-[hsl(270,60%,70%)] text-xs font-bold">2</div>
                         <div>
-                          <div className="font-medium">Capture Leads</div>
-                          <div className="text-gray-600 dark:text-gray-400">Visitors fill out forms on your landing page</div>
+                          <div className="font-medium text-[hsl(210,17%,98%)]">Capture Leads</div>
+                          <div className="text-[hsl(215,20%,65%)]">Visitors fill out forms on your landing page</div>
                         </div>
                       </div>
                       <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-xs font-bold">3</div>
+                        <div className="w-6 h-6 bg-[hsl(160,84%,39%)/30%] rounded-full flex items-center justify-center text-[hsl(160,84%,39%)] text-xs font-bold">3</div>
                         <div>
-                          <div className="font-medium">Auto-Import</div>
-                          <div className="text-gray-600 dark:text-gray-400">Leads automatically appear in your CRM system</div>
+                          <div className="font-medium text-[hsl(210,17%,98%)]">Auto-Import</div>
+                          <div className="text-[hsl(215,20%,65%)]">Leads automatically appear in your CRM system</div>
                         </div>
                       </div>
                     </div>
@@ -786,10 +822,10 @@ export default function LeadsPage() {
         </Tabs>
 
         {selectedTemplate && (
-          <Card className="mt-6">
+          <Card className="mt-6 bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
             <CardHeader>
-              <CardTitle>Create Lead: {selectedTemplate.name}</CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{selectedTemplate.description}</p>
+              <CardTitle className="text-[hsl(210,17%,98%)]">Create Lead: {selectedTemplate.name}</CardTitle>
+              <p className="text-sm text-[hsl(215,20%,65%)]">{selectedTemplate.description}</p>
             </CardHeader>
             <CardContent>
               <form onSubmit={(e) => {
@@ -807,18 +843,27 @@ export default function LeadsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {selectedTemplate.fields.map((field) => (
                     <div key={field.name}>
-                      <label className="block text-sm font-medium mb-1">
-                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                      <label className="block text-sm font-medium mb-1 text-[hsl(215,20%,65%)]">
+                        {field.label} {field.required && <span className="text-[hsl(0,84%,60%)]">*</span>}
                       </label>
                       {renderField(field)}
                     </div>
                   ))}
                 </div>
-                <div className="flex space-x-2 pt-4 border-t">
-                  <Button type="submit" disabled={createLeadFromTemplate.isPending}>
+                <div className="flex space-x-2 pt-4 border-t border-[hsl(217,33%,17%)]">
+                  <Button 
+                    type="submit" 
+                    disabled={createLeadFromTemplate.isPending}
+                    className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
+                  >
                     {createLeadFromTemplate.isPending ? "Creating..." : "Create Lead"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setSelectedTemplate(null)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setSelectedTemplate(null)}
+                    className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -828,9 +873,9 @@ export default function LeadsPage() {
         )}
 
         {showForm && (
-          <Card className="mt-6">
+          <Card className="mt-6 bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
             <CardHeader>
-              <CardTitle>Add New Lead</CardTitle>
+              <CardTitle className="text-[hsl(210,17%,98%)]">Add New Lead</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={(e) => {
@@ -848,14 +893,14 @@ export default function LeadsPage() {
                 });
               }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input name="firstName" placeholder="First Name" required className="px-3 py-2 border rounded-md" />
-                  <input name="lastName" placeholder="Last Name" required className="px-3 py-2 border rounded-md" />
-                  <input name="email" type="email" placeholder="Email" required className="px-3 py-2 border rounded-md" />
+                  <input name="firstName" placeholder="First Name" required className={inputStyles} />
+                  <input name="lastName" placeholder="Last Name" required className={inputStyles} />
+                  <input name="email" type="email" placeholder="Email" required className={inputStyles} />
                   <input 
                     name="phone" 
                     type="tel"
                     placeholder="Phone (10 digits)" 
-                    className="px-3 py-2 border rounded-md"
+                    className={inputStyles}
                     maxLength={10}
                     pattern="[0-9]{10}"
                     title="Please enter exactly 10 digits"
@@ -864,10 +909,10 @@ export default function LeadsPage() {
                       e.currentTarget.value = value.substring(0, 10);
                     }}
                   />
-                  <input name="company" placeholder="Company" className="px-3 py-2 border rounded-md" />
-                  <input name="jobTitle" placeholder="Job Title" className="px-3 py-2 border rounded-md" />
-                  <input name="leadSource" placeholder="Lead Source" className="px-3 py-2 border rounded-md" />
-                  <select name="status" className="px-3 py-2 border rounded-md">
+                  <input name="company" placeholder="Company" className={inputStyles} />
+                  <input name="jobTitle" placeholder="Job Title" className={inputStyles} />
+                  <input name="leadSource" placeholder="Lead Source" className={inputStyles} />
+                  <select name="status" className={inputStyles}>
                     <option value="new">New</option>
                     <option value="contacted">Contacted</option>
                     <option value="qualified">Qualified</option>
@@ -875,10 +920,19 @@ export default function LeadsPage() {
                   </select>
                 </div>
                 <div className="flex space-x-2">
-                  <Button type="submit" disabled={createMutation.isPending}>
+                  <Button 
+                    type="submit" 
+                    disabled={createMutation.isPending}
+                    className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
+                  >
                     {createMutation.isPending ? "Creating..." : "Create Lead"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowForm(false)}
+                    className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -888,9 +942,9 @@ export default function LeadsPage() {
         )}
 
         {editingLead && (
-          <Card className="mt-6">
+          <Card className="mt-6 bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
             <CardHeader>
-              <CardTitle>Edit Lead: {editingLead.firstName} {editingLead.lastName}</CardTitle>
+              <CardTitle className="text-[hsl(210,17%,98%)]">Edit Lead: {editingLead.firstName} {editingLead.lastName}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={(e) => {
@@ -916,14 +970,14 @@ export default function LeadsPage() {
                     placeholder="First Name" 
                     defaultValue={editingLead.firstName || ''} 
                     required 
-                    className="px-3 py-2 border rounded-md" 
+                    className={inputStyles}
                   />
                   <input 
                     name="lastName" 
                     placeholder="Last Name" 
                     defaultValue={editingLead.lastName || ''} 
                     required 
-                    className="px-3 py-2 border rounded-md" 
+                    className={inputStyles}
                   />
                   <input 
                     name="email" 
@@ -931,14 +985,14 @@ export default function LeadsPage() {
                     placeholder="Email" 
                     defaultValue={editingLead.email || ''} 
                     required 
-                    className="px-3 py-2 border rounded-md" 
+                    className={inputStyles}
                   />
                   <input 
                     name="phone" 
                     type="tel"
                     placeholder="Phone (10 digits)" 
                     defaultValue={editingLead.phone || ''}
-                    className="px-3 py-2 border rounded-md"
+                    className={inputStyles}
                     maxLength={10}
                     pattern="[0-9]{10}"
                     title="Please enter exactly 10 digits"
@@ -951,21 +1005,21 @@ export default function LeadsPage() {
                     name="company" 
                     placeholder="Company" 
                     defaultValue={editingLead.company || ''} 
-                    className="px-3 py-2 border rounded-md" 
+                    className={inputStyles}
                   />
                   <input 
                     name="jobTitle" 
                     placeholder="Job Title" 
                     defaultValue={editingLead.jobTitle || ''} 
-                    className="px-3 py-2 border rounded-md" 
+                    className={inputStyles}
                   />
                   <input 
                     name="leadSource" 
                     placeholder="Lead Source" 
                     defaultValue={editingLead.leadSource || ''} 
-                    className="px-3 py-2 border rounded-md" 
+                    className={inputStyles}
                   />
-                  <select name="status" defaultValue={editingLead.status || 'new'} className="px-3 py-2 border rounded-md">
+                  <select name="status" defaultValue={editingLead.status || 'new'} className={inputStyles}>
                     <option value="new">New</option>
                     <option value="contacted">Contacted</option>
                     <option value="qualified">Qualified</option>
@@ -973,11 +1027,20 @@ export default function LeadsPage() {
                   </select>
                 </div>
                 <div className="flex space-x-2">
-                  <Button type="submit" disabled={isSaving}>
+                  <Button 
+                    type="submit" 
+                    disabled={isSaving}
+                    className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
+                  >
                     <Save className="h-4 w-4 mr-1" />
                     {isSaving ? "Saving..." : "Save Changes"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setEditingLead(null)}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setEditingLead(null)}
+                    className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
+                  >
                     Cancel
                   </Button>
                 </div>

@@ -577,103 +577,137 @@ body > [data-radix-portal]:not(:has(.chatbot-container)) {
 }
 
 :root {
-  /* Modern rich backgrounds - subtle blue-gray gradient feel */
+  /* Apollo Light - Clean professional */
   --background: 220 15% 97%;
-  --foreground: 222 47% 11%;
+  --foreground: 228 37% 15%;
   
-  /* Elevated surfaces - cards stand out */
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --card-foreground: 228 37% 15%;
   
-  /* Muted elements */
-  --muted: 220 14% 96%;
-  --muted-foreground: 220 9% 46%;
+  --muted: 220 14% 94%;
+  --muted-foreground: 215 16% 47%;
   
-  /* Popovers and dropdowns */
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
+  --popover-foreground: 228 37% 15%;
   
-  /* Professional blue primary */
-  --primary: 221 83% 53%;
-  --primary-foreground: 210 40% 98%;
+  /* Apollo Primary Blue */
+  --primary: 227 89% 63%;
+  --primary-foreground: 210 17% 98%;
   
-  /* Subtle secondary */
-  --secondary: 220 14% 96%;
-  --secondary-foreground: 222 47% 11%;
+  --secondary: 220 14% 94%;
+  --secondary-foreground: 228 37% 15%;
   
-  /* Accent for highlights */
-  --accent: 210 100% 97%;
-  --accent-foreground: 221 83% 53%;
+  --accent: 255 78% 60%;
+  --accent-foreground: 210 17% 98%;
   
-  /* Border and input */
   --border: 220 13% 91%;
   --input: 220 13% 91%;
   
-  /* Status colors */
   --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 210 17% 98%;
   
-  --success: 142 76% 36%;
-  --success-foreground: 144 61% 97%;
+  --success: 160 84% 39%;
+  --success-foreground: 210 17% 98%;
   
   --warning: 38 92% 50%;
-  --warning-foreground: 48 96% 89%;
+  --warning-foreground: 228 37% 15%;
   
-  /* Focus ring */
-  --ring: 221 83% 53%;
+  --ring: 227 89% 63%;
   --radius: 0.5rem;
   
+  /* Sidebar specific */
+  --sidebar-background: 228 47% 12%;
+  --sidebar-foreground: 210 17% 98%;
+  --sidebar-accent: 229 41% 16%;
+  --sidebar-border: 217 33% 17%;
+  
   /* White label custom properties */
-  --primary-color: #7C3AED;
-  --secondary-color: #1E40AF;
+  --primary-color: #4C6EF5;
+  --secondary-color: #7048E8;
 }
 
 .dark {
-  /* Rich dark backgrounds - deep blue-gray */
-  --background: 222 47% 11%;
-  --foreground: 210 40% 98%;
+  /* Apollo Deep Navy - Primary dark theme */
+  --background: 228 37% 7%;
+  --foreground: 210 17% 98%;
   
-  /* Elevated dark surfaces */
-  --card: 222 47% 14%;
-  --card-foreground: 210 40% 98%;
+  /* Elevated surfaces - Dark Indigo */
+  --card: 228 47% 12%;
+  --card-foreground: 210 17% 98%;
   
-  /* Muted dark elements */
-  --muted: 217 33% 17%;
+  /* Raised elements for hover/active */
+  --muted: 229 41% 16%;
   --muted-foreground: 215 20% 65%;
   
-  /* Dark popovers */
-  --popover: 222 47% 14%;
-  --popover-foreground: 210 40% 98%;
+  --popover: 228 47% 12%;
+  --popover-foreground: 210 17% 98%;
   
-  /* Bright primary in dark mode */
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
+  /* Apollo Primary Blue */
+  --primary: 227 89% 63%;
+  --primary-foreground: 228 37% 7%;
   
-  /* Dark secondary */
-  --secondary: 217 33% 17%;
-  --secondary-foreground: 210 40% 98%;
+  /* Subtle secondary */
+  --secondary: 229 41% 16%;
+  --secondary-foreground: 210 17% 98%;
   
-  /* Dark accent */
-  --accent: 217 33% 17%;
-  --accent-foreground: 210 40% 98%;
+  /* Purple accent */
+  --accent: 255 78% 60%;
+  --accent-foreground: 210 17% 98%;
   
-  /* Dark borders */
+  /* Subtle borders */
   --border: 217 33% 17%;
-  --input: 217 33% 17%;
+  --input: 229 41% 16%;
   
-  /* Status colors for dark mode */
-  --destructive: 0 62% 30%;
-  --destructive-foreground: 210 40% 98%;
+  /* Status colors */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 17% 98%;
   
-  --success: 142 76% 36%;
-  --success-foreground: 144 61% 97%;
+  --success: 160 84% 39%;
+  --success-foreground: 228 37% 7%;
   
   --warning: 38 92% 50%;
-  --warning-foreground: 222 47% 11%;
+  --warning-foreground: 228 37% 7%;
   
-  /* Dark focus ring */
-  --ring: 217 91% 60%;
+  /* Focus ring */
+  --ring: 227 89% 63%;
   --radius: 0.5rem;
+  
+  /* Sidebar in dark mode */
+  --sidebar-background: 228 47% 12%;
+  --sidebar-foreground: 210 17% 98%;
+  --sidebar-accent: 229 41% 16%;
+  --sidebar-border: 217 33% 17%;
+}
+
+/* Apollo-style utility classes */
+.apollo-text-primary { color: hsl(210 17% 98%); }
+.apollo-text-secondary { color: hsl(215 20% 65%); }
+.apollo-text-tertiary { color: hsl(215 16% 47%); }
+
+.apollo-bg-base { background-color: hsl(228 37% 7%); }
+.apollo-bg-surface { background-color: hsl(228 47% 12%); }
+.apollo-bg-raised { background-color: hsl(229 41% 16%); }
+
+/* Apollo sidebar navigation active state */
+.apollo-nav-active {
+  background-color: hsl(229 41% 16%);
+  border-left: 3px solid hsl(227 89% 63%);
+}
+
+/* Apollo data table styling */
+.apollo-table thead {
+  background-color: hsl(228 37% 7%);
+}
+
+.apollo-table tbody tr:hover {
+  background-color: hsl(229 41% 16%);
+}
+
+/* Apollo card flat style */
+.apollo-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
 }
 
 @layer base {

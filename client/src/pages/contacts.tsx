@@ -271,42 +271,40 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
   return (
     <Layout>
       <div className="space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-3">
-              <Users className="h-8 w-8 text-blue-600" />
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    Contact Management
-                  </h1>
-                  {!isPlatformOwner && (
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
-                      Clean Data View
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-slate-600 dark:text-slate-400 text-lg">Manage your customer contacts and relationships with AI intelligence</p>
-              </div>
+        {/* Apollo-style Page Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl font-bold text-[hsl(210,17%,98%)] tracking-tight">
+                Contacts
+              </h1>
+              {!isPlatformOwner && (
+                <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">
+                  Clean Data View
+                </Badge>
+              )}
             </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+            <p className="text-sm text-[hsl(215,20%,65%)]">
+              Manage your contacts and relationships
+            </p>
+            <div className="flex items-center gap-3 mt-3">
+              <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">
+                <div className="w-2 h-2 bg-[hsl(227,89%,63%)] rounded-full mr-2 animate-pulse"></div>
                 Smart CRM
               </Badge>
-              <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+              <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(142,71%,45%)] border-0">
                 Data Synced
               </Badge>
-              <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">
+              <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(270,60%,70%)] border-0">
                 AI Enhanced
               </Badge>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+          <div className="flex items-center gap-3">
             <ProtectedButton 
               permission="analytics.read"
               variant="outline" 
-              className="bg-white shadow-md border-slate-200"
+              className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
               data-testid="button-contact-analytics"
             >
               <BarChart3 className="w-4 h-4 mr-2" />
@@ -315,7 +313,7 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
             <ProtectedButton 
               permission="contacts.create"
               onClick={() => setShowContactForm(true)} 
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
+              className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
               hideIfNoPermission
               data-testid="button-add-contact"
             >
@@ -325,359 +323,404 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
           </div>
         </div>
 
-        {/* Tabs Layout */}
+        {/* Apollo-style Tabs Layout */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-800 p-1">
-            <TabsTrigger value="list" className="gap-2" data-testid="tab-list">
+          <TabsList className="bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] p-1 w-auto inline-flex">
+            <TabsTrigger 
+              value="list" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-list"
+            >
               <Users className="h-4 w-4" />
               Contact List
             </TabsTrigger>
-            <TabsTrigger value="import" className="gap-2" data-testid="tab-import">
+            <TabsTrigger 
+              value="import" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-import"
+            >
               <Upload className="h-4 w-4" />
               Bulk Import
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
+            <TabsTrigger 
+              value="analytics" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-analytics"
+            >
               <BarChart3 className="h-4 w-4" />
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="segments" className="gap-2" data-testid="tab-segments">
+            <TabsTrigger 
+              value="segments" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-segments"
+            >
               <Filter className="h-4 w-4" />
               Segments
             </TabsTrigger>
-            <TabsTrigger value="export" className="gap-2" data-testid="tab-export">
+            <TabsTrigger 
+              value="export" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-export"
+            >
               <Download className="h-4 w-4" />
               Export
             </TabsTrigger>
-            <TabsTrigger value="emotional-intelligence" className="gap-2" data-testid="tab-ai">
+            <TabsTrigger 
+              value="emotional-intelligence" 
+              className="gap-2 data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]" 
+              data-testid="tab-ai"
+            >
               <Brain className="h-4 w-4" />
               AI Intelligence
-              <Badge className="ml-1 bg-purple-100 text-purple-600 text-xs">NEW</Badge>
+              <Badge className="ml-1 bg-[hsl(270,60%,50%)] text-white text-xs border-0">NEW</Badge>
             </TabsTrigger>
           </TabsList>
 
           <div>
             <TabsContent value="list" className="space-y-6 mt-0">
-            <ContactList />
-            
-            {showContactForm && (
-              <ContactForm onClose={() => setShowContactForm(false)} />
-            )}
-          </TabsContent>
+              <ContactList />
+              
+              {showContactForm && (
+                <ContactForm onClose={() => setShowContactForm(false)} />
+              )}
+            </TabsContent>
 
             <TabsContent value="import" className="space-y-6 mt-0">
-            <ProtectedSection 
-              permission="contacts.import"
-              fallback={
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Import Not Available</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">You don't have permission to import contacts.</p>
-                  </CardContent>
-                </Card>
-              }
-            >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Upload className="h-5 w-5 mr-2" />
-                    Upload Contacts
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Upload a CSV or Excel file to import multiple contacts at once. 
-                      The system will automatically map columns to contact fields.
-                    </p>
-                    
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Choose file to upload</p>
-                        <p className="text-xs text-gray-500">CSV, XLS, or XLSX files up to 10MB</p>
-                      </div>
-                      <input
-                        type="file"
-                        accept=".csv,.xls,.xlsx"
-                        onChange={handleFileUpload}
-                        disabled={uploading}
-                        className="mt-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                      />
-                    </div>
+              <ProtectedSection 
+                permission="contacts.import"
+                fallback={
+                  <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]">
+                    <CardHeader>
+                      <CardTitle className="text-[hsl(210,17%,98%)]">Import Not Available</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-[hsl(215,20%,65%)]">You don't have permission to import contacts.</p>
+                    </CardContent>
+                  </Card>
+                }
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]">
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-[hsl(210,17%,98%)]">
+                        <Upload className="h-5 w-5 mr-2 text-[hsl(227,89%,63%)]" />
+                        Upload Contacts
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="text-sm text-[hsl(215,20%,65%)] mb-4">
+                          Upload a CSV or Excel file to import multiple contacts at once. 
+                          The system will automatically map columns to contact fields.
+                        </p>
+                        
+                        <div className="border-2 border-dashed border-[hsl(217,33%,17%)] rounded-lg p-6 text-center bg-[hsl(229,41%,16%)]">
+                          <Upload className="h-12 w-12 text-[hsl(215,16%,47%)] mx-auto mb-4" />
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-[hsl(210,17%,98%)]">Choose file to upload</p>
+                            <p className="text-xs text-[hsl(215,16%,47%)]">CSV, XLS, or XLSX files up to 10MB</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept=".csv,.xls,.xlsx"
+                            onChange={handleFileUpload}
+                            disabled={uploading}
+                            className="mt-4 block w-full text-sm text-[hsl(215,20%,65%)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[hsl(227,89%,63%)] file:text-white hover:file:bg-[hsl(227,89%,55%)]"
+                          />
+                        </div>
 
-                    {uploading && (
-                      <div className="mt-4">
-                        <Progress value={50} className="h-2" />
-                        <p className="text-sm text-gray-500 mt-2">Processing file...</p>
+                        {uploading && (
+                          <div className="mt-4">
+                            <Progress value={50} className="h-2 bg-[hsl(229,41%,16%)]" />
+                            <p className="text-sm text-[hsl(215,16%,47%)] mt-2">Processing file...</p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="flex space-x-2">
-                    <Button variant="outline" onClick={downloadTemplate} size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Template
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    Import Guidelines
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Supported Columns</h4>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                        <p><strong>Name:</strong> name, full name, contact name, first name</p>
-                        <p><strong>Email:</strong> email, email address, e-mail, mail</p>
-                        <p><strong>Phone:</strong> phone, phone number, telephone, mobile</p>
-                        <p><strong>Company:</strong> company, organization, business, firm</p>
-                        <p><strong>Job Title:</strong> job title, title, position, role</p>
-                        <p><strong>Location:</strong> location, address, city, region, area</p>
-                        <p><strong>Bio:</strong> bio, biography, description, about, notes</p>
-                        <p><strong>LinkedIn:</strong> linkedin, linkedin profile, linkedin url</p>
-                        <p><strong>Company Website:</strong> company website, website, company url</p>
-                        <p><strong>Number of Employees:</strong> number of employees, employees, employee count</p>
-                        <p><strong>Lead Source:</strong> lead source, source, origin, channel</p>
-                        <p><strong>Status:</strong> status, lead status, contact status</p>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={downloadTemplate} 
+                          size="sm"
+                          className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download Template
+                        </Button>
                       </div>
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    <div>
-                      <h4 className="font-medium mb-2">Requirements</h4>
-                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                        <li>• Each contact must have either a name or email</li>
-                        <li>• Email addresses must be valid format</li>
-                        <li>• Duplicate emails will be skipped</li>
-                        <li>• Maximum 10MB file size</li>
-                        <li>• First row should contain column headers</li>
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]">
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-[hsl(210,17%,98%)]">
+                        <FileText className="h-5 w-5 mr-2 text-[hsl(227,89%,63%)]" />
+                        Import Guidelines
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium mb-2 text-[hsl(210,17%,98%)]">Supported Columns</h4>
+                          <div className="text-sm text-[hsl(215,20%,65%)] space-y-1">
+                            <p><strong className="text-[hsl(210,17%,98%)]">Name:</strong> name, full name, contact name, first name</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Email:</strong> email, email address, e-mail, mail</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Phone:</strong> phone, phone number, telephone, mobile</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Company:</strong> company, organization, business, firm</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Job Title:</strong> job title, title, position, role</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Location:</strong> location, address, city, region, area</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Bio:</strong> bio, biography, description, about, notes</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">LinkedIn:</strong> linkedin, linkedin profile, linkedin url</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Company Website:</strong> company website, website, company url</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Number of Employees:</strong> number of employees, employees, employee count</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Lead Source:</strong> lead source, source, origin, channel</p>
+                            <p><strong className="text-[hsl(210,17%,98%)]">Status:</strong> status, lead status, contact status</p>
+                          </div>
+                        </div>
 
-            {/* Preview Section */}
-            {showPreview && previewData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Eye className="h-5 w-5 mr-2" />
-                      Import Preview
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" onClick={() => setShowPreview(false)}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleImportConfirm}
-                        disabled={processingImport || previewData.stats.valid === 0}
-                      >
-                        {processingImport ? "Importing..." : `Import ${previewData.stats.valid} Contacts`}
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Stats Summary */}
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold">{previewData.stats.total}</div>
-                        <div className="text-sm text-gray-500">Total</div>
+                        <div>
+                          <h4 className="font-medium mb-2 text-[hsl(210,17%,98%)]">Requirements</h4>
+                          <ul className="text-sm text-[hsl(215,20%,65%)] space-y-1">
+                            <li>Each contact must have either a name or email</li>
+                            <li>Email addresses must be valid format</li>
+                            <li>Duplicate emails will be skipped</li>
+                            <li>Maximum 10MB file size</li>
+                            <li>First row should contain column headers</li>
+                          </ul>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">{previewData.stats.valid}</div>
-                        <div className="text-sm text-gray-500">Valid</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">{previewData.stats.invalid}</div>
-                        <div className="text-sm text-gray-500">Invalid</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-600">{previewData.stats.duplicates}</div>
-                        <div className="text-sm text-gray-500">Duplicates</div>
-                      </div>
-                    </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                    {/* Preview Table */}
-                    <div className="max-h-96 overflow-y-auto border rounded-lg">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 sticky top-0">
-                          <tr>
-                            <th className="p-2 text-left">Include</th>
-                            <th className="p-2 text-left">Row</th>
-                            <th className="p-2 text-left">Name</th>
-                            <th className="p-2 text-left">Email</th>
-                            <th className="p-2 text-left">Company</th>
-                            <th className="p-2 text-left">Status</th>
-                            <th className="p-2 text-left">Issues</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {previewData.preview.map((contact: any, index: number) => (
-                            <tr key={index} className={`border-t ${!contact.isValid || contact.isDuplicate ? 'bg-red-50' : 'bg-white'}`}>
-                              <td className="p-2">
-                                <Checkbox
-                                  checked={contact.isValid && !contact.isDuplicate}
-                                  onCheckedChange={() => toggleContactInclude(index)}
-                                  disabled={contact.isDuplicate}
-                                />
-                              </td>
-                              <td className="p-2">{contact.rowNumber}</td>
-                              <td className="p-2">
-                                {editingRow === index ? (
-                                  <Input
-                                    value={contact.mappedData.name}
-                                    onChange={(e) => handleEditContact(index, 'name', e.target.value)}
-                                    className="h-6 text-xs"
-                                    onBlur={() => setEditingRow(null)}
-                                    autoFocus
-                                  />
-                                ) : (
-                                  <div 
-                                    className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                                    onClick={() => setEditingRow(index)}
-                                  >
-                                    {contact.mappedData.name || '-'}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="p-2">
-                                {editingRow === index ? (
-                                  <Input
-                                    value={contact.mappedData.email}
-                                    onChange={(e) => handleEditContact(index, 'email', e.target.value)}
-                                    className="h-6 text-xs"
-                                    onBlur={() => setEditingRow(null)}
-                                  />
-                                ) : (
-                                  <div 
-                                    className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                                    onClick={() => setEditingRow(index)}
-                                  >
-                                    {contact.mappedData.email || '-'}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="p-2">{contact.mappedData.company || '-'}</td>
-                              <td className="p-2">
-                                {contact.isDuplicate ? (
-                                  <Badge variant="secondary">Duplicate</Badge>
-                                ) : contact.isValid ? (
-                                  <Badge className="bg-green-100 text-green-800">Valid</Badge>
-                                ) : (
-                                  <Badge variant="destructive">Invalid</Badge>
-                                )}
-                              </td>
-                              <td className="p-2">
-                                {contact.errors?.length > 0 && (
-                                  <div className="text-xs text-red-600">
-                                    {contact.errors.slice(0, 2).join(', ')}
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                {/* Preview Section */}
+                {showPreview && previewData && (
+                  <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center text-[hsl(210,17%,98%)]">
+                          <Eye className="h-5 w-5 mr-2 text-[hsl(227,89%,63%)]" />
+                          Import Preview
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setShowPreview(false)}
+                            className="border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)]"
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            onClick={handleImportConfirm}
+                            disabled={processingImport || previewData.stats.valid === 0}
+                            className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white"
+                          >
+                            {processingImport ? "Importing..." : `Import ${previewData.stats.valid} Contacts`}
+                          </Button>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Stats Summary */}
+                        <div className="grid grid-cols-4 gap-4">
+                          <div className="text-center p-4 bg-[hsl(229,41%,16%)] rounded-lg">
+                            <div className="text-2xl font-bold text-[hsl(210,17%,98%)] tabular-nums">{previewData.stats.total}</div>
+                            <div className="text-sm text-[hsl(215,16%,47%)]">Total</div>
+                          </div>
+                          <div className="text-center p-4 bg-[hsl(229,41%,16%)] rounded-lg">
+                            <div className="text-2xl font-bold text-[hsl(142,71%,45%)] tabular-nums">{previewData.stats.valid}</div>
+                            <div className="text-sm text-[hsl(215,16%,47%)]">Valid</div>
+                          </div>
+                          <div className="text-center p-4 bg-[hsl(229,41%,16%)] rounded-lg">
+                            <div className="text-2xl font-bold text-[hsl(0,84%,60%)] tabular-nums">{previewData.stats.invalid}</div>
+                            <div className="text-sm text-[hsl(215,16%,47%)]">Invalid</div>
+                          </div>
+                          <div className="text-center p-4 bg-[hsl(229,41%,16%)] rounded-lg">
+                            <div className="text-2xl font-bold text-[hsl(38,92%,50%)] tabular-nums">{previewData.stats.duplicates}</div>
+                            <div className="text-sm text-[hsl(215,16%,47%)]">Duplicates</div>
+                          </div>
+                        </div>
 
-                    {processingImport && (
-                      <div className="mt-4">
-                        <Progress value={50} className="h-2" />
-                        <p className="text-sm text-gray-500 mt-2">Importing contacts...</p>
+                        {/* Preview Table */}
+                        <div className="max-h-96 overflow-y-auto border border-[hsl(217,33%,17%)] rounded-lg">
+                          <table className="w-full text-sm">
+                            <thead className="bg-[hsl(229,41%,16%)] sticky top-0">
+                              <tr>
+                                <th className="p-3 text-left text-[hsl(210,17%,98%)] font-medium">Include</th>
+                                <th className="p-3 text-left text-[hsl(210,17%,98%)] font-medium">Row</th>
+                                <th className="p-3 text-left text-[hsl(210,17%,98%)] font-medium">Name</th>
+                                <th className="p-3 text-left text-[hsl(210,17%,98%)] font-medium">Email</th>
+                                <th className="p-3 text-left text-[hsl(210,17%,98%)] font-medium">Company</th>
+                                <th className="p-3 text-left text-[hsl(210,17%,98%)] font-medium">Status</th>
+                                <th className="p-3 text-left text-[hsl(210,17%,98%)] font-medium">Issues</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {previewData.preview.map((contact: any, index: number) => (
+                                <tr 
+                                  key={index} 
+                                  className={`border-t border-[hsl(217,33%,17%)] ${!contact.isValid || contact.isDuplicate ? 'bg-[hsl(0,30%,15%)]' : 'bg-[hsl(228,47%,12%)] hover:bg-[hsl(229,41%,16%)]'}`}
+                                >
+                                  <td className="p-3">
+                                    <Checkbox
+                                      checked={contact.isValid && !contact.isDuplicate}
+                                      onCheckedChange={() => toggleContactInclude(index)}
+                                      disabled={contact.isDuplicate}
+                                    />
+                                  </td>
+                                  <td className="p-3 text-[hsl(215,20%,65%)]">{contact.rowNumber}</td>
+                                  <td className="p-3">
+                                    {editingRow === index ? (
+                                      <Input
+                                        value={contact.mappedData.name}
+                                        onChange={(e) => handleEditContact(index, 'name', e.target.value)}
+                                        className="h-7 text-xs bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)]"
+                                        onBlur={() => setEditingRow(null)}
+                                        autoFocus
+                                      />
+                                    ) : (
+                                      <div 
+                                        className="cursor-pointer hover:bg-[hsl(229,41%,16%)] p-1 rounded text-[hsl(210,17%,98%)]"
+                                        onClick={() => setEditingRow(index)}
+                                      >
+                                        {contact.mappedData.name || '-'}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="p-3">
+                                    {editingRow === index ? (
+                                      <Input
+                                        value={contact.mappedData.email}
+                                        onChange={(e) => handleEditContact(index, 'email', e.target.value)}
+                                        className="h-7 text-xs bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] text-[hsl(210,17%,98%)]"
+                                        onBlur={() => setEditingRow(null)}
+                                      />
+                                    ) : (
+                                      <div 
+                                        className="cursor-pointer hover:bg-[hsl(229,41%,16%)] p-1 rounded text-[hsl(215,20%,65%)]"
+                                        onClick={() => setEditingRow(index)}
+                                      >
+                                        {contact.mappedData.email || '-'}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-[hsl(215,20%,65%)]">{contact.mappedData.company || '-'}</td>
+                                  <td className="p-3">
+                                    {contact.isDuplicate ? (
+                                      <Badge className="bg-[hsl(38,30%,20%)] text-[hsl(38,92%,50%)] border-0">Duplicate</Badge>
+                                    ) : contact.isValid ? (
+                                      <Badge className="bg-[hsl(142,30%,20%)] text-[hsl(142,71%,45%)] border-0">Valid</Badge>
+                                    ) : (
+                                      <Badge className="bg-[hsl(0,30%,20%)] text-[hsl(0,84%,60%)] border-0">Invalid</Badge>
+                                    )}
+                                  </td>
+                                  <td className="p-3">
+                                    {contact.errors?.length > 0 && (
+                                      <div className="text-xs text-[hsl(0,84%,60%)]">
+                                        {contact.errors.slice(0, 2).join(', ')}
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {processingImport && (
+                          <div className="mt-4">
+                            <Progress value={50} className="h-2 bg-[hsl(229,41%,16%)]" />
+                            <p className="text-sm text-[hsl(215,16%,47%)] mt-2">Importing contacts...</p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {importResult && (
-              <Alert className={importResult.success ? "border-green-200" : "border-red-200"}>
-                {importResult.success ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
+                    </CardContent>
+                  </Card>
                 )}
-                <AlertDescription>
-                  {importResult.success ? (
-                    <div>
-                      <strong>Import completed successfully!</strong>
-                      <div className="mt-2 text-sm">
-                        <p>✓ {importResult.imported} contacts imported</p>
-                        {importResult.duplicates > 0 && (
-                          <p>⚠ {importResult.duplicates} duplicates skipped</p>
-                        )}
-                        {importResult.failed > 0 && (
-                          <p>✗ {importResult.failed} contacts failed</p>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <strong>Import failed:</strong>
-                      <div className="mt-2 text-sm">
-                        {importResult.errors?.map((error: string, index: number) => (
-                          <p key={index}>• {error}</p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-            </ProtectedSection>
+
+                {importResult && (
+                  <Alert className={`bg-[hsl(229,41%,16%)] border-[hsl(217,33%,17%)] ${importResult.success ? 'border-l-4 border-l-[hsl(142,71%,45%)]' : 'border-l-4 border-l-[hsl(0,84%,60%)]'}`}>
+                    {importResult.success ? (
+                      <CheckCircle className="h-4 w-4 text-[hsl(142,71%,45%)]" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-[hsl(0,84%,60%)]" />
+                    )}
+                    <AlertDescription className="text-[hsl(215,20%,65%)]">
+                      {importResult.success ? (
+                        <div>
+                          <strong className="text-[hsl(210,17%,98%)]">Import completed successfully!</strong>
+                          <div className="mt-2 text-sm">
+                            <p className="text-[hsl(142,71%,45%)]">{importResult.imported} contacts imported</p>
+                            {importResult.duplicates > 0 && (
+                              <p className="text-[hsl(38,92%,50%)]">{importResult.duplicates} duplicates skipped</p>
+                            )}
+                            {importResult.failed > 0 && (
+                              <p className="text-[hsl(0,84%,60%)]">{importResult.failed} contacts failed</p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <strong className="text-[hsl(210,17%,98%)]">Import failed:</strong>
+                          <div className="mt-2 text-sm text-[hsl(0,84%,60%)]">
+                            {importResult.errors?.map((error: string, index: number) => (
+                              <p key={index}>{error}</p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </ProtectedSection>
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Contacts</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="stat-total-contacts">
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">
+                        Total Contacts
+                      </p>
+                      <Users className="h-4 w-4 text-[hsl(215,16%,47%)]" />
+                    </div>
+                    <p className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums" data-testid="stat-total-contacts">
                       {isLoadingContacts ? '...' : statistics.totalContacts}
-                    </div>
-                    <p className="text-xs text-muted-foreground">All contacts</p>
+                    </p>
+                    <p className="text-xs text-[hsl(215,16%,47%)] mt-1">All contacts</p>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Contacts</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="stat-active-contacts">
+
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">
+                        Active Contacts
+                      </p>
+                      <CheckCircle className="h-4 w-4 text-[hsl(215,16%,47%)]" />
+                    </div>
+                    <p className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums" data-testid="stat-active-contacts">
                       {isLoadingContacts ? '...' : statistics.activeContacts}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Engaged contacts</p>
+                    </p>
+                    <p className="text-xs text-[hsl(215,16%,47%)] mt-1">Engaged contacts</p>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">New This Month</CardTitle>
-                    <Plus className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="stat-new-month">
-                      {isLoadingContacts ? '...' : statistics.newThisMonth}
+
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">
+                        New This Month
+                      </p>
+                      <Plus className="h-4 w-4 text-[hsl(215,16%,47%)]" />
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums" data-testid="stat-new-month">
+                      {isLoadingContacts ? '...' : statistics.newThisMonth}
+                    </p>
+                    <p className="text-xs text-[hsl(215,16%,47%)] mt-1">
                       {statistics.totalContacts > 0 
                         ? `${((statistics.newThisMonth / statistics.totalContacts) * 100).toFixed(1)}% of total`
                         : 'No data yet'
@@ -685,49 +728,52 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
                     </p>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="stat-conversion-rate">
-                      {isLoadingContacts ? '...' : `${statistics.conversionRate}%`}
+
+                <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">
+                        Conversion Rate
+                      </p>
+                      <BarChart3 className="h-4 w-4 text-[hsl(215,16%,47%)]" />
                     </div>
-                    <p className="text-xs text-muted-foreground">Contact to active rate</p>
+                    <p className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums" data-testid="stat-conversion-rate">
+                      {isLoadingContacts ? '...' : `${statistics.conversionRate}%`}
+                    </p>
+                    <p className="text-xs text-[hsl(215,16%,47%)] mt-1">Contact to active rate</p>
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
 
             <TabsContent value="segments" className="space-y-6 mt-0">
-              <Card>
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]">
                 <CardHeader>
-                  <CardTitle>Contact Segments</CardTitle>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Organize contacts into meaningful segments</p>
+                  <CardTitle className="text-[hsl(210,17%,98%)]">Contact Segments</CardTitle>
+                  <p className="text-sm text-[hsl(215,20%,65%)]">Organize contacts into meaningful segments</p>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                    <div className="p-4 border border-[hsl(217,33%,17%)] rounded-lg hover:bg-[hsl(229,41%,16%)] cursor-pointer transition-colors">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">High-Value Customers</h3>
-                        <Badge>89</Badge>
+                        <h3 className="font-medium text-[hsl(210,17%,98%)]">High-Value Customers</h3>
+                        <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">89</Badge>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Customers with high lifetime value</p>
+                      <p className="text-sm text-[hsl(215,20%,65%)]">Customers with high lifetime value</p>
                     </div>
-                    <div className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                    <div className="p-4 border border-[hsl(217,33%,17%)] rounded-lg hover:bg-[hsl(229,41%,16%)] cursor-pointer transition-colors">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">New Prospects</h3>
-                        <Badge>156</Badge>
+                        <h3 className="font-medium text-[hsl(210,17%,98%)]">New Prospects</h3>
+                        <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">156</Badge>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Recently added prospects</p>
+                      <p className="text-sm text-[hsl(215,20%,65%)]">Recently added prospects</p>
                     </div>
-                    <div className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                    <div className="p-4 border border-[hsl(217,33%,17%)] rounded-lg hover:bg-[hsl(229,41%,16%)] cursor-pointer transition-colors">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">Enterprise Clients</h3>
-                        <Badge>34</Badge>
+                        <h3 className="font-medium text-[hsl(210,17%,98%)]">Enterprise Clients</h3>
+                        <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">34</Badge>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Large enterprise accounts</p>
+                      <p className="text-sm text-[hsl(215,20%,65%)]">Large enterprise accounts</p>
                     </div>
                   </div>
                 </CardContent>
@@ -735,48 +781,57 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
             </TabsContent>
 
             <TabsContent value="export" className="space-y-6 mt-0">
-              <Card>
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]">
                 <CardHeader>
-                  <CardTitle>Export Contacts</CardTitle>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Export your contact data in various formats</p>
+                  <CardTitle className="text-[hsl(210,17%,98%)]">Export Contacts</CardTitle>
+                  <p className="text-sm text-[hsl(215,20%,65%)]">Export your contact data in various formats</p>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <h3 className="font-medium">Export Options</h3>
+                      <h3 className="font-medium text-[hsl(210,17%,98%)]">Export Options</h3>
                       <div className="space-y-2">
-                        <Button className="w-full justify-start" variant="outline">
+                        <Button 
+                          className="w-full justify-start border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] bg-transparent" 
+                          variant="outline"
+                        >
                           <FileSpreadsheet className="h-4 w-4 mr-2" />
                           Export as CSV
                         </Button>
-                        <Button className="w-full justify-start" variant="outline">
+                        <Button 
+                          className="w-full justify-start border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] bg-transparent" 
+                          variant="outline"
+                        >
                           <FileSpreadsheet className="h-4 w-4 mr-2" />
                           Export as Excel
                         </Button>
-                        <Button className="w-full justify-start" variant="outline">
+                        <Button 
+                          className="w-full justify-start border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] bg-transparent" 
+                          variant="outline"
+                        >
                           <Download className="h-4 w-4 mr-2" />
                           Export as PDF Report
                         </Button>
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <h3 className="font-medium">Export Statistics</h3>
+                      <h3 className="font-medium text-[hsl(210,17%,98%)]">Export Statistics</h3>
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Total Contacts:</span>
-                          <span className="font-medium" data-testid="export-stat-total">
+                        <div className="flex justify-between p-2 bg-[hsl(229,41%,16%)] rounded">
+                          <span className="text-[hsl(215,20%,65%)]">Total Contacts:</span>
+                          <span className="font-medium text-[hsl(210,17%,98%)] tabular-nums" data-testid="export-stat-total">
                             {isLoadingContacts ? '...' : statistics.totalContacts}
                           </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Active Contacts:</span>
-                          <span className="font-medium" data-testid="export-stat-active">
+                        <div className="flex justify-between p-2 bg-[hsl(229,41%,16%)] rounded">
+                          <span className="text-[hsl(215,20%,65%)]">Active Contacts:</span>
+                          <span className="font-medium text-[hsl(210,17%,98%)] tabular-nums" data-testid="export-stat-active">
                             {isLoadingContacts ? '...' : statistics.activeContacts}
                           </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Last Export:</span>
-                          <span className="font-medium">Never</span>
+                        <div className="flex justify-between p-2 bg-[hsl(229,41%,16%)] rounded">
+                          <span className="text-[hsl(215,20%,65%)]">Last Export:</span>
+                          <span className="font-medium text-[hsl(210,17%,98%)]">Never</span>
                         </div>
                       </div>
                     </div>
@@ -784,32 +839,33 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
                 </CardContent>
               </Card>
             </TabsContent>
+
             <TabsContent value="emotional-intelligence" className="space-y-6 mt-0">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                   <EmotionalIntelligenceWidget showFullDashboard={true} />
                 </div>
                 <div className="space-y-4">
-                  <Card>
+                  <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)]">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-purple-700">
+                      <CardTitle className="flex items-center gap-2 text-[hsl(270,60%,70%)]">
                         <Heart className="h-5 w-5" />
                         Customer Sentiment Overview
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border">
-                          <span className="text-sm font-medium">Positive Sentiment</span>
-                          <Badge className="bg-green-100 text-green-700">Active</Badge>
+                        <div className="flex justify-between items-center p-3 bg-[hsl(142,30%,15%)] rounded-lg border border-[hsl(142,30%,25%)]">
+                          <span className="text-sm font-medium text-[hsl(210,17%,98%)]">Positive Sentiment</span>
+                          <Badge className="bg-[hsl(142,30%,20%)] text-[hsl(142,71%,45%)] border-0">Active</Badge>
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg border">
-                          <span className="text-sm font-medium">Neutral Sentiment</span>
-                          <Badge className="bg-yellow-100 text-yellow-700">Monitoring</Badge>
+                        <div className="flex justify-between items-center p-3 bg-[hsl(38,30%,15%)] rounded-lg border border-[hsl(38,30%,25%)]">
+                          <span className="text-sm font-medium text-[hsl(210,17%,98%)]">Neutral Sentiment</span>
+                          <Badge className="bg-[hsl(38,30%,20%)] text-[hsl(38,92%,50%)] border-0">Monitoring</Badge>
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg border">
-                          <span className="text-sm font-medium">Negative Sentiment</span>
-                          <Badge className="bg-red-100 text-red-700">Alert</Badge>
+                        <div className="flex justify-between items-center p-3 bg-[hsl(0,30%,15%)] rounded-lg border border-[hsl(0,30%,25%)]">
+                          <span className="text-sm font-medium text-[hsl(210,17%,98%)]">Negative Sentiment</span>
+                          <Badge className="bg-[hsl(0,30%,20%)] text-[hsl(0,84%,60%)] border-0">Alert</Badge>
                         </div>
                       </div>
                     </CardContent>

@@ -279,10 +279,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
         <button
           onClick={() => toggleSection(group.key)}
           className={cn(
-            "w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-lg transition-all-smooth hover-lift",
+            "w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-200",
             hasActiveItem
-              ? "bg-primary/10 text-primary border border-primary/20"
-              : "text-foreground/70 hover:bg-accent hover:text-accent-foreground"
+              ? "bg-[hsl(229,41%,16%)] text-[hsl(210,17%,98%)]"
+              : "text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]"
           )}
           aria-expanded={!isCollapsed}
           data-testid={`nav-group-${group.key}`}
@@ -290,21 +290,21 @@ export default function Navigation({ onLogout }: NavigationProps) {
           <div className="flex items-center">
             <GroupIcon className={cn(
               "mr-3 h-4 w-4 transition-all duration-200",
-              hasActiveItem ? "text-primary scale-110" : "group-hover:scale-110"
+              hasActiveItem ? "text-[hsl(227,89%,63%)]" : ""
             )} />
             <div className="text-left">
               <div className="font-semibold">{group.title}</div>
-              <div className="text-xs opacity-70 font-normal">{group.description}</div>
+              <div className="text-xs text-[hsl(215,20%,65%)] font-normal">{group.description}</div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="bg-muted text-muted-foreground text-xs px-2 py-1 rounded-full font-medium">
+          <div className="flex items-center gap-2">
+            <div className="bg-[hsl(229,41%,16%)] text-[hsl(215,20%,65%)] text-xs px-2 py-0.5 rounded-full font-medium">
               {visibleModules.length}
             </div>
             {isCollapsed ? (
-              <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+              <ChevronRight className="h-4 w-4 text-[hsl(215,20%,65%)] transition-transform duration-200" />
             ) : (
-              <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+              <ChevronDown className="h-4 w-4 text-[hsl(215,20%,65%)] transition-transform duration-200" />
             )}
           </div>
         </button>
@@ -314,7 +314,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
           "transition-all duration-300 ease-in-out overflow-hidden",
           isCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
         )}>
-          <div className="mt-2 ml-6 space-y-1 border-l-2 border-border pl-4">
+          <div className="mt-2 ml-6 space-y-1 border-l border-[hsl(217,33%,17%)] pl-4">
             {visibleModules.map((item: any) => {
               const Icon = item.icon;
               const canAccess = saasFeatures.canAccessFeature(item.path);
@@ -329,7 +329,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
                 return (
                   <div
                     key={item.path}
-                    className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-400 cursor-not-allowed relative"
+                    className="group flex items-center px-3 py-2 text-sm font-medium rounded-md text-[hsl(215,16%,47%)] cursor-not-allowed relative"
                     data-testid={`nav-item-${item.path.replace('/', '')}-locked`}
                   >
                     <Icon className="mr-3 h-4 w-4 flex-shrink-0" />
@@ -337,7 +337,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
                     <Lock className="h-3 w-3 ml-2" />
                     
                     {/* Tooltip */}
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-[hsl(228,37%,7%)] text-[hsl(210,17%,98%)] text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none border border-[hsl(217,33%,17%)]">
                       Upgrade to access this feature
                     </div>
                   </div>
@@ -352,10 +352,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
                     console.log('Navigation link clicked:', item.path, 'Current location:', location);
                   }}
                   className={cn(
-                    "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all-smooth cursor-pointer focus-ring relative",
+                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 cursor-pointer relative",
                     isActive(item.path)
-                      ? "bg-primary text-primary-foreground shadow-card hover:shadow-card-hover scale-[1.02] border-l-4 border-primary-foreground/30"
-                      : "text-foreground/70 hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-[hsl(229,41%,16%)] text-[hsl(210,17%,98%)] border-l-[3px] border-l-[hsl(227,89%,63%)] -ml-[3px] pl-[calc(0.75rem+3px)]"
+                      : "text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]"
                   )}
                   role="menuitem"
                   aria-label={`Navigate to ${item.label}`}
@@ -363,15 +363,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
                   data-testid={`nav-item-${item.path.replace('/', '')}`}
                 >
                   <Icon className={cn(
-                    "mr-3 h-4 w-4 flex-shrink-0 transition-transform duration-200",
-                    isActive(item.path) ? "text-primary-foreground scale-110 animate-pulse" : "group-hover:scale-110"
+                    "mr-3 h-4 w-4 flex-shrink-0 transition-colors duration-200",
+                    isActive(item.path) ? "text-[hsl(227,89%,63%)]" : ""
                   )} aria-hidden="true" />
-                  <span className="truncate font-semibold">{item.label}</span>
-                  {isActive(item.path) && (
-                    <div className="ml-auto flex items-center gap-1">
-                      <div className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse"></div>
-                    </div>
-                  )}
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
@@ -388,25 +383,19 @@ export default function Navigation({ onLogout }: NavigationProps) {
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="flex flex-col h-full bg-card/95 backdrop-blur-md shadow-2xl border-r border-border overflow-y-auto pointer-events-auto">
-        <div className="p-6 border-b border-border bg-accent/50">
+      <div className="flex flex-col h-full bg-[hsl(228,47%,12%)] shadow-2xl border-r border-[hsl(217,33%,17%)] overflow-y-auto pointer-events-auto">
+        {/* Apollo-style Header */}
+        <div className="p-6 border-b border-[hsl(217,33%,17%)]">
           <div className="flex items-center">
-            <div className="relative">
-              <BrandedLogo />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-green-400 to-blue-500 rounded-full animate-pulse"></div>
-            </div>
+            <BrandedLogo />
             <div className="ml-3">
-              <h2 className="text-lg font-bold text-primary">
+              <h2 className="text-lg font-bold text-[hsl(210,17%,98%)]">
                 NODE CRM
               </h2>
-              <p className="text-xs text-muted-foreground font-medium">
-                Enterprise AI Platform
+              <p className="text-xs text-[hsl(215,20%,65%)]">
+                AI-Powered Sales Platform
               </p>
             </div>
-          </div>
-          <div className="mt-4 flex items-center space-x-2">
-            <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-            <span className="text-xs text-muted-foreground font-medium">All Systems Operational</span>
           </div>
         </div>
         
@@ -417,26 +406,26 @@ export default function Navigation({ onLogout }: NavigationProps) {
 
         {/* Offline Status Section */}
         {status.isInitialized && (
-          <div className="border-t p-2 space-y-2">
+          <div className="border-t border-[hsl(217,33%,17%)] p-3 space-y-2">
             <div className="px-2">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              <div className="text-xs font-semibold text-[hsl(215,16%,47%)] uppercase tracking-wider mb-2">
                 Connection Status
               </div>
               <div className="space-y-2">
                 {/* Connection Status */}
-                <div className="flex items-center justify-between px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-800">
-                  <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-md bg-[hsl(229,41%,16%)]">
+                  <div className="flex items-center gap-2">
                     {status.isOnline ? (
-                      <Wifi className="h-3 w-3 text-green-600" />
+                      <Wifi className="h-3 w-3 text-[hsl(160,84%,39%)]" />
                     ) : (
-                      <WifiOff className="h-3 w-3 text-red-600" />
+                      <WifiOff className="h-3 w-3 text-[hsl(0,84%,60%)]" />
                     )}
-                    <span className="text-xs font-medium">
+                    <span className="text-xs font-medium text-[hsl(210,17%,98%)]">
                       {status.isOnline ? "Online" : "Offline"}
                     </span>
                   </div>
                   {status.hasOfflineData && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-[hsl(227,89%,63%)] rounded-full"></div>
                   )}
                 </div>
 
@@ -455,7 +444,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
                     }}
                     size="sm"
                     variant="outline"
-                    className="w-full text-xs py-1"
+                    className="w-full text-xs py-1 bg-transparent border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)] hover:border-[hsl(217,33%,17%)]"
                   >
                     <Download className="h-3 w-3 mr-1" />
                     {status.hasOfflineData ? "Update Offline" : "Download Offline"}
@@ -464,7 +453,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
 
                 {/* Offline Status Message */}
                 {!status.isOnline && status.hasOfflineData && (
-                  <div className="text-xs text-blue-600 bg-blue-50 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded">
+                  <div className="text-xs text-[hsl(227,89%,63%)] bg-[hsl(229,41%,16%)] px-2 py-1.5 rounded">
                     Working offline mode
                   </div>
                 )}
@@ -474,7 +463,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
         )}
 
         {/* User Actions */}
-        <div className="border-t p-2 space-y-2">
+        <div className="border-t border-[hsl(217,33%,17%)] p-3 space-y-2">
           {/* Language Selector */}
           <div className="px-2">
             <LanguageSelector variant="compact" showLabel={false} />
@@ -483,7 +472,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
           {/* Logout Button */}
           <button
             onClick={logout}
-            className="group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900 dark:hover:text-red-300 transition-colors"
+            className="group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md text-[hsl(0,84%,60%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(0,84%,70%)] transition-colors duration-200"
           >
             <LogOut className="mr-3 h-4 w-4" />
             Logout

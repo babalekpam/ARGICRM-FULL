@@ -1,306 +1,275 @@
 # NODE CRM Design Guidelines
-**AI-Powered B2B SaaS Platform**
+**B2B Sales Intelligence & CRM Platform - Apollo.io Inspired**
 
 ## Design Philosophy
 
-**Approach**: Hybrid system combining Linear's clarity, Notion's comfort, and Stripe's polish for enterprise CRM requiring sophisticated data visualization and comfortable long-session usability.
+**Approach**: Dark, modern SaaS interface combining Apollo.io's data density with Linear's clarity and Notion's organization. Professional B2B aesthetic with flat design, strategic use of color, and generous breathing room.
 
 **Core Principles**:
-- Depth through layering (rich backgrounds, elevated surfaces)
-- Progressive disclosure (organize complexity)
-- Consistent polish (every page intentional)
-- Professional warmth (trustworthy yet approachable)
+- Information density without clutter
+- Dark backgrounds with strategic accent use
+- Flat, bordered cards (minimal shadows)
+- Whitespace creates hierarchy
+- Data-first presentation
+
+---
+
+## Color System
+
+**Backgrounds**:
+- Deep Navy Base: #0B0D17 (page background)
+- Dark Indigo Surface: #11152B (cards, elevated surfaces)
+- Raised Elements: #1A1F3A (hover states, active elements)
+
+**Accents**:
+- Primary Blue: #4C6EF5 (CTAs, links, primary actions)
+- Purple Accent: #7048E8 (secondary highlights, gradients)
+- Success: #10B981
+- Warning: #F59E0B
+- Error: #EF4444
+
+**Text**:
+- Primary: #F8F9FA (headings, emphasis)
+- Secondary: #94A3B8 (body, descriptions)
+- Tertiary: #64748B (metadata, labels)
+
+**Borders**: #1E293B (subtle separation)
 
 ---
 
 ## Typography
 
-**Fonts**: Inter (primary), JetBrains Mono (data/metrics)
+**Font**: Inter (all weights, tight tracking -0.02em)
 
 **Scale**:
 ```
-Page Titles:      text-3xl font-bold
-Section Headers:  text-xl font-semibold  
-Card Titles:      text-lg font-medium
-Body:             text-base font-normal
-Meta/Subtext:     text-sm font-normal
-Labels:           text-xs font-medium uppercase tracking-wider
-Metrics:          text-2xl md:text-4xl font-bold (monospace)
-Buttons:          text-sm font-medium
+Page Titles:      text-3xl font-bold tracking-tight
+Section Headers:  text-xl font-semibold tracking-tight
+Card Titles:      text-lg font-semibold
+Body:             text-sm font-normal
+Meta/Labels:      text-xs font-medium uppercase tracking-wide
+Metrics:          text-4xl font-bold tabular-nums
 ```
 
 ---
 
 ## Layout & Spacing
 
-**Primitives**: Use Tailwind units: 2, 3, 4, 6, 8, 12, 16, 20, 24
+**Primitives**: 4, 6, 8, 12, 16, 20, 24, 32, 48
 
 **Structure**:
-- **Sidebar**: Fixed w-64 lg:w-72
-- **Content**: max-w-7xl, px-6 lg:px-8
-- **Top Bar**: h-16 sticky with backdrop-blur-md
-- **Card Grids**: grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6
+- Sidebar: Fixed w-64 with #11152B background
+- Content: max-w-7xl px-8 py-12
+- Top Bar: h-16 with border-b
+- Grid rhythm: 24px mobile, 32px desktop
 
-**Rhythm**:
-- Page padding: py-8 lg:py-12
-- Section spacing: mb-8 lg:mb-12
+**Containers**:
+- Dashboard widgets: gap-6 lg:gap-8
+- Form sections: space-y-6
 - Card padding: p-6 lg:p-8
-- List items: py-4
 
 ---
 
-## Visual Treatment
+## Navigation Sidebar
 
-**Backgrounds**:
-- Base: Subtle diagonal gradients (top-left to bottom-right)
-- Cards: Distinct backgrounds with borders (not transparent)
-- Three depth levels: base → elevated (cards) → floating (modals)
+**Layout**: Fixed left, #11152B background, subtle border-r
 
-**Shadows**:
-- Cards: shadow-sm, hover:shadow-lg
-- Dropdowns: shadow-xl
-- Modals: shadow-2xl with backdrop blur
-- Floating actions: shadow-lg with ring
+**Structure**:
+- Logo area (h-16, px-6)
+- Nav groups (space-y-8, py-8)
+- User section (bottom, border-t, p-6)
+
+**Nav Items**:
+- Heroicons outline (20x20)
+- Active: #1A1F3A background, #4C6EF5 left border (3px), primary text
+- Inactive: Secondary text, hover to raised background
+- Badges: Small pills with counts
+
+**Groups**: Prospecting, CRM, Engagement, Intelligence, Analytics, Settings
 
 ---
 
-## Components
+## Top Navigation
 
-### Navigation Sidebar
+**Layout**: h-16, border-b, flex justify-between
 
-**Structure**: Fixed vertical nav with logo (h-16), grouped items, user footer
+**Left**: Breadcrumbs with Heroicons, current page emphasized
+**Center**: Global search (w-96, #1A1F3A bg, focus ring primary)
+**Right**: Quick actions (icon buttons), notifications (badge), user avatar menu
 
-**Elements**:
-- Icons: Heroicons outline, 20x20
-- Active state: Background + border-l-4 accent
-- Badges: Count pills on items
-- Collapsible sections for sub-nav
+---
 
-**Categories**: Dashboard, Contacts, Companies, Deals, Pipeline, Tasks, Email, Reports, SEO Tools, Settings
+## Cards & Surfaces
 
-### Top Bar
+**Base Card**:
+- Background: #11152B
+- Border: 1px #1E293B
+- Rounded: rounded-lg
+- Padding: p-6
+- NO shadows (flat design)
 
-- Left: Breadcrumbs (Icon > Parent > Current)
-- Center: Search (w-64, focus:w-96, cmd+k hint)
-- Right: Quick actions, notifications, user menu with avatar dropdown
+**Card Types**:
 
-### Cards
+**Metric Widgets**:
+- Large tabular number (text-4xl)
+- Label above (text-xs uppercase)
+- Trend indicator (+/- with arrow, colored)
+- Mini sparkline chart (Recharts)
+- Comparison text below
 
-**1. Metric Cards (KPI)**:
-- Large monospace value
-- Trend indicator with % change
-- Optional mini sparkline
-- Comparison text
-- CTA link
+**Data Cards**:
+- Header with title + action buttons
+- Content area (scrollable if needed)
+- Footer with pagination/actions
 
-**2. Chart Cards**:
-- Title + time range selector
-- Full-width chart with padding
-- Horizontal legend below
-- Export/fullscreen buttons (top-right)
-- Footer with insights
-
-**3. List Cards**:
-- Scrollable (max-h-96)
-- Rows: avatar/icon, title, subtitle, timestamp
-- Hover states
-- "View all" footer
+**List Cards**:
+- Items with hover (#1A1F3A background)
+- Left icon/avatar, title, metadata
+- Right actions (ghost buttons)
 - Empty state with illustration + CTA
 
-**4. Pipeline Cards**:
-- Stage name + count header
-- Draggable deal items
-- Progress indicator (total value)
-- "+ Add deal" action
+---
 
-### Contact/Company Cards (Grid)
+## Data Tables
 
-- Avatar (rounded-full) or logo (rounded-lg)
-- Name (font-semibold), role/industry
-- Key metrics (deal value, last contact)
-- Quick actions (email, call, view)
-- Hover elevation
-
-### Data Tables
+**Design**:
+- Sticky header (#0B0D17 background)
+- Row hover: #1A1F3A
+- Borders: Horizontal only (#1E293B)
+- Cell padding: px-6 py-4
+- Column sorting indicators
+- Inline filters (dropdown menus)
 
 **Features**:
-- Sticky header with sort
-- Fixed first column
-- Row selection checkboxes
-- Inline editing (double-click)
-- Bulk actions toolbar
-- Pagination + density toggle
+- Multi-select checkboxes (left)
+- Bulk action bar (appears on selection)
+- Column visibility toggle
+- Density controls (comfortable/compact)
+- Export button (top-right)
 
-**Styling**:
-- Alternating row backgrounds
-- Full row hover highlight
-- Cell formatting (links, tags, badges)
-- Column visibility controls
-
-### Forms
-
-**Inputs** (h-11, rounded-lg):
-- Label above with required indicator
-- Helper text below
-- Error/success states with icons
-- Icon support (left/right)
-
-**Types**:
-- Text/email, select (searchable), multi-select (pills)
-- Date pickers (range capable), rich text (toolbar)
-- File upload (drag-drop with preview)
-
-### Modals
-
-**Sizes**: max-w-md (small), max-w-2xl (medium), max-w-5xl (large), full-screen
-
-**Structure**:
-- Header: Title, close, optional subtitle
-- Scrollable body with padding
-- Footer: Primary right, secondary left
-- Backdrop: Blur with opacity
-
-### Buttons
-
-**Variants & Sizes**:
-```
-Primary:   Bold, gradient-capable (main actions)
-Secondary: Bordered (alternatives)
-Ghost:     Minimal (tertiary)
-Danger:    Red (destructive)
-Icon-only: Square with tooltip
-
-Small:  h-8 px-3 text-sm
-Medium: h-10 px-4 text-sm  
-Large:  h-12 px-6 text-base
-```
-
-**States**: Hover, active, loading (spinner), disabled
-
-### Badges & Tags
-
-- Pill: rounded-full px-3 py-1
-- Dot indicator with label
-- Color-coded: success, warning, error, info, neutral
-- Removable (X icon)
-
-### Empty States
-
-- Icon/illustration (120x120)
-- Primary message (text-lg font-medium)
-- Description text
-- Primary CTA button
-- Optional secondary link
+**Cell Types**:
+- Text with truncation
+- Pills/badges for status
+- Avatar + name combos
+- Action dropdowns (3-dot menu)
+- Inline editable fields
 
 ---
 
-## Page Layouts
+## Forms & Inputs
 
-### Dashboard
+**Input Fields** (h-10, rounded-md):
+- Background: #1A1F3A
+- Border: 1px #1E293B
+- Focus: Ring primary color
+- Label: text-xs above, font-medium
+- Helper: text-xs below, tertiary color
 
-1. Welcome header (user name, date)
-2. KPI row (4 metrics: Revenue, Deals, Contacts, Tasks)
-3. Pipeline overview (horizontal stages)
-4. Recent activity (left 2/3) + Quick actions (right 1/3)
-5. Upcoming tasks/meetings
+**Types**:
+- Text inputs with icons
+- Searchable dropdowns
+- Multi-select with pill removals
+- Date range pickers
+- Toggle switches (primary color)
+- Radio/checkbox groups
 
-### CRM Pages (Contacts/Companies/Deals)
+**Validation**:
+- Error state: Red border + message
+- Success: Green checkmark icon
 
-- Collapsible filter sidebar (saved views, filters)
-- Table/grid toggle
-- Bulk action toolbar
-- Floating "+ Create" button (bottom-right)
+---
 
-### Analytics & Reports
+## Buttons
 
-- Time range selector (top-right)
-- Summary metrics row
-- Large featured chart
-- Secondary insights (2-column)
-- Exportable data table
+**Primary**: bg-primary (#4C6EF5), hover:bg-#3D5DDB, white text, h-10 px-6
+**Secondary**: border-#1E293B, hover:bg-#1A1F3A, h-10 px-6
+**Ghost**: hover:bg-#1A1F3A, text-secondary, h-10 px-4
+**Danger**: bg-error, hover:bg-#DC2626
+**Icon-only**: Square 40x40, ghost style
 
-### SEO Tools
+**States**: Loading spinner, disabled opacity-50
 
-- Domain/project selector (top)
-- Health score (prominent)
-- Issue prioritization (critical/medium/low)
-- Charts (line, pie)
-- Actionable recommendations list
+---
 
-### Settings
+## Modals & Overlays
 
-- Tab-based with vertical side menu
-- Sectioned forms
-- Save/cancel always visible
-- Progressive disclosure for advanced options
+**Modal**:
+- Backdrop: Black opacity-60 with blur
+- Container: #11152B, border #1E293B, rounded-lg
+- Sizes: max-w-md, max-w-2xl, max-w-5xl
+- Header: Title + close, border-b
+- Footer: Actions right-aligned, border-t
+
+**Dropdowns**:
+- #11152B background
+- Border #1E293B
+- Rounded-md
+- Items hover to #1A1F3A
+- Dividers between groups
+
+---
+
+## Dashboard Layout
+
+**Widget Grid**: grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8
+
+**Sections**:
+1. KPI Row (4 metric widgets)
+2. Activity Chart (full-width, height 400px)
+3. Pipeline Funnel (2/3 width) + Quick Stats (1/3 width)
+4. Recent Leads Table (full-width)
+5. Tasks/Calendar (2-column split)
 
 ---
 
 ## Data Visualization
 
-**Library**: Chart.js or Recharts
+**Library**: Recharts
 
-**Charts**:
-- Line: Trends (revenue, contacts)
-- Bar: Comparisons (stages, performance)
-- Pie/Donut: Distributions (sources, status)
-- Funnel: Pipeline conversion
-- Heatmap: Activity patterns
+**Chart Styling**:
+- Line/Area: Smooth curves, gradient fills (primary → transparent)
+- Bar: Rounded tops, primary color
+- Grid: #1E293B subtle lines
+- Tooltips: #11152B with border
+- Legend: Below charts, horizontal
 
-**Styling**:
-- Smooth curves (line charts)
-- Clear axis labels + gridlines
-- Interactive tooltips
-- Context-appropriate legends
-- Responsive with min-height
+**Chart Types**:
+- Line: Revenue trends, activity over time
+- Bar: Pipeline stages, performance
+- Funnel: Conversion tracking
+- Donut: Source distribution
 
 ---
 
 ## Icons & Images
 
-**Icons**: Heroicons (outline primary, solid for active)
-- Nav: 20x20
-- Buttons: 16x16 or 20x20
-- Cards: 24x24
-- Empty states: 48x48 to 120x120
+**Icons**: Heroicons outline, consistent sizing
+- Navigation: 20x20
+- Buttons: 16x16
+- Headers: 24x24
 
 **Images**:
-- Avatars: Circular, 32/40/48/64px, initials fallback
-- Logos: Rounded square, 40/56/80px
-- Empty states: Professional SVG
-- Fallback: Colored backgrounds with initials
+- Avatars: Circular, 32/40/48px, colored fallbacks with initials
+- Company logos: Rounded square, 40/56px
+- Empty states: Monochrome illustrations (secondary color)
+
+**Hero Images**: Use for marketing pages - full-width with gradient overlay, buttons with backdrop-blur-md
 
 ---
 
-## Animations & Interactions
+## Accessibility & Interactions
 
-**Timing** (subtle, purposeful):
-- Page transitions: 200ms fade
-- Card hover: 150ms ease-out elevation
-- Dropdowns: 200ms scale + fade
-- Modals: 250ms scale (95% to 100%)
-- Skeleton loading: Subtle pulse
+**Focus States**: 2px ring offset-2 primary color
+**Keyboard**: Full navigation, escape closes, enter submits
+**Screen Readers**: aria-labels on icon buttons
+**Touch Targets**: 44x44px minimum
+**Contrast**: Maintain WCAG AA on dark backgrounds
 
----
-
-## Accessibility
-
-**Requirements**:
-- Focus rings on all interactive elements (with offset)
-- Full keyboard navigation (tab order, escape)
-- Screen reader labels on icon buttons
-- Proper heading hierarchy (h1→h2→h3)
-- WCAG contrast ratios
-- 44x44px minimum touch targets
-- Loading states for async operations
-- Error recovery guidance
-
-**Consistency Rules**:
-- Use only defined spacing primitives
-- Reuse component patterns across pages
-- Apply typography scale uniformly
-- Identical interactive states everywhere
+**Transitions**:
+- Hover: 150ms ease-out
+- Dropdowns: 200ms scale
+- Page loads: Skeleton pulse
 
 ---
 
-**Implementation Note**: Mobile-first responsive design. Prioritize information density with breathing room. Every element serves utility and builds trust.
+**Implementation**: Mobile-first responsive. Collapse sidebar to drawer on mobile. Maintain 24/32px rhythm across breakpoints. Every page uses widget/card-based layout for consistency.

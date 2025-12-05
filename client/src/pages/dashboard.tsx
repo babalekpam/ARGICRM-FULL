@@ -41,35 +41,16 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const { user } = useAuth();
   
-  // Generate SEO data
   const pageSEO = generatePageSEO('dashboard');
   const structuredData = generateStructuredData('organization');
   
-  // Define role variables - Platform owner check
   const isPlatformOwner = Boolean(user?.email === 'abel@argilette.com');
   const isDemoAdmin = Boolean(user?.role === 'demo_admin' && !isPlatformOwner);
   const isAdmin = Boolean(user?.role === 'admin' && !isPlatformOwner);
 
-  // Debug logging to check user authentication
-  console.log('Dashboard - User data:', user);
-  console.log('Dashboard - isPlatformOwner:', isPlatformOwner);
-  console.log('Dashboard - User role:', user?.role);
-  console.log('Dashboard - User email:', user?.email);
   const isRegularAdmin = isDemoAdmin || isAdmin;
-  const isSuperAdmin = isPlatformOwner; // Legacy compatibility
+  const isSuperAdmin = isPlatformOwner;
   
-  console.log("Current active tab:", activeTab); // Debug log
-  console.log("Dashboard roles:", { 
-    isPlatformOwner, 
-    isDemoAdmin, 
-    isAdmin, 
-    userRole: user?.role, 
-    userEmail: user?.email,
-    userIsPlatformOwner: user?.isPlatformOwner,
-    fullUser: user
-  });
-  
-  // Fetch data from APIs with loading states
   const { data: allContactsData, isLoading: contactsLoading } = useQuery<any[]>({ queryKey: ["/api/contacts"] });
   const { data: allAccountsData, isLoading: accountsLoading } = useQuery<any[]>({ queryKey: ["/api/accounts"] });
   const { data: allLeadsData, isLoading: leadsLoading } = useQuery<any[]>({ queryKey: ["/api/leads"] });
@@ -86,15 +67,13 @@ export default function Dashboard() {
   
   const isLoading = contactsLoading || accountsLoading || leadsLoading || dealsLoading || tasksLoading || ticketsLoading;
 
-  // Filter data based on user role - Platform owners see all test data, other users see empty/clean data
-  const contacts = isPlatformOwner ? allContacts : []; // Non-platform users see no pre-populated contacts
-  const accounts = isPlatformOwner ? allAccounts : []; // Non-platform users see no pre-populated accounts  
-  const leads = isPlatformOwner ? allLeads : []; // Non-platform users see no pre-populated leads
-  const deals = isPlatformOwner ? allDeals : []; // Non-platform users see no pre-populated deals
-  const tasks = isPlatformOwner ? allTasks : []; // Non-platform users see no pre-populated tasks
-  const tickets = isPlatformOwner ? allTickets : []; // Non-platform users see no pre-populated tickets
+  const contacts = isPlatformOwner ? allContacts : [];
+  const accounts = isPlatformOwner ? allAccounts : [];
+  const leads = isPlatformOwner ? allLeads : [];
+  const deals = isPlatformOwner ? allDeals : [];
+  const tasks = isPlatformOwner ? allTasks : [];
+  const tickets = isPlatformOwner ? allTickets : [];
 
-  // Calculate real metrics from API data
   const totalDealsValue = deals.reduce((sum: number, deal: any) => sum + (parseFloat(deal.amount || "0")), 0);
   const openTicketsCount = tickets.filter((t: any) => t.status === "open").length;
   const totalContacts = contacts.length;
@@ -104,49 +83,48 @@ export default function Dashboard() {
   const totalTasks = tasks.length;
   const totalTickets = tickets.length;
 
-  // Platform Owner gets platform-wide metrics, Regular users get company-specific metrics
   const stats = isPlatformOwner ? [
     {
       title: "Total Platform Users",
       value: totalContacts.toLocaleString(),
       change: totalContacts > 0 ? `+${Math.round((totalContacts / 10) * 100)}%` : "0%",
       icon: Users,
-      color: "text-blue-600"
+      color: "text-[hsl(227,89%,63%)]"
     },
     {
       title: "Active Companies",
       value: totalAccounts.toLocaleString(),
       change: totalAccounts > 0 ? `+${Math.round((totalAccounts / 5) * 100)}%` : "0%",
       icon: Building2,
-      color: "text-green-600"
+      color: "text-[hsl(142,76%,36%)]"
     },
     {
       title: "Monthly Revenue",
       value: `$${totalDealsValue.toLocaleString()}`,
       change: totalDealsValue > 0 ? `+${Math.round((totalDealsValue / 1000) * 10)}%` : "0%",
       icon: DollarSign,
-      color: "text-green-600"
+      color: "text-[hsl(142,76%,36%)]"
     },
     {
       title: "Trial Conversions",
       value: totalLeads > 0 ? `${Math.round((totalDeals / totalLeads) * 100)}%` : "0%",
       change: "0%",
       icon: TrendingUp,
-      color: "text-yellow-600"
+      color: "text-[hsl(45,93%,47%)]"
     },
     {
       title: "Platform Health",
       value: totalTickets === 0 ? "100%" : `${Math.max(0, 100 - (openTicketsCount * 10))}%`,
       change: "0%",
       icon: Activity,
-      color: "text-purple-600"
+      color: "text-[hsl(280,65%,60%)]"
     },
     {
       title: "Support Tickets",
       value: openTicketsCount.toLocaleString(),
       change: totalTickets > 0 ? `${totalTickets} total` : "0%",
       icon: Ticket,
-      color: "text-red-600"
+      color: "text-[hsl(0,84%,60%)]"
     }
   ] : [
     {
@@ -154,42 +132,42 @@ export default function Dashboard() {
       value: totalContacts.toLocaleString(),
       change: totalContacts > 0 ? `${totalContacts} total` : "0%",
       icon: Users,
-      color: "text-blue-600"
+      color: "text-[hsl(227,89%,63%)]"
     },
     {
       title: "My Accounts",
       value: totalAccounts.toLocaleString(),
       change: totalAccounts > 0 ? `${totalAccounts} companies` : "0%",
       icon: Building2,
-      color: "text-green-600"
+      color: "text-[hsl(142,76%,36%)]"
     },
     {
       title: "My Leads",
       value: totalLeads.toLocaleString(),
       change: totalLeads > 0 ? `${leads.filter((l: any) => l.status === "qualified").length} qualified` : "0%",
       icon: UserCheck,
-      color: "text-indigo-600"
+      color: "text-[hsl(230,65%,60%)]"
     },
     {
       title: "My Deals",
       value: `$${totalDealsValue.toLocaleString()}`,
       change: totalDeals > 0 ? `${totalDeals} active deals` : "0%",
       icon: DollarSign,
-      color: "text-yellow-600"
+      color: "text-[hsl(45,93%,47%)]"
     },
     {
       title: "My Tasks",
       value: totalTasks.toLocaleString(),
       change: totalTasks > 0 ? `${tasks.filter((t: any) => t.status === "pending").length} pending` : "0%",
       icon: CheckSquare,
-      color: "text-purple-600"
+      color: "text-[hsl(280,65%,60%)]"
     },
     {
       title: "My Tickets",
       value: totalTickets.toLocaleString(),
       change: totalTickets > 0 ? `${openTicketsCount} open` : "0%",
       icon: Ticket,
-      color: "text-red-600"
+      color: "text-[hsl(0,84%,60%)]"
     }
   ];
 
@@ -204,42 +182,41 @@ export default function Dashboard() {
       />
       <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center space-x-4">
             <Logo size="lg" />
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">
                   <CheckCircle className="h-4 w-4 inline mr-1" />
                   Enterprise-Grade Security
-                </div>
-                <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                </Badge>
+                <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(280,65%,60%)] border-0">
                   <Brain className="h-4 w-4 inline mr-1" />
                   AI-Powered Intelligence
-                </div>
+                </Badge>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-3xl font-bold text-[hsl(210,17%,98%)] tracking-tight">
                 {isPlatformOwner ? "Platform Command Center" : "AI-Powered CRM Dashboard"}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-[hsl(215,20%,65%)]">
                 {isPlatformOwner 
                   ? "Manage your entire platform with enterprise-grade controls and real-time analytics" 
                   : "Transform customer relationships with AI-driven analytics and predictive insights"}
               </p>
               {!isPlatformOwner && (
-                <Badge variant="secondary" className="mt-2">
+                <Badge className="mt-2 bg-[hsl(229,41%,16%)] text-[hsl(215,20%,65%)] border-0">
                   Enterprise-Ready Platform • Built with AI/ML
                 </Badge>
               )}
             </div>
           </div>
-          <div className="flex space-x-2">
-            {/* ONLY Platform Owner gets access to Super Admin Dashboard */}
+          <div className="flex space-x-2 gap-2">
             {isPlatformOwner && (
               <Link href="/super-admin">
                 <Button 
                   variant="outline" 
-                  className="bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100"
+                  className="border-[hsl(45,93%,47%)] text-[hsl(45,93%,47%)] hover:bg-[hsl(229,41%,16%)]"
                 >
                   <Crown className="mr-2 h-4 w-4" />
                   Platform Admin
@@ -247,9 +224,8 @@ export default function Dashboard() {
               </Link>
             )}
             
-            {/* Regular Schedule Meeting for both types */}
             <Link href="/scheduling">
-              <Button>
+              <Button className="bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white">
                 <Calendar className="mr-2 h-4 w-4" />
                 Schedule Meeting
               </Button>
@@ -258,32 +234,35 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Trial Banner for Demo Users */}
         <TrialBanner />
         
-        {/* Trial Warning Banner for Account Locking */}
         {!isPlatformOwner && <TrialWarningBanner />}
 
-        {/* Onboarding Trigger for New Users */}
         <OnboardingTrigger userRole={user?.role} />
 
-        {/* Personalized Welcome Screen - Only mount when user is known and not platform owner */}
         {user && !isPlatformOwner && !user?.isPlatformOwner && user.email !== 'abel@argilette.com' && user.role !== 'platform_owner' && <PersonalizedWelcome />}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.title}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <TrendingUp className="mr-1 h-3 w-3" />
-                    {stat.change} from last month
+              <Card key={stat.title} className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide mb-1">
+                        {stat.title}
+                      </p>
+                      <p className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums">
+                        {stat.value}
+                      </p>
+                      <p className="text-xs text-[hsl(215,16%,47%)] mt-1">
+                        {stat.change} from last month
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-[hsl(229,41%,16%)] flex items-center justify-center flex-shrink-0">
+                      <Icon className={`h-6 w-6 ${stat.color}`} />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -292,43 +271,45 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Activity className="mr-2 h-5 w-5" />
+          <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                <Activity className="h-5 w-5 text-[hsl(227,89%,63%)]" />
                 Recent Activity
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-[hsl(142,76%,36%)] rounded-full"></div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">New lead converted to customer</p>
-                    <p className="text-xs text-gray-500">2 hours ago</p>
+                    <p className="text-sm font-medium text-[hsl(210,17%,98%)]">New lead converted to customer</p>
+                    <p className="text-xs text-[hsl(215,16%,47%)]">2 hours ago</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-[hsl(227,89%,63%)] rounded-full"></div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">Campaign "Q1 Outreach" completed</p>
-                    <p className="text-xs text-gray-500">5 hours ago</p>
+                    <p className="text-sm font-medium text-[hsl(210,17%,98%)]">Campaign "Q1 Outreach" completed</p>
+                    <p className="text-xs text-[hsl(215,16%,47%)]">5 hours ago</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-[hsl(45,93%,47%)] rounded-full"></div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">High priority ticket assigned</p>
-                    <p className="text-xs text-gray-500">1 day ago</p>
+                    <p className="text-sm font-medium text-[hsl(210,17%,98%)]">High priority ticket assigned</p>
+                    <p className="text-xs text-[hsl(215,16%,47%)]">1 day ago</p>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Sales Pipeline</CardTitle>
+          <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide">
+                Sales Pipeline
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -339,12 +320,12 @@ export default function Dashboard() {
                   );
                   
                   return (
-                    <div key={stage} className="flex justify-between items-center">
+                    <div key={stage} className="flex justify-between items-center gap-2">
                       <div className="flex items-center space-x-2">
-                        <Badge variant="outline">{stageDeals.length}</Badge>
-                        <span className="text-sm capitalize">{stage.replace("-", " ")}</span>
+                        <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0">{stageDeals.length}</Badge>
+                        <span className="text-sm capitalize text-[hsl(210,17%,98%)]">{stage.replace("-", " ")}</span>
                       </div>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-[hsl(210,17%,98%)]">
                         ${totalValue.toLocaleString()}
                       </span>
                     </div>
@@ -355,54 +336,50 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => {
-          console.log("Tab change triggered:", value);
-          setActiveTab(value);
-        }} className="space-y-6">
-          <TabsList className={`grid w-full ${isPlatformOwner ? 'grid-cols-7' : 'grid-cols-4'}`}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className={`grid w-full ${isPlatformOwner ? 'grid-cols-7' : 'grid-cols-4'} bg-[hsl(229,41%,16%)] border border-[hsl(217,33%,17%)] p-1`}>
             <TabsTrigger 
               value="overview" 
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
             >
               Overview
             </TabsTrigger>
             
-            {/* Platform Owner gets advanced tabs, regular users get basic CRM tabs */}
             {isPlatformOwner ? (
               <>
                 <TabsTrigger 
                   value="platform-analytics"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
                 >
                   Platform Analytics
                 </TabsTrigger>
                 <TabsTrigger 
                   value="activities"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
                 >
                   Activities
                 </TabsTrigger>
                 <TabsTrigger 
                   value="team"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
                 >
                   Team
                 </TabsTrigger>
                 <TabsTrigger 
                   value="intelligence"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
                 >
                   Intelligence
                 </TabsTrigger>
                 <TabsTrigger 
                   value="reports"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
                 >
                   Reports
                 </TabsTrigger>
                 <TabsTrigger 
                   value="platform-management"
-                  className="data-[state=active]:bg-yellow-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(45,93%,47%)] data-[state=active]:text-[hsl(228,47%,12%)] text-[hsl(215,20%,65%)]"
                 >
                   <Crown className="h-4 w-4 mr-1" />
                   Platform
@@ -412,19 +389,19 @@ export default function Dashboard() {
               <>
                 <TabsTrigger 
                   value="analytics"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
                 >
                   Analytics
                 </TabsTrigger>
                 <TabsTrigger 
                   value="activities"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
                 >
                   Activities
                 </TabsTrigger>
                 <TabsTrigger 
                   value="reports"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[hsl(227,89%,63%)] data-[state=active]:text-white text-[hsl(215,20%,65%)]"
                 >
                   Reports
                 </TabsTrigger>
@@ -437,16 +414,24 @@ export default function Dashboard() {
               {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (
-                  <Card key={stat.title}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                      <Icon className={`h-4 w-4 ${stat.color}`} />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stat.value}</div>
-                      <p className="text-xs text-muted-foreground">
-                        {stat.change} from last month
-                      </p>
+                  <Card key={stat.title} className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-xs font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide mb-1">
+                            {stat.title}
+                          </p>
+                          <p className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums">
+                            {stat.value}
+                          </p>
+                          <p className="text-xs text-[hsl(215,16%,47%)] mt-1">
+                            {stat.change} from last month
+                          </p>
+                        </div>
+                        <div className="h-12 w-12 rounded-lg bg-[hsl(229,41%,16%)] flex items-center justify-center flex-shrink-0">
+                          <Icon className={`h-6 w-6 ${stat.color}`} />
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -459,11 +444,17 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Predictive Analytics Widgets */}
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Predictive Intelligence</h3>
-                <Badge variant="outline" className="text-xs">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <h2 className="text-xl font-semibold text-[hsl(210,17%,98%)] tracking-tight">
+                    Predictive Intelligence
+                  </h2>
+                  <p className="text-sm text-[hsl(215,20%,65%)]">
+                    AI-powered insights and predictions
+                  </p>
+                </div>
+                <Badge className="bg-[hsl(229,41%,16%)] text-[hsl(227,89%,63%)] border-0 text-xs">
                   <Brain className="h-3 w-3 mr-1" />
                   AI Powered
                 </Badge>
@@ -487,34 +478,33 @@ export default function Dashboard() {
             </div>
           </TabsContent>
 
-          {/* Regular User Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BarChart3 className="mr-2 h-5 w-5" />
+            <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-[hsl(227,89%,63%)]" />
                   Your CRM Analytics
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Your Revenue</span>
-                    <span className="text-2xl font-bold text-green-600">${totalDealsValue.toLocaleString()}</span>
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Your Revenue</span>
+                    <span className="text-2xl font-bold text-[hsl(142,76%,36%)]">${totalDealsValue.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Growth Rate</span>
-                    <span className="text-lg font-semibold text-blue-600">
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Growth Rate</span>
+                    <span className="text-lg font-semibold text-[hsl(227,89%,63%)]">
                       {totalDeals > 0 ? `${Math.round((totalDeals / 10) * 100)}%` : "0%"}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-[hsl(229,41%,16%)] rounded-full h-2">
                     <div 
-                      className="bg-blue-600 h-2 rounded-full" 
+                      className="bg-[hsl(227,89%,63%)] h-2 rounded-full" 
                       style={{ width: `${Math.min(100, (totalDeals / 10) * 100)}%` }}
                     ></div>
                   </div>
-                  <p className="text-sm text-gray-500 mt-4">
+                  <p className="text-sm text-[hsl(215,16%,47%)] mt-4">
                     {totalContacts === 0 
                       ? "Start adding contacts and deals to see your analytics grow"
                       : `You have ${totalContacts} contacts and ${totalDeals} active deals`}
@@ -524,99 +514,98 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          {/* Platform Owner Analytics Tab */}
           <TabsContent value="platform-analytics" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="border-yellow-200 bg-yellow-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-yellow-800">
-                    <Crown className="mr-2 h-5 w-5" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(45,93%,47%)/30] rounded-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(45,93%,47%)] uppercase tracking-wide flex items-center gap-2">
+                    <Crown className="h-5 w-5" />
                     Platform Revenue
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="text-3xl font-bold text-yellow-800">$307</div>
-                    <div className="text-sm text-yellow-600">+23% from last month</div>
-                    <div className="w-full bg-yellow-200 rounded-full h-2">
-                      <div className="bg-yellow-600 h-2 rounded-full w-3/4"></div>
+                    <div className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums">$307</div>
+                    <div className="text-sm text-[hsl(142,76%,36%)]">+23% from last month</div>
+                    <div className="w-full bg-[hsl(229,41%,16%)] rounded-full h-2">
+                      <div className="bg-[hsl(45,93%,47%)] h-2 rounded-full w-3/4"></div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-green-200 bg-green-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-green-800">
-                    <Users className="mr-2 h-5 w-5" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(142,76%,36%)/30] rounded-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(142,76%,36%)] uppercase tracking-wide flex items-center gap-2">
+                    <Users className="h-5 w-5" />
                     Platform Users
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="text-3xl font-bold text-green-800">5</div>
-                    <div className="text-sm text-green-600">+2 new users this month</div>
-                    <div className="w-full bg-green-200 rounded-full h-2">
-                      <div className="bg-green-600 h-2 rounded-full w-2/3"></div>
+                    <div className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums">5</div>
+                    <div className="text-sm text-[hsl(142,76%,36%)]">+2 new users this month</div>
+                    <div className="w-full bg-[hsl(229,41%,16%)] rounded-full h-2">
+                      <div className="bg-[hsl(142,76%,36%)] h-2 rounded-full w-2/3"></div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-blue-200 bg-blue-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-blue-800">
-                    <Building2 className="mr-2 h-5 w-5" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(227,89%,63%)/30] rounded-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(227,89%,63%)] uppercase tracking-wide flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
                     Active Companies
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="text-3xl font-bold text-blue-800">4</div>
-                    <div className="text-sm text-blue-600">98.5% uptime</div>
-                    <div className="w-full bg-blue-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full w-full"></div>
+                    <div className="text-3xl font-bold text-[hsl(210,17%,98%)] tabular-nums">4</div>
+                    <div className="text-sm text-[hsl(227,89%,63%)]">98.5% uptime</div>
+                    <div className="w-full bg-[hsl(229,41%,16%)] rounded-full h-2">
+                      <div className="bg-[hsl(227,89%,63%)] h-2 rounded-full w-full"></div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Shield className="mr-2 h-5 w-5" />
+            <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-[hsl(227,89%,63%)]" />
                   Platform Health Monitor
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">System Uptime</span>
-                      <span className="text-lg font-semibold text-green-600">99.9%</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm font-medium text-[hsl(215,20%,65%)]">System Uptime</span>
+                      <span className="text-lg font-semibold text-[hsl(142,76%,36%)]">99.9%</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Active Sessions</span>
-                      <span className="text-lg font-semibold text-blue-600">12</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Active Sessions</span>
+                      <span className="text-lg font-semibold text-[hsl(227,89%,63%)]">12</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Trial Conversions</span>
-                      <span className="text-lg font-semibold text-yellow-600">75%</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Trial Conversions</span>
+                      <span className="text-lg font-semibold text-[hsl(45,93%,47%)]">75%</span>
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Support Tickets</span>
-                      <span className="text-lg font-semibold text-red-600">{(tickets || []).filter((t: any) => t.status === "open").length}</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Support Tickets</span>
+                      <span className="text-lg font-semibold text-[hsl(0,84%,60%)]">{(tickets || []).filter((t: any) => t.status === "open").length}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Database Health</span>
-                      <span className="text-lg font-semibold text-green-600">Optimal</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Database Health</span>
+                      <span className="text-lg font-semibold text-[hsl(142,76%,36%)]">Optimal</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Storage Used</span>
-                      <span className="text-lg font-semibold text-blue-600">45%</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Storage Used</span>
+                      <span className="text-lg font-semibold text-[hsl(227,89%,63%)]">45%</span>
                     </div>
                   </div>
                 </div>
@@ -625,22 +614,22 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="activities" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Activity className="mr-2 h-5 w-5" />
+            <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-[hsl(227,89%,63%)]" />
                   Recent Activities
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-3 p-3 border rounded">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Users className="h-4 w-4 text-blue-600" />
+                  <div className="flex items-center space-x-3 p-3 border border-[hsl(217,33%,17%)] rounded-lg bg-[hsl(229,41%,16%)]">
+                    <div className="w-8 h-8 bg-[hsl(227,89%,63%)/20] rounded-full flex items-center justify-center">
+                      <Users className="h-4 w-4 text-[hsl(227,89%,63%)]" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm">New customer registration</p>
-                      <p className="text-xs text-gray-500">Sarah Johnson - 2 hours ago</p>
+                      <p className="font-medium text-sm text-[hsl(210,17%,98%)]">New customer registration</p>
+                      <p className="text-xs text-[hsl(215,16%,47%)]">Sarah Johnson - 2 hours ago</p>
                     </div>
                   </div>
                 </div>
@@ -648,29 +637,28 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          {/* Team Tab - Platform Owner Only */}
           {isPlatformOwner && (
             <TabsContent value="team" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className="mr-2 h-5 w-5" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                    <Users className="h-5 w-5 text-[hsl(227,89%,63%)]" />
                     Team Performance
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border rounded">
+                    <div className="flex items-center justify-between gap-2 p-3 border border-[hsl(217,33%,17%)] rounded-lg bg-[hsl(229,41%,16%)]">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-blue-600">JS</span>
+                        <div className="w-8 h-8 bg-[hsl(227,89%,63%)/20] rounded-full flex items-center justify-center">
+                          <span className="text-xs font-medium text-[hsl(227,89%,63%)]">JS</span>
                         </div>
                         <div>
-                          <p className="font-medium text-sm">John Smith</p>
-                          <p className="text-xs text-gray-500">Sales Manager</p>
+                          <p className="font-medium text-sm text-[hsl(210,17%,98%)]">John Smith</p>
+                          <p className="text-xs text-[hsl(215,16%,47%)]">Sales Manager</p>
                         </div>
                       </div>
-                      <span className="text-sm font-semibold text-green-600">95%</span>
+                      <span className="text-sm font-semibold text-[hsl(142,76%,36%)]">95%</span>
                     </div>
                   </div>
                 </CardContent>
@@ -678,29 +666,28 @@ export default function Dashboard() {
             </TabsContent>
           )}
 
-          {/* Intelligence Tab - Platform Owner Only */}
           {isPlatformOwner && (
             <TabsContent value="intelligence" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Brain className="mr-2 h-5 w-5" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-[hsl(280,65%,60%)]" />
                     Customer Sentiment
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Overall Sentiment</span>
-                      <span className="text-lg font-bold text-green-600">Positive</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm font-medium text-[hsl(215,20%,65%)]">Overall Sentiment</span>
+                      <span className="text-lg font-bold text-[hsl(142,76%,36%)]">Positive</span>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Positive</span>
-                        <span>72%</span>
+                        <span className="text-[hsl(215,20%,65%)]">Positive</span>
+                        <span className="text-[hsl(210,17%,98%)]">72%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '72%' }}></div>
+                      <div className="w-full bg-[hsl(229,41%,16%)] rounded-full h-2">
+                        <div className="bg-[hsl(142,76%,36%)] h-2 rounded-full" style={{ width: '72%' }}></div>
                       </div>
                     </div>
                   </div>
@@ -711,60 +698,59 @@ export default function Dashboard() {
 
           <TabsContent value="reports" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg hover-elevate cursor-pointer">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center">
-                    <BarChart3 className="mr-2 h-4 w-4" />
+                  <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-[hsl(227,89%,63%)]" />
                     Sales Report
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600 mb-2">$45,230</div>
-                  <button className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                  <div className="text-2xl font-bold text-[hsl(227,89%,63%)] mb-2 tabular-nums">$45,230</div>
+                  <Button className="w-full bg-[hsl(227,89%,63%)] hover:bg-[hsl(227,89%,55%)] text-white text-sm">
                     Generate Report
-                  </button>
+                  </Button>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg hover-elevate cursor-pointer">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
+                  <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[hsl(142,76%,36%)]" />
                     Customer Report
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600 mb-2">{totalContacts.toLocaleString()}</div>
-                  <button className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                  <div className="text-2xl font-bold text-[hsl(142,76%,36%)] mb-2 tabular-nums">{totalContacts.toLocaleString()}</div>
+                  <Button className="w-full bg-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,30%)] text-white text-sm">
                     Generate Report
-                  </button>
+                  </Button>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          {/* Platform Management Tab - Only for Platform Owner */}
           <TabsContent value="platform-management" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="border-purple-200 bg-purple-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-purple-800">
-                    <Shield className="mr-2 h-5 w-5" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(280,65%,60%)/30] rounded-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(280,65%,60%)] uppercase tracking-wide flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
                     Security Center
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">System Security</span>
-                      <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm text-[hsl(215,20%,65%)]">System Security</span>
+                      <Badge className="bg-[hsl(142,76%,36%)/20] text-[hsl(142,76%,36%)] border-0">Active</Badge>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Failed Login Attempts</span>
-                      <span className="text-lg font-semibold text-purple-800">2</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm text-[hsl(215,20%,65%)]">Failed Login Attempts</span>
+                      <span className="text-lg font-semibold text-[hsl(210,17%,98%)]">2</span>
                     </div>
                     <Link href="/super-admin-dashboard">
-                      <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700">
+                      <Button size="sm" className="w-full bg-[hsl(280,65%,60%)] hover:bg-[hsl(280,65%,50%)] text-white">
                         Manage Security
                       </Button>
                     </Link>
@@ -772,25 +758,25 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-indigo-200 bg-indigo-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-indigo-800">
-                    <Users className="mr-2 h-5 w-5" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(230,65%,60%)/30] rounded-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(230,65%,60%)] uppercase tracking-wide flex items-center gap-2">
+                    <Users className="h-5 w-5" />
                     User Management
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Total Users</span>
-                      <span className="text-lg font-semibold text-indigo-800">5</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm text-[hsl(215,20%,65%)]">Total Users</span>
+                      <span className="text-lg font-semibold text-[hsl(210,17%,98%)]">5</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Active Today</span>
-                      <span className="text-lg font-semibold text-indigo-800">3</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm text-[hsl(215,20%,65%)]">Active Today</span>
+                      <span className="text-lg font-semibold text-[hsl(210,17%,98%)]">3</span>
                     </div>
                     <Link href="/super-admin-dashboard">
-                      <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-700">
+                      <Button size="sm" className="w-full bg-[hsl(230,65%,60%)] hover:bg-[hsl(230,65%,50%)] text-white">
                         Manage Users
                       </Button>
                     </Link>
@@ -798,25 +784,25 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-orange-200 bg-orange-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-orange-800">
-                    <DollarSign className="mr-2 h-5 w-5" />
+              <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(25,95%,53%)/30] rounded-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[hsl(25,95%,53%)] uppercase tracking-wide flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
                     Revenue Control
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Monthly Revenue</span>
-                      <span className="text-lg font-semibold text-orange-800">$307</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm text-[hsl(215,20%,65%)]">Monthly Revenue</span>
+                      <span className="text-lg font-semibold text-[hsl(210,17%,98%)]">$307</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Subscriptions</span>
-                      <span className="text-lg font-semibold text-orange-800">4</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm text-[hsl(215,20%,65%)]">Subscriptions</span>
+                      <span className="text-lg font-semibold text-[hsl(210,17%,98%)]">4</span>
                     </div>
                     <Link href="/super-admin-dashboard">
-                      <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700">
+                      <Button size="sm" className="w-full bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,45%)] text-white">
                         Financial Reports
                       </Button>
                     </Link>
@@ -825,49 +811,49 @@ export default function Dashboard() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Crown className="mr-2 h-5 w-5 text-yellow-600" />
+            <Card className="bg-[hsl(228,47%,12%)] border border-[hsl(217,33%,17%)] rounded-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-[hsl(215,20%,65%)] uppercase tracking-wide flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-[hsl(45,93%,47%)]" />
                   Platform Administration
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">System Operations</h3>
+                    <h3 className="font-semibold text-[hsl(210,17%,98%)]">System Operations</h3>
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 border rounded">
-                        <span className="text-sm">Database Status</span>
-                        <Badge variant="outline" className="bg-green-100 text-green-800">Operational</Badge>
+                      <div className="flex justify-between items-center gap-2 p-3 border border-[hsl(217,33%,17%)] rounded-lg bg-[hsl(229,41%,16%)]">
+                        <span className="text-sm text-[hsl(215,20%,65%)]">Database Status</span>
+                        <Badge className="bg-[hsl(142,76%,36%)/20] text-[hsl(142,76%,36%)] border-0">Operational</Badge>
                       </div>
-                      <div className="flex justify-between items-center p-3 border rounded">
-                        <span className="text-sm">Server Health</span>
-                        <Badge variant="outline" className="bg-green-100 text-green-800">99.9% Uptime</Badge>
+                      <div className="flex justify-between items-center gap-2 p-3 border border-[hsl(217,33%,17%)] rounded-lg bg-[hsl(229,41%,16%)]">
+                        <span className="text-sm text-[hsl(215,20%,65%)]">Server Health</span>
+                        <Badge className="bg-[hsl(142,76%,36%)/20] text-[hsl(142,76%,36%)] border-0">99.9% Uptime</Badge>
                       </div>
-                      <div className="flex justify-between items-center p-3 border rounded">
-                        <span className="text-sm">Backup Status</span>
-                        <Badge variant="outline" className="bg-blue-100 text-blue-800">Last: 2 hours ago</Badge>
+                      <div className="flex justify-between items-center gap-2 p-3 border border-[hsl(217,33%,17%)] rounded-lg bg-[hsl(229,41%,16%)]">
+                        <span className="text-sm text-[hsl(215,20%,65%)]">Backup Status</span>
+                        <Badge className="bg-[hsl(227,89%,63%)/20] text-[hsl(227,89%,63%)] border-0">Last: 2 hours ago</Badge>
                       </div>
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">Quick Actions</h3>
+                    <h3 className="font-semibold text-[hsl(210,17%,98%)]">Quick Actions</h3>
                     <div className="space-y-3">
                       <Link href="/super-admin">
-                        <Button className="w-full justify-start" variant="outline">
+                        <Button className="w-full justify-start border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] bg-transparent" variant="outline">
                           <Shield className="mr-2 h-4 w-4" />
                           Security Dashboard
                         </Button>
                       </Link>
                       <Link href="/super-admin">
-                        <Button className="w-full justify-start" variant="outline">
+                        <Button className="w-full justify-start border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] bg-transparent" variant="outline">
                           <BarChart3 className="mr-2 h-4 w-4" />
                           Analytics Dashboard
                         </Button>
                       </Link>
                       <Link href="/super-admin">
-                        <Button className="w-full justify-start" variant="outline">
+                        <Button className="w-full justify-start border-[hsl(217,33%,17%)] text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] bg-transparent" variant="outline">
                           <Users className="mr-2 h-4 w-4" />
                           User Management
                         </Button>
