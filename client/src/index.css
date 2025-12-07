@@ -79,68 +79,13 @@ html:focus-within {
   overflow: hidden !important;
 }
 
-/* Aggressive overlay and pseudo-element removal for chatbot */
-.chatbot-container,
-.chatbot-container *,
-.chatbot-container *:focus,
-.chatbot-container *:hover,
-.chatbot-container *:active,
-.chatbot-container *:visited {
-  outline: none !important;
-  box-shadow: none !important;
-  border-radius: inherit !important;
-  position: relative !important;
-}
-
-.chatbot-container::before,
-.chatbot-container::after,
-.chatbot-container *::before,
-.chatbot-container *::after {
-  content: none !important;
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  position: absolute !important;
-  z-index: -1 !important;
-}
-
-/* Remove any backdrop or overlay elements */
-.chatbot-container .backdrop,
-.chatbot-container .overlay,
-.chatbot-container [class*="backdrop"],
-.chatbot-container [class*="overlay"],
-.chatbot-container [data-backdrop],
-.chatbot-container [data-overlay] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-/* Ensure no fixed positioning conflicts */
-.chatbot-container * {
-  isolation: auto !important;
-}
-
-/* Remove any Dialog component overlays that might interfere with chatbot */
-[data-radix-portal] {
-  z-index: 50 !important;
-}
-
-/* Ensure Dialog overlays don't cover the chatbot */
-[data-radix-overlay] {
-  z-index: 50 !important;
-}
-
-/* Chatbot should always be above Dialog overlays */
+/* Chatbot container styling - scoped to avoid breaking other UI components */
 .chatbot-container {
   z-index: 99999 !important;
   pointer-events: auto !important;
   position: fixed !important;
   isolation: isolate !important;
 }
-
-/* Ensure chatbot stays above Radix overlays without breaking them */
-/* Note: We removed aggressive overlay hiding rules that were breaking Radix UI components */
 
 /* Skip navigation links */
 .skip-link {
