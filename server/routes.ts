@@ -517,13 +517,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Secure logout endpoint
   app.post("/api/auth/logout", (req, res) => {
-    // Clear the authentication cookie
+    // Clear the authentication cookie (must match same settings used when setting)
     res.clearCookie('auth-token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'lax',
+      path: '/'
     });
     res.json({ success: true, message: 'Logged out successfully' });
+  });
+  
+  // Force logout endpoint - clears cookie unconditionally
+  app.get("/api/auth/force-logout", (req, res) => {
+    res.clearCookie('auth-token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
+    });
+    res.redirect('/login');
   });
 
   app.get("/api/auth/me", async (req, res) => {
