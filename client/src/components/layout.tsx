@@ -98,7 +98,7 @@ export default function Layout({ children }: LayoutProps) {
       
       <main 
         id="main-content"
-        className={`${isFunnelBuilder ? '' : 'md:ml-64 md:pt-16'} pt-0 min-h-screen transition-all-smooth relative z-40`}
+        className={`${isFunnelBuilder ? '' : 'md:ml-64 md:pt-16'} pt-0 min-h-screen transition-all-smooth relative z-10`}
         role="main"
         aria-label="Main content area"
         tabIndex={-1}

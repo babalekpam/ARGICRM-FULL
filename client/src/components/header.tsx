@@ -20,7 +20,7 @@ export default function Header() {
                           user?.role === 'platform_owner';
 
   return (
-    <header className="fixed top-0 right-0 left-[var(--sidebar-width,16rem)] bg-[hsl(228,47%,12%)] border-b border-[hsl(217,33%,17%)] shadow-sm z-40 transition-all duration-200">
+    <header className="fixed top-0 right-0 left-[var(--sidebar-width,16rem)] bg-[hsl(228,47%,12%)] border-b border-[hsl(217,33%,17%)] shadow-sm z-50 transition-all duration-200">
       <div className="flex items-center justify-between h-16 px-6">
         <div className="flex items-center">
           {user && (
