@@ -429,8 +429,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // CRITICAL FIX: Simple token generation for MemStorage
-        // Generate simple JWT token for authentication
+        // Generate simple JWT token for authentication - MUST use same secret as auth.ts verification
         const jwt = await import('jsonwebtoken');
+        const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+        if (!JWT_SECRET) {
+          console.error('CRITICAL: No JWT_SECRET or SESSION_SECRET set');
+          return res.status(500).json({ error: 'Server configuration error' });
+        }
         const token = jwt.default.sign({
           id: user.id,
           tenantId: user.tenantId || 'default-tenant',
@@ -439,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: user.lastName,
           role: user.role,
           permissions: userWithPermissions.permissions || []
-        }, process.env.JWT_SECRET || 'default-secret-key', { expiresIn: '7d' });
+        }, JWT_SECRET, { expiresIn: '7d' });
         
         // Set secure httpOnly cookie
         res.cookie('auth-token', token, {

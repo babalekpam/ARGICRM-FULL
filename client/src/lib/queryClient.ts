@@ -66,17 +66,15 @@ export const getQueryFn: <T>(options: {
     });
 
     if (res.status === 401) {
+      // Only clear and redirect if we actually HAD a token (avoid loop on fresh load)
+      const hadToken = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      
       // Clear all auth data on 401 - token is invalid
       localStorage.removeItem('auth_user');
       localStorage.removeItem('token');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_email');
       localStorage.removeItem('userEmail');
-      
-      // Redirect to login page if not already there
-      if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
       
       if (unauthorizedBehavior === "returnNull") {
         return null;
