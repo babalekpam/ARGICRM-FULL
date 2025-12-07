@@ -292,7 +292,7 @@ html:focus-within {
   outline-offset: 2px !important;
 }
 
-/* Calendar popover z-index fix */
+/* Calendar popover z-index fix - scoped to actual visible content */
 [data-radix-popper-content-wrapper] {
   z-index: 9999 !important;
 }
@@ -303,14 +303,21 @@ html:focus-within {
   position: fixed !important;
 }
 
-/* Fix for calendar portal z-index */
+/* Fix for calendar portal z-index - portal containers should not block clicks */
 [data-radix-portal] {
   z-index: 9999 !important;
+  pointer-events: none !important;
+}
+
+/* Actual portal content should receive clicks */
+[data-radix-portal] > * {
+  pointer-events: auto !important;
 }
 
 /* Ensure radix popovers don't interfere */
 [data-radix-popover-content] {
   z-index: 9999 !important;
+  pointer-events: auto !important;
 }
 
 /* Hide any lingering overlays after form submit */
