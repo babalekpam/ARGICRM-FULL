@@ -139,33 +139,8 @@ html:focus-within {
   isolation: isolate !important;
 }
 
-/* Hide any overlays that might be covering the chatbot */
-body > [data-radix-portal]:not(:has(.chatbot-container)) {
-  display: none !important;
-}
-
-/* Force remove any potential overlay squares */
-*[style*="position: fixed"][style*="inset: 0"],
-*[class*="overlay"][style*="position: fixed"],
-*[class*="backdrop"][style*="position: fixed"],
-*[data-overlay],
-*[data-backdrop] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-/* Override any Dialog or Modal overlays completely */
-.fixed.inset-0:not(.chatbot-container):not(.chatbot-container *) {
-  display: none !important;
-}
-
-/* Remove any potential masking elements */
-.chatbot-container *[style*="mask"],
-.chatbot-container *[style*="clip-path"] {
-  mask: none !important;
-  clip-path: none !important;
-}
+/* Ensure chatbot stays above Radix overlays without breaking them */
+/* Note: We removed aggressive overlay hiding rules that were breaking Radix UI components */
 
 /* Skip navigation links */
 .skip-link {
