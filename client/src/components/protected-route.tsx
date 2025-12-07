@@ -32,7 +32,6 @@ export default function ProtectedRoute({
 
   // If user is not authenticated, redirect to landing page with login form
   if (!isAuthenticated || !user) {
-    console.log('User not authenticated, redirecting to landing page');
     return <Redirect to="/" />;
   }
 
@@ -49,9 +48,6 @@ export default function ProtectedRoute({
     requiredPermission === 'admin.*'
   )) {
     if (!isPlatformOwner) {
-      // Log the access denial
-      console.log('ACCESS DENIED: Platform owner required but user is:', user?.email);
-      
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <Card className="w-full max-w-md">

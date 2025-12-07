@@ -21,7 +21,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           if (entry.entryType === 'paint' && entry.name === 'first-contentful-paint') {
-            console.log(`FCP: ${entry.startTime.toFixed(2)}ms`);
+            // Performance metrics captured silently for production
           }
         }
       });
@@ -35,8 +35,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
       // Monitor Largest Contentful Paint (LCP)
       const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1];
-        console.log(`LCP: ${lastEntry.startTime.toFixed(2)}ms`);
+        // LCP metrics captured silently for production
       });
       
       try {
@@ -53,7 +52,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
             clsScore += (entry as any).value;
           }
         }
-        console.log(`CLS Score: ${clsScore.toFixed(4)}`);
+        // CLS metrics captured silently for production
       });
       
       try {

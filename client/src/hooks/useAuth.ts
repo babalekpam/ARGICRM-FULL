@@ -58,15 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                userData.role === 'platform_owner'
             };
             
-            console.log('✅ Restoring authenticated session for:', refreshedUser.email, 'isPlatformOwner:', refreshedUser.isPlatformOwner);
-            
             // Update localStorage with refreshed data
             localStorage.setItem('auth_user', JSON.stringify(refreshedUser));
             setUser(refreshedUser);
           } else {
             // If server validation fails but we have stored user data, trust it for now
             // This prevents clearing auth on temporary network issues
-            console.log('⚠️ Server validation failed, using cached session');
             const cachedUser: User = {
               ...userData,
               isPlatformOwner: userData.isPlatformOwner || 
@@ -77,7 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (error) {
           // On error, still try to use cached data
-          console.log('⚠️ Auth restore error, using cached session');
           try {
             const userData = JSON.parse(storedAuth);
             const cachedUser: User = {
@@ -121,13 +117,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await response.json();
-      
-      // DEBUG: Log full response to see what we're getting
-      console.log('🔍 LOGIN RESPONSE:', { 
-        ok: response.ok, 
-        status: response.status,
-        data: data 
-      });
 
       // Only proceed if server authentication succeeds (JWT token is in secure httpOnly cookie)
       if (response.ok && data.success && data.user) {
@@ -153,16 +142,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('user_email', email);
         localStorage.setItem('userEmail', email); // Store both for consistency
         
-        console.log('✅ Secure authentication successful for:', email);
         return { success: true };
       } else {
         // Authentication failed - return server error
         const errorMessage = data.error || data.message || 'Invalid credentials';
-        console.log('❌ Authentication failed:', errorMessage);
         return { success: false, error: errorMessage };
       }
     } catch (error) {
-      console.error('❌ Login error:', error);
       return { success: false, error: 'Login failed. Please check your connection and try again.' };
     }
   };
@@ -185,10 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include'
       });
     } catch (error) {
-      console.error('Error during server logout:', error);
+      // Logout error handled silently
     }
-    
-    console.log('✅ User logged out, all auth data cleared');
     
     // No manual redirect needed - ProtectedRoute will automatically redirect to '/' 
     // when isAuthenticated becomes false, preventing application errors from hard refresh

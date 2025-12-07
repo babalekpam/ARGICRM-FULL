@@ -348,9 +348,6 @@ export default function Navigation({ onLogout }: NavigationProps) {
                 <Link 
                   key={item.path} 
                   href={item.path}
-                  onClick={() => {
-                    console.log('Navigation link clicked:', item.path, 'Current location:', location);
-                  }}
                   className={cn(
                     "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 cursor-pointer relative",
                     isActive(item.path)
