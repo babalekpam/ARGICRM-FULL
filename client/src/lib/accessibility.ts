@@ -45,31 +45,34 @@ class AccessibilityManager {
       const saved = localStorage.getItem('accessibility-settings');
       if (saved) {
         const parsed = JSON.parse(saved);
-        let needsSave = false;
         
-        // Reset screen-reader-mode if it was auto-detected incorrectly in the past
-        // Users can still manually enable it if needed
-        if (parsed.screenReaderMode === true && !this.isActualScreenReader()) {
+        // MIGRATION: Force disable problematic settings that were incorrectly enabled
+        // These caused visual overlays (gray ovals) on the page
+        const migrationNeeded = 
+          parsed.screenReaderMode === true || 
+          parsed.focusIndicators === true ||
+          parsed.skipNavigation === true ||
+          parsed.announcements === true;
+        
+        if (migrationNeeded && !this.isActualScreenReader()) {
+          // Reset all potentially problematic settings
           parsed.screenReaderMode = false;
-          needsSave = true;
-        }
-        
-        // Also reset focus indicators if it was incorrectly enabled
-        if (parsed.focusIndicators === true && !this.isActualScreenReader()) {
           parsed.focusIndicators = false;
-          needsSave = true;
-        }
-        
-        // Save the corrected settings
-        if (needsSave) {
+          parsed.skipNavigation = false;
+          parsed.announcements = false;
+          
+          // Save the corrected settings immediately
           const corrected = { ...DEFAULT_SETTINGS, ...parsed };
           localStorage.setItem('accessibility-settings', JSON.stringify(corrected));
+          return corrected;
         }
         
         return { ...DEFAULT_SETTINGS, ...parsed };
       }
       return DEFAULT_SETTINGS;
     } catch {
+      // If there's any error parsing, clear and start fresh
+      localStorage.removeItem('accessibility-settings');
       return DEFAULT_SETTINGS;
     }
   }

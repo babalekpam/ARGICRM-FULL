@@ -40,10 +40,10 @@ export default function AccessibilityPanel({ trigger }: AccessibilityPanelProps)
       highContrast: false,
       reducedMotion: false,
       fontSize: 'medium',
-      focusIndicators: true,
-      skipNavigation: true,
+      focusIndicators: false,
+      skipNavigation: false,
       keyboardNavigation: true,
-      announcements: true,
+      announcements: false,
     });
     announce('Accessibility settings reset to defaults', 'polite');
   };
