@@ -61,9 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Update localStorage with refreshed data
             localStorage.setItem('auth_user', JSON.stringify(refreshedUser));
             setUser(refreshedUser);
+          } else if (response.status === 401) {
+            // Token is invalid - clear all auth data and force re-login
+            console.log('Token invalid - clearing auth state');
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user_email');
+            localStorage.removeItem('userEmail');
+            setUser(null);
           } else {
-            // If server validation fails but we have stored user data, trust it for now
-            // This prevents clearing auth on temporary network issues
+            // For other errors (network issues), trust cached data temporarily
             const cachedUser: User = {
               ...userData,
               isPlatformOwner: userData.isPlatformOwner || 
