@@ -329,21 +329,14 @@ header [data-testid="button-global-search"] {
   position: fixed !important;
 }
 
-/* Fix for calendar portal z-index - portal containers should not block clicks */
+/* Fix for calendar portal z-index */
 [data-radix-portal] {
   z-index: 9999 !important;
-  pointer-events: none !important;
 }
 
-/* Actual portal content should receive clicks */
-[data-radix-portal] > * {
-  pointer-events: auto !important;
-}
-
-/* Ensure radix popovers don't interfere */
+/* Ensure radix popovers display properly */
 [data-radix-popover-content] {
   z-index: 9999 !important;
-  pointer-events: auto !important;
 }
 
 /* Hide any lingering overlays after form submit */

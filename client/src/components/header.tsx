@@ -20,7 +20,11 @@ export default function Header() {
                           user?.role === 'platform_owner';
 
   return (
-    <header className="fixed top-0 right-0 left-[var(--sidebar-width,16rem)] bg-[hsl(228,47%,12%)] border-b border-[hsl(217,33%,17%)] shadow-sm z-[60] transition-all duration-200 pointer-events-auto">
+    <header 
+      className="fixed top-0 right-0 left-[var(--sidebar-width,16rem)] bg-[hsl(228,47%,12%)] border-b border-[hsl(217,33%,17%)] shadow-sm z-[9999] transition-all duration-200"
+      style={{ pointerEvents: 'auto' }}
+      onClick={(e) => console.log('Header clicked!', e.target)}
+    >
       <div className="flex items-center justify-between h-16 px-6">
         <div className="flex items-center">
           {user && (
