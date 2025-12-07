@@ -67,6 +67,12 @@ import { registerReportsRoutes } from "./routes/reports.js";
 import { registerAppointmentsRoutes } from "./routes/appointments.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
 import { registerAIEmployeeRoutes } from "./routes/ai-employee.js";
+import { registerSequenceRoutes } from "./routes/sequences.js";
+import { registerIntentRoutes } from "./routes/intent.js";
+import { registerLinkedinRoutes } from "./routes/linkedin.js";
+import { registerDialerRoutes } from "./routes/dialer.js";
+import { registerConversationIntelligenceRoutes } from "./routes/conversation-intelligence.js";
+import { registerExtensionRoutes } from "./routes/extension.js";
 
 import voiceEmotionRoutes from "./routes/voice-emotion.js";
 import { googleServicesRouter } from "./routes/google-services.js";
@@ -74,6 +80,8 @@ import salesChannelRoutes from "./routes/sales-channels.js";
 import aiCampaignRoutes from "./routes/ai-campaigns.js";
 import funnelRoutes from "./routes/funnels.js";
 import unsubscribeRoutes from "./routes/unsubscribe.js";
+import prospectsRoutes from "./routes/prospects.js";
+import enrichmentRoutes from "./routes/enrichment.js";
 import { trialLockMiddleware, requireActiveSubscription } from "./middleware/trial-lock-middleware.js";
 import { registerEcommerceRoutes } from "./routes/ecommerce.js";
 import { authenticateClient, type RequestWithClientContext } from "./client-portal-auth.js";
@@ -5896,6 +5904,12 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
   await registerAppointmentsRoutes(app);
   registerWebhookRoutes(app);
   registerAIEmployeeRoutes(app);
+  registerSequenceRoutes(app);
+  registerIntentRoutes(app);
+  registerLinkedinRoutes(app);
+  registerDialerRoutes(app);
+  registerConversationIntelligenceRoutes(app);
+  registerExtensionRoutes(app);
 
   // Add analytics routes directly without any middleware  
   app.get("/api/analytics/overview", async (req, res) => {
@@ -6157,6 +6171,8 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
   app.use('/api/ai-campaigns', aiCampaignRoutes);
   app.use('/api/funnels', funnelRoutes);
   app.use('/api/unsubscribe', unsubscribeRoutes);
+  app.use('/api/prospects', prospectsRoutes);
+  app.use('/api/enrichment', enrichmentRoutes);
   
   // Register Google services routes
   app.use('/api/google', googleServicesRouter);

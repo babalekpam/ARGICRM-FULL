@@ -63,7 +63,8 @@ import {
   Cog,
   DollarSign as FinanceIcon,
   UserCog,
-  Sparkles
+  Sparkles,
+  Phone
 } from "lucide-react";
 
 interface NavigationProps {
@@ -115,6 +116,16 @@ export default function Navigation({ onLogout }: NavigationProps) {
       ]
     },
     {
+      key: "leadgen",
+      title: "Lead Generation",
+      icon: UserCheck,
+      description: "B2B prospect database and enrichment",
+      modules: [
+        { path: "/prospect-explorer", label: "Prospect Explorer", icon: Users, permission: "leads.read", testId: "link-prospect-explorer" },
+        { path: "/email-finder", label: "Email Finder", icon: Mail, permission: "leads.read", testId: "link-email-finder" },
+      ]
+    },
+    {
       key: "marketing",
       title: "Marketing & Sales",
       icon: ShoppingCart,
@@ -128,6 +139,17 @@ export default function Navigation({ onLogout }: NavigationProps) {
       ]
     },
     {
+      key: "engagement",
+      title: "Engagement",
+      icon: Zap,
+      description: "Automated outreach and sequences",
+      modules: [
+        { path: "/sequences", label: "Email Sequences", icon: Mail, permission: "campaigns.read", testId: "link-sequences" },
+        { path: "/linkedin-tasks", label: "LinkedIn Tasks", icon: Link2, permission: "campaigns.read", testId: "link-linkedin-tasks" },
+        { path: "/dialer", label: "Dialer", icon: Phone, permission: "campaigns.read", testId: "link-dialer" },
+      ]
+    },
+    {
       key: "analytics", 
       title: "Analytics & Reports",
       icon: PieChart,
@@ -136,6 +158,8 @@ export default function Navigation({ onLogout }: NavigationProps) {
         { path: "/analytics", label: "Analytics & Reports", icon: BarChart3, permission: "analytics.read" },
         { path: "/advanced-analytics", label: "Advanced Analytics", icon: TrendingUp, permission: "analytics.read" },
         { path: "/unified-analytics", label: "Unified Analytics", icon: Activity, permission: "analytics.read" },
+        { path: "/intent-signals", label: "Intent Signals", icon: Zap, permission: "analytics.read", testId: "link-intent-signals" },
+        { path: "/conversation-intelligence", label: "Conversation Intelligence", icon: Mic, permission: "analytics.read", testId: "link-conversation-intelligence" },
       ]
     },
     {

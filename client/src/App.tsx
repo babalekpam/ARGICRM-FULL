@@ -52,6 +52,8 @@ const SettingsPage = lazy(() => import("@/pages/settings"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics"));
 const AdvancedAnalyticsPage = lazy(() => import("@/pages/advanced-analytics"));
 const UnifiedAnalyticsPage = lazy(() => import("@/pages/unified-analytics"));
+const IntentSignalsPage = lazy(() => import("@/pages/intent-signals"));
+const ConversationIntelligencePage = lazy(() => import("@/pages/conversation-intelligence"));
 const AbTestingPage = lazy(() => import("@/pages/ab-testing"));
 const AbTestingCreatePage = lazy(() => import("@/pages/ab-testing-create"));
 const AbTestingDetailsPage = lazy(() => import("@/pages/ab-testing-details"));
@@ -80,6 +82,11 @@ const AIEmployeeDashboardPage = lazy(() => import("@/pages/ai-employee-dashboard
 const UnifiedInboxPage = lazy(() => import("@/pages/unified-inbox"));
 const FormsSurveysPage = lazy(() => import("@/pages/forms-surveys"));
 const SalesChannelsPage = lazy(() => import("@/components/sales-channels-manager"));
+const SequencesPage = lazy(() => import("@/pages/sequences"));
+const LinkedinTasksPage = lazy(() => import("@/pages/linkedin-tasks"));
+const DialerPage = lazy(() => import("@/pages/dialer"));
+const ProspectExplorerPage = lazy(() => import("@/pages/prospect-explorer"));
+const EmailFinderPage = lazy(() => import("@/pages/email-finder"));
 
 // ARGILETTE SEO Platform - Full Ubersuggest Clone
 const SeoAuditPage = lazy(() => import("@/pages/seo-audit"));
@@ -247,6 +254,45 @@ function App() {
                             </ProtectedRoute>
                           )}</Route>
                           
+                          {/* Lead Generation Routes */}
+                          <Route path="/prospect-explorer">{() => (
+                            <ProtectedRoute requiredPermission="leads.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><ProspectExplorerPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/email-finder">{() => (
+                            <ProtectedRoute requiredPermission="leads.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><EmailFinderPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
+                          
+                          {/* Engagement Routes */}
+                          <Route path="/sequences">{() => (
+                            <ProtectedRoute requiredPermission="campaigns.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><SequencesPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/linkedin-tasks">{() => (
+                            <ProtectedRoute requiredPermission="campaigns.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><LinkedinTasksPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/dialer">{() => (
+                            <ProtectedRoute requiredPermission="campaigns.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><DialerPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
+                          
                           {/* A/B Testing Routes */}
                           <Route path="/ab-testing">{() => (
                             <ProtectedRoute requiredPermission="marketing.read">
@@ -283,6 +329,18 @@ function App() {
                           <Route path="/unified-analytics">{() => (
                             <ProtectedRoute requiredPermission="analytics.read">
                               <PageTranslator><UnifiedAnalyticsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/intent-signals">{() => (
+                            <ProtectedRoute requiredPermission="analytics.read">
+                              <PageTranslator><IntentSignalsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/conversation-intelligence">{() => (
+                            <ProtectedRoute requiredPermission="analytics.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><ConversationIntelligencePage /></PageTranslator>
+                              </Suspense>
                             </ProtectedRoute>
                           )}</Route>
                           <Route path="/reports">{() => (
