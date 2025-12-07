@@ -16,10 +16,10 @@ const DEFAULT_SETTINGS: AccessibilitySettings = {
   highContrast: false,
   reducedMotion: false,
   fontSize: 'medium',
-  focusIndicators: true,
-  skipNavigation: true,
+  focusIndicators: false,
+  skipNavigation: false,
   keyboardNavigation: true,
-  announcements: true,
+  announcements: false,
 };
 
 class AccessibilityManager {
@@ -54,9 +54,9 @@ class AccessibilityManager {
           needsSave = true;
         }
         
-        // Also reset enhanced focus if it was incorrectly enabled
-        if (parsed.enhancedFocus === true && !this.isActualScreenReader()) {
-          parsed.enhancedFocus = false;
+        // Also reset focus indicators if it was incorrectly enabled
+        if (parsed.focusIndicators === true && !this.isActualScreenReader()) {
+          parsed.focusIndicators = false;
           needsSave = true;
         }
         
