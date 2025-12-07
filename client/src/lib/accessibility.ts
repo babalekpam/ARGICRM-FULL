@@ -45,11 +45,27 @@ class AccessibilityManager {
       const saved = localStorage.getItem('accessibility-settings');
       if (saved) {
         const parsed = JSON.parse(saved);
+        let needsSave = false;
+        
         // Reset screen-reader-mode if it was auto-detected incorrectly in the past
         // Users can still manually enable it if needed
         if (parsed.screenReaderMode === true && !this.isActualScreenReader()) {
           parsed.screenReaderMode = false;
+          needsSave = true;
         }
+        
+        // Also reset enhanced focus if it was incorrectly enabled
+        if (parsed.enhancedFocus === true && !this.isActualScreenReader()) {
+          parsed.enhancedFocus = false;
+          needsSave = true;
+        }
+        
+        // Save the corrected settings
+        if (needsSave) {
+          const corrected = { ...DEFAULT_SETTINGS, ...parsed };
+          localStorage.setItem('accessibility-settings', JSON.stringify(corrected));
+        }
+        
         return { ...DEFAULT_SETTINGS, ...parsed };
       }
       return DEFAULT_SETTINGS;
