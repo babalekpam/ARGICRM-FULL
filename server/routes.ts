@@ -553,7 +553,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         const jwt = await import('jsonwebtoken');
-        const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'default-secret-key') as { email: string };
+        const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+        if (!JWT_SECRET) {
+          return res.status(500).json({ error: 'Server configuration error' });
+        }
+        const decoded = jwt.default.verify(token, JWT_SECRET) as { email: string };
         const sessionEmail = decoded.email;
         const isPlatformOwner = sessionEmail === 'abel@argilette.com';
       
