@@ -57,11 +57,35 @@ export default function Header() {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]">
-            <Bell className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]"
+                data-testid="button-notifications"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 bg-[hsl(228,47%,12%)] border-[hsl(217,33%,17%)]">
+              <div className="px-3 py-2">
+                <div className="font-medium text-[hsl(210,17%,98%)]">Notifications</div>
+              </div>
+              <DropdownMenuSeparator className="bg-[hsl(217,33%,17%)]" />
+              <div className="px-3 py-6 text-center text-[hsl(215,20%,65%)] text-sm">
+                No new notifications
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <ThemeToggle />
-          <Button variant="ghost" size="icon" className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]" asChild>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-[hsl(215,20%,65%)] hover:bg-[hsl(229,41%,16%)] hover:text-[hsl(210,17%,98%)]" 
+            asChild
+            data-testid="button-settings"
+          >
             <Link to="/account-settings">
               <Settings className="h-4 w-4" />
             </Link>
