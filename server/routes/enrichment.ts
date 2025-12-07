@@ -16,22 +16,33 @@ const router = express.Router();
 
 const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3";
 
-function getDataForSEOAuthHeader(): string {
+function hasDataForSEOCredentials(): boolean {
+  const login = process.env.DATAFORSEO_LOGIN;
+  const password = process.env.DATAFORSEO_PASSWORD;
+  return !!(login && password);
+}
+
+function getDataForSEOAuthHeader(): string | null {
   const login = process.env.DATAFORSEO_LOGIN;
   const password = process.env.DATAFORSEO_PASSWORD;
   
   if (!login || !password) {
-    throw new Error("DataForSEO credentials not configured");
+    return null;
   }
   
   return `Basic ${Buffer.from(`${login}:${password}`).toString("base64")}`;
 }
 
 async function callDataForSEOAPI(endpoint: string, body: any): Promise<any> {
+  const authHeader = getDataForSEOAuthHeader();
+  if (!authHeader) {
+    throw new Error("DataForSEO credentials not configured");
+  }
+
   const response = await fetch(`${DATAFORSEO_API_URL}${endpoint}`, {
     method: "POST",
     headers: {
-      "Authorization": getDataForSEOAuthHeader(),
+      "Authorization": authHeader,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
@@ -42,6 +53,39 @@ async function callDataForSEOAPI(endpoint: string, body: any): Promise<any> {
   }
 
   return response.json();
+}
+
+function generateDemoEnrichmentData(email?: string, domain?: string, linkedinUrl?: string): any {
+  const baseDomain = domain || (email ? email.split('@')[1] : 'example.com');
+  const companyName = baseDomain.split('.')[0].charAt(0).toUpperCase() + baseDomain.split('.')[0].slice(1);
+  
+  const result: any = {
+    companyName: `${companyName} Inc`,
+    industry: 'Technology',
+    website: baseDomain,
+    description: `${companyName} is a leading company in their industry, providing innovative solutions.`,
+    location: {
+      city: 'San Francisco',
+      state: 'California',
+      country: 'US',
+    },
+    socialProfiles: {
+      linkedin: `https://linkedin.com/company/${baseDomain.split('.')[0]}`,
+    },
+    employeeCount: '50-200',
+    foundedYear: 2015,
+  };
+
+  if (email) {
+    result.email = email;
+    const emailParts = email.split('@')[0].split('.');
+    if (emailParts.length >= 2) {
+      result.firstName = emailParts[0].charAt(0).toUpperCase() + emailParts[0].slice(1);
+      result.lastName = emailParts[1].charAt(0).toUpperCase() + emailParts[1].slice(1);
+    }
+  }
+
+  return result;
 }
 
 // POST /api/enrichment/contact - Enrich a single contact from domain/email
@@ -62,6 +106,18 @@ router.post('/contact', authenticate as any, async (req: any, res: Response) => 
     });
 
     const validatedData = enrichContactSchema.parse(req.body);
+    const isDemo = !hasDataForSEOCredentials();
+
+    if (isDemo) {
+      const demoData = generateDemoEnrichmentData(validatedData.email, validatedData.domain, validatedData.linkedinUrl);
+      return res.json({
+        success: true,
+        isDemo: true,
+        message: "DataForSEO credentials not configured - showing sample data",
+        data: demoData,
+        job: null,
+      });
+    }
 
     const [job] = await db.insert(enrichmentJobs).values({
       tenantId: user.tenantId,
@@ -138,6 +194,7 @@ router.post('/contact', authenticate as any, async (req: any, res: Response) => 
 
       res.json({
         success: true,
+        isDemo: false,
         job: updatedJob,
         data: enrichmentResult,
       });
@@ -302,6 +359,27 @@ router.post('/email/find', authenticate as any, async (req: any, res: Response) 
 
     const validatedData = findEmailSchema.parse(req.body);
     const domain = validatedData.domain || validatedData.company.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com';
+    const isDemo = !hasDataForSEOCredentials();
+
+    const emailPatterns = [
+      `${validatedData.firstName.toLowerCase()}.${validatedData.lastName.toLowerCase()}@${domain}`,
+      `${validatedData.firstName.toLowerCase()}${validatedData.lastName.toLowerCase()}@${domain}`,
+      `${validatedData.firstName[0].toLowerCase()}${validatedData.lastName.toLowerCase()}@${domain}`,
+      `${validatedData.firstName.toLowerCase()}@${domain}`,
+      `${validatedData.lastName.toLowerCase()}.${validatedData.firstName.toLowerCase()}@${domain}`,
+    ];
+
+    if (isDemo) {
+      return res.json({
+        success: true,
+        isDemo: true,
+        message: "DataForSEO credentials not configured - showing generated email patterns",
+        email: emailPatterns[0],
+        alternatives: emailPatterns.slice(1),
+        confidence: 0.65,
+        job: null,
+      });
+    }
 
     const [job] = await db.insert(enrichmentJobs).values({
       tenantId: user.tenantId,
@@ -315,14 +393,6 @@ router.post('/email/find', authenticate as any, async (req: any, res: Response) 
       },
       startedAt: new Date(),
     }).returning();
-
-    const emailPatterns = [
-      `${validatedData.firstName.toLowerCase()}.${validatedData.lastName.toLowerCase()}@${domain}`,
-      `${validatedData.firstName.toLowerCase()}${validatedData.lastName.toLowerCase()}@${domain}`,
-      `${validatedData.firstName[0].toLowerCase()}${validatedData.lastName.toLowerCase()}@${domain}`,
-      `${validatedData.firstName.toLowerCase()}@${domain}`,
-      `${validatedData.lastName.toLowerCase()}.${validatedData.firstName.toLowerCase()}@${domain}`,
-    ];
 
     const [updatedJob] = await db.update(enrichmentJobs)
       .set({
@@ -343,6 +413,7 @@ router.post('/email/find', authenticate as any, async (req: any, res: Response) 
 
     res.json({
       success: true,
+      isDemo: false,
       job: updatedJob,
       email: emailPatterns[0],
       alternatives: emailPatterns.slice(1),
@@ -367,24 +438,7 @@ router.post('/email/validate', authenticate as any, async (req: any, res: Respon
     });
 
     const { email } = validateEmailSchema.parse(req.body);
-
-    const existingValidation = await db.select()
-      .from(emailValidations)
-      .where(and(
-        eq(emailValidations.tenantId, user.tenantId),
-        eq(emailValidations.email, email.toLowerCase())
-      ))
-      .limit(1);
-
-    if (existingValidation.length > 0) {
-      const existing = existingValidation[0];
-      if (existing.expiresAt && new Date(existing.expiresAt) > new Date()) {
-        return res.json({
-          cached: true,
-          validation: existing,
-        });
-      }
-    }
+    const isDemo = !hasDataForSEOCredentials();
 
     const domain = email.split('@')[1];
     const isDisposable = ['tempmail.com', 'throwaway.email', 'guerrillamail.com', '10minutemail.com', 'mailinator.com'].includes(domain);
@@ -409,6 +463,46 @@ router.post('/email/validate', authenticate as any, async (req: any, res: Respon
       deliverability = 'deliverable';
     }
 
+    if (isDemo) {
+      return res.json({
+        success: true,
+        isDemo: true,
+        message: "DataForSEO credentials not configured - showing sample validation",
+        validation: {
+          id: 'demo-' + Date.now(),
+          email: email.toLowerCase(),
+          isValid,
+          status,
+          deliverability,
+          isDisposable,
+          isFreeProvider,
+          isRoleAccount,
+          isCatchAll: false,
+          provider: 'demo',
+          confidence: 0.75,
+        },
+      });
+    }
+
+    const existingValidation = await db.select()
+      .from(emailValidations)
+      .where(and(
+        eq(emailValidations.tenantId, user.tenantId),
+        eq(emailValidations.email, email.toLowerCase())
+      ))
+      .limit(1);
+
+    if (existingValidation.length > 0) {
+      const existing = existingValidation[0];
+      if (existing.expiresAt && new Date(existing.expiresAt) > new Date()) {
+        return res.json({
+          cached: true,
+          isDemo: false,
+          validation: existing,
+        });
+      }
+    }
+
     const [validation] = await db.insert(emailValidations).values({
       tenantId: user.tenantId,
       email: email.toLowerCase(),
@@ -426,6 +520,7 @@ router.post('/email/validate', authenticate as any, async (req: any, res: Respon
 
     res.json({
       success: true,
+      isDemo: false,
       validation,
     });
   } catch (error) {
@@ -447,6 +542,7 @@ router.post('/email/validate/bulk', authenticate as any, async (req: any, res: R
     });
 
     const { emails } = bulkValidateSchema.parse(req.body);
+    const isDemo = !hasDataForSEOCredentials();
 
     const results: any[] = [];
     const errors: any[] = [];
@@ -476,22 +572,38 @@ router.post('/email/validate/bulk', authenticate as any, async (req: any, res: R
           deliverability = 'deliverable';
         }
 
-        const [validation] = await db.insert(emailValidations).values({
-          tenantId: user.tenantId,
-          email: email.toLowerCase(),
-          isValid,
-          status,
-          deliverability,
-          isDisposable,
-          isFreeProvider,
-          isRoleAccount,
-          isCatchAll: false,
-          provider: 'internal',
-          confidence: 0.85,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        }).returning();
+        if (isDemo) {
+          results.push({
+            id: 'demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+            email: email.toLowerCase(),
+            isValid,
+            status,
+            deliverability,
+            isDisposable,
+            isFreeProvider,
+            isRoleAccount,
+            isCatchAll: false,
+            provider: 'demo',
+            confidence: 0.75,
+          });
+        } else {
+          const [validation] = await db.insert(emailValidations).values({
+            tenantId: user.tenantId,
+            email: email.toLowerCase(),
+            isValid,
+            status,
+            deliverability,
+            isDisposable,
+            isFreeProvider,
+            isRoleAccount,
+            isCatchAll: false,
+            provider: 'internal',
+            confidence: 0.85,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          }).returning();
 
-        results.push(validation);
+          results.push(validation);
+        }
       } catch (err) {
         errors.push({ email, error: (err as Error).message });
       }
@@ -499,6 +611,8 @@ router.post('/email/validate/bulk', authenticate as any, async (req: any, res: R
 
     res.json({
       success: true,
+      isDemo,
+      message: isDemo ? "DataForSEO credentials not configured - showing sample validation results" : undefined,
       totalProcessed: results.length,
       totalErrors: errors.length,
       results,

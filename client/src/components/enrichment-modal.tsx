@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Building2, User, Mail, Phone, Globe, Briefcase, MapPin, CheckCircle, AlertTriangle } from "lucide-react";
+import { Loader2, Building2, User, Mail, Phone, Globe, Briefcase, MapPin, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface EnrichmentModalProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function EnrichmentModal({
   const [domain, setDomain] = useState(initialDomain);
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [enrichmentResult, setEnrichmentResult] = useState<any>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -47,9 +49,12 @@ export function EnrichmentModal({
     },
     onSuccess: (data) => {
       setEnrichmentResult(data.data);
+      if (data.isDemo) {
+        setIsDemo(true);
+      }
       toast({
-        title: "Contact Enriched",
-        description: "Successfully enriched contact data",
+        title: data.isDemo ? "Demo: Contact Enriched" : "Contact Enriched",
+        description: data.isDemo ? "Showing sample enrichment data" : "Successfully enriched contact data",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/enrichment/credits'] });
@@ -78,6 +83,7 @@ export function EnrichmentModal({
 
   const resetModal = () => {
     setEnrichmentResult(null);
+    setIsDemo(false);
     setEmail(initialEmail);
     setDomain(initialDomain);
     setLinkedinUrl("");
@@ -198,9 +204,19 @@ export function EnrichmentModal({
           </div>
         ) : (
           <div className="space-y-6 py-4">
+            {isDemo && (
+              <Alert className="bg-[#F59E0B]/10 border-[#F59E0B]/30" data-testid="alert-demo-mode">
+                <Info className="h-4 w-4 text-[#F59E0B]" />
+                <AlertTitle className="text-[#F59E0B]">Demo Mode</AlertTitle>
+                <AlertDescription className="text-[#94A3B8]">
+                  DataForSEO credentials not configured. This is sample data to demonstrate the feature.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="flex items-center gap-2 text-[#10B981]">
               <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">Enrichment Complete</span>
+              <span className="font-medium">{isDemo ? "Demo Enrichment Complete" : "Enrichment Complete"}</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

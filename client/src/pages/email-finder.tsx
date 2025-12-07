@@ -27,8 +27,10 @@ import {
   TrendingUp,
   FileSpreadsheet,
   Copy,
-  RefreshCw
+  RefreshCw,
+  Info
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -47,6 +49,7 @@ export default function EmailFinderPage() {
   const [bulkEmails, setBulkEmails] = useState("");
   const [foundEmail, setFoundEmail] = useState<any>(null);
   const [bulkResults, setBulkResults] = useState<any>(null);
+  const [isDemo, setIsDemo] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -78,8 +81,11 @@ export default function EmailFinderPage() {
     },
     onSuccess: (data) => {
       setFoundEmail(data);
+      if (data.isDemo) {
+        setIsDemo(true);
+      }
       toast({
-        title: "Email Found",
+        title: data.isDemo ? "Demo: Email Generated" : "Email Found",
         description: `Found potential email: ${data.email}`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/enrichment/credits'] });
@@ -99,8 +105,11 @@ export default function EmailFinderPage() {
       return response.json();
     },
     onSuccess: (data) => {
+      if (data.isDemo) {
+        setIsDemo(true);
+      }
       toast({
-        title: "Email Validated",
+        title: data.isDemo ? "Demo: Email Validated" : "Email Validated",
         description: `Status: ${data.validation.status}`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/enrichment/email/validations'] });
@@ -123,8 +132,11 @@ export default function EmailFinderPage() {
     },
     onSuccess: (data) => {
       setBulkResults(data);
+      if (data.isDemo) {
+        setIsDemo(true);
+      }
       toast({
-        title: "Bulk Validation Complete",
+        title: data.isDemo ? "Demo: Bulk Validation Complete" : "Bulk Validation Complete",
         description: `Validated ${data.totalProcessed} emails`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/enrichment/email/validations'] });
@@ -177,6 +189,17 @@ export default function EmailFinderPage() {
             </p>
           </div>
         </div>
+
+        {isDemo && (
+          <Alert className="bg-[#F59E0B]/10 border-[#F59E0B]/30" data-testid="alert-demo-mode">
+            <Info className="h-4 w-4 text-[#F59E0B]" />
+            <AlertTitle className="text-[#F59E0B]">Demo Mode</AlertTitle>
+            <AlertDescription className="text-[#94A3B8]">
+              DataForSEO credentials are not configured. You're seeing sample data to demonstrate how this feature works. 
+              Configure your DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD environment variables to enable full functionality.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="bg-[#11152B] border-[#1E293B]">
