@@ -92,6 +92,13 @@ export async function authenticate(req: TenantRequest, res: Response, next: Next
     next();
   } catch (error) {
     console.error('Authentication error:', error);
+    // Clear the invalid cookie so it doesn't keep causing 401 errors
+    res.clearCookie('auth-token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
+    });
     res.status(401).json({ error: 'Invalid authentication token' });
   }
 }
