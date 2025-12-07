@@ -401,7 +401,7 @@ export default function ProspectExplorerPage() {
             )}
           </div>
 
-          <ScrollArea className="flex-1 p-4">
+          <div className="flex-1 overflow-y-auto p-4">
             <div className="space-y-1">
               {renderFilterSection("Personal Info", "personal", <Users className="h-4 w-4" />, (
                 <>
@@ -608,7 +608,7 @@ export default function ProspectExplorerPage() {
                 </>
               ))}
             </div>
-          </ScrollArea>
+          </div>
 
           <div className="p-4 border-t border-border space-y-2">
             <Button
