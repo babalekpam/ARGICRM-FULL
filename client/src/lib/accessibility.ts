@@ -43,10 +43,27 @@ class AccessibilityManager {
   private loadSettings(): AccessibilitySettings {
     try {
       const saved = localStorage.getItem('accessibility-settings');
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Reset screen-reader-mode if it was auto-detected incorrectly in the past
+        // Users can still manually enable it if needed
+        if (parsed.screenReaderMode === true && !this.isActualScreenReader()) {
+          parsed.screenReaderMode = false;
+        }
+        return { ...DEFAULT_SETTINGS, ...parsed };
+      }
+      return DEFAULT_SETTINGS;
     } catch {
       return DEFAULT_SETTINGS;
     }
+  }
+
+  private isActualScreenReader(): boolean {
+    return (
+      navigator.userAgent.includes('NVDA') ||
+      navigator.userAgent.includes('JAWS') ||
+      navigator.userAgent.includes('VoiceOver')
+    );
   }
 
   private saveSettings(): void {
@@ -68,21 +85,10 @@ class AccessibilityManager {
       this.settings.highContrast = true;
     }
 
-    // Detect screen reader usage
-    if (this.detectScreenReader()) {
+    // Detect screen reader usage - only enable if actually using one
+    if (this.isActualScreenReader()) {
       this.settings.screenReaderMode = true;
     }
-  }
-
-  private detectScreenReader(): boolean {
-    // Check for common screen reader indicators
-    return (
-      navigator.userAgent.includes('NVDA') ||
-      navigator.userAgent.includes('JAWS') ||
-      navigator.userAgent.includes('VoiceOver') ||
-      window.speechSynthesis !== undefined ||
-      'speechSynthesis' in window
-    );
   }
 
   private applySettings(): void {
