@@ -65,8 +65,22 @@ export const getQueryFn: <T>(options: {
       credentials: "include",
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    if (res.status === 401) {
+      // Clear all auth data on 401 - token is invalid
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_email');
+      localStorage.removeItem('userEmail');
+      
+      // Redirect to login page if not already there
+      if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      
+      if (unauthorizedBehavior === "returnNull") {
+        return null;
+      }
     }
 
     await throwIfResNotOk(res);
