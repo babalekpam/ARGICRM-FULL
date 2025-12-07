@@ -5383,3 +5383,585 @@ export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
 export type InsertEmailThread = z.infer<typeof insertEmailThreadSchema>;
 export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
 
+// ============================================
+// APOLLO.IO-MATCHING FEATURES
+// ============================================
+
+// Email Sequence Templates - Multi-step automated email campaigns
+export const sequenceTemplates = pgTable("sequence_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category"), // outreach, nurture, follow-up, re-engagement
+  isActive: boolean("is_active").default(true),
+  settings: jsonb("settings").$type<{
+    sendingWindow?: { startHour: number; endHour: number; timezone: string };
+    skipWeekends?: boolean;
+    trackOpens?: boolean;
+    trackClicks?: boolean;
+    stopOnReply?: boolean;
+    stopOnMeeting?: boolean;
+    dailyLimit?: number;
+  }>().default({}),
+  stats: jsonb("stats").$type<{
+    totalEnrolled?: number;
+    activeEnrollments?: number;
+    completed?: number;
+    openRate?: number;
+    clickRate?: number;
+    replyRate?: number;
+    bounceRate?: number;
+  }>().default({}),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_seq_templates_tenant").on(table.tenantId),
+  index("idx_seq_templates_active").on(table.isActive),
+]);
+
+// Sequence Steps - Individual steps in a sequence
+export const sequenceSteps = pgTable("sequence_steps", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sequenceId: varchar("sequence_id").references(() => sequenceTemplates.id).notNull(),
+  stepNumber: integer("step_number").notNull(),
+  stepType: text("step_type").notNull(), // email, linkedin_view, linkedin_connect, linkedin_message, call, manual_task, wait
+  name: text("name"),
+  delayDays: integer("delay_days").default(1),
+  delayHours: integer("delay_hours").default(0),
+  // Email content
+  subject: text("subject"),
+  body: text("body"),
+  // A/B Testing
+  variantA: jsonb("variant_a").$type<{ subject?: string; body?: string }>(),
+  variantB: jsonb("variant_b").$type<{ subject?: string; body?: string }>(),
+  abTestEnabled: boolean("ab_test_enabled").default(false),
+  abWinner: text("ab_winner"), // a, b, or null if not yet determined
+  // Conditional logic
+  conditions: jsonb("conditions").$type<{
+    skipIfOpened?: boolean;
+    skipIfClicked?: boolean;
+    skipIfReplied?: boolean;
+    customConditions?: Array<{ field: string; operator: string; value: string }>;
+  }>().default({}),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_seq_steps_sequence").on(table.sequenceId),
+  index("idx_seq_steps_number").on(table.stepNumber),
+]);
+
+// Sequence Enrollments - Contacts enrolled in sequences
+export const sequenceEnrollments = pgTable("sequence_enrollments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  sequenceId: varchar("sequence_id").references(() => sequenceTemplates.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id).notNull(),
+  status: text("status").default("active"), // active, paused, completed, bounced, replied, unsubscribed, manually_removed
+  currentStepId: varchar("current_step_id").references(() => sequenceSteps.id),
+  currentStepNumber: integer("current_step_number").default(1),
+  nextActionAt: timestamp("next_action_at"),
+  enrolledBy: varchar("enrolled_by").references(() => users.id),
+  stats: jsonb("stats").$type<{
+    emailsSent?: number;
+    opens?: number;
+    clicks?: number;
+    replies?: number;
+    bounces?: number;
+  }>().default({}),
+  pausedAt: timestamp("paused_at"),
+  completedAt: timestamp("completed_at"),
+  pauseReason: text("pause_reason"),
+  enrolledAt: timestamp("enrolled_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_seq_enrollments_tenant").on(table.tenantId),
+  index("idx_seq_enrollments_sequence").on(table.sequenceId),
+  index("idx_seq_enrollments_contact").on(table.contactId),
+  index("idx_seq_enrollments_status").on(table.status),
+  index("idx_seq_enrollments_next_action").on(table.nextActionAt),
+]);
+
+// Sequence Events - Track all events in sequences
+export const sequenceEvents = pgTable("sequence_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  enrollmentId: varchar("enrollment_id").references(() => sequenceEnrollments.id).notNull(),
+  stepId: varchar("step_id").references(() => sequenceSteps.id),
+  eventType: text("event_type").notNull(), // email_sent, email_opened, email_clicked, email_replied, email_bounced, linkedin_sent, call_made, task_completed
+  variant: text("variant"), // a, b (for A/B testing)
+  metadata: jsonb("metadata").$type<{
+    subject?: string;
+    linkClicked?: string;
+    openCount?: number;
+    deviceType?: string;
+    location?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_seq_events_tenant").on(table.tenantId),
+  index("idx_seq_events_enrollment").on(table.enrollmentId),
+  index("idx_seq_events_type").on(table.eventType),
+  index("idx_seq_events_created").on(table.createdAt),
+]);
+
+// Engagement Events - Track all contact engagement for intent signals
+export const engagementEvents = pgTable("engagement_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  eventType: text("event_type").notNull(), // email_open, email_click, page_view, form_submit, download, meeting_booked, demo_request
+  source: text("source"), // email, website, ad, social, direct
+  channel: text("channel"), // email, linkedin, twitter, website, phone
+  score: integer("score").default(1), // Weight for intent scoring
+  metadata: jsonb("metadata").$type<{
+    url?: string;
+    pageTitle?: string;
+    referrer?: string;
+    duration?: number;
+    emailSubject?: string;
+    campaignId?: string;
+    formId?: string;
+    downloadAsset?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    location?: { city?: string; region?: string; country?: string };
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_engagement_tenant").on(table.tenantId),
+  index("idx_engagement_contact").on(table.contactId),
+  index("idx_engagement_account").on(table.accountId),
+  index("idx_engagement_type").on(table.eventType),
+  index("idx_engagement_created").on(table.createdAt),
+]);
+
+// Intent Scores - Aggregated buyer intent scores per account
+export const intentScores = pgTable("intent_scores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  accountId: varchar("account_id").references(() => accounts.id),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  overallScore: integer("overall_score").default(0), // 0-100
+  scoreBreakdown: jsonb("score_breakdown").$type<{
+    emailEngagement?: number;
+    websiteActivity?: number;
+    contentDownloads?: number;
+    socialEngagement?: number;
+    meetingIntent?: number;
+    buyingSignals?: number;
+  }>().default({}),
+  trend: text("trend"), // rising, stable, declining
+  lastActivityAt: timestamp("last_activity_at"),
+  signalCount: integer("signal_count").default(0),
+  topSignals: jsonb("top_signals").$type<Array<{
+    type: string;
+    description: string;
+    score: number;
+    timestamp: string;
+  }>>().default([]),
+  calculatedAt: timestamp("calculated_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_intent_scores_tenant").on(table.tenantId),
+  index("idx_intent_scores_account").on(table.accountId),
+  index("idx_intent_scores_contact").on(table.contactId),
+  index("idx_intent_scores_overall").on(table.overallScore),
+]);
+
+// Contact Enrichment Jobs - Track enrichment requests
+export const enrichmentJobs = pgTable("enrichment_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  accountId: varchar("account_id").references(() => accounts.id),
+  jobType: text("job_type").notNull(), // contact_enrich, company_enrich, email_find, email_validate, phone_find
+  status: text("status").default("pending"), // pending, processing, completed, failed
+  provider: text("provider"), // dataforseo, clearbit, zoominfo, apollo, internal
+  inputData: jsonb("input_data").$type<{
+    email?: string;
+    domain?: string;
+    linkedinUrl?: string;
+    name?: string;
+    company?: string;
+  }>(),
+  resultData: jsonb("result_data").$type<{
+    // Contact data
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    directDial?: string;
+    mobilePhone?: string;
+    linkedinUrl?: string;
+    title?: string;
+    seniority?: string;
+    department?: string;
+    // Company data
+    companyName?: string;
+    industry?: string;
+    employeeCount?: number;
+    revenue?: string;
+    founded?: number;
+    website?: string;
+    description?: string;
+    technologies?: string[];
+    location?: { city?: string; state?: string; country?: string };
+    socialProfiles?: { linkedin?: string; twitter?: string; facebook?: string };
+  }>(),
+  confidence: real("confidence"), // 0-1 confidence score
+  creditsUsed: integer("credits_used").default(0),
+  errorMessage: text("error_message"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_enrich_jobs_tenant").on(table.tenantId),
+  index("idx_enrich_jobs_contact").on(table.contactId),
+  index("idx_enrich_jobs_status").on(table.status),
+  index("idx_enrich_jobs_type").on(table.jobType),
+]);
+
+// B2B Prospect Database - Cached prospect data
+export const prospectDatabase = pgTable("prospect_database", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  // Personal info
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  fullName: text("full_name"),
+  email: text("email"),
+  emailVerified: boolean("email_verified").default(false),
+  emailVerifiedAt: timestamp("email_verified_at"),
+  phone: text("phone"),
+  directDial: text("direct_dial"),
+  mobilePhone: text("mobile_phone"),
+  linkedinUrl: text("linkedin_url"),
+  twitterUrl: text("twitter_url"),
+  // Professional info
+  title: text("title"),
+  seniority: text("seniority"), // c_level, vp, director, manager, senior, entry
+  department: text("department"), // sales, marketing, engineering, hr, finance, operations
+  // Company info
+  companyName: text("company_name"),
+  companyDomain: text("company_domain"),
+  companyLinkedin: text("company_linkedin"),
+  industry: text("industry"),
+  subIndustry: text("sub_industry"),
+  employeeCount: integer("employee_count"),
+  employeeRange: text("employee_range"), // 1-10, 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5000+
+  revenue: text("revenue"), // revenue range
+  revenueRange: text("revenue_range"),
+  founded: integer("founded"),
+  companyType: text("company_type"), // public, private, nonprofit, government
+  // Location
+  city: text("city"),
+  state: text("state"),
+  country: text("country"),
+  region: text("region"),
+  // Technology
+  technologies: text("technologies").array().default([]),
+  techCategories: text("tech_categories").array().default([]),
+  // Data quality
+  dataSource: text("data_source"), // dataforseo, linkedin, manual, import
+  dataConfidence: real("data_confidence"), // 0-1
+  lastVerifiedAt: timestamp("last_verified_at"),
+  // Import tracking
+  importedToCrm: boolean("imported_to_crm").default(false),
+  crmContactId: varchar("crm_contact_id"),
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_prospect_tenant").on(table.tenantId),
+  index("idx_prospect_email").on(table.email),
+  index("idx_prospect_company").on(table.companyName),
+  index("idx_prospect_industry").on(table.industry),
+  index("idx_prospect_seniority").on(table.seniority),
+  index("idx_prospect_location").on(table.city, table.country),
+]);
+
+// Saved Prospect Filters - Save search filters
+export const savedFilters = pgTable("saved_filters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  name: text("name").notNull(),
+  filterType: text("filter_type").default("contact"), // contact, company, prospect
+  filters: jsonb("filters").$type<{
+    // Personal filters
+    name?: string;
+    email?: string;
+    title?: string[];
+    seniority?: string[];
+    department?: string[];
+    // Company filters
+    companyName?: string[];
+    industry?: string[];
+    employeeRange?: string[];
+    revenueRange?: string[];
+    technologies?: string[];
+    // Location filters
+    city?: string[];
+    state?: string[];
+    country?: string[];
+    region?: string[];
+    // Advanced filters
+    hasEmail?: boolean;
+    hasPhone?: boolean;
+    hasLinkedin?: boolean;
+    leadScore?: { min?: number; max?: number };
+    intentScore?: { min?: number; max?: number };
+    lastActivityDays?: number;
+    createdDateRange?: { from?: string; to?: string };
+    // Custom fields
+    tags?: string[];
+    status?: string[];
+    assignedTo?: string[];
+  }>().notNull(),
+  resultCount: integer("result_count"),
+  isDefault: boolean("is_default").default(false),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_saved_filters_tenant").on(table.tenantId),
+  index("idx_saved_filters_type").on(table.filterType),
+]);
+
+// Email Validations - Track email validation results
+export const emailValidations = pgTable("email_validations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  email: text("email").notNull(),
+  isValid: boolean("is_valid"),
+  status: text("status"), // valid, invalid, risky, unknown, catch_all, disposable
+  deliverability: text("deliverability"), // deliverable, undeliverable, risky
+  isDisposable: boolean("is_disposable").default(false),
+  isCatchAll: boolean("is_catch_all").default(false),
+  isRoleAccount: boolean("is_role_account").default(false),
+  isFreeProvider: boolean("is_free_provider").default(false),
+  mxRecord: text("mx_record"),
+  smtpCheck: boolean("smtp_check"),
+  provider: text("provider"), // dataforseo, neverbounce, zerobounce
+  confidence: real("confidence"),
+  errorMessage: text("error_message"),
+  validatedAt: timestamp("validated_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => [
+  index("idx_email_val_tenant").on(table.tenantId),
+  index("idx_email_val_email").on(table.email),
+  index("idx_email_val_status").on(table.status),
+]);
+
+// Dialer Calls - Track all phone calls
+export const dialerCalls = pgTable("dialer_calls", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  direction: text("direction").notNull(), // inbound, outbound
+  status: text("status").default("pending"), // pending, ringing, in_progress, completed, failed, no_answer, busy, voicemail
+  outcome: text("outcome"), // connected, voicemail, no_answer, busy, wrong_number, callback_requested, meeting_booked
+  duration: integer("duration"), // in seconds
+  twilioCallSid: text("twilio_call_sid"),
+  twilioRecordingSid: text("twilio_recording_sid"),
+  recordingUrl: text("recording_url"),
+  transcriptionStatus: text("transcription_status"), // pending, processing, completed, failed
+  transcription: text("transcription"),
+  aiSummary: text("ai_summary"),
+  sentiment: text("sentiment"), // positive, neutral, negative
+  keyPoints: jsonb("key_points").$type<string[]>().default([]),
+  nextSteps: jsonb("next_steps").$type<string[]>().default([]),
+  notes: text("notes"),
+  startedAt: timestamp("started_at"),
+  answeredAt: timestamp("answered_at"),
+  endedAt: timestamp("ended_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_dialer_calls_tenant").on(table.tenantId),
+  index("idx_dialer_calls_contact").on(table.contactId),
+  index("idx_dialer_calls_user").on(table.userId),
+  index("idx_dialer_calls_status").on(table.status),
+  index("idx_dialer_calls_created").on(table.createdAt),
+]);
+
+// LinkedIn Actions - Track LinkedIn automation
+export const linkedinActions = pgTable("linkedin_actions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  sequenceEnrollmentId: varchar("sequence_enrollment_id").references(() => sequenceEnrollments.id),
+  actionType: text("action_type").notNull(), // profile_view, connect_request, message, post_like, post_comment, inmails
+  status: text("status").default("pending"), // pending, completed, failed, rate_limited
+  linkedinProfileUrl: text("linkedin_profile_url"),
+  messageContent: text("message_content"),
+  connectionNote: text("connection_note"),
+  response: text("response"), // accepted, pending, ignored
+  errorMessage: text("error_message"),
+  scheduledFor: timestamp("scheduled_for"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_linkedin_actions_tenant").on(table.tenantId),
+  index("idx_linkedin_actions_contact").on(table.contactId),
+  index("idx_linkedin_actions_user").on(table.userId),
+  index("idx_linkedin_actions_type").on(table.actionType),
+  index("idx_linkedin_actions_status").on(table.status),
+]);
+
+// Extension Sessions - Track Chrome extension usage
+export const extensionSessions = pgTable("extension_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  sessionToken: text("session_token").notNull().unique(),
+  extensionVersion: text("extension_version"),
+  browserInfo: text("browser_info"),
+  isActive: boolean("is_active").default(true),
+  lastActiveAt: timestamp("last_active_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_ext_sessions_tenant").on(table.tenantId),
+  index("idx_ext_sessions_user").on(table.userId),
+  index("idx_ext_sessions_token").on(table.sessionToken),
+]);
+
+// Extension Events - Track extension scraping activity
+export const extensionEvents = pgTable("extension_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => extensionSessions.id).notNull(),
+  eventType: text("event_type").notNull(), // linkedin_profile_scraped, linkedin_search_scraped, email_found, contact_saved
+  sourceUrl: text("source_url"),
+  scrapedData: jsonb("scraped_data").$type<{
+    firstName?: string;
+    lastName?: string;
+    title?: string;
+    company?: string;
+    linkedinUrl?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    headline?: string;
+    connections?: number;
+  }>(),
+  savedToContactId: varchar("saved_to_contact_id").references(() => contacts.id),
+  savedToProspectId: varchar("saved_to_prospect_id").references(() => prospectDatabase.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_ext_events_session").on(table.sessionId),
+  index("idx_ext_events_type").on(table.eventType),
+  index("idx_ext_events_created").on(table.createdAt),
+]);
+
+// Conversation Intelligence - AI analysis of calls/meetings
+export const conversationIntelligence = pgTable("conversation_intelligence", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  callId: varchar("call_id").references(() => dialerCalls.id),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  dealId: varchar("deal_id"),
+  conversationType: text("conversation_type").notNull(), // call, meeting, video_call
+  duration: integer("duration"), // in seconds
+  participants: jsonb("participants").$type<Array<{
+    name: string;
+    email?: string;
+    role: string;
+    speakingTime?: number;
+  }>>().default([]),
+  transcription: text("transcription"),
+  summary: text("summary"),
+  sentiment: text("sentiment"), // positive, neutral, negative
+  sentimentScore: real("sentiment_score"), // -1 to 1
+  topics: jsonb("topics").$type<Array<{
+    topic: string;
+    confidence: number;
+    mentions: number;
+  }>>().default([]),
+  actionItems: jsonb("action_items").$type<Array<{
+    item: string;
+    assignee?: string;
+    dueDate?: string;
+  }>>().default([]),
+  questions: jsonb("questions").$type<string[]>().default([]),
+  objections: jsonb("objections").$type<Array<{
+    objection: string;
+    response?: string;
+    handled: boolean;
+  }>>().default([]),
+  competitorMentions: jsonb("competitor_mentions").$type<string[]>().default([]),
+  nextSteps: jsonb("next_steps").$type<string[]>().default([]),
+  dealSignals: jsonb("deal_signals").$type<{
+    buyingIntent?: string;
+    budgetDiscussed?: boolean;
+    timelineDiscussed?: boolean;
+    decisionMakers?: string[];
+    painPoints?: string[];
+  }>(),
+  recordingUrl: text("recording_url"),
+  occurredAt: timestamp("occurred_at").notNull(),
+  analyzedAt: timestamp("analyzed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_conv_intel_tenant").on(table.tenantId),
+  index("idx_conv_intel_call").on(table.callId),
+  index("idx_conv_intel_contact").on(table.contactId),
+  index("idx_conv_intel_deal").on(table.dealId),
+  index("idx_conv_intel_type").on(table.conversationType),
+]);
+
+// Apollo.io Feature Schemas
+export const insertSequenceTemplateSchema = createInsertSchema(sequenceTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSequenceStepSchema = createInsertSchema(sequenceSteps).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSequenceEnrollmentSchema = createInsertSchema(sequenceEnrollments).omit({ id: true, enrolledAt: true, updatedAt: true });
+export const insertSequenceEventSchema = createInsertSchema(sequenceEvents).omit({ id: true, createdAt: true });
+export const insertEngagementEventSchema = createInsertSchema(engagementEvents).omit({ id: true, createdAt: true });
+export const insertIntentScoreSchema = createInsertSchema(intentScores).omit({ id: true, calculatedAt: true, updatedAt: true });
+export const insertEnrichmentJobSchema = createInsertSchema(enrichmentJobs).omit({ id: true, createdAt: true });
+export const insertProspectSchema = createInsertSchema(prospectDatabase).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSavedFilterSchema = createInsertSchema(savedFilters).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEmailValidationSchema = createInsertSchema(emailValidations).omit({ id: true, validatedAt: true });
+export const insertDialerCallSchema = createInsertSchema(dialerCalls).omit({ id: true, createdAt: true });
+export const insertLinkedinActionSchema = createInsertSchema(linkedinActions).omit({ id: true, createdAt: true });
+export const insertExtensionSessionSchema = createInsertSchema(extensionSessions).omit({ id: true, createdAt: true });
+export const insertExtensionEventSchema = createInsertSchema(extensionEvents).omit({ id: true, createdAt: true });
+export const insertConversationIntelligenceSchema = createInsertSchema(conversationIntelligence).omit({ id: true, createdAt: true });
+
+// Apollo.io Feature Types
+export type SequenceTemplate = typeof sequenceTemplates.$inferSelect;
+export type SequenceStep = typeof sequenceSteps.$inferSelect;
+export type SequenceEnrollment = typeof sequenceEnrollments.$inferSelect;
+export type SequenceEvent = typeof sequenceEvents.$inferSelect;
+export type EngagementEvent = typeof engagementEvents.$inferSelect;
+export type IntentScore = typeof intentScores.$inferSelect;
+export type EnrichmentJob = typeof enrichmentJobs.$inferSelect;
+export type Prospect = typeof prospectDatabase.$inferSelect;
+export type SavedFilter = typeof savedFilters.$inferSelect;
+export type EmailValidation = typeof emailValidations.$inferSelect;
+export type DialerCall = typeof dialerCalls.$inferSelect;
+export type LinkedinAction = typeof linkedinActions.$inferSelect;
+export type ExtensionSession = typeof extensionSessions.$inferSelect;
+export type ExtensionEvent = typeof extensionEvents.$inferSelect;
+export type ConversationIntelligence = typeof conversationIntelligence.$inferSelect;
+
+export type InsertSequenceTemplate = z.infer<typeof insertSequenceTemplateSchema>;
+export type InsertSequenceStep = z.infer<typeof insertSequenceStepSchema>;
+export type InsertSequenceEnrollment = z.infer<typeof insertSequenceEnrollmentSchema>;
+export type InsertSequenceEvent = z.infer<typeof insertSequenceEventSchema>;
+export type InsertEngagementEvent = z.infer<typeof insertEngagementEventSchema>;
+export type InsertIntentScore = z.infer<typeof insertIntentScoreSchema>;
+export type InsertEnrichmentJob = z.infer<typeof insertEnrichmentJobSchema>;
+export type InsertProspect = z.infer<typeof insertProspectSchema>;
+export type InsertSavedFilter = z.infer<typeof insertSavedFilterSchema>;
+export type InsertEmailValidation = z.infer<typeof insertEmailValidationSchema>;
+export type InsertDialerCall = z.infer<typeof insertDialerCallSchema>;
+export type InsertLinkedinAction = z.infer<typeof insertLinkedinActionSchema>;
+export type InsertExtensionSession = z.infer<typeof insertExtensionSessionSchema>;
+export type InsertExtensionEvent = z.infer<typeof insertExtensionEventSchema>;
+export type InsertConversationIntelligence = z.infer<typeof insertConversationIntelligenceSchema>;
+
