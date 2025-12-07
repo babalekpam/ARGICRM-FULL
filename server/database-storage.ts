@@ -1199,22 +1199,6 @@ export class DatabaseStorage implements IStorage {
     return false;
   }
 
-  async linkBankAccountToChart(bankAccountId: number, chartAccountId: number): Promise<boolean> {
-    return false;
-  }
-  
-  async unlinkBankAccount(bankAccountId: number): Promise<boolean> {
-    return false;
-  }
-  
-  async getLinkedChartAccount(bankAccountId: number): Promise<number | null> {
-    return null;
-  }
-  
-  async getAllBankAccountLinks(): Promise<Map<number, number>> {
-    return new Map();
-  }
-  
   async getFinancialTransactions(): Promise<any[]> {
     return [];
   }

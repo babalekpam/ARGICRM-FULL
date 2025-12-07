@@ -2096,66 +2096,6 @@ export class MemStorage implements IStorage {
     };
   }
 
-  // Fix Order operations type mismatch
-  async getOrders(filters?: { storeId?: string; status?: string; limit?: number }): Promise<any[]> {
-    let orders = Array.from(this.orders.values());
-    
-    if (filters?.storeId) {
-      orders = orders.filter(order => order.storeId === filters.storeId);
-    }
-    
-    if (filters?.status) {
-      orders = orders.filter(order => order.status === filters.status);
-    }
-    
-    if (filters?.limit) {
-      orders = orders.slice(0, filters.limit);
-    }
-    
-    return orders;
-  }
-
-  async getOrder(id: string): Promise<any | undefined> {
-    const numId = parseInt(id);
-    return this.orders.get(numId);
-  }
-
-  async updateOrder(id: string, order: any): Promise<any | undefined> {
-    const numId = parseInt(id);
-    return this.updateOrder(numId, order);
-  }
-
-  async deleteOrder(id: string): Promise<boolean> {
-    const numId = parseInt(id);
-    return this.orders.delete(numId);
-  }
-
-  // Fix Customer operations type mismatch
-  async getCustomer(id: string): Promise<any | undefined> {
-    const numId = parseInt(id);
-    return this.customers.get(numId);
-  }
-
-  async updateCustomer(id: string, customer: any): Promise<any | undefined> {
-    const numId = parseInt(id);
-    return this.updateCustomer(numId, customer);
-  }
-
-  async deleteCustomer(id: string): Promise<boolean> {
-    const numId = parseInt(id);
-    return this.customers.delete(numId);
-  }
-
-  // Fix Store operations type mismatch  
-  async getStore(id: string): Promise<any | undefined> {
-    const numId = parseInt(id);
-    return this.stores.get(numId);
-  }
-
-  async updateStore(id: string, store: any): Promise<any | undefined> {
-    const numId = parseInt(id);
-    return this.updateStore(numId, store);
-  }
 
   async deleteStore(id: string): Promise<boolean> {
     const numId = parseInt(id);
