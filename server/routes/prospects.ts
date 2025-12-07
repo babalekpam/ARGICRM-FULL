@@ -4,6 +4,7 @@ import { prospectDatabase, savedFilters, contacts, insertProspectSchema, insertS
 import { eq, and, or, ilike, sql, desc, asc, inArray, gte, lte, isNotNull, isNull } from 'drizzle-orm';
 import { authenticate } from '../middleware/auth.js';
 import { z } from 'zod';
+import { createDataForSEOService } from '../dataforseo.js';
 
 const router = express.Router();
 
@@ -477,6 +478,71 @@ router.get('/filters/options', authenticate as any, async (req: Request, res: Re
   } catch (error) {
     console.error('Error fetching filter options:', error);
     res.status(500).json({ error: 'Failed to fetch filter options' });
+  }
+});
+
+// POST /api/prospects/fetch-businesses - Fetch businesses from DataForSEO
+router.post('/fetch-businesses', authenticate as any, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (!user?.tenantId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { keyword, location = 'United States', limit = 20 } = req.body;
+
+    if (!keyword) {
+      return res.status(400).json({ error: 'Keyword is required (e.g., "software companies", "marketing agencies")' });
+    }
+
+    // Check if DataForSEO credentials are configured
+    if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
+      return res.status(503).json({ error: 'DataForSEO credentials not configured' });
+    }
+
+    const dataForSEO = createDataForSEOService();
+    
+    // Fetch businesses from DataForSEO
+    const { businesses, totalCount } = await dataForSEO.fetchBusinessListings(keyword, location, Math.min(limit, 50));
+
+    if (businesses.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No businesses found for your search criteria',
+        imported: 0,
+        prospects: [],
+      });
+    }
+
+    // Transform and insert prospects
+    const insertedProspects = [];
+    const errors = [];
+
+    for (const business of businesses) {
+      try {
+        const prospectData = dataForSEO.transformToProspect(business, user.tenantId);
+        
+        const [inserted] = await db.insert(prospectDatabase)
+          .values(prospectData)
+          .returning();
+        
+        insertedProspects.push(inserted);
+      } catch (err) {
+        errors.push({ business: business.title, error: (err as Error).message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Found ${totalCount} businesses, imported ${insertedProspects.length} to your prospect database`,
+      imported: insertedProspects.length,
+      totalFound: totalCount,
+      prospects: insertedProspects,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    console.error('Error fetching businesses from DataForSEO:', error);
+    res.status(500).json({ error: 'Failed to fetch businesses: ' + (error as Error).message });
   }
 });
 

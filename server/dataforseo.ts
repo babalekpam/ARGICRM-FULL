@@ -2,6 +2,30 @@ import type { Backlink } from "@shared/schema";
 
 const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3";
 
+// Business Listings types
+interface BusinessListingItem {
+  title: string;
+  domain?: string;
+  url?: string;
+  phone?: string;
+  address?: string;
+  address_info?: {
+    city?: string;
+    region?: string;
+    country_code?: string;
+    zip?: string;
+  };
+  category?: string;
+  additional_categories?: string[];
+  description?: string;
+  rating?: {
+    value?: number;
+    votes_count?: number;
+  };
+  work_time?: any;
+  attributes?: any;
+}
+
 interface DataForSEOCredentials {
   login: string;
   password: string;
@@ -167,6 +191,121 @@ export class DataForSEOService {
       domainScore: Math.round(item.domain_from_rank || 0),
       anchorText: item.anchor || null,
       date: dateFound,
+    };
+  }
+
+  // Fetch business listings from DataForSEO
+  async fetchBusinessListings(
+    keyword: string,
+    location: string = "United States",
+    limit: number = 20
+  ): Promise<{
+    businesses: BusinessListingItem[];
+    totalCount: number;
+  }> {
+    try {
+      const requestBody = [
+        {
+          keyword: keyword,
+          location_name: location,
+          language_code: "en",
+          limit: limit,
+        },
+      ];
+
+      const response = await fetch(`${DATAFORSEO_API_URL}/business_data/google/my_business_info/live`, {
+        method: "POST",
+        headers: {
+          "Authorization": this.getAuthHeader(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`DataForSEO API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status_code !== 20000) {
+        throw new Error(`DataForSEO error: ${data.status_message}`);
+      }
+
+      const task = data.tasks?.[0];
+      if (!task || task.status_code !== 20000) {
+        throw new Error(`Task error: ${task?.status_message || "Unknown error"}`);
+      }
+
+      const result = task.result?.[0];
+      const businesses = result?.items || [];
+      const totalCount = result?.items_count || 0;
+
+      return {
+        businesses,
+        totalCount,
+      };
+    } catch (error) {
+      console.error("Error fetching business listings from DataForSEO:", error);
+      throw error;
+    }
+  }
+
+  // Transform business listing to prospect format
+  transformToProspect(item: BusinessListingItem, tenantId: string): any {
+    // Determine industry from category
+    const category = item.category || '';
+    let industry = 'Other';
+    let department = 'operations';
+    
+    if (category.toLowerCase().includes('software') || category.toLowerCase().includes('technology')) {
+      industry = 'Technology';
+      department = 'engineering';
+    } else if (category.toLowerCase().includes('marketing') || category.toLowerCase().includes('advertising')) {
+      industry = 'Marketing';
+      department = 'marketing';
+    } else if (category.toLowerCase().includes('financial') || category.toLowerCase().includes('bank')) {
+      industry = 'Finance';
+      department = 'finance';
+    } else if (category.toLowerCase().includes('health') || category.toLowerCase().includes('medical')) {
+      industry = 'Healthcare';
+    } else if (category.toLowerCase().includes('retail') || category.toLowerCase().includes('shop')) {
+      industry = 'Retail';
+      department = 'sales';
+    } else if (category.toLowerCase().includes('real estate')) {
+      industry = 'Real Estate';
+      department = 'sales';
+    } else if (category.toLowerCase().includes('restaurant') || category.toLowerCase().includes('food')) {
+      industry = 'Food & Beverage';
+    } else if (category.toLowerCase().includes('construction')) {
+      industry = 'Construction';
+    } else if (category.toLowerCase().includes('legal') || category.toLowerCase().includes('lawyer')) {
+      industry = 'Legal';
+      department = 'legal';
+    } else if (category.toLowerCase().includes('education') || category.toLowerCase().includes('school')) {
+      industry = 'Education';
+    }
+
+    return {
+      tenantId,
+      companyName: item.title || 'Unknown Company',
+      companyDomain: item.domain || null,
+      phone: item.phone || null,
+      city: item.address_info?.city || null,
+      state: item.address_info?.region || null,
+      country: item.address_info?.country_code || 'US',
+      industry,
+      department,
+      seniority: 'manager',
+      title: 'Business Contact',
+      fullName: item.title || 'Unknown',
+      firstName: item.title?.split(' ')[0] || 'Business',
+      lastName: 'Contact',
+      importedToCrm: false,
+      emailVerified: false,
+      leadScore: Math.round((item.rating?.value || 3) * 20),
+      intentScore: Math.round((item.rating?.votes_count || 0) / 10),
+      dataSource: 'dataforseo',
     };
   }
 }

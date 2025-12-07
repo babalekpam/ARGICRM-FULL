@@ -156,6 +156,9 @@ export default function ProspectExplorerPage() {
   const [saveFilterOpen, setSaveFilterOpen] = useState(false);
   const [filterName, setFilterName] = useState("");
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["personal", "professional", "company", "location", "data"]));
+  const [fetchBusinessesOpen, setFetchBusinessesOpen] = useState(false);
+  const [businessKeyword, setBusinessKeyword] = useState("");
+  const [businessLocation, setBusinessLocation] = useState("United States");
 
   const buildQueryString = () => {
     const params = new URLSearchParams();
@@ -244,6 +247,32 @@ export default function ProspectExplorerPage() {
     onSuccess: () => {
       toast({ title: "Filter Deleted" });
       queryClient.invalidateQueries({ queryKey: ["/api/prospects/filters/saved"] });
+    },
+  });
+
+  const fetchBusinessesMutation = useMutation({
+    mutationFn: async (data: { keyword: string; location: string; limit: number }) => {
+      return apiRequest("/api/prospects/fetch-businesses", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Businesses Fetched",
+        description: data.message || `Imported ${data.imported} prospects`,
+      });
+      setFetchBusinessesOpen(false);
+      setBusinessKeyword("");
+      queryClient.invalidateQueries({ queryKey: ["/api/prospects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/prospects/stats/overview"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fetch Failed",
+        description: error.message || "Failed to fetch businesses",
+        variant: "destructive",
+      });
     },
   });
 
@@ -727,11 +756,68 @@ export default function ProspectExplorerPage() {
                 <Users className="h-16 w-16 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold">No Prospects Found</h3>
                 <p className="text-muted-foreground mt-2 max-w-md">
-                  Try adjusting your filters or search criteria to find more prospects.
+                  {stats.total === 0 
+                    ? "Your prospect database is empty. Fetch businesses from DataForSEO to get started."
+                    : "Try adjusting your filters or search criteria to find more prospects."
+                  }
                 </p>
-                <Button variant="outline" className="mt-4" onClick={resetFilters}>
-                  Reset Filters
-                </Button>
+                <div className="flex gap-3 mt-4">
+                  <Button variant="outline" onClick={resetFilters}>
+                    Reset Filters
+                  </Button>
+                  <Dialog open={fetchBusinessesOpen} onOpenChange={setFetchBusinessesOpen}>
+                    <DialogTrigger asChild>
+                      <Button data-testid="button-fetch-businesses">
+                        <Download className="h-4 w-4 mr-2" />
+                        Fetch Businesses
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Fetch Businesses from DataForSEO</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label>Business Type / Keyword</Label>
+                          <Input
+                            placeholder="e.g. software companies, marketing agencies, restaurants..."
+                            value={businessKeyword}
+                            onChange={(e) => setBusinessKeyword(e.target.value)}
+                            data-testid="input-business-keyword"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Enter the type of business you want to find
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Location</Label>
+                          <Input
+                            placeholder="e.g. United States, California, New York..."
+                            value={businessLocation}
+                            onChange={(e) => setBusinessLocation(e.target.value)}
+                            data-testid="input-business-location"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setFetchBusinessesOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() => fetchBusinessesMutation.mutate({ 
+                            keyword: businessKeyword, 
+                            location: businessLocation, 
+                            limit: 20 
+                          })}
+                          disabled={!businessKeyword || fetchBusinessesMutation.isPending}
+                          data-testid="button-confirm-fetch"
+                        >
+                          {fetchBusinessesMutation.isPending ? "Fetching..." : "Fetch Businesses"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             ) : (
               <Table>
