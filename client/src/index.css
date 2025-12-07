@@ -275,12 +275,21 @@ html:focus-within {
   color: var(--secondary-foreground) !important;
 }
 
-/* Enhanced focus indicators */
-.enhanced-focus :focus,
-.enhanced-focus :focus-visible {
-  outline: 3px solid var(--ring) !important;
+/* Enhanced focus indicators - scoped to interactive elements only */
+.enhanced-focus button:focus,
+.enhanced-focus button:focus-visible,
+.enhanced-focus a:focus,
+.enhanced-focus a:focus-visible,
+.enhanced-focus input:focus,
+.enhanced-focus input:focus-visible,
+.enhanced-focus select:focus,
+.enhanced-focus select:focus-visible,
+.enhanced-focus textarea:focus,
+.enhanced-focus textarea:focus-visible,
+.enhanced-focus [role="button"]:focus,
+.enhanced-focus [role="button"]:focus-visible {
+  outline: 2px solid var(--ring) !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5) !important;
 }
 
 /* Calendar popover z-index fix */
@@ -309,14 +318,7 @@ html:focus-within {
   display: none !important;
 }
 
-.enhanced-focus button:focus,
-.enhanced-focus a:focus,
-.enhanced-focus input:focus,
-.enhanced-focus select:focus,
-.enhanced-focus textarea:focus {
-  transform: scale(1.05);
-  transition: transform 0.1s ease-in-out;
-}
+/* Removed scale transform - was causing visual glitches */
 
 /* Reduced motion */
 .reduced-motion *,
