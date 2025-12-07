@@ -200,10 +200,7 @@ export default function ProspectExplorerPage() {
 
   const importMutation = useMutation({
     mutationFn: async (prospectIds: string[]) => {
-      return apiRequest("/api/prospects/import", {
-        method: "POST",
-        body: JSON.stringify({ prospectIds }),
-      });
+      return apiRequest("POST", "/api/prospects/import", { prospectIds });
     },
     onSuccess: (data: any) => {
       toast({
@@ -225,10 +222,7 @@ export default function ProspectExplorerPage() {
 
   const saveFilterMutation = useMutation({
     mutationFn: async (data: { name: string; filters: ProspectFilters }) => {
-      return apiRequest("/api/prospects/filters/saved", {
-        method: "POST",
-        body: JSON.stringify({ name: data.name, filters: data.filters }),
-      });
+      return apiRequest("POST", "/api/prospects/filters/saved", { name: data.name, filters: data.filters });
     },
     onSuccess: () => {
       toast({ title: "Filter Saved", description: "Your filter has been saved" });
@@ -240,9 +234,7 @@ export default function ProspectExplorerPage() {
 
   const deleteFilterMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/prospects/filters/saved/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/prospects/filters/saved/${id}`);
     },
     onSuccess: () => {
       toast({ title: "Filter Deleted" });
@@ -252,10 +244,7 @@ export default function ProspectExplorerPage() {
 
   const fetchBusinessesMutation = useMutation({
     mutationFn: async (data: { keyword: string; location: string; limit: number }) => {
-      return apiRequest("/api/prospects/fetch-businesses", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("POST", "/api/prospects/fetch-businesses", data);
     },
     onSuccess: (data: any) => {
       toast({
