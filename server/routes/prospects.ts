@@ -40,7 +40,7 @@ const prospectFilterSchema = z.object({
 });
 
 // GET /api/prospects - Search prospects with filters
-router.get('/', authenticate, async (req: Request, res: Response) => {
+router.get('/', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
@@ -182,7 +182,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 });
 
 // GET /api/prospects/:id - Get prospect details
-router.get('/:id', authenticate, async (req: Request, res: Response) => {
+router.get('/:id', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
@@ -210,7 +210,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
 });
 
 // POST /api/prospects/import - Import prospects to CRM as contacts
-router.post('/import', authenticate, async (req: Request, res: Response) => {
+router.post('/import', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
@@ -242,6 +242,7 @@ router.post('/import', authenticate, async (req: Request, res: Response) => {
       try {
         const contactData = {
           tenantId: user.tenantId,
+          name: `${prospect.firstName || ''} ${prospect.lastName || ''}`.trim() || 'Unknown',
           firstName: prospect.firstName || '',
           lastName: prospect.lastName || '',
           email: prospect.email || '',
@@ -286,7 +287,7 @@ router.post('/import', authenticate, async (req: Request, res: Response) => {
 });
 
 // GET /api/prospects/filters/saved - Get saved filters
-router.get('/filters/saved', authenticate, async (req: Request, res: Response) => {
+router.get('/filters/saved', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
@@ -309,7 +310,7 @@ router.get('/filters/saved', authenticate, async (req: Request, res: Response) =
 });
 
 // POST /api/prospects/filters/saved - Save a filter
-router.post('/filters/saved', authenticate, async (req: Request, res: Response) => {
+router.post('/filters/saved', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
@@ -350,7 +351,7 @@ router.post('/filters/saved', authenticate, async (req: Request, res: Response) 
 });
 
 // DELETE /api/prospects/filters/saved/:id - Delete saved filter
-router.delete('/filters/saved/:id', authenticate, async (req: Request, res: Response) => {
+router.delete('/filters/saved/:id', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
@@ -378,7 +379,7 @@ router.delete('/filters/saved/:id', authenticate, async (req: Request, res: Resp
 });
 
 // POST /api/prospects/search - Advanced search with DataForSEO integration
-router.post('/search', authenticate, async (req: Request, res: Response) => {
+router.post('/search', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
@@ -436,7 +437,7 @@ router.post('/search', authenticate, async (req: Request, res: Response) => {
 });
 
 // Get filter options (unique values for dropdowns)
-router.get('/filters/options', authenticate, async (req: Request, res: Response) => {
+router.get('/filters/options', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
@@ -480,7 +481,7 @@ router.get('/filters/options', authenticate, async (req: Request, res: Response)
 });
 
 // Get prospect statistics
-router.get('/stats/overview', authenticate, async (req: Request, res: Response) => {
+router.get('/stats/overview', authenticate as any, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user?.tenantId) {
