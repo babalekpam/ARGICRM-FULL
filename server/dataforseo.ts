@@ -194,7 +194,7 @@ export class DataForSEOService {
     };
   }
 
-  // Fetch business listings from DataForSEO
+  // Fetch business listings from DataForSEO using Google Maps SERP
   async fetchBusinessListings(
     keyword: string,
     location: string = "United States",
@@ -204,16 +204,42 @@ export class DataForSEOService {
     totalCount: number;
   }> {
     try {
+      // Use Google Maps SERP API which is more reliable for business searches
+      // Location code 2840 = United States
+      let locationCode = 2840;
+      
+      // Map common location names to codes
+      const locationMap: Record<string, number> = {
+        'united states': 2840,
+        'usa': 2840,
+        'california': 21137,
+        'new york': 21167,
+        'texas': 21176,
+        'florida': 21139,
+        'illinois': 21146,
+        'uk': 2826,
+        'united kingdom': 2826,
+        'canada': 2124,
+        'australia': 2036,
+        'germany': 2276,
+        'france': 2250,
+      };
+      
+      const normalizedLocation = location.toLowerCase().trim();
+      if (locationMap[normalizedLocation]) {
+        locationCode = locationMap[normalizedLocation];
+      }
+
       const requestBody = [
         {
           keyword: keyword,
-          location_name: location,
+          location_code: locationCode,
           language_code: "en",
-          limit: limit,
+          depth: Math.min(limit, 20),
         },
       ];
 
-      const response = await fetch(`${DATAFORSEO_API_URL}/business_data/google/my_business_info/live`, {
+      const response = await fetch(`${DATAFORSEO_API_URL}/serp/google/maps/live/advanced`, {
         method: "POST",
         headers: {
           "Authorization": this.getAuthHeader(),
@@ -237,13 +263,34 @@ export class DataForSEOService {
         throw new Error(`Task error: ${task?.status_message || "Unknown error"}`);
       }
 
+      // Extract business listings from SERP result
       const result = task.result?.[0];
-      const businesses = result?.items || [];
-      const totalCount = result?.items_count || 0;
+      const items = result?.items || [];
+      
+      // The items array contains business listings directly with type 'maps_search'
+      const businesses: BusinessListingItem[] = [];
+      for (const item of items) {
+        if (item.type === 'maps_search') {
+          businesses.push({
+            title: item.title || '',
+            domain: item.domain || '',
+            url: item.url || '',
+            phone: item.phone || '',
+            address: item.address || '',
+            address_info: {
+              city: item.address_info?.city || '',
+              region: item.address_info?.region || '',
+              country_code: item.address_info?.country_code || 'US',
+            },
+            category: item.category || '',
+            rating: item.rating ? { value: item.rating.value, votes_count: item.rating.votes_count } : undefined,
+          });
+        }
+      }
 
       return {
-        businesses,
-        totalCount,
+        businesses: businesses.slice(0, limit),
+        totalCount: businesses.length,
       };
     } catch (error) {
       console.error("Error fetching business listings from DataForSEO:", error);
