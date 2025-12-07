@@ -47,11 +47,8 @@ import {
   FileCheck,
   Bot
 } from "lucide-react";
-import ServiceMatchingChatbot from "@/components/service-matching-chatbot";
-
 export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   const serviceCategories = [
     { id: "all", label: "All Services", icon: Globe },
@@ -371,19 +368,6 @@ export default function ServicesPage() {
             Comprehensive CRM, cybersecurity and RF engineering solutions powered by advanced AI technology
           </p>
           
-          {/* AI Assistant CTA */}
-          <div className="mb-8">
-            <Button
-              onClick={() => setIsChatbotOpen(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <Bot className="mr-2 h-5 w-5" />
-              Get Personalized Service Recommendations
-            </Button>
-            <p className="text-sm text-gray-500 mt-2">
-              Chat with Cloe, our AI assistant, to find the perfect solution for your needs
-            </p>
-          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
@@ -687,13 +671,6 @@ export default function ServicesPage() {
           </p>
         </div>
       </section>
-      {/* Service Matching Chatbot */}
-      <ServiceMatchingChatbot
-        isOpen={isChatbotOpen}
-        onClose={() => setIsChatbotOpen(false)}
-        onMinimize={() => setIsChatbotOpen(false)}
-        isMinimized={false}
-      />
     </div>
   );
 }

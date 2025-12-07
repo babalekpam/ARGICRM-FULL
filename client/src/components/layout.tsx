@@ -5,7 +5,6 @@ import MobileFAB from "@/components/mobile-fab";
 import QuickActionsMenu from "@/components/quick-actions-menu";
 import CommandPalette from "@/components/command-palette";
 import { BrandedFooter } from "@/components/branded-footer";
-import ChatbotTrigger from "@/components/chatbot-trigger";
 import LiveChatWidget from "@/components/live-chat-widget";
 import PageTranslator from "@/components/PageTranslator";
 
@@ -162,9 +161,6 @@ export default function Layout({ children }: LayoutProps) {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
       />
-      
-      {/* Chatbot Trigger (hidden on super admin dashboard and funnel builder) */}
-      {!isSuperAdminDashboard && !isFunnelBuilder && <ChatbotTrigger />}
       
       {/* Live Chat Widget (hidden on super admin dashboard and funnel builder) */}
       {!isSuperAdminDashboard && !isFunnelBuilder && <LiveChatWidget />}
