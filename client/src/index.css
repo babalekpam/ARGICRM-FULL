@@ -292,6 +292,20 @@ html:focus-within {
   outline-offset: 2px !important;
 }
 
+/* HEADER BUTTONS FIX - ensure header buttons are always clickable */
+header {
+  pointer-events: auto !important;
+  isolation: isolate !important;
+}
+
+header button,
+header [role="button"],
+header a {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: inherit !important;
+}
+
 /* Calendar popover z-index fix - scoped to actual visible content */
 [data-radix-popper-content-wrapper] {
   z-index: 9999 !important;

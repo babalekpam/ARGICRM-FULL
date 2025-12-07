@@ -83,7 +83,7 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Desktop Navigation & Header - Hidden on Funnel Builder */}
       {!isFunnelBuilder && (
-        <div className="hidden md:block">
+        <div className="hidden md:block pointer-events-none [&>*]:pointer-events-auto">
           <Navigation />
           <Header />
         </div>
