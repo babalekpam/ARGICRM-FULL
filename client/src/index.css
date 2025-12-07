@@ -300,10 +300,22 @@ header {
 
 header button,
 header [role="button"],
-header a {
+header a,
+header [data-testid^="button-"] {
   pointer-events: auto !important;
   position: relative !important;
   z-index: inherit !important;
+  cursor: pointer !important;
+}
+
+/* Explicit button styling in header */
+header [data-testid="button-notifications"],
+header [data-testid="button-theme-toggle"],
+header [data-testid="button-settings"],
+header [data-testid="button-user-menu"],
+header [data-testid="button-global-search"] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 /* Calendar popover z-index fix - scoped to actual visible content */
