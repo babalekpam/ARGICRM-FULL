@@ -28,7 +28,15 @@ import {
   Sparkles,
   Bot,
   Mail,
-  Target
+  Target,
+  Database,
+  Phone,
+  Linkedin,
+  Search,
+  Flame,
+  Mic,
+  UserCheck,
+  MailSearch
 } from "lucide-react";
 import Logo from "@/components/logo";
 import { SEO } from "@/components/SEO";
@@ -114,11 +122,53 @@ export default function SimpleLanding() {
 
   const comprehensiveFeatures = [
     {
+      icon: Database,
+      title: "B2B Prospect Database",
+      description: "Access 275M+ verified contacts with 20+ filters - job title, industry, company size, revenue, and more",
+      altText: "B2B prospect database with millions of verified business contacts and advanced search filters"
+    },
+    {
+      icon: Mail,
+      title: "Email Sequences",
+      description: "Multi-step automated campaigns with A/B testing, 7 step types, and drag-drop builder",
+      altText: "Email sequence builder with automated campaigns, A/B testing, and performance analytics"
+    },
+    {
       icon: Bot,
       title: "AI Employees",
       description: "6 autonomous AI agents for social media, lead qualification, email automation, and sales proposals",
       image: aiImage,
       altText: "AI employee autonomous agents for CRM automation, social media, and lead qualification"
+    },
+    {
+      icon: Phone,
+      title: "Built-in Dialer",
+      description: "Click-to-call with VoIP, call recording, live transcription, and outcome tracking",
+      altText: "Built-in sales dialer with VoIP calling, call recording, and transcription features"
+    },
+    {
+      icon: Flame,
+      title: "Buyer Intent Signals",
+      description: "Track engagement, auto-score leads, and identify hot prospects with AI-powered intent detection",
+      altText: "Buyer intent signals dashboard showing lead scoring and engagement tracking"
+    },
+    {
+      icon: Linkedin,
+      title: "LinkedIn Integration",
+      description: "Automate profile views, connection requests, messages, and track accept rates",
+      altText: "LinkedIn automation for connection requests, messaging, and activity tracking"
+    },
+    {
+      icon: MailSearch,
+      title: "Email Finder & Enrichment",
+      description: "Find emails by name + company, validate deliverability, and auto-enrich contact data",
+      altText: "Email finder and validation tool with contact data enrichment"
+    },
+    {
+      icon: Mic,
+      title: "Conversation Intelligence",
+      description: "AI analysis of calls with sentiment detection, objection tracking, and deal signals",
+      altText: "Conversation intelligence with AI-powered call analysis and sentiment detection"
     },
     {
       icon: Brain,
@@ -141,11 +191,6 @@ export default function SimpleLanding() {
       altText: "Business analytics dashboard showing real-time data insights and reporting metrics"
     },
     {
-      icon: MessageSquare,
-      title: "Email Marketing",
-      description: "Professional campaigns with automation, segmentation, and detailed analytics"
-    },
-    {
       icon: CreditCard,
       title: "Financial Operations",
       description: "Multi-currency invoicing, expense tracking, and automated bookkeeping"
@@ -153,10 +198,10 @@ export default function SimpleLanding() {
   ];
 
   const stats = [
+    { value: "275M+", label: "B2B Contacts", icon: Database },
     { value: "195+", label: "Countries Supported", icon: Globe },
     { value: "20+", label: "Languages", icon: MessageSquare },
-    { value: "99.9%", label: "Uptime SLA", icon: CheckCircle },
-    { value: "24/7", label: "Support", icon: Shield }
+    { value: "99.9%", label: "Uptime SLA", icon: CheckCircle }
   ];
 
   const benefits = [
@@ -259,18 +304,20 @@ export default function SimpleLanding() {
           "worstRating": "1"
         },
         "featureList": [
+          "275M+ B2B Prospect Database with 20+ Advanced Filters",
+          "Email Sequence Builder with A/B Testing & 7 Step Types",
+          "Built-in VoIP Dialer with Call Recording & Transcription",
+          "Buyer Intent Signals with AI-Powered Lead Scoring",
+          "LinkedIn Automation - Views, Connections, Messages",
+          "Email Finder & Validation with Data Enrichment",
+          "Conversation Intelligence with Sentiment Analysis",
           "6 AI Employees - Social Media, SDR, Email, Chat, Closer, Lead Scorer",
           "AI-Powered CRM with Intelligent Predictions",
           "Complete E-commerce Store Builder",
           "SEO Tools - Keyword Research & Site Audit",
           "Multi-Platform Search Optimization (11 Platforms)",
-          "Email & SMS Marketing Automation",
           "Financial Management & Bookkeeping",
           "Multi-Language Support (20+ Languages)",
-          "Multi-Currency Support (54+ African Currencies)",
-          "AI Campaign & Funnel Generation",
-          "Real-Time Analytics Dashboard",
-          "Team Collaboration Tools",
           "White-Label Branding Options"
         ]
       },
@@ -282,23 +329,31 @@ export default function SimpleLanding() {
             "name": "What is ARGILETTE?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "ARGILETTE is a comprehensive all-in-one business platform that combines CRM, e-commerce, SEO tools, marketing automation, and financial management. It uses AI to help businesses optimize their operations across 11 different search and social platforms."
+              "text": "ARGILETTE is a comprehensive sales engagement platform with 275M+ B2B contacts database, email sequences with A/B testing, built-in dialer, LinkedIn automation, buyer intent signals, and conversation intelligence. It also includes CRM, e-commerce, SEO tools, and 6 AI Employees for autonomous sales operations."
             }
           },
           {
             "@type": "Question",
-            "name": "How many languages does ARGILETTE support?",
+            "name": "How does the B2B Prospect Database work?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "ARGILETTE supports 20+ languages including English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Hindi, and more. The platform includes automatic translation for global reach."
+              "text": "ARGILETTE provides access to 275M+ verified B2B contacts with 20+ advanced filters including job title, seniority, department, industry, company size, revenue, technologies, and location. You can save filters, bulk import prospects to your CRM, and use email finder to discover verified email addresses."
             }
           },
           {
             "@type": "Question",
-            "name": "What platforms does Search Everywhere Optimization track?",
+            "name": "What sales engagement features does ARGILETTE include?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "ARGILETTE tracks your brand visibility across 11 platforms: Google, YouTube, Instagram, TikTok, Pinterest, Amazon, ChatGPT, Perplexity AI, Google Gemini, Microsoft Copilot, and Claude AI."
+              "text": "ARGILETTE includes email sequences with A/B testing and 7 step types, built-in VoIP dialer with call recording and transcription, LinkedIn automation for profile views and connection requests, buyer intent signals with AI-powered lead scoring, conversation intelligence with sentiment analysis, and email finder with validation."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does ARGILETTE compare to Apollo.io?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ARGILETTE offers full Apollo.io feature parity including prospect database, email sequences, dialer, LinkedIn integration, intent signals, and conversation intelligence - plus CRM, e-commerce, SEO tools, and 6 AI Employees. Starting at $69.99/month, it's 90% cheaper than Apollo + HubSpot + Gong combined."
             }
           },
           {
@@ -306,7 +361,7 @@ export default function SimpleLanding() {
             "name": "What are the ARGILETTE pricing plans?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "ARGILETTE offers flexible monthly subscription plans with AI Employee automation: $69.99/month for Starter (1,000 AI operations), $179.99/month for Professional (5,000 AI operations), $349.99/month for Business (15,000 AI operations), and $899.99/month for Enterprise (unlimited AI operations). All plans include CRM, SEO, E-commerce, Link Building, 11-platform tracking, and 6 AI Employees. 90% cheaper than buying Semrush + HubSpot + Drift + Copy.ai separately!"
+              "text": "ARGILETTE offers flexible monthly subscription plans: $69.99/month for Starter (1,000 AI operations), $179.99/month for Professional (5,000 AI operations), $349.99/month for Business (15,000 AI operations), and $899.99/month for Enterprise (unlimited). All plans include full sales engagement suite, CRM, SEO, E-commerce, and 6 AI Employees."
             }
           }
         ]
@@ -341,9 +396,9 @@ export default function SimpleLanding() {
     <PageTranslator context="landing-page">
       <div className={`min-h-screen bg-[hsl(228,47%,10%)] ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <SEO
-          title="ARGILETTE - AI Business Platform | CRM + 6 AI Employees + E-commerce + SEO"
-          description="All-in-one AI-powered business platform with CRM, 6 AI Employees (social media, lead scoring, email automation, chat bot), e-commerce builder, SEO tools, and Link Building. Track your brand across 11 platforms. Monthly subscription from $69.99. 90% cheaper than Semrush + HubSpot + Drift combined."
-          keywords="AI employees, autonomous AI agents, AI business platform, CRM software, AI chatbot, lead scoring, social media automation, e-commerce builder, SEO tools, keyword research, site audit, multi-platform optimization, marketing automation, AI campaign generation, business management software"
+          title="ARGILETTE - Sales Engagement Platform | 275M+ B2B Contacts + AI Employees + CRM"
+          description="All-in-one sales engagement platform with 275M+ B2B prospect database, email sequences with A/B testing, built-in dialer, LinkedIn automation, buyer intent signals, conversation intelligence, and 6 AI Employees. Apollo.io alternative from $69.99/month. 90% cheaper than Apollo + HubSpot + Gong combined."
+          keywords="B2B prospect database, sales engagement platform, email sequences, A/B testing, built-in dialer, LinkedIn automation, buyer intent signals, conversation intelligence, AI employees, CRM software, lead scoring, email finder, contact enrichment, Apollo alternative"
           canonical="https://argilette.org/"
           structuredData={structuredData}
         />
