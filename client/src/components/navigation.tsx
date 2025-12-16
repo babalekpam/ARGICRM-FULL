@@ -123,6 +123,9 @@ export default function Navigation({ onLogout }: NavigationProps) {
       modules: [
         { path: "/prospect-explorer", label: "Prospect Explorer", icon: Users, permission: "leads.read", testId: "link-prospect-explorer" },
         { path: "/email-finder", label: "Email Finder", icon: Mail, permission: "leads.read", testId: "link-email-finder" },
+        { path: "/website-visitors", label: "Website Visitors", icon: Eye, permission: "leads.read", testId: "link-website-visitors" },
+        { path: "/technographics", label: "Technographics", icon: Cog, permission: "leads.read", testId: "link-technographics" },
+        { path: "/org-charts", label: "Org Charts", icon: GitBranch, permission: "leads.read", testId: "link-org-charts" },
       ]
     },
     {
@@ -160,6 +163,9 @@ export default function Navigation({ onLogout }: NavigationProps) {
         { path: "/unified-analytics", label: "Unified Analytics", icon: Activity, permission: "analytics.read" },
         { path: "/intent-signals", label: "Intent Signals", icon: Zap, permission: "analytics.read", testId: "link-intent-signals" },
         { path: "/conversation-intelligence", label: "Conversation Intelligence", icon: Mic, permission: "analytics.read", testId: "link-conversation-intelligence" },
+        { path: "/company-news", label: "Company News", icon: FileText, permission: "analytics.read", testId: "link-company-news" },
+        { path: "/data-health", label: "Data Health", icon: Heart, permission: "analytics.read", testId: "link-data-health" },
+        { path: "/account-scoring", label: "Account Scoring", icon: Target, permission: "analytics.read", testId: "link-account-scoring" },
       ]
     },
     {

@@ -52,6 +52,7 @@ const SettingsPage = lazy(() => import("@/pages/settings"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics"));
 const AdvancedAnalyticsPage = lazy(() => import("@/pages/advanced-analytics"));
 const UnifiedAnalyticsPage = lazy(() => import("@/pages/unified-analytics"));
+const DataHealthPage = lazy(() => import("@/pages/data-health"));
 const IntentSignalsPage = lazy(() => import("@/pages/intent-signals"));
 const ConversationIntelligencePage = lazy(() => import("@/pages/conversation-intelligence"));
 const AbTestingPage = lazy(() => import("@/pages/ab-testing"));
@@ -87,6 +88,11 @@ const LinkedinTasksPage = lazy(() => import("@/pages/linkedin-tasks"));
 const DialerPage = lazy(() => import("@/pages/dialer"));
 const ProspectExplorerPage = lazy(() => import("@/pages/prospect-explorer"));
 const EmailFinderPage = lazy(() => import("@/pages/email-finder"));
+const WebsiteVisitorsPage = lazy(() => import("@/pages/website-visitors"));
+const TechnographicsPage = lazy(() => import("@/pages/technographics"));
+const OrgChartsPage = lazy(() => import("@/pages/org-charts"));
+const CompanyNewsPage = lazy(() => import("@/pages/company-news"));
+const AccountScoringPage = lazy(() => import("@/pages/account-scoring"));
 
 // ARGILETTE SEO Platform - Full Ubersuggest Clone
 const SeoAuditPage = lazy(() => import("@/pages/seo-audit"));
@@ -269,6 +275,27 @@ function App() {
                               </Suspense>
                             </ProtectedRoute>
                           )}</Route>
+                          <Route path="/website-visitors">{() => (
+                            <ProtectedRoute requiredPermission="leads.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><WebsiteVisitorsPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/technographics">{() => (
+                            <ProtectedRoute requiredPermission="leads.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><TechnographicsPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/org-charts">{() => (
+                            <ProtectedRoute requiredPermission="leads.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><OrgChartsPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
                           
                           {/* Engagement Routes */}
                           <Route path="/sequences">{() => (
@@ -331,9 +358,28 @@ function App() {
                               <PageTranslator><UnifiedAnalyticsPage /></PageTranslator>
                             </ProtectedRoute>
                           )}</Route>
+                          <Route path="/data-health">{() => (
+                            <ProtectedRoute requiredPermission="analytics.read">
+                              <PageTranslator><DataHealthPage /></PageTranslator>
+                            </ProtectedRoute>
+                          )}</Route>
                           <Route path="/intent-signals">{() => (
                             <ProtectedRoute requiredPermission="analytics.read">
                               <PageTranslator><IntentSignalsPage /></PageTranslator>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/account-scoring">{() => (
+                            <ProtectedRoute requiredPermission="analytics.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><AccountScoringPage /></PageTranslator>
+                              </Suspense>
+                            </ProtectedRoute>
+                          )}</Route>
+                          <Route path="/company-news">{() => (
+                            <ProtectedRoute requiredPermission="analytics.read">
+                              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+                                <PageTranslator><CompanyNewsPage /></PageTranslator>
+                              </Suspense>
                             </ProtectedRoute>
                           )}</Route>
                           <Route path="/conversation-intelligence">{() => (

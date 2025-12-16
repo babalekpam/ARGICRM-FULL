@@ -5965,3 +5965,252 @@ export type InsertExtensionSession = z.infer<typeof insertExtensionSessionSchema
 export type InsertExtensionEvent = z.infer<typeof insertExtensionEventSchema>;
 export type InsertConversationIntelligence = z.infer<typeof insertConversationIntelligenceSchema>;
 
+// ============================================
+// ZoomInfo-like B2B Intelligence Features
+// ============================================
+
+// Website Visitor Identification - Track anonymous companies visiting your site
+export const websiteVisitors = pgTable("website_visitors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  ipHash: text("ip_hash").notNull(), // Hashed IP for privacy
+  companyName: text("company_name"),
+  companyDomain: text("company_domain"),
+  companyIndustry: text("company_industry"),
+  companySize: text("company_size"), // 1-10, 11-50, 51-200, 201-500, 500+
+  companyRevenue: text("company_revenue"),
+  location: text("location"),
+  pageViews: integer("page_views").default(1),
+  sessionDuration: integer("session_duration").default(0), // seconds
+  pagesVisited: jsonb("pages_visited").$type<string[]>().default([]),
+  referrer: text("referrer"),
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  deviceType: text("device_type"), // desktop, mobile, tablet
+  browserInfo: text("browser_info"),
+  isIdentified: boolean("is_identified").default(false),
+  linkedAccountId: varchar("linked_account_id").references(() => accounts.id),
+  enrichmentData: jsonb("enrichment_data").$type<{
+    employees?: number;
+    foundedYear?: number;
+    technologies?: string[];
+    socialProfiles?: Record<string, string>;
+    confidence?: number;
+  }>(),
+  firstVisitAt: timestamp("first_visit_at").defaultNow(),
+  lastVisitAt: timestamp("last_visit_at").defaultNow(),
+  visitCount: integer("visit_count").default(1),
+}, (table) => [
+  index("idx_website_visitors_tenant").on(table.tenantId),
+  index("idx_website_visitors_company").on(table.companyDomain),
+  index("idx_website_visitors_date").on(table.lastVisitAt),
+]);
+
+// Technographics - Technology stack information for companies
+export const technographics = pgTable("technographics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  accountId: varchar("account_id").references(() => accounts.id),
+  companyDomain: text("company_domain").notNull(),
+  technologies: jsonb("technologies").$type<Array<{
+    category: string; // CRM, Marketing, Analytics, Cloud, Development, etc.
+    name: string;
+    version?: string;
+    confidence: number; // 0-1
+    detectedAt: string;
+  }>>().default([]),
+  categories: jsonb("categories").$type<Record<string, string[]>>().default({}), // { "CRM": ["Salesforce"], "Marketing": ["HubSpot"] }
+  totalTechnologies: integer("total_technologies").default(0),
+  monthlySpend: text("monthly_spend"), // Estimated tech spend
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  dataSource: text("data_source"), // builtwith, stackshare, manual
+  confidence: real("confidence").default(0.8),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_technographics_tenant").on(table.tenantId),
+  index("idx_technographics_account").on(table.accountId),
+  index("idx_technographics_domain").on(table.companyDomain),
+]);
+
+// Org Charts - Company organizational structure
+export const orgChartNodes = pgTable("org_chart_nodes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  accountId: varchar("account_id").references(() => accounts.id).notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id),
+  name: text("name").notNull(),
+  title: text("title"),
+  department: text("department"),
+  level: text("level"), // C-Level, VP, Director, Manager, Individual Contributor
+  reportingTo: varchar("reporting_to"), // Self-reference for hierarchy
+  email: text("email"),
+  phone: text("phone"),
+  linkedinUrl: text("linkedin_url"),
+  isDecisionMaker: boolean("is_decision_maker").default(false),
+  influenceScore: real("influence_score").default(0.5), // 0-1
+  engagementStatus: text("engagement_status"), // engaged, contacted, cold
+  notes: text("notes"),
+  photoUrl: text("photo_url"),
+  trustScore: real("trust_score").default(0.7), // Data confidence
+  lastVerified: timestamp("last_verified"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_org_chart_tenant").on(table.tenantId),
+  index("idx_org_chart_account").on(table.accountId),
+  index("idx_org_chart_parent").on(table.reportingTo),
+]);
+
+// Company News & Alerts
+export const companyNewsEvents = pgTable("company_news_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  accountId: varchar("account_id").references(() => accounts.id),
+  companyDomain: text("company_domain"),
+  eventType: text("event_type").notNull(), // funding, acquisition, hiring, layoffs, product_launch, leadership_change, expansion, award
+  title: text("title").notNull(),
+  description: text("description"),
+  source: text("source"), // news_api, linkedin, crunchbase, manual
+  sourceUrl: text("source_url"),
+  publishedAt: timestamp("published_at"),
+  sentiment: text("sentiment"), // positive, neutral, negative
+  sentimentScore: real("sentiment_score"), // -1 to 1
+  significance: text("significance"), // high, medium, low
+  fundingAmount: text("funding_amount"), // For funding events
+  fundingRound: text("funding_round"), // Series A, B, C, etc.
+  isFollowed: boolean("is_followed").default(false),
+  isRead: boolean("is_read").default(false),
+  alertSent: boolean("alert_sent").default(false),
+  metadata: jsonb("metadata").$type<{
+    investors?: string[];
+    acquirer?: string;
+    acquired?: string;
+    newExecutive?: { name: string; title: string };
+    hireCount?: number;
+    layoffCount?: number;
+    location?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_company_news_tenant").on(table.tenantId),
+  index("idx_company_news_account").on(table.accountId),
+  index("idx_company_news_type").on(table.eventType),
+  index("idx_company_news_date").on(table.publishedAt),
+]);
+
+// CRM Data Health Dashboard
+export const crmDataQualitySnapshots = pgTable("crm_data_quality_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  snapshotDate: timestamp("snapshot_date").defaultNow(),
+  overallScore: real("overall_score").notNull(), // 0-100
+  contactsScore: real("contacts_score").default(0),
+  accountsScore: real("accounts_score").default(0),
+  leadsScore: real("leads_score").default(0),
+  dealsScore: real("deals_score").default(0),
+  metrics: jsonb("metrics").$type<{
+    totalContacts: number;
+    contactsWithEmail: number;
+    contactsWithPhone: number;
+    contactsWithCompany: number;
+    duplicateContacts: number;
+    staleContacts: number; // Not updated in 90 days
+    totalAccounts: number;
+    accountsWithIndustry: number;
+    accountsWithWebsite: number;
+    accountsWithRevenue: number;
+    duplicateAccounts: number;
+    totalLeads: number;
+    leadsWithSource: number;
+    staleLeads: number;
+    totalDeals: number;
+    dealsWithValue: number;
+    dealsWithCloseDate: number;
+  }>(),
+  suggestions: jsonb("suggestions").$type<Array<{
+    type: string;
+    priority: string;
+    message: string;
+    count: number;
+    action: string;
+  }>>().default([]),
+  enrichmentOpportunities: integer("enrichment_opportunities").default(0),
+  duplicateRecords: integer("duplicate_records").default(0),
+  staleRecords: integer("stale_records").default(0),
+  missingFields: jsonb("missing_fields").$type<Record<string, number>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_data_quality_tenant").on(table.tenantId),
+  index("idx_data_quality_date").on(table.snapshotDate),
+]);
+
+// Account Scoring - AI-powered account prioritization
+export const accountScores = pgTable("account_scores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  accountId: varchar("account_id").references(() => accounts.id).notNull(),
+  overallScore: real("overall_score").notNull(), // 0-100
+  tier: text("tier"), // A, B, C, D
+  signals: jsonb("signals").$type<{
+    intentScore: number;
+    engagementScore: number;
+    fitScore: number;
+    techStackFit: number;
+    revenueScore: number;
+    growthSignals: number;
+    websiteActivityScore: number;
+  }>(),
+  weights: jsonb("weights").$type<{
+    intent: number;
+    engagement: number;
+    fit: number;
+    techStack: number;
+    revenue: number;
+    growth: number;
+    websiteActivity: number;
+  }>(),
+  factors: jsonb("factors").$type<Array<{
+    name: string;
+    value: number;
+    impact: string; // positive, negative, neutral
+    description: string;
+  }>>().default([]),
+  aiExplanation: text("ai_explanation"),
+  recommendedActions: jsonb("recommended_actions").$type<string[]>().default([]),
+  predictedCloseRate: real("predicted_close_rate"),
+  predictedDealSize: text("predicted_deal_size"),
+  lastCalculated: timestamp("last_calculated").defaultNow(),
+  modelVersion: text("model_version").default("v1"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_account_scores_tenant").on(table.tenantId),
+  index("idx_account_scores_account").on(table.accountId),
+  index("idx_account_scores_score").on(table.overallScore),
+  index("idx_account_scores_tier").on(table.tier),
+]);
+
+// ZoomInfo Feature Schemas
+export const insertWebsiteVisitorSchema = createInsertSchema(websiteVisitors).omit({ id: true, firstVisitAt: true, lastVisitAt: true });
+export const insertTechnographicsSchema = createInsertSchema(technographics).omit({ id: true, createdAt: true, lastUpdated: true });
+export const insertOrgChartNodeSchema = createInsertSchema(orgChartNodes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCompanyNewsEventSchema = createInsertSchema(companyNewsEvents).omit({ id: true, createdAt: true });
+export const insertCrmDataQualitySnapshotSchema = createInsertSchema(crmDataQualitySnapshots).omit({ id: true, createdAt: true });
+export const insertAccountScoreSchema = createInsertSchema(accountScores).omit({ id: true, createdAt: true, updatedAt: true });
+
+// ZoomInfo Feature Types
+export type WebsiteVisitor = typeof websiteVisitors.$inferSelect;
+export type Technographics = typeof technographics.$inferSelect;
+export type OrgChartNode = typeof orgChartNodes.$inferSelect;
+export type CompanyNewsEvent = typeof companyNewsEvents.$inferSelect;
+export type CrmDataQualitySnapshot = typeof crmDataQualitySnapshots.$inferSelect;
+export type AccountScore = typeof accountScores.$inferSelect;
+
+export type InsertWebsiteVisitor = z.infer<typeof insertWebsiteVisitorSchema>;
+export type InsertTechnographics = z.infer<typeof insertTechnographicsSchema>;
+export type InsertOrgChartNode = z.infer<typeof insertOrgChartNodeSchema>;
+export type InsertCompanyNewsEvent = z.infer<typeof insertCompanyNewsEventSchema>;
+export type InsertCrmDataQualitySnapshot = z.infer<typeof insertCrmDataQualitySnapshotSchema>;
+export type InsertAccountScore = z.infer<typeof insertAccountScoreSchema>;
+
