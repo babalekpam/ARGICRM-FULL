@@ -5966,7 +5966,7 @@ export type InsertExtensionEvent = z.infer<typeof insertExtensionEventSchema>;
 export type InsertConversationIntelligence = z.infer<typeof insertConversationIntelligenceSchema>;
 
 // ============================================
-// ZoomInfo-like B2B Intelligence Features
+// Sales Intelligence Features
 // ============================================
 
 // Website Visitor Identification - Track anonymous companies visiting your site
@@ -6191,7 +6191,7 @@ export const accountScores = pgTable("account_scores", {
   index("idx_account_scores_tier").on(table.tier),
 ]);
 
-// ZoomInfo Feature Schemas
+// Sales Intelligence Schemas
 export const insertWebsiteVisitorSchema = createInsertSchema(websiteVisitors).omit({ id: true, firstVisitAt: true, lastVisitAt: true });
 export const insertTechnographicsSchema = createInsertSchema(technographics).omit({ id: true, createdAt: true, lastUpdated: true });
 export const insertOrgChartNodeSchema = createInsertSchema(orgChartNodes).omit({ id: true, createdAt: true, updatedAt: true });
@@ -6199,7 +6199,7 @@ export const insertCompanyNewsEventSchema = createInsertSchema(companyNewsEvents
 export const insertCrmDataQualitySnapshotSchema = createInsertSchema(crmDataQualitySnapshots).omit({ id: true, createdAt: true });
 export const insertAccountScoreSchema = createInsertSchema(accountScores).omit({ id: true, createdAt: true, updatedAt: true });
 
-// ZoomInfo Feature Types
+// Sales Intelligence Types
 export type WebsiteVisitor = typeof websiteVisitors.$inferSelect;
 export type Technographics = typeof technographics.$inferSelect;
 export type OrgChartNode = typeof orgChartNodes.$inferSelect;

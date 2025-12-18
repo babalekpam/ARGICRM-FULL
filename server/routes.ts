@@ -86,7 +86,7 @@ import { trialLockMiddleware, requireActiveSubscription } from "./middleware/tri
 import { registerEcommerceRoutes } from "./routes/ecommerce.js";
 import { authenticateClient, type RequestWithClientContext } from "./client-portal-auth.js";
 import { registerInventoryRoutes } from "./routes/inventory.js";
-import { registerZoomInfoIntelligenceRoutes } from "./routes/zoominfo-intelligence.js";
+import { registerSalesIntelligenceRoutes } from "./routes/sales-intelligence.js";
 import { translationService } from "./services/translation-service.js";
 import { aiFailoverService } from "./services/ai-failover-service.js";
 import { leadGenerationService } from "./services/lead-generation-service.js";
@@ -6162,8 +6162,8 @@ Jane Smith,jane@company.com,+1-555-0456,Tech Solutions,Marketing Director,"San F
   const { registerAutomationRoutes } = await import('./routes/automation.js');
   registerAutomationRoutes(app);
   
-  // Register ZoomInfo B2B Intelligence routes
-  registerZoomInfoIntelligenceRoutes(app);
+  // Register Sales Intelligence routes
+  registerSalesIntelligenceRoutes(app);
   
   app.use('/api/voice-emotion', voiceEmotionRoutes);
 

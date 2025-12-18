@@ -1556,7 +1556,7 @@ accountScoresRouter.delete('/:id', authenticate as any, async (req: Request, res
 // REGISTER ALL ROUTES
 // ========================================
 
-export function registerZoomInfoIntelligenceRoutes(app: Express): void {
+export function registerSalesIntelligenceRoutes(app: Express): void {
   app.use('/api/website-visitors', websiteVisitorsRouter);
   app.use('/api/technographics', technographicsRouter);
   app.use('/api/org-charts', orgChartsRouter);
@@ -1564,5 +1564,5 @@ export function registerZoomInfoIntelligenceRoutes(app: Express): void {
   app.use('/api/data-health', dataHealthRouter);
   app.use('/api/account-scores', accountScoresRouter);
   
-  console.log('ZoomInfo B2B Intelligence routes registered');
+  console.log('✅ Sales Intelligence routes registered');
 }
