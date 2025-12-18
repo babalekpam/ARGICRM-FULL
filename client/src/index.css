@@ -655,32 +655,33 @@ header [data-testid="button-global-search"] {
   --sidebar-primary-foreground: 0 0% 100%;
 }
 
-/* Apollo-style utility classes */
-.apollo-text-primary { color: hsl(210 17% 98%); }
-.apollo-text-secondary { color: hsl(215 20% 65%); }
-.apollo-text-tertiary { color: hsl(215 16% 47%); }
+/* ZoomInfo-style utility classes */
+.zoominfo-text-primary { color: hsl(var(--foreground)); }
+.zoominfo-text-secondary { color: hsl(var(--muted-foreground)); }
+.zoominfo-text-accent { color: hsl(var(--primary)); }
 
-.apollo-bg-base { background-color: hsl(228 37% 7%); }
-.apollo-bg-surface { background-color: hsl(228 47% 12%); }
-.apollo-bg-raised { background-color: hsl(229 41% 16%); }
+.zoominfo-bg-base { background-color: hsl(var(--background)); }
+.zoominfo-bg-surface { background-color: hsl(var(--card)); }
+.zoominfo-bg-muted { background-color: hsl(var(--muted)); }
 
-/* Apollo sidebar navigation active state */
-.apollo-nav-active {
-  background-color: hsl(229 41% 16%);
-  border-left: 3px solid hsl(227 89% 63%);
+/* ZoomInfo navigation active state */
+.zoominfo-nav-active {
+  background-color: hsl(var(--primary) / 0.1);
+  border-left: 3px solid hsl(var(--primary));
+  color: hsl(var(--primary));
 }
 
-/* Apollo data table styling */
-.apollo-table thead {
-  background-color: hsl(228 37% 7%);
+/* ZoomInfo data table styling */
+.zoominfo-table thead {
+  background-color: hsl(var(--muted));
 }
 
-.apollo-table tbody tr:hover {
-  background-color: hsl(229 41% 16%);
+.zoominfo-table tbody tr:hover {
+  background-color: hsl(var(--muted));
 }
 
-/* Apollo card flat style */
-.apollo-card {
+/* ZoomInfo card style */
+.zoominfo-card {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
