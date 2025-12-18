@@ -452,13 +452,23 @@ export default function OrgChartsPage() {
       try {
         const response = await fetch("/api/org-charts");
         if (!response.ok) {
+          // API not available, use mock data
           return MOCK_ORG_DATA;
         }
-        return response.json();
+        const data = await response.json();
+        // If API returns empty data, fall back to mock
+        if (!data || !data.companies || data.companies.length === 0) {
+          return MOCK_ORG_DATA;
+        }
+        return data;
       } catch {
+        // Network error, use mock data
         return MOCK_ORG_DATA;
       }
     },
+    // Ensure we always have data
+    staleTime: Infinity,
+    retry: false,
   });
 
   const addToContactsMutation = useMutation({
@@ -491,7 +501,10 @@ export default function OrgChartsPage() {
     },
   });
 
-  const companies = orgData?.companies || [];
+  // Always ensure we have companies data (use mock as fallback)
+  const companies = orgData?.companies && orgData.companies.length > 0 
+    ? orgData.companies 
+    : MOCK_ORG_DATA.companies;
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
 
   const departments = useMemo(() => {
