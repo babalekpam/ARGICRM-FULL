@@ -1,275 +1,296 @@
-# NODE CRM Design Guidelines
-**B2B Sales Intelligence & CRM Platform - Apollo.io Inspired**
+# ARGILETTE Design Guidelines
+**Enterprise B2B SaaS Platform - ZoomInfo-Inspired Light Theme**
 
 ## Design Philosophy
 
-**Approach**: Dark, modern SaaS interface combining Apollo.io's data density with Linear's clarity and Notion's organization. Professional B2B aesthetic with flat design, strategic use of color, and generous breathing room.
+**Approach**: Clean, professional enterprise SaaS interface with a light theme. Data-focused design that prioritizes scannability, efficiency, and clarity. Minimal shadows, clear borders, and consistent patterns throughout.
 
 **Core Principles**:
-- Information density without clutter
-- Dark backgrounds with strategic accent use
-- Flat, bordered cards (minimal shadows)
-- Whitespace creates hierarchy
-- Data-first presentation
+1. Clean & Professional - minimal shadows, clear borders
+2. Data-Focused - numbers prominent, easy to scan
+3. Efficient - dense information, little whitespace waste
+4. Consistent - same patterns repeated
+5. Action-Oriented - CTAs are clear, blue stands out
 
 ---
 
 ## Color System
 
-**Backgrounds**:
-- Deep Navy Base: #0B0D17 (page background)
-- Dark Indigo Surface: #11152B (cards, elevated surfaces)
-- Raised Elements: #1A1F3A (hover states, active elements)
+### Primary Colors
+- **Primary Blue**: #3B82F6 (blue-500) - links, highlights
+- **Primary Blue Dark**: #2563EB (blue-600) - buttons, CTAs
 
-**Accents**:
-- Primary Blue: #4C6EF5 (CTAs, links, primary actions)
-- Purple Accent: #7048E8 (secondary highlights, gradients)
-- Success: #10B981
-- Warning: #F59E0B
-- Error: #EF4444
+### Backgrounds
+- **Page Background**: #F9FAFB (gray-50)
+- **Card Background**: #FFFFFF (white)
+- **Table Header**: #F9FAFB (gray-50)
+- **Hover State**: #F9FAFB (gray-50)
 
-**Text**:
-- Primary: #F8F9FA (headings, emphasis)
-- Secondary: #94A3B8 (body, descriptions)
-- Tertiary: #64748B (metadata, labels)
+### Borders
+- **Default Border**: #E5E7EB (gray-200)
 
-**Borders**: #1E293B (subtle separation)
+### Text Colors
+- **Text Primary**: #111827 (gray-900) - headings, important content
+- **Text Secondary**: #6B7280 (gray-500) - body text, descriptions
+- **Text Muted**: #9CA3AF (gray-400) - metadata, placeholders
+
+### Status Colors
+- **Success**: #10B981 (green-500)
+- **Warning**: #F59E0B (yellow-500)
+- **Error**: #EF4444 (red-500)
+- **Info**: #3B82F6 (blue-500)
+
+### Accent Colors
+- **Purple (AI Features)**: #8B5CF6 - AI-powered features, smart suggestions
 
 ---
 
 ## Typography
 
-**Font**: Inter (all weights, tight tracking -0.02em)
+**Font Family**: Inter, system-ui, sans-serif
 
-**Scale**:
+### Type Scale
 ```
-Page Titles:      text-3xl font-bold tracking-tight
-Section Headers:  text-xl font-semibold tracking-tight
-Card Titles:      text-lg font-semibold
-Body:             text-sm font-normal
-Meta/Labels:      text-xs font-medium uppercase tracking-wide
-Metrics:          text-4xl font-bold tabular-nums
+H1:       36px, font-weight: 600, line-height: 1.2
+H2:       30px, font-weight: 600, line-height: 1.3
+H3:       24px, font-weight: 600, line-height: 1.4
+Body:     16px, font-weight: 400, line-height: 1.5
+Small:    14px, font-weight: 400, line-height: 1.5
+Caption:  12px, font-weight: 400, line-height: 1.4
 ```
+
+### Usage
+- **Headings**: Gray-900, semibold (600)
+- **Body Text**: Gray-500, regular (400)
+- **Labels**: Gray-500, 12px, uppercase for badges
+- **Data/Numbers**: Gray-900, tabular-nums for alignment
 
 ---
 
 ## Layout & Spacing
 
-**Primitives**: 4, 6, 8, 12, 16, 20, 24, 32, 48
+### Structure
+- **Top Navigation**: 64px height, white background, border-bottom gray-200
+- **Left Sidebar**: 320px width, white background, border-right gray-200
+- **Content Area**: Flexible, gray-50 background
+- **Max Content Width**: 1280px for main content areas
 
-**Structure**:
-- Sidebar: Fixed w-64 with #11152B background
-- Content: max-w-7xl px-8 py-12
-- Top Bar: h-16 with border-b
-- Grid rhythm: 24px mobile, 32px desktop
+### Spacing Scale
+- **xs**: 4px
+- **sm**: 8px
+- **md**: 16px
+- **lg**: 24px
+- **xl**: 32px
+- **2xl**: 48px
 
-**Containers**:
-- Dashboard widgets: gap-6 lg:gap-8
-- Form sections: space-y-6
-- Card padding: p-6 lg:p-8
-
----
-
-## Navigation Sidebar
-
-**Layout**: Fixed left, #11152B background, subtle border-r
-
-**Structure**:
-- Logo area (h-16, px-6)
-- Nav groups (space-y-8, py-8)
-- User section (bottom, border-t, p-6)
-
-**Nav Items**:
-- Heroicons outline (20x20)
-- Active: #1A1F3A background, #4C6EF5 left border (3px), primary text
-- Inactive: Secondary text, hover to raised background
-- Badges: Small pills with counts
-
-**Groups**: Prospecting, CRM, Engagement, Intelligence, Analytics, Settings
+### Grid
+- Dashboard: 12-column grid
+- Card gaps: 24px
+- Section spacing: 32px
 
 ---
 
-## Top Navigation
+## Components
 
-**Layout**: h-16, border-b, flex justify-between
+### Buttons
 
-**Left**: Breadcrumbs with Heroicons, current page emphasized
-**Center**: Global search (w-96, #1A1F3A bg, focus ring primary)
-**Right**: Quick actions (icon buttons), notifications (badge), user avatar menu
+**Primary Button**:
+- Background: #2563EB (blue-600)
+- Text: #FFFFFF (white)
+- Border Radius: 6px
+- Padding: 10px 16px
+- Font: 14px, weight 500
+- No shadows
+- Hover: #1D4ED8 (blue-700)
 
----
+**Secondary Button**:
+- Background: #FFFFFF (white)
+- Border: 1px solid #E5E7EB (gray-200)
+- Text: #374151 (gray-700)
+- Border Radius: 6px
+- Hover: #F9FAFB (gray-50) background
 
-## Cards & Surfaces
+**Ghost Button**:
+- Background: transparent
+- Text: #6B7280 (gray-500)
+- Hover: #F9FAFB (gray-50) background
 
-**Base Card**:
-- Background: #11152B
-- Border: 1px #1E293B
-- Rounded: rounded-lg
-- Padding: p-6
-- NO shadows (flat design)
+**Icon Button**:
+- Size: 36px x 36px
+- Border Radius: 6px
+- Icon: 20px
 
-**Card Types**:
+### Cards
 
-**Metric Widgets**:
-- Large tabular number (text-4xl)
-- Label above (text-xs uppercase)
-- Trend indicator (+/- with arrow, colored)
-- Mini sparkline chart (Recharts)
-- Comparison text below
+- Background: #FFFFFF (white)
+- Border: 1px solid #E5E7EB (gray-200)
+- Border Radius: 8px
+- Padding: 24px
+- No shadows (flat design)
 
-**Data Cards**:
-- Header with title + action buttons
-- Content area (scrollable if needed)
-- Footer with pagination/actions
+**Card Header**:
+- Title: 16px, font-weight 600, gray-900
+- Actions: Right-aligned, ghost buttons
 
-**List Cards**:
-- Items with hover (#1A1F3A background)
-- Left icon/avatar, title, metadata
-- Right actions (ghost buttons)
-- Empty state with illustration + CTA
+### Badges
 
----
+- Shape: Pill (border-radius: 12px)
+- Font: 12px, uppercase, font-weight 500
+- Padding: 4px 12px
 
-## Data Tables
+**Badge Variants**:
+- Default: Gray-100 bg, Gray-700 text
+- Success: Green-100 bg, Green-700 text
+- Warning: Yellow-100 bg, Yellow-700 text
+- Error: Red-100 bg, Red-700 text
+- Info: Blue-100 bg, Blue-700 text
+- Purple: Purple-100 bg, Purple-700 text
 
-**Design**:
-- Sticky header (#0B0D17 background)
-- Row hover: #1A1F3A
-- Borders: Horizontal only (#1E293B)
-- Cell padding: px-6 py-4
-- Column sorting indicators
-- Inline filters (dropdown menus)
+### Data Tables
+
+**Header Row**:
+- Background: #F9FAFB (gray-50)
+- Text: 12px, uppercase, gray-500, font-weight 500
+- Padding: 12px 16px
+
+**Data Rows**:
+- Background: #FFFFFF (white)
+- Border-bottom: 1px solid #E5E7EB
+- Padding: 16px
+- Hover: #F9FAFB (gray-50) background
 
 **Features**:
-- Multi-select checkboxes (left)
-- Bulk action bar (appears on selection)
-- Column visibility toggle
-- Density controls (comfortable/compact)
-- Export button (top-right)
+- Checkbox column for multi-select
+- Sortable column headers
+- Action menu (3-dot) per row
+- Pagination at bottom
 
-**Cell Types**:
-- Text with truncation
-- Pills/badges for status
-- Avatar + name combos
-- Action dropdowns (3-dot menu)
-- Inline editable fields
+### Forms & Inputs
 
----
+**Text Input**:
+- Height: 40px
+- Border: 1px solid #E5E7EB (gray-200)
+- Border Radius: 6px
+- Padding: 8px 12px
+- Focus: Blue-500 ring (2px)
+- Background: #FFFFFF
 
-## Forms & Inputs
+**Labels**:
+- Font: 14px, font-weight 500, gray-700
+- Margin-bottom: 6px
 
-**Input Fields** (h-10, rounded-md):
-- Background: #1A1F3A
-- Border: 1px #1E293B
-- Focus: Ring primary color
-- Label: text-xs above, font-medium
-- Helper: text-xs below, tertiary color
+**Helper Text**:
+- Font: 12px, gray-500
+- Margin-top: 4px
 
-**Types**:
-- Text inputs with icons
-- Searchable dropdowns
-- Multi-select with pill removals
-- Date range pickers
-- Toggle switches (primary color)
-- Radio/checkbox groups
+### Navigation
 
-**Validation**:
-- Error state: Red border + message
-- Success: Green checkmark icon
+**Top Navigation** (64px height):
+- Background: #FFFFFF
+- Border-bottom: 1px solid #E5E7EB
+- Logo: Left-aligned
+- Search: Center (optional)
+- Actions/Profile: Right-aligned
 
----
+**Left Sidebar** (320px width):
+- Background: #FFFFFF
+- Border-right: 1px solid #E5E7EB
+- Nav items: 40px height, 16px padding
+- Active item: Blue-50 background, Blue-600 text, Blue-600 left border (3px)
+- Hover: Gray-50 background
+- Icons: 20px, gray-500 (active: blue-600)
+- Collapsible groups with chevron
 
-## Buttons
+### Modals
 
-**Primary**: bg-primary (#4C6EF5), hover:bg-#3D5DDB, white text, h-10 px-6
-**Secondary**: border-#1E293B, hover:bg-#1A1F3A, h-10 px-6
-**Ghost**: hover:bg-#1A1F3A, text-secondary, h-10 px-4
-**Danger**: bg-error, hover:bg-#DC2626
-**Icon-only**: Square 40x40, ghost style
+- Background: #FFFFFF
+- Border Radius: 8px
+- Overlay: Black, 50% opacity
+- Max-width: 480px (small), 640px (medium), 960px (large)
+- Padding: 24px
+- Header: Border-bottom, title + close button
+- Footer: Border-top, actions right-aligned
 
-**States**: Loading spinner, disabled opacity-50
+### Tooltips
 
----
-
-## Modals & Overlays
-
-**Modal**:
-- Backdrop: Black opacity-60 with blur
-- Container: #11152B, border #1E293B, rounded-lg
-- Sizes: max-w-md, max-w-2xl, max-w-5xl
-- Header: Title + close, border-b
-- Footer: Actions right-aligned, border-t
-
-**Dropdowns**:
-- #11152B background
-- Border #1E293B
-- Rounded-md
-- Items hover to #1A1F3A
-- Dividers between groups
-
----
-
-## Dashboard Layout
-
-**Widget Grid**: grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8
-
-**Sections**:
-1. KPI Row (4 metric widgets)
-2. Activity Chart (full-width, height 400px)
-3. Pipeline Funnel (2/3 width) + Quick Stats (1/3 width)
-4. Recent Leads Table (full-width)
-5. Tasks/Calendar (2-column split)
+- Background: #111827 (gray-900)
+- Text: #FFFFFF, 12px
+- Border Radius: 4px
+- Padding: 6px 10px
+- Max-width: 200px
 
 ---
 
 ## Data Visualization
 
-**Library**: Recharts
+**Chart Colors**:
+- Primary: #3B82F6 (blue-500)
+- Secondary: #8B5CF6 (purple-500)
+- Tertiary: #10B981 (green-500)
+- Quaternary: #F59E0B (yellow-500)
 
 **Chart Styling**:
-- Line/Area: Smooth curves, gradient fills (primary → transparent)
-- Bar: Rounded tops, primary color
-- Grid: #1E293B subtle lines
-- Tooltips: #11152B with border
-- Legend: Below charts, horizontal
-
-**Chart Types**:
-- Line: Revenue trends, activity over time
-- Bar: Pipeline stages, performance
-- Funnel: Conversion tracking
-- Donut: Source distribution
+- Grid lines: #E5E7EB (gray-200)
+- Axis labels: #6B7280 (gray-500), 12px
+- Tooltips: White background, gray-200 border
+- Legend: Below chart, horizontal layout
 
 ---
 
-## Icons & Images
+## Icons
 
-**Icons**: Heroicons outline, consistent sizing
-- Navigation: 20x20
-- Buttons: 16x16
-- Headers: 24x24
+**Library**: Lucide React (recommended)
 
-**Images**:
-- Avatars: Circular, 32/40/48px, colored fallbacks with initials
-- Company logos: Rounded square, 40/56px
-- Empty states: Monochrome illustrations (secondary color)
+**Sizes**:
+- Small: 16px
+- Default: 20px
+- Large: 24px
 
-**Hero Images**: Use for marketing pages - full-width with gradient overlay, buttons with backdrop-blur-md
-
----
-
-## Accessibility & Interactions
-
-**Focus States**: 2px ring offset-2 primary color
-**Keyboard**: Full navigation, escape closes, enter submits
-**Screen Readers**: aria-labels on icon buttons
-**Touch Targets**: 44x44px minimum
-**Contrast**: Maintain WCAG AA on dark backgrounds
-
-**Transitions**:
-- Hover: 150ms ease-out
-- Dropdowns: 200ms scale
-- Page loads: Skeleton pulse
+**Colors**:
+- Default: #6B7280 (gray-500)
+- Active: #3B82F6 (blue-500)
+- Muted: #9CA3AF (gray-400)
 
 ---
 
-**Implementation**: Mobile-first responsive. Collapse sidebar to drawer on mobile. Maintain 24/32px rhythm across breakpoints. Every page uses widget/card-based layout for consistency.
+## Accessibility
+
+- Focus rings: 2px, blue-500, offset-2
+- Minimum touch targets: 44px x 44px
+- Color contrast: WCAG AA compliant
+- Keyboard navigation: Full support
+- Screen reader labels: All interactive elements
+
+---
+
+## Responsive Breakpoints
+
+- **Mobile**: < 640px
+- **Tablet**: 640px - 1024px
+- **Desktop**: > 1024px
+
+**Mobile Adaptations**:
+- Sidebar: Collapsible drawer
+- Tables: Horizontal scroll or card view
+- Navigation: Bottom tab bar option
+
+---
+
+## Animation & Transitions
+
+- **Duration**: 150ms (fast), 200ms (normal), 300ms (slow)
+- **Easing**: ease-out for most transitions
+- **Hover states**: 150ms
+- **Modal open/close**: 200ms
+- **Page transitions**: 200ms fade
+
+---
+
+## Implementation Notes
+
+- Use Tailwind CSS utility classes
+- Leverage shadcn/ui components
+- Maintain consistent spacing with the 8px grid
+- All interactive elements need hover and focus states
+- Use semantic HTML for accessibility
+- Icons should have aria-labels when used alone
