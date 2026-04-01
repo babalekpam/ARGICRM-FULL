@@ -48,7 +48,6 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "date-fns": "^3.6.0",
-    "dns": "^0.2.2",
     "dotenv": "^16.6.1",
     "drizzle-orm": "^0.39.1",
     "drizzle-zod": "^0.7.0",
