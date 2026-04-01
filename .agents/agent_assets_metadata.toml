@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "meH1wiUPjdXMORplzCTQJ"
+uri = "file://argilette-project.zip"
+type = "unspecified"
+title = "ARGILETTE Project - Full Source Code"
