@@ -1,6216 +1,1118 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, date, jsonb, varchar, index, real, uuid, numeric } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
+import { pgTable, text, integer, boolean, timestamp, decimal, jsonb, uuid, index, varchar } from "drizzle-orm/pg-core";
+import { sql, relations } from "drizzle-orm";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Multi-tenant system: Each company gets its own isolated environment
+// ═══════════════════════════════════════════════════
+// TENANTS (one per company/account)
+// ═══════════════════════════════════════════════════
 export const tenants = pgTable("tenants", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  domain: text("domain").unique(), // Custom subdomain like company.argilette.com
-  subscriptionPlan: text("subscription_plan").default("starter"), // starter, professional, enterprise
-  maxUsers: integer("max_users").default(5),
-  settings: jsonb("settings").$type<{
-    theme?: string;
-    timezone?: string;
-    currency?: string;
-    features?: string[];
-  }>().default({}),
-  // Stripe integration for payment processing
+  domain: text("domain").unique().notNull(),
+  slug: text("slug").unique().notNull(), // URL-friendly identifier
+  logo: text("logo"),
+  primaryColor: text("primary_color").default("#3b82f6"),
+  subscriptionPlan: text("subscription_plan").default("trial"), // trial, starter, pro, business, enterprise
+  subscriptionStatus: text("subscription_status").default("trialing"), // trialing, active, past_due, canceled
+  trialEndsAt: timestamp("trial_ends_at"),
+  maxUsers: integer("max_users").default(3),
+  maxContacts: integer("max_contacts").default(500),
   stripeCustomerId: text("stripe_customer_id").unique(),
   stripeSubscriptionId: text("stripe_subscription_id").unique(),
-  stripePaymentMethodId: text("stripe_payment_method_id"),
-  trialEndsAt: timestamp("trial_ends_at"),
-  subscriptionStatus: text("subscription_status").default("trialing"), // trialing, active, past_due, canceled, unpaid
+  settings: jsonb("settings").$type<{
+    timezone?: string;
+    currency?: string;
+    language?: string;
+    emailSignature?: string;
+    features?: string[];
+    customFields?: Record<string, any>;
+  }>().default({}),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// User management with tenant isolation
+// ═══════════════════════════════════════════════════
+// USERS
+// ═══════════════════════════════════════════════════
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   email: text("email").notNull(),
   firstName: text("first_name"),
   lastName: text("last_name"),
+  avatar: text("avatar"),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").default("user"), // platform_owner (unique super admin), admin, manager, user, viewer
+  role: text("role").default("user"), // platform_owner, super_admin, admin, manager, user, viewer
+  permissions: jsonb("permissions").$type<string[]>().default([]),
   isActive: boolean("is_active").default(true),
   emailVerified: boolean("email_verified").default(false),
   emailVerificationToken: text("email_verification_token"),
-  emailVerificationExpires: timestamp("email_verification_expires"),
   passwordResetToken: text("password_reset_token"),
   passwordResetExpires: timestamp("password_reset_expires"),
   lastLoginAt: timestamp("last_login_at"),
   preferredLanguage: text("preferred_language").default("en"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_users_tenant_email").on(table.tenantId, table.email),
-]);
-
-// Role-based permissions system
-export const roles = pgTable("roles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(), // Sales Manager, Marketing Lead, etc.
-  description: text("description"),
-  permissions: jsonb("permissions").$type<string[]>().default([]),
-  isSystemRole: boolean("is_system_role").default(false), // Cannot be deleted
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_roles_tenant").on(table.tenantId),
-]);
-
-// User role assignments
-export const userRoles = pgTable("user_roles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  roleId: varchar("role_id").references(() => roles.id).notNull(),
-  assignedAt: timestamp("assigned_at").defaultNow(),
-  assignedBy: varchar("assigned_by").references(() => users.id),
-}, (table) => [
-  index("idx_user_roles_user").on(table.userId),
-  index("idx_user_roles_role").on(table.roleId),
-]);
-
-// Permission definitions
-export const permissions = pgTable("permissions", {
-  id: text("id").primaryKey(), // contacts.read, contacts.write, deals.read, etc.
-  name: text("name").notNull(),
-  description: text("description"),
-  module: text("module").notNull(), // contacts, deals, accounts, reports, etc.
-  action: text("action").notNull(), // read, write, delete, admin
-});
-
-// Session management for multi-tenant
-export const sessions = pgTable("sessions", {
-  id: text("id").primaryKey(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_sessions_user").on(table.userId),
-  index("idx_sessions_tenant").on(table.tenantId),
-]);
-
-// Tenant subscriptions with feature entitlements
-export const tenantSubscriptions = pgTable("tenant_subscriptions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  planId: text("plan_id").notNull(), // starter, professional, enterprise, unlimited, platform_owner
-  status: text("status").default("active"), // active, canceled, past_due, trial, suspended
-  billingCycle: text("billing_cycle").default("monthly"), // monthly, yearly
-  currentPeriodStart: timestamp("current_period_start").defaultNow(),
-  currentPeriodEnd: timestamp("current_period_end").notNull(),
-  trialStart: timestamp("trial_start"),
-  trialEnd: timestamp("trial_end"),
-  canceledAt: timestamp("canceled_at"),
-  enabledFeatures: jsonb("enabled_features").$type<string[]>().default([]),
-  usageLimits: jsonb("usage_limits").$type<{
-    users?: number;
-    contacts?: number;
-    storage?: number;
-    emailsPerMonth?: number;
-    smsPerMonth?: number;
-    formsPerMonth?: number;
-    apiCalls?: number;
-  }>().default({}),
-  currentUsage: jsonb("current_usage").$type<{
-    users?: number;
-    contacts?: number;
-    storage?: number;
-    emailsThisMonth?: number;
-    smsThisMonth?: number;
-    formsThisMonth?: number;
-    apiCallsThisMonth?: number;
-  }>().default({}),
-  monthlyRevenue: decimal("monthly_revenue", { precision: 10, scale: 2 }).default("0.00"),
-  yearlyRevenue: decimal("yearly_revenue", { precision: 10, scale: 2 }).default("0.00"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_tenant_subscriptions_tenant").on(table.tenantId),
-  index("idx_tenant_subscriptions_status").on(table.status),
-]);
-
-// Tenant Payment Configuration - for e-commerce stores only
-export const tenantPaymentConfigs = pgTable("tenant_payment_configs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  tenantEmail: text("tenant_email").notNull(),
-  
-  // Stripe Configuration
-  stripePublicKey: text("stripe_public_key"),
-  stripeSecretKey: text("stripe_secret_key"), // Encrypted
-  stripeWebhookSecret: text("stripe_webhook_secret"), // Encrypted
-  stripeEnabled: boolean("stripe_enabled").default(false),
-  
-  // Visa Configuration
-  visaApiKey: text("visa_api_key"), // Encrypted
-  visaMerchantId: text("visa_merchant_id"),
-  visaEnabled: boolean("visa_enabled").default(false),
-  
-  // Configuration metadata
-  defaultProvider: text("default_provider").default("stripe"), // stripe, visa
-  testMode: boolean("test_mode").default(true),
-  
-  // Settings and preferences for e-commerce only
-  settings: jsonb("settings").$type<{
-    currencies?: string[];
-    webhookUrl?: string;
-    failoverProvider?: string;
-    autoSwitchOnFailure?: boolean;
-    transactionFeeHandling?: 'merchant' | 'customer' | 'split';
-    minimumAmount?: number;
-    maximumAmount?: number;
-    ecommerceOnly?: boolean; // Always true - this is only for e-commerce
-  }>().default({ ecommerceOnly: true }),
-  
-  // Timestamps
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  lastUsed: timestamp("last_used"),
-  
-  // Status
-  isActive: boolean("is_active").default(true),
-  verificationStatus: text("verification_status").default("pending"), // pending, verified, failed
-}, (table) => [
-  index("idx_tenant_payment_configs_tenant").on(table.tenantId),
-  index("idx_tenant_payment_configs_email").on(table.tenantEmail),
-]);
-
-// Tenant E-commerce Payment Transactions Log
-export const tenantPaymentTransactions = pgTable("tenant_payment_transactions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  configId: varchar("config_id").references(() => tenantPaymentConfigs.id),
-  
-  // Transaction details
-  transactionId: text("transaction_id").notNull(),
-  externalTransactionId: text("external_transaction_id"), // From payment provider
-  provider: text("provider").notNull(), // stripe, visa
-  amount: text("amount").notNull(), // Store as string to avoid floating point issues
-  currency: text("currency").notNull(),
-  
-  // Transaction status
-  status: text("status").notNull(), // pending, completed, failed, refunded
-  paymentMethod: text("payment_method"), // card, bank_transfer, wallet
-  
-  // Customer information
-  customerEmail: text("customer_email"),
-  customerName: text("customer_name"),
-  
-  // E-commerce specific
-  storeId: text("store_id"), // Which e-commerce store this payment is for
-  orderId: text("order_id"),
-  productIds: jsonb("product_ids").$type<string[]>(),
-  
-  // Metadata
-  description: text("description"),
-  metadata: jsonb("metadata"),
-  
-  // Provider response
-  providerResponse: jsonb("provider_response"),
-  errorMessage: text("error_message"),
-  
-  // Revenue sharing - payments go to platform owner
-  platformFee: text("platform_fee"), // Fee taken by platform
-  tenantAmount: text("tenant_amount"), // Amount that would go to tenant (for reporting)
-  
-  // Timestamps
-  createdAt: timestamp("created_at").defaultNow(),
-  processedAt: timestamp("processed_at"),
-  completedAt: timestamp("completed_at"),
-}, (table) => [
-  index("idx_tenant_payment_transactions_tenant").on(table.tenantId),
-  index("idx_tenant_payment_transactions_store").on(table.storeId),
-  index("idx_tenant_payment_transactions_status").on(table.status),
-]);
-
-// Audit logs for tracking all platform activities
-export const auditLogs = pgTable("audit_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id),
-  userId: varchar("user_id").references(() => users.id),
-  action: text("action").notNull(), // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
-  resource: text("resource").notNull(), // contacts, deals, settings, etc.
-  resourceId: text("resource_id"), // ID of the affected resource
-  details: jsonb("details").$type<{
-    before?: any;
-    after?: any;
-    metadata?: any;
-    ipAddress?: string;
-    userAgent?: string;
-    sessionId?: string;
-  }>().default({}),
-  severity: text("severity").default("info"), // info, warning, error, critical
-  outcome: text("outcome").default("success"), // success, failure, partial
-  timestamp: timestamp("timestamp").defaultNow(),
-  expiresAt: timestamp("expires_at"), // For automatic cleanup
-}, (table) => [
-  index("idx_audit_logs_tenant").on(table.tenantId),
-  index("idx_audit_logs_user").on(table.userId),
-  index("idx_audit_logs_action").on(table.action),
-  index("idx_audit_logs_timestamp").on(table.timestamp),
-]);
-
-// System metrics for platform monitoring
-export const systemMetrics = pgTable("system_metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  metricType: text("metric_type").notNull(), // revenue, users, performance, errors
-  metricName: text("metric_name").notNull(), // daily_revenue, active_users, response_time
-  value: decimal("value", { precision: 15, scale: 4 }).notNull(),
-  unit: text("unit"), // USD, count, ms, percent
-  tags: jsonb("tags").$type<Record<string, string>>().default({}),
-  timestamp: timestamp("timestamp").defaultNow(),
-  aggregationPeriod: text("aggregation_period"), // hour, day, week, month
-}, (table) => [
-  index("idx_system_metrics_type").on(table.metricType),
-  index("idx_system_metrics_timestamp").on(table.timestamp),
-]);
-
-// ==================== ADVANCED PROJECT MANAGEMENT ====================
-
-// Enhanced projects with Gantt chart support - matching actual database structure
-export const projects = pgTable("projects", {
-  id: text("id").primaryKey(),
-  tenantId: text("tenant_id"),
-  name: text("name").notNull(),
-  description: text("description"),
-  status: text("status").default("planning"), // planning, active, on_hold, completed, cancelled
-  priority: text("priority").default("medium"), // low, medium, high, critical
-  startDate: date("start_date"),
-  endDate: date("end_date"),
-  plannedStartDate: date("planned_start_date"),
-  plannedEndDate: date("planned_end_date"),
-  budget: decimal("budget"),
-  actualCost: decimal("actual_cost"),
-  progress: integer("progress").default(0), // 0-100
-  managerId: integer("manager_id"),
-  accountId: integer("account_id"),
-  clientId: text("client_id"),
-  customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
-  tags: text("tags").array(),
-  createdBy: text("created_by"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_projects_tenant").on(table.tenantId),
-  index("idx_projects_status").on(table.status),
-]);
-
-// Project tasks with dependencies for Gantt charts
-export const projectTasks = pgTable("project_tasks", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  projectId: varchar("project_id").references(() => projects.id).notNull(),
-  parentTaskId: varchar("parent_task_id").references(() => projectTasks.id),
-  name: text("name").notNull(),
-  description: text("description"),
-  status: text("status").default("todo"), // todo, in_progress, review, done, blocked
-  priority: text("priority").default("medium"), // low, medium, high, critical
-  startDate: date("start_date"),
-  endDate: date("end_date"),
-  plannedHours: integer("planned_hours"),
-  actualHours: integer("actual_hours"),
-  progress: integer("progress").default(0), // 0-100
-  assigneeId: varchar("assignee_id").references(() => users.id),
-  dependencies: jsonb("dependencies").$type<string[]>().default([]), // Task IDs this task depends on
-  tags: jsonb("tags").$type<string[]>().default([]),
-  customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_project_tasks_tenant").on(table.tenantId),
-  index("idx_project_tasks_project").on(table.projectId),
-  index("idx_project_tasks_assignee").on(table.assigneeId),
-  index("idx_project_tasks_status").on(table.status),
-]);
-
-// Resource allocation and capacity planning
-export const resourceAllocations = pgTable("resource_allocations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  projectId: varchar("project_id").references(() => projects.id).notNull(),
-  taskId: varchar("task_id").references(() => projectTasks.id),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  allocatedHours: integer("allocated_hours").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  utilizationPercent: integer("utilization_percent").default(100), // 0-100
-  billableRate: decimal("billable_rate", { precision: 10, scale: 2 }),
-  status: text("status").default("planned"), // planned, active, completed
-  notes: text("notes"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_resource_allocations_tenant").on(table.tenantId),
-  index("idx_resource_allocations_project").on(table.projectId),
-  index("idx_resource_allocations_user").on(table.userId),
-]);
-
-// Time tracking for projects and tasks
-export const timeEntries = pgTable("time_entries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  projectId: varchar("project_id").references(() => projects.id),
-  taskId: varchar("task_id").references(() => projectTasks.id),
-  description: text("description"),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time"),
-  duration: integer("duration"), // in minutes
-  billable: boolean("billable").default(true),
-  billableRate: decimal("billable_rate", { precision: 10, scale: 2 }),
-  status: text("status").default("completed"), // running, completed, approved, invoiced
-  tags: jsonb("tags").$type<string[]>().default([]),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_time_entries_tenant").on(table.tenantId),
-  index("idx_time_entries_user").on(table.userId),
-  index("idx_time_entries_project").on(table.projectId),
-  index("idx_time_entries_date").on(table.startTime),
-]);
-
-// ==================== ENHANCED HR MANAGEMENT ====================
-
-// Performance management
-export const performanceReviews = pgTable("performance_reviews", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: varchar("employee_id").references(() => users.id).notNull(),
-  reviewerId: varchar("reviewer_id").references(() => users.id).notNull(),
-  reviewPeriod: text("review_period").notNull(), // Q1-2024, Annual-2024, etc.
-  reviewType: text("review_type").default("annual"), // annual, quarterly, monthly, project
-  status: text("status").default("draft"), // draft, in_progress, completed, approved
-  overallRating: integer("overall_rating"), // 1-5 scale
-  goals: jsonb("goals").$type<Array<{
-    id: string;
-    title: string;
-    description: string;
-    target: string;
-    achievement: string;
-    rating: number;
-    weight: number;
-  }>>().default([]),
-  competencies: jsonb("competencies").$type<Array<{
-    id: string;
-    name: string;
-    description: string;
-    rating: number;
-    comments: string;
-  }>>().default([]),
-  strengths: text("strengths"),
-  areasForImprovement: text("areas_for_improvement"),
-  developmentPlan: text("development_plan"),
-  reviewerComments: text("reviewer_comments"),
-  employeeComments: text("employee_comments"),
-  hrComments: text("hr_comments"),
-  reviewDate: date("review_date"),
-  dueDate: date("due_date"),
-  completedDate: date("completed_date"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_performance_reviews_tenant").on(table.tenantId),
-  index("idx_performance_reviews_employee").on(table.employeeId),
-  index("idx_performance_reviews_reviewer").on(table.reviewerId),
-  index("idx_performance_reviews_period").on(table.reviewPeriod),
-]);
-
-// Employee attendance and time tracking
-export const attendanceRecords = pgTable("attendance_records", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: varchar("employee_id").references(() => users.id).notNull(),
-  date: date("date").notNull(),
-  clockInTime: timestamp("clock_in_time"),
-  clockOutTime: timestamp("clock_out_time"),
-  totalHours: decimal("total_hours", { precision: 4, scale: 2 }),
-  regularHours: decimal("regular_hours", { precision: 4, scale: 2 }),
-  overtimeHours: decimal("overtime_hours", { precision: 4, scale: 2 }),
-  breakTime: integer("break_time"), // in minutes
-  status: text("status").default("present"), // present, absent, late, half_day, sick, vacation
-  notes: text("notes"),
-  approvedBy: varchar("approved_by").references(() => users.id),
-  approvedAt: timestamp("approved_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_attendance_records_tenant").on(table.tenantId),
-  index("idx_attendance_records_employee").on(table.employeeId),
-  index("idx_attendance_records_date").on(table.date),
-]);
-
-// Leave management
-export const leaveRequests = pgTable("leave_requests", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: varchar("employee_id").references(() => users.id).notNull(),
-  leaveType: text("leave_type").notNull(), // vacation, sick, personal, maternity, bereavement
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  totalDays: integer("total_days").notNull(),
-  reason: text("reason"),
-  status: text("status").default("pending"), // pending, approved, denied, cancelled
-  approverId: varchar("approver_id").references(() => users.id),
-  approvedAt: timestamp("approved_at"),
-  approverComments: text("approver_comments"),
-  emergencyContact: text("emergency_contact"),
-  handoverNotes: text("handover_notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_leave_requests_tenant").on(table.tenantId),
-  index("idx_leave_requests_employee").on(table.employeeId),
-  index("idx_leave_requests_status").on(table.status),
-]);
-
-// ==================== INVENTORY & ORDER MANAGEMENT ====================
-
-// Product catalog
-export const products = pgTable("products", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  sku: text("sku").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  category: text("category"),
-  brand: text("brand"),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  costPrice: decimal("cost_price", { precision: 10, scale: 2 }),
-  currency: text("currency").default("USD"),
-  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default("0.00"),
-  weight: decimal("weight", { precision: 8, scale: 2 }),
-  dimensions: jsonb("dimensions").$type<{
-    length?: number;
-    width?: number;
-    height?: number;
-    unit?: string;
-  }>().default({}),
-  images: jsonb("images").$type<string[]>().default([]),
-  status: text("status").default("active"), // active, inactive, discontinued
-  trackInventory: boolean("track_inventory").default(true),
-  stockQuantity: integer("stock_quantity").default(0),
-  minStockLevel: integer("min_stock_level").default(10),
-  maxStockLevel: integer("max_stock_level"),
-  reorderPoint: integer("reorder_point").default(5),
-  supplier: text("supplier"),
-  barcode: text("barcode"),
-  tags: jsonb("tags").$type<string[]>().default([]),
-  customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_products_tenant").on(table.tenantId),
-  index("idx_products_sku").on(table.sku),
-  index("idx_products_category").on(table.category),
-  index("idx_products_status").on(table.status),
-]);
-
-// Inventory movements
-export const inventoryMovements = pgTable("inventory_movements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  productId: varchar("product_id").references(() => products.id).notNull(),
-  movementType: text("movement_type").notNull(), // in, out, adjustment, transfer
-  quantity: integer("quantity").notNull(),
-  previousQuantity: integer("previous_quantity").notNull(),
-  newQuantity: integer("new_quantity").notNull(),
-  reason: text("reason"), // sale, purchase, return, adjustment, damage, etc.
-  referenceId: varchar("reference_id"), // Order ID, Invoice ID, etc.
-  referenceType: text("reference_type"), // order, invoice, return, adjustment
-  notes: text("notes"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_inventory_movements_tenant").on(table.tenantId),
-  index("idx_inventory_movements_product").on(table.productId),
-  index("idx_inventory_movements_type").on(table.movementType),
-  index("idx_inventory_movements_date").on(table.createdAt),
-]);
-
-// Purchase orders
-export const purchaseOrders = pgTable("purchase_orders", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  poNumber: text("po_number").notNull(),
-  supplierId: varchar("supplier_id").references(() => contacts.id).notNull(),
-  orderDate: date("order_date").notNull(),
-  expectedDeliveryDate: date("expected_delivery_date"),
-  actualDeliveryDate: date("actual_delivery_date"),
-  status: text("status").default("draft"), // draft, sent, confirmed, partial, delivered, cancelled
-  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
-  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default("0.00"),
-  shippingAmount: decimal("shipping_amount", { precision: 10, scale: 2 }).default("0.00"),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  currency: text("currency").default("USD"),
-  paymentTerms: text("payment_terms"),
-  shippingAddress: jsonb("shipping_address").$type<{
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
-  }>().default({}),
-  notes: text("notes"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_purchase_orders_tenant").on(table.tenantId),
-  index("idx_purchase_orders_supplier").on(table.supplierId),
-  index("idx_purchase_orders_status").on(table.status),
-  index("idx_purchase_orders_date").on(table.orderDate),
-]);
-
-// Purchase order items
-export const purchaseOrderItems = pgTable("purchase_order_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  purchaseOrderId: varchar("purchase_order_id").references(() => purchaseOrders.id).notNull(),
-  productId: varchar("product_id").references(() => products.id).notNull(),
-  quantity: integer("quantity").notNull(),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  receivedQuantity: integer("received_quantity").default(0),
-  status: text("status").default("pending"), // pending, partial, received, cancelled
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_purchase_order_items_tenant").on(table.tenantId),
-  index("idx_purchase_order_items_po").on(table.purchaseOrderId),
-  index("idx_purchase_order_items_product").on(table.productId),
-]);
-
-// ==================== E-COMMERCE PLATFORM ====================
-
-// Online stores (tenant-specific storefronts)
-export const stores = pgTable("stores", {
-  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  tenantId: varchar("tenant_id").notNull(),
-  userId: varchar("user_id").notNull(), // Required field for store ownership
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  subdomain: text("subdomain").unique(), // custom-store.nodecrm.com
-  customDomain: text("custom_domain"), // www.mystore.com
-  logo: text("logo"),
-  favicon: text("favicon"),
-  primaryColor: text("primary_color").default("#3b82f6"),
-  secondaryColor: text("secondary_color").default("#1f2937"),
-  theme: varchar("theme", { length: 50 }).default("modern"), // modern, classic, minimal, custom
-  currency: varchar("currency", { length: 10 }).notNull(),
   timezone: text("timezone").default("UTC"),
-  language: text("language").default("en"),
-  status: text("status").default("active"), // active, inactive, maintenance
-  isPublic: boolean("is_public").default(true),
-  seoSettings: jsonb("seo_settings").$type<{
-    metaTitle?: string;
-    metaDescription?: string;
-    keywords?: string[];
-    ogImage?: string;
-  }>().default({}),
-  socialLinks: jsonb("social_links").$type<{
-    facebook?: string;
-    twitter?: string;
-    instagram?: string;
-    linkedin?: string;
-    youtube?: string;
-  }>().default({}),
-  paymentMethods: jsonb("payment_methods").$type<{
-    stripe?: boolean;
-    paypal?: boolean;
-    applePay?: boolean;
-    googlePay?: boolean;
-    bankTransfer?: boolean;
-  }>().default({}),
-  shippingSettings: jsonb("shipping_settings").$type<{
-    freeShippingThreshold?: number;
-    shippingRates?: Array<{
-      name: string;
-      price: number;
-      estimatedDays: string;
-    }>;
-  }>().default({}),
-  taxSettings: jsonb("tax_settings").$type<{
-    includeTax?: boolean;
-    taxRate?: number;
-    taxName?: string;
-  }>().default({}),
-  isPublished: boolean("is_published").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_stores_tenant").on(table.tenantId),
-  index("idx_stores_user").on(table.userId),
+}, (t) => [
+  index("idx_users_tenant_email").on(t.tenantId, t.email),
 ]);
 
-// Enhanced product catalog for e-commerce (simplified to match DB)
-export const ecommerceProducts = pgTable("ecommerce_products", {
-  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  storeId: varchar("store_id").notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  imageUrl: text("image_url"),
-  category: varchar("category", { length: 100 }),
-  stockQuantity: integer("stock_quantity").default(0),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_ecommerce_products_store_id").on(table.storeId),
-  index("idx_ecommerce_products_category").on(table.category),
-]);
-
-// Product variants (size, color, etc.)
-export const productVariants = pgTable("product_variants", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  productId: varchar("product_id").references(() => ecommerceProducts.id).notNull(),
-  sku: text("sku").notNull(),
-  name: text("name").notNull(),
-  options: jsonb("options").$type<Record<string, string>>().default({}), // {size: "Large", color: "Red"}
-  price: decimal("price", { precision: 10, scale: 2 }),
-  salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
-  costPrice: decimal("cost_price", { precision: 10, scale: 2 }),
-  stockQuantity: integer("stock_quantity").default(0),
-  image: text("image"),
-  weight: decimal("weight", { precision: 8, scale: 3 }),
-  barcode: text("barcode"),
-  isDefault: boolean("is_default").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_product_variants_tenant").on(table.tenantId),
-  index("idx_product_variants_product").on(table.productId),
-  index("idx_product_variants_sku").on(table.sku),
-]);
-
-// Product categories and collections
-export const productCategories = pgTable("product_categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  storeId: varchar("store_id").references(() => stores.id).notNull(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull(),
-  description: text("description"),
-  parentId: varchar("parent_id").references(() => productCategories.id),
-  image: text("image"),
-  sortOrder: integer("sort_order").default(0),
-  isVisible: boolean("is_visible").default(true),
-  seoTitle: text("seo_title"),
-  seoDescription: text("seo_description"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_product_categories_tenant").on(table.tenantId),
-  index("idx_product_categories_store").on(table.storeId),
-  index("idx_product_categories_parent").on(table.parentId),
-]);
-
-// Customer accounts for e-commerce
-export const customers = pgTable("customers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  storeId: varchar("store_id").references(() => stores.id).notNull(),
-  email: text("email").notNull(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  phone: text("phone"),
-  dateOfBirth: date("date_of_birth"),
-  gender: text("gender"),
-  passwordHash: text("password_hash"),
-  emailVerified: boolean("email_verified").default(false),
-  emailVerificationToken: text("email_verification_token"),
-  isActive: boolean("is_active").default(true),
-  acceptsMarketing: boolean("accepts_marketing").default(false),
-  tags: jsonb("tags").$type<string[]>().default([]),
-  notes: text("notes"),
-  totalOrders: integer("total_orders").default(0),
-  totalSpent: decimal("total_spent", { precision: 10, scale: 2 }).default("0.00"),
-  averageOrderValue: decimal("average_order_value", { precision: 10, scale: 2 }).default("0.00"),
-  lastOrderAt: timestamp("last_order_at"),
-  lastActiveAt: timestamp("last_active_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_customers_tenant").on(table.tenantId),
-  index("idx_customers_store").on(table.storeId),
-  index("idx_customers_email").on(table.email),
-]);
-
-// Customer addresses
-export const customerAddresses = pgTable("customer_addresses", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  customerId: varchar("customer_id").references(() => customers.id).notNull(),
-  type: text("type").default("shipping"), // shipping, billing
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  company: text("company"),
-  address1: text("address1").notNull(),
-  address2: text("address2"),
-  city: text("city").notNull(),
-  state: text("state"),
-  zipCode: text("zip_code").notNull(),
-  country: text("country").notNull(),
-  phone: text("phone"),
-  isDefault: boolean("is_default").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_customer_addresses_tenant").on(table.tenantId),
-  index("idx_customer_addresses_customer").on(table.customerId),
-]);
-
-// E-commerce orders
-export const ecommerceOrders = pgTable("ecommerce_orders", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  storeId: varchar("store_id").references(() => stores.id).notNull(),
-  orderNumber: text("order_number").notNull().unique(),
-  customerId: varchar("customer_id").references(() => customers.id),
-  
-  // Order status
-  status: text("status").default("pending"), // pending, processing, shipped, delivered, cancelled, refunded
-  financialStatus: text("financial_status").default("pending"), // pending, paid, partially_paid, refunded, voided
-  fulfillmentStatus: text("fulfillment_status").default("unfulfilled"), // unfulfilled, partial, fulfilled
-  
-  // Customer information
-  customerEmail: text("customer_email").notNull(),
-  customerPhone: text("customer_phone"),
-  customerNotes: text("customer_notes"),
-  
-  // Pricing
-  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
-  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default("0.00"),
-  shippingAmount: decimal("shipping_amount", { precision: 10, scale: 2 }).default("0.00"),
-  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  currency: text("currency").default("USD"),
-  
-  // Addresses
-  shippingAddress: jsonb("shipping_address").$type<{
-    firstName: string;
-    lastName: string;
-    company?: string;
-    address1: string;
-    address2?: string;
-    city: string;
-    state?: string;
-    zipCode: string;
-    country: string;
-    phone?: string;
-  }>(),
-  billingAddress: jsonb("billing_address").$type<{
-    firstName: string;
-    lastName: string;
-    company?: string;
-    address1: string;
-    address2?: string;
-    city: string;
-    state?: string;
-    zipCode: string;
-    country: string;
-    phone?: string;
-  }>(),
-  
-  // Payment and shipping
-  paymentMethod: text("payment_method"),
-  paymentGateway: text("payment_gateway"),
-  transactionId: text("transaction_id"),
-  shippingMethod: text("shipping_method"),
-  trackingNumber: text("tracking_number"),
-  trackingUrl: text("tracking_url"),
-  
-  // Dates
-  orderDate: timestamp("order_date").defaultNow(),
-  shippedAt: timestamp("shipped_at"),
-  deliveredAt: timestamp("delivered_at"),
-  cancelledAt: timestamp("cancelled_at"),
-  
-  // Additional fields
-  tags: jsonb("tags").$type<string[]>().default([]),
-  internalNotes: text("internal_notes"),
-  source: text("source").default("online_store"), // online_store, pos, api, manual
-  
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_ecommerce_orders_tenant").on(table.tenantId),
-  index("idx_ecommerce_orders_store").on(table.storeId),
-  index("idx_ecommerce_orders_customer").on(table.customerId),
-  index("idx_ecommerce_orders_status").on(table.status),
-  index("idx_ecommerce_orders_date").on(table.orderDate),
-]);
-
-// Order line items
-export const orderItems = pgTable("order_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  orderId: varchar("order_id").references(() => ecommerceOrders.id).notNull(),
-  productId: varchar("product_id").references(() => ecommerceProducts.id).notNull(),
-  variantId: varchar("variant_id").references(() => productVariants.id),
-  sku: text("sku").notNull(),
-  productName: text("product_name").notNull(),
-  variantTitle: text("variant_title"),
-  quantity: integer("quantity").notNull(),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
-  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default("0.00"),
-  fulfillmentStatus: text("fulfillment_status").default("unfulfilled"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_order_items_tenant").on(table.tenantId),
-  index("idx_order_items_order").on(table.orderId),
-  index("idx_order_items_product").on(table.productId),
-]);
-
-// Shopping cart for guests and customers
-export const shoppingCarts = pgTable("shopping_carts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  storeId: varchar("store_id").references(() => stores.id).notNull(),
-  customerId: varchar("customer_id").references(() => customers.id),
-  sessionId: text("session_id"), // For guest users
-  items: jsonb("items").$type<Array<{
-    productId: string;
-    variantId?: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-  }>>().default([]),
-  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).default("0.00"),
-  discountCodes: jsonb("discount_codes").$type<string[]>().default([]),
-  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
-  expiresAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_shopping_carts_tenant").on(table.tenantId),
-  index("idx_shopping_carts_store").on(table.storeId),
-  index("idx_shopping_carts_customer").on(table.customerId),
-  index("idx_shopping_carts_session").on(table.sessionId),
-]);
-
-// Discount codes and promotions
-export const discountCodes = pgTable("discount_codes", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  storeId: varchar("store_id").references(() => stores.id).notNull(),
-  code: text("code").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  type: text("type").notNull(), // percentage, fixed_amount, free_shipping
-  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
-  minimumAmount: decimal("minimum_amount", { precision: 10, scale: 2 }),
-  usageLimit: integer("usage_limit"),
-  usageCount: integer("usage_count").default(0),
-  customerUsageLimit: integer("customer_usage_limit"),
-  applicableProducts: jsonb("applicable_products").$type<string[]>().default([]),
-  applicableCategories: jsonb("applicable_categories").$type<string[]>().default([]),
-  startsAt: timestamp("starts_at"),
-  endsAt: timestamp("ends_at"),
-  isActive: boolean("is_active").default(true),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_discount_codes_tenant").on(table.tenantId),
-  index("idx_discount_codes_store").on(table.storeId),
-  index("idx_discount_codes_code").on(table.code),
-]);
-
-// ==================== DOCUMENT MANAGEMENT ====================
-
-// Document storage and version control
-export const documents = pgTable("documents", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  fileName: text("file_name").notNull(),
-  fileSize: integer("file_size").notNull(),
-  fileType: text("file_type").notNull(),
-  filePath: text("file_path").notNull(),
-  fileHash: text("file_hash"), // For duplicate detection
-  version: integer("version").default(1),
-  parentDocumentId: varchar("parent_document_id").references(() => documents.id),
-  folderId: varchar("folder_id").references(() => documentFolders.id),
-  status: text("status").default("active"), // active, archived, deleted
-  accessLevel: text("access_level").default("private"), // private, team, company, public
-  tags: jsonb("tags").$type<string[]>().default([]),
-  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
-  uploadedBy: varchar("uploaded_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_documents_tenant").on(table.tenantId),
-  index("idx_documents_folder").on(table.folderId),
-  index("idx_documents_parent").on(table.parentDocumentId),
-  index("idx_documents_status").on(table.status),
-]);
-
-// Document folders
-export const documentFolders = pgTable("document_folders", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  parentFolderId: varchar("parent_folder_id").references(() => documentFolders.id),
-  path: text("path").notNull(),
-  accessLevel: text("access_level").default("private"), // private, team, company, public
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_document_folders_tenant").on(table.tenantId),
-  index("idx_document_folders_parent").on(table.parentFolderId),
-]);
-
-// Document approval workflows
-export const documentApprovals = pgTable("document_approvals", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  documentId: varchar("document_id").references(() => documents.id).notNull(),
-  workflowId: varchar("workflow_id").references(() => approvalWorkflows.id).notNull(),
-  status: text("status").default("pending"), // pending, approved, rejected, cancelled
-  currentStep: integer("current_step").default(1),
-  totalSteps: integer("total_steps").notNull(),
-  submittedBy: varchar("submitted_by").references(() => users.id),
-  submittedAt: timestamp("submitted_at").defaultNow(),
-  completedAt: timestamp("completed_at"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_document_approvals_tenant").on(table.tenantId),
-  index("idx_document_approvals_document").on(table.documentId),
-  index("idx_document_approvals_workflow").on(table.workflowId),
-  index("idx_document_approvals_status").on(table.status),
-]);
-
-// Approval workflows
-export const approvalWorkflows = pgTable("approval_workflows", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  steps: jsonb("steps").$type<Array<{
-    stepNumber: number;
-    name: string;
-    approverId: string;
-    approverRole?: string;
-    required: boolean;
-    parallelApproval?: boolean;
-  }>>().default([]),
-  documentTypes: jsonb("document_types").$type<string[]>().default([]),
-  isActive: boolean("is_active").default(true),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_approval_workflows_tenant").on(table.tenantId),
-  index("idx_approval_workflows_active").on(table.isActive),
-]);
-
-// Document approval steps
-export const documentApprovalSteps = pgTable("document_approval_steps", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  documentApprovalId: varchar("document_approval_id").references(() => documentApprovals.id).notNull(),
-  stepNumber: integer("step_number").notNull(),
-  approverId: varchar("approver_id").references(() => users.id).notNull(),
-  status: text("status").default("pending"), // pending, approved, rejected, skipped
-  decision: text("decision"), // approve, reject, delegate
-  comments: text("comments"),
-  decidedAt: timestamp("decided_at"),
-  delegatedTo: varchar("delegated_to").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_document_approval_steps_tenant").on(table.tenantId),
-  index("idx_document_approval_steps_approval").on(table.documentApprovalId),
-  index("idx_document_approval_steps_approver").on(table.approverId),
-  index("idx_document_approval_steps_status").on(table.status),
-]);
-
-// ==================== TERRITORY MANAGEMENT ====================
-
-// Sales territories
-export const territories = pgTable("territories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  territoryType: text("territory_type").notNull(), // geographic, account_based, industry, hybrid
-  parentTerritoryId: varchar("parent_territory_id").references(() => territories.id),
-  managerId: varchar("manager_id").references(() => users.id),
-  geographicBounds: jsonb("geographic_bounds").$type<{
-    countries?: string[];
-    states?: string[];
-    cities?: string[];
-    zipCodes?: string[];
-    coordinates?: Array<{ lat: number; lng: number }>;
-  }>().default({}),
-  accountCriteria: jsonb("account_criteria").$type<{
-    industries?: string[];
-    companySize?: string[];
-    revenue?: { min?: number; max?: number };
-    customFields?: Record<string, any>;
-  }>().default({}),
-  quotas: jsonb("quotas").$type<{
-    annual?: number;
-    quarterly?: number;
-    monthly?: number;
-    currency?: string;
-  }>().default({}),
-  isActive: boolean("is_active").default(true),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_territories_tenant").on(table.tenantId),
-  index("idx_territories_manager").on(table.managerId),
-  index("idx_territories_parent").on(table.parentTerritoryId),
-  index("idx_territories_type").on(table.territoryType),
-]);
-
-// Territory assignments
-export const territoryAssignments = pgTable("territory_assignments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  territoryId: varchar("territory_id").references(() => territories.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  role: text("role").default("rep"), // rep, manager, support
-  assignedAt: timestamp("assigned_at").defaultNow(),
-  assignedBy: varchar("assigned_by").references(() => users.id),
-  isActive: boolean("is_active").default(true),
-  quotas: jsonb("quotas").$type<{
-    annual?: number;
-    quarterly?: number;
-    monthly?: number;
-    currency?: string;
-  }>().default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_territory_assignments_tenant").on(table.tenantId),
-  index("idx_territory_assignments_territory").on(table.territoryId),
-  index("idx_territory_assignments_user").on(table.userId),
-]);
-
-// Account territory assignments
-export const accountTerritoryAssignments = pgTable("account_territory_assignments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  accountId: varchar("account_id").references(() => accounts.id).notNull(),
-  territoryId: varchar("territory_id").references(() => territories.id).notNull(),
-  assignedAt: timestamp("assigned_at").defaultNow(),
-  assignedBy: varchar("assigned_by").references(() => users.id),
-  isActive: boolean("is_active").default(true),
-  assignmentReason: text("assignment_reason"), // geographic, strategic, custom
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_account_territory_assignments_tenant").on(table.tenantId),
-  index("idx_account_territory_assignments_account").on(table.accountId),
-  index("idx_account_territory_assignments_territory").on(table.territoryId),
-]);
-
-// ==================== ADVANCED ACCOUNTING ====================
-
-// Chart of accounts
-export const chartOfAccounts = pgTable("chart_of_accounts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  accountCode: text("account_code").notNull(),
-  accountName: text("account_name").notNull(),
-  accountType: text("account_type").notNull(), // asset, liability, equity, revenue, expense
-  parentAccountId: varchar("parent_account_id").references(() => chartOfAccounts.id),
-  subType: text("sub_type"), // current_asset, fixed_asset, current_liability, etc.
-  normalBalance: text("normal_balance").notNull(), // debit, credit
-  description: text("description"),
-  isActive: boolean("is_active").default(true),
-  isBankAccount: boolean("is_bank_account").default(false),
-  bankAccountDetails: jsonb("bank_account_details").$type<{
-    accountNumber?: string;
-    routingNumber?: string;
-    bankName?: string;
-    accountType?: string;
-  }>().default({}),
-  taxCode: text("tax_code"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_chart_of_accounts_tenant").on(table.tenantId),
-  index("idx_chart_of_accounts_code").on(table.accountCode),
-  index("idx_chart_of_accounts_type").on(table.accountType),
-  index("idx_chart_of_accounts_parent").on(table.parentAccountId),
-]);
-
-// Journal entries
-export const journalEntries = pgTable("journal_entries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  entryNumber: text("entry_number").notNull(),
-  entryDate: date("entry_date").notNull(),
-  description: text("description").notNull(),
-  reference: text("reference"),
-  totalDebit: decimal("total_debit", { precision: 15, scale: 2 }).notNull(),
-  totalCredit: decimal("total_credit", { precision: 15, scale: 2 }).notNull(),
-  status: text("status").default("draft"), // draft, posted, reversed
-  reversalEntryId: varchar("reversal_entry_id").references(() => journalEntries.id),
-  isAdjustment: boolean("is_adjustment").default(false),
-  adjustmentReason: text("adjustment_reason"),
-  recurringEntryId: varchar("recurring_entry_id").references(() => recurringEntries.id),
-  createdBy: varchar("created_by").references(() => users.id),
-  postedBy: varchar("posted_by").references(() => users.id),
-  postedAt: timestamp("posted_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_journal_entries_tenant").on(table.tenantId),
-  index("idx_journal_entries_number").on(table.entryNumber),
-  index("idx_journal_entries_date").on(table.entryDate),
-  index("idx_journal_entries_status").on(table.status),
-]);
-
-// Journal entry line items
-export const journalEntryLineItems = pgTable("journal_entry_line_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  journalEntryId: varchar("journal_entry_id").references(() => journalEntries.id).notNull(),
-  accountId: varchar("account_id").references(() => chartOfAccounts.id).notNull(),
-  description: text("description"),
-  debitAmount: decimal("debit_amount", { precision: 15, scale: 2 }).default("0.00"),
-  creditAmount: decimal("credit_amount", { precision: 15, scale: 2 }).default("0.00"),
-  reference: text("reference"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_journal_entry_line_items_tenant").on(table.tenantId),
-  index("idx_journal_entry_line_items_entry").on(table.journalEntryId),
-  index("idx_journal_entry_line_items_account").on(table.accountId),
-]);
-
-// Recurring journal entries
-export const recurringEntries = pgTable("recurring_entries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  frequency: text("frequency").notNull(), // daily, weekly, monthly, quarterly, yearly
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date"),
-  nextRunDate: date("next_run_date").notNull(),
-  lastRunDate: date("last_run_date"),
-  isActive: boolean("is_active").default(true),
-  template: jsonb("template").$type<{
-    description: string;
-    lineItems: Array<{
-      accountId: string;
-      description: string;
-      debitAmount?: number;
-      creditAmount?: number;
-    }>;
-  }>().notNull(),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_recurring_entries_tenant").on(table.tenantId),
-  index("idx_recurring_entries_next_run").on(table.nextRunDate),
-  index("idx_recurring_entries_active").on(table.isActive),
-]);
-
-// Financial periods
-export const financialPeriods = pgTable("financial_periods", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  periodType: text("period_type").notNull(), // month, quarter, year
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  status: text("status").default("open"), // open, closed, locked
-  closedBy: varchar("closed_by").references(() => users.id),
-  closedAt: timestamp("closed_at"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_financial_periods_tenant").on(table.tenantId),
-  index("idx_financial_periods_dates").on(table.startDate, table.endDate),
-  index("idx_financial_periods_status").on(table.status),
-]);
-
-// Account balances
-export const accountBalances = pgTable("account_balances", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  accountId: varchar("account_id").references(() => chartOfAccounts.id).notNull(),
-  periodId: varchar("period_id").references(() => financialPeriods.id).notNull(),
-  openingBalance: decimal("opening_balance", { precision: 15, scale: 2 }).default("0.00"),
-  closingBalance: decimal("closing_balance", { precision: 15, scale: 2 }).default("0.00"),
-  debitTotal: decimal("debit_total", { precision: 15, scale: 2 }).default("0.00"),
-  creditTotal: decimal("credit_total", { precision: 15, scale: 2 }).default("0.00"),
-  lastUpdated: timestamp("last_updated").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_account_balances_tenant").on(table.tenantId),
-  index("idx_account_balances_account").on(table.accountId),
-  index("idx_account_balances_period").on(table.periodId),
-]);
-
-// ==================== PAYROLL SYSTEM ====================
-
-// Payroll profiles
-export const payrollProfiles = pgTable("payroll_profiles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: varchar("employee_id").references(() => employees.id).notNull(),
-  payrollId: text("payroll_id").notNull(), // Unique payroll identifier
-  payType: text("pay_type").notNull(), // salary, hourly, commission, contract
-  baseSalary: decimal("base_salary", { precision: 15, scale: 2 }).default("0.00"),
-  hourlyRate: decimal("hourly_rate", { precision: 15, scale: 2 }).default("0.00"),
-  currency: text("currency").default("USD"),
-  payFrequency: text("pay_frequency").notNull(), // weekly, bi-weekly, monthly, quarterly
-  payPeriodStart: date("pay_period_start"),
-  payPeriodEnd: date("pay_period_end"),
-  bankAccount: jsonb("bank_account").$type<{
-    accountNumber?: string;
-    routingNumber?: string;
-    bankName?: string;
-    accountType?: string;
-  }>().default({}),
-  taxSettings: jsonb("tax_settings").$type<{
-    federalTaxRate?: number;
-    stateTaxRate?: number;
-    localTaxRate?: number;
-    socialSecurityRate?: number;
-    medicareRate?: number;
-    exemptions?: number;
-    additionalWithholdings?: number;
-  }>().default({}),
-  benefits: jsonb("benefits").$type<{
-    healthInsurance?: { amount: number; deductible: boolean };
-    dentalInsurance?: { amount: number; deductible: boolean };
-    retirement401k?: { amount: number; employerMatch: number };
-    lifeInsurance?: { amount: number; deductible: boolean };
-    vacationDays?: number;
-    sickDays?: number;
-    personalDays?: number;
-  }>().default({}),
-  deductions: jsonb("deductions").$type<{
-    unionDues?: number;
-    childSupport?: number;
-    garnishments?: number;
-    otherDeductions?: Array<{ name: string; amount: number; recurring: boolean }>;
-  }>().default({}),
-  isActive: boolean("is_active").default(true),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_payroll_profiles_tenant").on(table.tenantId),
-  index("idx_payroll_profiles_employee").on(table.employeeId),
-  index("idx_payroll_profiles_payroll_id").on(table.payrollId),
-]);
-
-// Payroll periods
-export const payrollPeriods = pgTable("payroll_periods", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  periodName: text("period_name").notNull(),
-  payFrequency: text("pay_frequency").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  payDate: date("pay_date").notNull(),
-  status: text("status").default("draft"), // draft, processing, completed, approved, paid
-  totalGrossPay: decimal("total_gross_pay", { precision: 15, scale: 2 }).default("0.00"),
-  totalNetPay: decimal("total_net_pay", { precision: 15, scale: 2 }).default("0.00"),
-  totalTaxes: decimal("total_taxes", { precision: 15, scale: 2 }).default("0.00"),
-  totalDeductions: decimal("total_deductions", { precision: 15, scale: 2 }).default("0.00"),
-  employeeCount: integer("employee_count").default(0),
-  processedBy: varchar("processed_by").references(() => users.id),
-  processedAt: timestamp("processed_at"),
-  approvedBy: varchar("approved_by").references(() => users.id),
-  approvedAt: timestamp("approved_at"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_payroll_periods_tenant").on(table.tenantId),
-  index("idx_payroll_periods_dates").on(table.startDate, table.endDate),
-  index("idx_payroll_periods_status").on(table.status),
-]);
-
-// Payroll entries (individual employee payroll records)
-export const payrollEntries = pgTable("payroll_entries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  payrollPeriodId: varchar("payroll_period_id").references(() => payrollPeriods.id).notNull(),
-  employeeId: varchar("employee_id").references(() => employees.id).notNull(),
-  payrollProfileId: varchar("payroll_profile_id").references(() => payrollProfiles.id).notNull(),
-  
-  // Earnings
-  basePay: decimal("base_pay", { precision: 15, scale: 2 }).default("0.00"),
-  overtimePay: decimal("overtime_pay", { precision: 15, scale: 2 }).default("0.00"),
-  bonusPay: decimal("bonus_pay", { precision: 15, scale: 2 }).default("0.00"),
-  commissionPay: decimal("commission_pay", { precision: 15, scale: 2 }).default("0.00"),
-  holidayPay: decimal("holiday_pay", { precision: 15, scale: 2 }).default("0.00"),
-  grossPay: decimal("gross_pay", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Hours
-  regularHours: decimal("regular_hours", { precision: 8, scale: 2 }).default("0.00"),
-  overtimeHours: decimal("overtime_hours", { precision: 8, scale: 2 }).default("0.00"),
-  vacationHours: decimal("vacation_hours", { precision: 8, scale: 2 }).default("0.00"),
-  sickHours: decimal("sick_hours", { precision: 8, scale: 2 }).default("0.00"),
-  holidayHours: decimal("holiday_hours", { precision: 8, scale: 2 }).default("0.00"),
-  
-  // Taxes
-  federalTax: decimal("federal_tax", { precision: 15, scale: 2 }).default("0.00"),
-  stateTax: decimal("state_tax", { precision: 15, scale: 2 }).default("0.00"),
-  localTax: decimal("local_tax", { precision: 15, scale: 2 }).default("0.00"),
-  socialSecurity: decimal("social_security", { precision: 15, scale: 2 }).default("0.00"),
-  medicare: decimal("medicare", { precision: 15, scale: 2 }).default("0.00"),
-  unemployment: decimal("unemployment", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Deductions
-  healthInsurance: decimal("health_insurance", { precision: 15, scale: 2 }).default("0.00"),
-  dentalInsurance: decimal("dental_insurance", { precision: 15, scale: 2 }).default("0.00"),
-  retirement401k: decimal("retirement_401k", { precision: 15, scale: 2 }).default("0.00"),
-  lifeInsurance: decimal("life_insurance", { precision: 15, scale: 2 }).default("0.00"),
-  otherDeductions: decimal("other_deductions", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Net pay
-  totalTaxes: decimal("total_taxes", { precision: 15, scale: 2 }).default("0.00"),
-  totalDeductions: decimal("total_deductions", { precision: 15, scale: 2 }).default("0.00"),
-  netPay: decimal("net_pay", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Year-to-date totals
-  ytdGrossPay: decimal("ytd_gross_pay", { precision: 15, scale: 2 }).default("0.00"),
-  ytdNetPay: decimal("ytd_net_pay", { precision: 15, scale: 2 }).default("0.00"),
-  ytdTaxes: decimal("ytd_taxes", { precision: 15, scale: 2 }).default("0.00"),
-  ytdDeductions: decimal("ytd_deductions", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Status and metadata
-  status: text("status").default("draft"), // draft, calculated, approved, paid
-  payMethod: text("pay_method").default("direct_deposit"), // direct_deposit, check, cash
-  checkNumber: text("check_number"),
-  transactionId: text("transaction_id"),
-  paidDate: date("paid_date"),
-  notes: text("notes"),
-  
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_payroll_entries_tenant").on(table.tenantId),
-  index("idx_payroll_entries_period").on(table.payrollPeriodId),
-  index("idx_payroll_entries_employee").on(table.employeeId),
-  index("idx_payroll_entries_profile").on(table.payrollProfileId),
-  index("idx_payroll_entries_status").on(table.status),
-]);
-
-// Time tracking for payroll
-export const timeSheets = pgTable("time_sheets", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  employeeId: varchar("employee_id").references(() => employees.id).notNull(),
-  payrollPeriodId: varchar("payroll_period_id").references(() => payrollPeriods.id),
-  
-  // Time entries
-  workDate: date("work_date").notNull(),
-  clockIn: timestamp("clock_in"),
-  clockOut: timestamp("clock_out"),
-  breakTime: decimal("break_time", { precision: 4, scale: 2 }).default("0.00"), // in hours
-  regularHours: decimal("regular_hours", { precision: 8, scale: 2 }).default("0.00"),
-  overtimeHours: decimal("overtime_hours", { precision: 8, scale: 2 }).default("0.00"),
-  doubleTimeHours: decimal("double_time_hours", { precision: 8, scale: 2 }).default("0.00"),
-  
-  // Time off
-  vacationHours: decimal("vacation_hours", { precision: 8, scale: 2 }).default("0.00"),
-  sickHours: decimal("sick_hours", { precision: 8, scale: 2 }).default("0.00"),
-  holidayHours: decimal("holiday_hours", { precision: 8, scale: 2 }).default("0.00"),
-  personalHours: decimal("personal_hours", { precision: 8, scale: 2 }).default("0.00"),
-  
-  // Project/task tracking
-  projectId: varchar("project_id").references(() => projects.id),
-  taskDescription: text("task_description"),
-  location: text("location"),
-  deviceUsed: text("device_used"),
-  ipAddress: text("ip_address"),
-  
-  // Approval
-  status: text("status").default("pending"), // pending, approved, rejected, needs_review
-  approvedBy: varchar("approved_by").references(() => users.id),
-  approvedAt: timestamp("approved_at"),
-  rejectionReason: text("rejection_reason"),
-  
-  // Metadata
-  submittedBy: varchar("submitted_by").references(() => users.id),
-  submittedAt: timestamp("submitted_at"),
-  notes: text("notes"),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_time_sheets_tenant").on(table.tenantId),
-  index("idx_time_sheets_employee").on(table.employeeId),
-  index("idx_time_sheets_period").on(table.payrollPeriodId),
-  index("idx_time_sheets_date").on(table.workDate),
-  index("idx_time_sheets_status").on(table.status),
-]);
-
-// Payroll tax filings
-export const payrollTaxFilings = pgTable("payroll_tax_filings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  filingType: text("filing_type").notNull(), // quarterly_941, annual_940, w2, state_quarterly
-  taxYear: integer("tax_year").notNull(),
-  quarter: integer("quarter"), // 1, 2, 3, 4 (null for annual filings)
-  filingPeriodStart: date("filing_period_start").notNull(),
-  filingPeriodEnd: date("filing_period_end").notNull(),
-  dueDate: date("due_date").notNull(),
-  
-  // Tax amounts
-  totalWages: decimal("total_wages", { precision: 15, scale: 2 }).default("0.00"),
-  totalFederalTax: decimal("total_federal_tax", { precision: 15, scale: 2 }).default("0.00"),
-  totalStateTax: decimal("total_state_tax", { precision: 15, scale: 2 }).default("0.00"),
-  totalSocialSecurity: decimal("total_social_security", { precision: 15, scale: 2 }).default("0.00"),
-  totalMedicare: decimal("total_medicare", { precision: 15, scale: 2 }).default("0.00"),
-  totalUnemployment: decimal("total_unemployment", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Filing details
-  filingData: jsonb("filing_data").default({}),
-  status: text("status").default("pending"), // pending, submitted, accepted, rejected
-  confirmationNumber: text("confirmation_number"),
-  submittedDate: date("submitted_date"),
-  acceptedDate: date("accepted_date"),
-  rejectionReason: text("rejection_reason"),
-  
-  // Metadata
-  preparedBy: varchar("prepared_by").references(() => users.id),
-  reviewedBy: varchar("reviewed_by").references(() => users.id),
-  submittedBy: varchar("submitted_by").references(() => users.id),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_payroll_tax_filings_tenant").on(table.tenantId),
-  index("idx_payroll_tax_filings_type").on(table.filingType),
-  index("idx_payroll_tax_filings_year").on(table.taxYear),
-  index("idx_payroll_tax_filings_due_date").on(table.dueDate),
-  index("idx_payroll_tax_filings_status").on(table.status),
-]);
-
-// ==================== MODERN BOOKKEEPING ENHANCEMENTS ====================
-
-// Automated bank reconciliation
-export const bankReconciliations = pgTable("bank_reconciliations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  bankAccountId: integer("bank_account_id").references(() => bankAccounts.id).notNull(),
-  reconciliationDate: date("reconciliation_date").notNull(),
-  statementDate: date("statement_date").notNull(),
-  
-  // Balances
-  statementBalance: decimal("statement_balance", { precision: 15, scale: 2 }).default("0.00"),
-  bookBalance: decimal("book_balance", { precision: 15, scale: 2 }).default("0.00"),
-  reconciledBalance: decimal("reconciled_balance", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Reconciliation items
-  outstandingChecks: decimal("outstanding_checks", { precision: 15, scale: 2 }).default("0.00"),
-  depositsInTransit: decimal("deposits_in_transit", { precision: 15, scale: 2 }).default("0.00"),
-  bankAdjustments: decimal("bank_adjustments", { precision: 15, scale: 2 }).default("0.00"),
-  bookAdjustments: decimal("book_adjustments", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Status and metadata
-  status: text("status").default("draft"), // draft, in_progress, completed, reviewed, approved
-  reconciliationMethod: text("reconciliation_method").default("manual"), // manual, automatic, assisted
-  discrepancyAmount: decimal("discrepancy_amount", { precision: 15, scale: 2 }).default("0.00"),
-  
-  // Approval workflow
-  reconciledBy: varchar("reconciled_by").references(() => users.id),
-  reviewedBy: varchar("reviewed_by").references(() => users.id),
-  approvedBy: varchar("approved_by").references(() => users.id),
-  
-  reconciliationItems: jsonb("reconciliation_items").$type<Array<{
-    transactionId: string;
-    amount: number;
-    type: 'matched' | 'unmatched' | 'adjustment';
-    description: string;
-    resolved: boolean;
-  }>>().default([]),
-  
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_bank_reconciliations_tenant").on(table.tenantId),
-  index("idx_bank_reconciliations_account").on(table.bankAccountId),
-  index("idx_bank_reconciliations_date").on(table.reconciliationDate),
-  index("idx_bank_reconciliations_status").on(table.status),
-]);
-
-// Smart expense categorization
-export const expenseCategories = pgTable("expense_categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  parentCategoryId: varchar("parent_category_id").references(() => expenseCategories.id),
-  accountId: varchar("account_id").references(() => chartOfAccounts.id),
-  
-  // AI categorization rules
-  keywords: jsonb("keywords").$type<string[]>().default([]),
-  patterns: jsonb("patterns").$type<string[]>().default([]),
-  vendors: jsonb("vendors").$type<string[]>().default([]),
-  amountRanges: jsonb("amount_ranges").$type<Array<{
-    min: number;
-    max: number;
-    confidence: number;
-  }>>().default([]),
-  
-  // Tax and compliance
-  taxDeductible: boolean("tax_deductible").default(false),
-  taxCategory: text("tax_category"),
-  requiresReceipt: boolean("requires_receipt").default(false),
-  approvalRequired: boolean("approval_required").default(false),
-  
-  // Budgeting
-  budgetAmount: decimal("budget_amount", { precision: 15, scale: 2 }).default("0.00"),
-  budgetPeriod: text("budget_period").default("monthly"), // monthly, quarterly, annually
-  
-  // Metadata
-  isActive: boolean("is_active").default(true),
-  sortOrder: integer("sort_order").default(0),
-  color: text("color").default("#4F46E5"),
-  icon: text("icon").default("receipt"),
-  
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_expense_categories_tenant").on(table.tenantId),
-  index("idx_expense_categories_parent").on(table.parentCategoryId),
-  index("idx_expense_categories_account").on(table.accountId),
-  index("idx_expense_categories_active").on(table.isActive),
-]);
-
-// Enhanced receipt management
-export const receipts = pgTable("receipts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  transactionId: varchar("transaction_id").references(() => transactions.id),
-  expenseId: varchar("expense_id"), // Reference to expense if different from transaction
-  
-  // Receipt details
-  receiptNumber: text("receipt_number"),
-  vendor: text("vendor").notNull(),
-  totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull(),
-  currency: text("currency").default("USD"),
-  receiptDate: date("receipt_date").notNull(),
-  
-  // Digital storage
-  fileName: text("file_name"),
-  fileUrl: text("file_url"),
-  fileType: text("file_type"), // pdf, jpg, png, etc.
-  fileSize: integer("file_size"),
-  
-  // AI-extracted data
-  extractedData: jsonb("extracted_data").$type<{
-    items?: Array<{
-      description: string;
-      quantity: number;
-      unitPrice: number;
-      totalPrice: number;
-      category?: string;
-    }>;
-    taxes?: Array<{
-      type: string;
-      rate: number;
-      amount: number;
-    }>;
-    paymentMethod?: string;
-    merchantInfo?: {
-      name: string;
-      address: string;
-      phone: string;
-      taxId: string;
-    };
-  }>().default({}),
-  
-  // Processing status
-  processingStatus: text("processing_status").default("pending"), // pending, processed, failed, manual_review
-  ocrConfidence: decimal("ocr_confidence", { precision: 5, scale: 2 }).default("0.00"),
-  verificationStatus: text("verification_status").default("unverified"), // unverified, verified, flagged
-  
-  // Categorization
-  categoryId: varchar("category_id").references(() => expenseCategories.id),
-  categoryConfidence: decimal("category_confidence", { precision: 5, scale: 2 }).default("0.00"),
-  
-  // Compliance
-  isBusinessExpense: boolean("is_business_expense").default(true),
-  taxDeductible: boolean("tax_deductible").default(false),
-  requiresApproval: boolean("requires_approval").default(false),
-  approvalStatus: text("approval_status").default("pending"), // pending, approved, rejected
-  
-  // Metadata
-  uploadedBy: varchar("uploaded_by").references(() => users.id),
-  verifiedBy: varchar("verified_by").references(() => users.id),
-  approvedBy: varchar("approved_by").references(() => users.id),
-  
-  notes: text("notes"),
-  tags: jsonb("tags").$type<string[]>().default([]),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_receipts_tenant").on(table.tenantId),
-  index("idx_receipts_transaction").on(table.transactionId),
-  index("idx_receipts_vendor").on(table.vendor),
-  index("idx_receipts_date").on(table.receiptDate),
-  index("idx_receipts_category").on(table.categoryId),
-  index("idx_receipts_status").on(table.processingStatus),
-]);
-
-// Create insert and select schemas
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true });
-export const insertProjectTaskSchema = createInsertSchema(projectTasks);
-export const insertResourceAllocationSchema = createInsertSchema(resourceAllocations);
-export const insertTimeEntrySchema = createInsertSchema(timeEntries);
-export const insertPerformanceReviewSchema = createInsertSchema(performanceReviews);
-export const insertAttendanceRecordSchema = createInsertSchema(attendanceRecords);
-export const insertLeaveRequestSchema = createInsertSchema(leaveRequests);
-export const insertProductSchema = createInsertSchema(products);
-export const insertInventoryMovementSchema = createInsertSchema(inventoryMovements);
-export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders);
-export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems);
-export const insertDocumentSchema = createInsertSchema(documents);
-export const insertDocumentFolderSchema = createInsertSchema(documentFolders);
-export const insertDocumentApprovalSchema = createInsertSchema(documentApprovals);
-export const insertApprovalWorkflowSchema = createInsertSchema(approvalWorkflows);
-export const insertTerritorySchema = createInsertSchema(territories);
-export const insertTerritoryAssignmentSchema = createInsertSchema(territoryAssignments);
-export const insertAccountTerritoryAssignmentSchema = createInsertSchema(accountTerritoryAssignments);
-export const insertChartOfAccountSchema = createInsertSchema(chartOfAccounts);
-export const insertJournalEntrySchema = createInsertSchema(journalEntries);
-export const insertJournalEntryLineItemSchema = createInsertSchema(journalEntryLineItems);
-export const insertRecurringEntrySchema = createInsertSchema(recurringEntries);
-export const insertFinancialPeriodSchema = createInsertSchema(financialPeriods);
-export const insertAccountBalanceSchema = createInsertSchema(accountBalances);
-export const insertPayrollProfileSchema = createInsertSchema(payrollProfiles);
-export const insertPayrollPeriodSchema = createInsertSchema(payrollPeriods);
-export const insertPayrollEntrySchema = createInsertSchema(payrollEntries);
-export const insertTimeSheetSchema = createInsertSchema(timeSheets);
-export const insertPayrollTaxFilingSchema = createInsertSchema(payrollTaxFilings);
-export const insertBankReconciliationSchema = createInsertSchema(bankReconciliations);
-export const insertExpenseCategorySchema = createInsertSchema(expenseCategories);
-export const insertReceiptSchema = createInsertSchema(receipts);
-
-// Type definitions
-export type Project = typeof projects.$inferSelect;
-export type ProjectTask = typeof projectTasks.$inferSelect;
-export type ResourceAllocation = typeof resourceAllocations.$inferSelect;
-export type TimeEntry = typeof timeEntries.$inferSelect;
-export type PerformanceReview = typeof performanceReviews.$inferSelect;
-export type AttendanceRecord = typeof attendanceRecords.$inferSelect;
-export type LeaveRequest = typeof leaveRequests.$inferSelect;
-export type Product = typeof products.$inferSelect;
-export type InventoryMovement = typeof inventoryMovements.$inferSelect;
-export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
-export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
-export type Document = typeof documents.$inferSelect;
-export type DocumentFolder = typeof documentFolders.$inferSelect;
-export type DocumentApproval = typeof documentApprovals.$inferSelect;
-export type ApprovalWorkflow = typeof approvalWorkflows.$inferSelect;
-export type Territory = typeof territories.$inferSelect;
-export type TerritoryAssignment = typeof territoryAssignments.$inferSelect;
-export type AccountTerritoryAssignment = typeof accountTerritoryAssignments.$inferSelect;
-export type ChartOfAccount = typeof chartOfAccounts.$inferSelect;
-export type JournalEntry = typeof journalEntries.$inferSelect;
-export type JournalEntryLineItem = typeof journalEntryLineItems.$inferSelect;
-export type RecurringEntry = typeof recurringEntries.$inferSelect;
-export type FinancialPeriod = typeof financialPeriods.$inferSelect;
-export type AccountBalance = typeof accountBalances.$inferSelect;
-export type PayrollProfile = typeof payrollProfiles.$inferSelect;
-export type PayrollPeriod = typeof payrollPeriods.$inferSelect;
-export type PayrollEntry = typeof payrollEntries.$inferSelect;
-export type TimeSheet = typeof timeSheets.$inferSelect;
-export type PayrollTaxFiling = typeof payrollTaxFilings.$inferSelect;
-export type BankReconciliation = typeof bankReconciliations.$inferSelect;
-export type ExpenseCategory = typeof expenseCategories.$inferSelect;
-export type Receipt = typeof receipts.$inferSelect;
-
-export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type InsertProjectTask = z.infer<typeof insertProjectTaskSchema>;
-export type InsertResourceAllocation = z.infer<typeof insertResourceAllocationSchema>;
-export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
-export type InsertPerformanceReview = z.infer<typeof insertPerformanceReviewSchema>;
-export type InsertAttendanceRecord = z.infer<typeof insertAttendanceRecordSchema>;
-export type InsertLeaveRequest = z.infer<typeof insertLeaveRequestSchema>;
-export type InsertProduct = z.infer<typeof insertProductSchema>;
-export type InsertInventoryMovement = z.infer<typeof insertInventoryMovementSchema>;
-export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
-export type InsertPurchaseOrderItem = z.infer<typeof insertPurchaseOrderItemSchema>;
-export type InsertDocument = z.infer<typeof insertDocumentSchema>;
-export type InsertDocumentFolder = z.infer<typeof insertDocumentFolderSchema>;
-export type InsertDocumentApproval = z.infer<typeof insertDocumentApprovalSchema>;
-export type InsertApprovalWorkflow = z.infer<typeof insertApprovalWorkflowSchema>;
-export type InsertTerritory = z.infer<typeof insertTerritorySchema>;
-export type InsertTerritoryAssignment = z.infer<typeof insertTerritoryAssignmentSchema>;
-export type InsertAccountTerritoryAssignment = z.infer<typeof insertAccountTerritoryAssignmentSchema>;
-export type InsertChartOfAccount = z.infer<typeof insertChartOfAccountSchema>;
-export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
-export type InsertJournalEntryLineItem = z.infer<typeof insertJournalEntryLineItemSchema>;
-export type InsertRecurringEntry = z.infer<typeof insertRecurringEntrySchema>;
-export type InsertFinancialPeriod = z.infer<typeof insertFinancialPeriodSchema>;
-export type InsertAccountBalance = z.infer<typeof insertAccountBalanceSchema>;
-export type InsertPayrollProfile = z.infer<typeof insertPayrollProfileSchema>;
-export type InsertPayrollPeriod = z.infer<typeof insertPayrollPeriodSchema>;
-export type InsertPayrollEntry = z.infer<typeof insertPayrollEntrySchema>;
-export type InsertTimeSheet = z.infer<typeof insertTimeSheetSchema>;
-export type InsertPayrollTaxFiling = z.infer<typeof insertPayrollTaxFilingSchema>;
-export type InsertBankReconciliation = z.infer<typeof insertBankReconciliationSchema>;
-export type InsertExpenseCategory = z.infer<typeof insertExpenseCategorySchema>;
-export type InsertReceipt = z.infer<typeof insertReceiptSchema>;
-
-// Company Device Management Tables
-export const companyDevices = pgTable("company_devices", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userEmail: text("user_email").notNull(),
-  deviceName: text("device_name").notNull(),
-  deviceType: text("device_type").notNull(), // desktop, laptop, mobile, tablet
-  operatingSystem: text("operating_system").notNull(),
-  ipAddress: text("ip_address").notNull(), // IPv4 or IPv6
-  macAddress: text("mac_address").notNull(),
-  internalIp: text("internal_ip"), // Local network IP
-  locationCountry: text("location_country"),
-  locationRegion: text("location_region"),
-  locationCity: text("location_city"),
-  locationLatitude: decimal("location_latitude", { precision: 10, scale: 8 }),
-  locationLongitude: decimal("location_longitude", { precision: 11, scale: 8 }),
-  locationTimezone: text("location_timezone"),
-  isTrusted: boolean("is_trusted").default(false),
-  isActive: boolean("is_active").default(true),
-  lastSeen: timestamp("last_seen"),
-  securityScore: integer("security_score").default(100), // 0-100
-  riskLevel: text("risk_level").default("low"), // low, medium, high, critical
-  deviceFingerprint: text("device_fingerprint"), // Browser/system fingerprint
-  vpnDetected: boolean("vpn_detected").default(false),
-  proxyDetected: boolean("proxy_detected").default(false),
-  torDetected: boolean("tor_detected").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_company_devices_tenant_user").on(table.tenantId, table.userEmail),
-  index("idx_company_devices_ip").on(table.ipAddress),
-  index("idx_company_devices_mac").on(table.macAddress),
-]);
-
-export const deviceActivityLogs = pgTable("device_activity_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  deviceId: varchar("device_id").references(() => companyDevices.id).notNull(),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userEmail: text("user_email").notNull(),
-  activityType: text("activity_type").notNull(), // login, logout, access_attempt, security_alert
-  activityDescription: text("activity_description"),
-  ipAddress: text("ip_address").notNull(),
-  locationCountry: text("location_country"),
-  locationCity: text("location_city"),
-  success: boolean("success").default(true),
-  riskScore: integer("risk_score").default(0),
-  metadata: jsonb("metadata"), // Additional activity data
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_device_activity_device").on(table.deviceId),
-  index("idx_device_activity_tenant").on(table.tenantId),
-  index("idx_device_activity_time").on(table.createdAt),
-]);
-
-export const deviceSecurityPolicies = pgTable("device_security_policies", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  policyName: text("policy_name").notNull(),
-  policyType: text("policy_type").notNull(), // ip_whitelist, geo_restriction, device_trust
-  policyRules: jsonb("policy_rules").$type<{
-    allowedIps?: string[];
-    blockedIps?: string[];
-    allowedCountries?: string[];
-    blockedCountries?: string[];
-    trustedDevicesOnly?: boolean;
-    maxDevicesPerUser?: number;
-    requireMacValidation?: boolean;
-    allowVpn?: boolean;
-    allowProxy?: boolean;
-    allowTor?: boolean;
-    workingHours?: { start: string; end: string; timezone: string };
-  }>().notNull(),
-  isActive: boolean("is_active").default(true),
-  appliesToAll: boolean("applies_to_all").default(false),
-  specificUsers: text("specific_users").array(),
-  createdBy: text("created_by").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_device_policies_tenant").on(table.tenantId),
-  index("idx_device_policies_active").on(table.isActive),
-]);
-
-// Device Management Schemas
-export const insertCompanyDeviceSchema = createInsertSchema(companyDevices);
-export const insertDeviceActivityLogSchema = createInsertSchema(deviceActivityLogs);
-export const insertDeviceSecurityPolicySchema = createInsertSchema(deviceSecurityPolicies);
-
-// Device Management Types
-export type CompanyDevice = typeof companyDevices.$inferSelect;
-export type DeviceActivityLog = typeof deviceActivityLogs.$inferSelect;
-export type DeviceSecurityPolicy = typeof deviceSecurityPolicies.$inferSelect;
-
-export type InsertCompanyDevice = z.infer<typeof insertCompanyDeviceSchema>;
-export type InsertDeviceActivityLog = z.infer<typeof insertDeviceActivityLogSchema>;
-export type InsertDeviceSecurityPolicy = z.infer<typeof insertDeviceSecurityPolicySchema>;
-
-// Core CRM with tenant isolation
+// ═══════════════════════════════════════════════════
+// CONTACTS
+// ═══════════════════════════════════════════════════
 export const contacts = pgTable("contacts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone"),
-  company: text("company"),
-  jobTitle: text("job_title"),
-  location: text("location"),
-  bio: text("bio"),
-  linkedin: text("linkedin"),
-  companyWebsite: text("company_website"),
-  numberOfEmployees: text("number_of_employees"),
-  leadSource: text("lead_source"),
-  status: text("status").default("active"), // active, inactive, prospect, customer
-  tags: jsonb("tags").$type<string[]>().default([]),
-  assignedTo: varchar("assigned_to").references(() => users.id),
-  createdBy: varchar("created_by").references(() => users.id),
-  // AI Employee fields
-  leadScore: integer("lead_score").default(0), // 0-100 AI-calculated score
-  lastIntent: text("last_intent"), // positive, neutral, objection, pricing, unsubscribe, ooo, bounce
-  lastChannel: text("last_channel"), // email, chat, social, call, linkedin, twitter
-  optIn: boolean("opt_in").default(false), // Email/marketing consent
-  locale: text("locale").default("en"), // Language/region preference
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_contacts_tenant").on(table.tenantId),
-  index("idx_contacts_assigned").on(table.assignedTo),
-  index("idx_contacts_lead_score").on(table.leadScore),
-]);
-
-export const accounts = pgTable("accounts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  industry: text("industry"),
-  website: text("website"),
-  phone: text("phone"),
-  email: text("email"),
-  billingAddress: text("billing_address"),
-  shippingAddress: text("shipping_address"),
-  accountType: text("account_type"), // prospect, customer, partner
-  parentAccountId: varchar("parent_account_id"),
-  annualRevenue: decimal("annual_revenue"),
-  employees: integer("employees"),
-  ownerId: varchar("owner_id").references(() => users.id),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_accounts_tenant").on(table.tenantId),
-  index("idx_accounts_owner").on(table.ownerId),
-]);
-
-export const leads = pgTable("leads", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  email: text("email").notNull(),
+  lastName: text("last_name"),
+  email: text("email"),
   phone: text("phone"),
   company: text("company"),
   jobTitle: text("job_title"),
-  leadSource: text("lead_source"),
-  status: text("status").default("new"), // new, contacted, qualified, unqualified
-  score: integer("score").default(0),
-  convertedToContactId: text("converted_to_contact_id"), // FIXED: Match actual database column name
-  convertedAt: timestamp("converted_at"),
-  source: text("source"),
+  website: text("website"),
+  linkedin: text("linkedin"),
+  address: text("address"),
+  city: text("city"),
+  country: text("country"),
+  avatar: text("avatar"),
+  status: text("status").default("active"), // active, inactive, lead, customer, churned
+  source: text("source"), // website, referral, cold_outreach, linkedin, etc.
+  tags: jsonb("tags").$type<string[]>().default([]),
+  customFields: jsonb("custom_fields").$type<Record<string, any>>().default({}),
   notes: text("notes"),
-  createdBy: text("created_by"),
-  tenantId: text("tenant_id"), // Multi-tenant support
+  assignedTo: uuid("assigned_to").references(() => users.id),
+  lastContactedAt: timestamp("last_contacted_at"),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("idx_contacts_tenant").on(t.tenantId),
+  index("idx_contacts_email").on(t.tenantId, t.email),
+]);
+
+// ═══════════════════════════════════════════════════
+// LEADS
+// ═══════════════════════════════════════════════════
+export const leads = pgTable("leads", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name"),
+  email: text("email"),
+  phone: text("phone"),
+  company: text("company"),
+  jobTitle: text("job_title"),
+  source: text("source"), // website, cold_email, linkedin, referral, ad
+  status: text("status").default("new"), // new, contacted, qualified, unqualified, converted
+  score: integer("score").default(0), // 0-100 lead score
+  estimatedValue: decimal("estimated_value", { precision: 12, scale: 2 }),
+  notes: text("notes"),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  assignedTo: uuid("assigned_to").references(() => users.id),
+  convertedToContactId: uuid("converted_to_contact_id").references(() => contacts.id),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("idx_leads_tenant").on(t.tenantId),
+]);
+
+// ═══════════════════════════════════════════════════
+// PIPELINES & DEALS
+// ═══════════════════════════════════════════════════
+export const pipelines = pgTable("pipelines", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  stages: jsonb("stages").$type<Array<{ id: string; name: string; order: number; color: string; probability: number }>>().default([]),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const deals = pgTable("deals", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  title: text("title"), // Added to match database
-  value: decimal("value"), // Added to match database
-  accountId: text("account_id"),
-  contactId: text("contact_id"),
-  amount: decimal("amount"),
-  stage: text("stage").default("qualification"), // qualification, proposal, negotiation, closed-won, closed-lost
-  probability: integer("probability").default(0),
-  expectedCloseDate: timestamp("expected_close_date"), // FIXED: Match actual database column name
-  currency: text("currency"),
-  status: text("status"),
-  notes: text("notes"),
-  createdBy: text("created_by"),
-  tenantId: text("tenant_id"), // Multi-tenant support
-  // AI Employee fields
-  score: integer("score").default(0), // AI-calculated deal score 0-100
-  nextBestAction: text("next_best_action"), // AI-suggested next action
-  lastTouch: timestamp("last_touch"), // Last contact timestamp
-  ownerId: varchar("owner_id"), // Assigned sales rep
-  source: text("source"), // email, chat, social, referral
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const tasks = pgTable("tasks", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  pipelineId: uuid("pipeline_id").references(() => pipelines.id),
+  contactId: uuid("contact_id").references(() => contacts.id),
   title: text("title").notNull(),
-  description: text("description"),
-  type: text("type"), // call, email, meeting, follow-up
-  priority: text("priority").default("medium"), // low, medium, high, urgent
-  status: text("status").default("pending"), // pending, in-progress, completed, cancelled
-  dueDate: text("due_date"),
-  assignedTo: text("assigned_to"),
-  userId: text("user_id"),
-  contactId: text("contact_id"),
-  dealId: text("deal_id"),
-  completedAt: timestamp("completed_at"),
-  createdBy: text("created_by"),
-  tenantId: text("tenant_id"), // Multi-tenant support
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const campaigns = pgTable("campaigns", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  type: text("type"), // email, social, webinar, event
-  status: text("status").default("draft"), // draft, active, paused, completed
-  startDate: date("start_date"),
-  endDate: date("end_date"),
-  budget: decimal("budget"),
-  expectedRevenue: decimal("expected_revenue"),
-  actualCost: decimal("actual_cost"),
-  description: text("description"),
-  targetAudience: text("target_audience"),
-  ownerId: integer("owner_id"),
-  tenantId: text("tenant_id"), // Multi-tenant support
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const tickets = pgTable("tickets", {
-  id: serial("id").primaryKey(),
-  subject: text("subject").notNull(),
-  description: text("description"),
-  priority: text("priority").default("medium"), // low, medium, high, urgent
-  status: text("status").default("open"), // open, in-progress, resolved, closed
-  category: text("category"),
-  contactId: text("contact_id"),
-  assignedTo: text("assigned_to"),
-  createdBy: text("created_by"),
-  tenantId: text("tenant_id"), // Multi-tenant support
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Legacy projects table removed - using enhanced version with tenant support above
-
-export const invoices = pgTable("invoices", {
-  id: serial("id").primaryKey(),
-  invoiceNumber: text("invoice_number").notNull().unique(),
-  accountId: integer("account_id").notNull(),
-  contactId: integer("contact_id"),
-  amount: decimal("amount").notNull(),
-  tax: decimal("tax").default("0"),
-  discount: decimal("discount").default("0"),
-  total: decimal("total").notNull(),
-  status: text("status").default("draft"), // draft, sent, paid, overdue, cancelled
-  dueDate: date("due_date"),
-  paidDate: date("paid_date"),
-  items: jsonb("items").$type<any[]>().default([]),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const employees = pgTable("employees", {
-  id: serial("id").primaryKey(),
-  employeeId: text("employee_id").unique(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  email: text("email").notNull().unique(),
-  phone: text("phone"),
-  department: text("department"),
-  position: text("position"),
-  manager: integer("manager"),
-  hireDate: date("hire_date"),
-  salary: decimal("salary"),
-  status: text("status").default("active"), // active, inactive, terminated
-  address: text("address"),
-  dateOfBirth: date("date_of_birth"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const sentimentAnalyses = pgTable("sentiment_analyses", {
-  id: serial("id").primaryKey(),
-  contactId: text("contact_id").notNull(),
-  message: text("message").notNull(),
-  sentiment: text("sentiment").notNull(),
-  score: integer("score").notNull(),
-  keywords: text("keywords"),
-  emotionalTone: text("emotional_tone"),
-  urgencyLevel: text("urgency_level"),
-  tenantId: text("tenant_id").notNull().default("default-tenant"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Advanced Enterprise Tables
-export const workflows = pgTable("workflows", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  triggerType: text("trigger_type").notNull(),
-  triggerConditions: text("trigger_conditions"),
-  actions: text("actions").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const reports = pgTable("reports", {
-  id: serial("id").primaryKey(),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  reportType: text("report_type").notNull(), // sales, revenue, customer, activity, forecast, pipeline
-  status: text("status").default("draft"), // draft, scheduled, running, completed, failed
-  config: jsonb("config").$type<{
-    dateRange?: string;
-    accounts?: number[];
-    includeMetrics?: { [key: string]: boolean };
-    filters?: { [key: string]: any };
-  }>().default({}),
-  data: jsonb("data").$type<any[]>().default([]),
-  lastRun: timestamp("last_run"),
-  nextRun: timestamp("next_run"),
-  schedule: text("schedule"), // cron expression for scheduled reports
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_reports_tenant").on(table.tenantId),
-  index("idx_reports_type").on(table.reportType),
-  index("idx_reports_status").on(table.status),
-]);
-
-export const salesForecasts = pgTable("sales_forecasts", {
-  id: serial("id").primaryKey(),
-  period: text("period").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  forecastAmount: decimal("forecast_amount", { precision: 12, scale: 2 }).notNull(),
-  actualAmount: decimal("actual_amount", { precision: 12, scale: 2 }),
-  confidence: decimal("confidence", { precision: 5, scale: 2 }).notNull(),
-  methodology: text("methodology"),
-  createdBy: integer("created_by").references(() => employees.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Legacy role tables renamed to avoid conflicts with multi-tenant system
-export const legacyRoles = pgTable("legacy_roles", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  description: text("description"),
-  permissions: text("permissions").array().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const legacyUserRoles = pgTable("legacy_user_roles", {
-  id: serial("id").primaryKey(),
-  employeeId: integer("employee_id").references(() => employees.id).notNull(),
-  roleId: integer("role_id").references(() => legacyRoles.id).notNull(),
-  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
-});
-
-export const emailSequences = pgTable("email_sequences", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  steps: text("steps").notNull(),
-  triggerEvent: text("trigger_event"),
-  isActive: boolean("is_active").default(true),
-  createdBy: integer("created_by").references(() => employees.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const leadScoring = pgTable("lead_scoring", {
-  id: serial("id").primaryKey(),
-  leadId: integer("lead_id").references(() => leads.id).notNull(),
-  score: integer("score").notNull(),
-  factors: text("factors").notNull(),
-  lastCalculated: timestamp("last_calculated").defaultNow().notNull(),
-});
-
-// Legacy tables removed - using enhanced versions above
-
-export const quotes = pgTable("quotes", {
-  id: serial("id").primaryKey(),
-  quoteNumber: text("quote_number").notNull().unique(),
-  contactId: integer("contact_id").references(() => contacts.id),
-  dealId: integer("deal_id").references(() => deals.id),
-  items: text("items").notNull(),
-  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
-  tax: decimal("tax", { precision: 12, scale: 2 }).default("0"),
-  total: decimal("total", { precision: 12, scale: 2 }).notNull(),
-  validUntil: date("valid_until"),
-  status: text("status").default("draft"),
-  createdBy: integer("created_by").references(() => employees.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-
-
-// Audit logs moved to Super Admin section above
-
-// Insert schemas
-export const insertContactSchema = createInsertSchema(contacts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  tenantId: z.string().optional(),
-  assignedTo: z.string().nullable().optional(),
-  createdBy: z.string().nullable().optional(),
-});
-
-export const insertAccountSchema = createInsertSchema(accounts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertLeadSchema = createInsertSchema(leads).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertDealSchema = createInsertSchema(deals).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertTaskSchema = createInsertSchema(tasks).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCampaignSchema = createInsertSchema(campaigns).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertTicketSchema = createInsertSchema(tickets).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  contactId: z.string().nullable().optional(),
-});
-
-// Duplicate insertProjectSchema removed
-
-export const insertInvoiceSchema = createInsertSchema(invoices).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  amount: z.union([z.string(), z.number()]).transform((val) => String(val)),
-  tax: z.union([z.string(), z.number()]).transform((val) => String(val)).optional(),
-  discount: z.union([z.string(), z.number()]).transform((val) => String(val)).optional(),
-  total: z.union([z.string(), z.number()]).transform((val) => String(val)),
-});
-
-export const insertEmployeeSchema = createInsertSchema(employees).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertSentimentAnalysisSchema = createInsertSchema(sentimentAnalyses).omit({
-  id: true,
-  createdAt: true,
-});
-
-// ==================== E-COMMERCE TYPES ====================
-
-// Store schemas
-export const insertStoreSchema = createInsertSchema(stores).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  // Make currency required to ensure it's always explicitly provided
-  currency: z.string().min(1, "Currency is required"),
-});
-
-export const insertEcommerceProductSchema = createInsertSchema(ecommerceProducts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertProductVariantSchema = createInsertSchema(productVariants).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertProductCategorySchema = createInsertSchema(productCategories).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCustomerSchema = createInsertSchema(customers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCustomerAddressSchema = createInsertSchema(customerAddresses).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertEcommerceOrderSchema = createInsertSchema(ecommerceOrders).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertShoppingCartSchema = createInsertSchema(shoppingCarts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertDiscountCodeSchema = createInsertSchema(discountCodes).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// Type definitions
-export type Store = typeof stores.$inferSelect;
-export type InsertStore = z.infer<typeof insertStoreSchema>;
-
-export type EcommerceProduct = typeof ecommerceProducts.$inferSelect;
-export type InsertEcommerceProduct = z.infer<typeof insertEcommerceProductSchema>;
-
-export type ProductVariant = typeof productVariants.$inferSelect;
-export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
-
-export type ProductCategory = typeof productCategories.$inferSelect;
-export type InsertProductCategory = z.infer<typeof insertProductCategorySchema>;
-
-export type Customer = typeof customers.$inferSelect;
-export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
-
-export type CustomerAddress = typeof customerAddresses.$inferSelect;
-export type InsertCustomerAddress = z.infer<typeof insertCustomerAddressSchema>;
-
-export type EcommerceOrder = typeof ecommerceOrders.$inferSelect;
-export type InsertEcommerceOrder = z.infer<typeof insertEcommerceOrderSchema>;
-
-export type OrderItem = typeof orderItems.$inferSelect;
-export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
-
-export type ShoppingCart = typeof shoppingCarts.$inferSelect;
-export type InsertShoppingCart = z.infer<typeof insertShoppingCartSchema>;
-
-export type DiscountCode = typeof discountCodes.$inferSelect;
-export type InsertDiscountCode = z.infer<typeof insertDiscountCodeSchema>;
-
-
-
-// Duplicate chartOfAccounts table definition removed - using enhanced version above
-
-export const transactions = pgTable("transactions", {
-  id: serial("id").primaryKey(),
-  date: date("date").notNull(),
-  description: varchar("description", { length: 500 }).notNull(),
-  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
-  exchangeRate: decimal("exchange_rate", { precision: 10, scale: 4 }).default("1.0000"),
-  baseCurrencyAmount: decimal("base_currency_amount", { precision: 15, scale: 2 }),
-  type: text("type", { enum: ["income", "expense", "transfer"] }).notNull(),
-  category: varchar("category", { length: 100 }),
-  accountId: integer("account_id").references(() => chartOfAccounts.id).notNull(),
-  reference: varchar("reference", { length: 100 }),
-  attachments: text("attachments").array(),
-  reconciled: boolean("reconciled").default(false),
-  reconciledDate: timestamp("reconciled_date"),
-  taxDeductible: boolean("tax_deductible").default(false),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const currencies = pgTable("currencies", {
-  id: serial("id").primaryKey(),
-  code: varchar("code", { length: 3 }).notNull().unique(),
-  name: varchar("name", { length: 100 }).notNull(),
-  symbol: varchar("symbol", { length: 10 }).notNull(),
-  exchangeRate: decimal("exchange_rate", { precision: 10, scale: 4 }).notNull(),
-  isBaseCurrency: boolean("is_base_currency").default(false),
-  isActive: boolean("is_active").default(true),
-  lastUpdated: timestamp("last_updated").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const budgets = pgTable("budgets", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  period: text("period", { enum: ["monthly", "quarterly", "yearly"] }).notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  totalBudget: decimal("total_budget", { precision: 15, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
-  spent: decimal("spent", { precision: 15, scale: 2 }).default("0.00"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Advanced Invoice Generation and Tracking
-export const invoiceGeneration = pgTable("invoice_generation", {
-  id: serial("id").primaryKey(),
-  invoiceNumber: varchar("invoice_number", { length: 50 }).notNull().unique(),
-  contactId: integer("contact_id").references(() => contacts.id),
-  dealId: integer("deal_id").references(() => deals.id),
-  issueDate: date("issue_date").notNull(),
-  dueDate: date("due_date").notNull(),
-  status: text("status", { enum: ["draft", "sent", "paid", "overdue", "cancelled"] }).default("draft"),
-  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
-  subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
-  taxAmount: decimal("tax_amount", { precision: 15, scale: 2 }).default("0.00"),
-  discountAmount: decimal("discount_amount", { precision: 15, scale: 2 }).default("0.00"),
-  totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull(),
-  paidAmount: decimal("paid_amount", { precision: 15, scale: 2 }).default("0.00"),
-  remainingBalance: decimal("remaining_balance", { precision: 15, scale: 2 }),
-  paymentTerms: varchar("payment_terms", { length: 100 }),
-  notes: text("notes"),
-  templateUsed: varchar("template_used", { length: 100 }),
-  sentDate: timestamp("sent_date"),
-  paidDate: timestamp("paid_date"),
-  remindersSent: integer("reminders_sent").default(0),
-  lastReminderDate: timestamp("last_reminder_date"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const invoiceLineItems = pgTable("invoice_line_items", {
-  id: serial("id").primaryKey(),
-  invoiceId: integer("invoice_id").references(() => invoiceGeneration.id).notNull(),
-  description: varchar("description", { length: 500 }).notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
-  unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
-  lineTotal: decimal("line_total", { precision: 15, scale: 2 }).notNull(),
-  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default("0.00"),
-  taxAmount: decimal("tax_amount", { precision: 15, scale: 2 }).default("0.00"),
-  productId: integer("product_id").references(() => products.id),
-  sortOrder: integer("sort_order").default(0),
-});
-
-// Financial Reports
-export const financialReports = pgTable("financial_reports", {
-  id: serial("id").primaryKey(),
-  reportType: text("report_type", { enum: ["profit_loss", "balance_sheet", "cash_flow", "trial_balance", "tax_summary"] }).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  periodType: text("period_type", { enum: ["monthly", "quarterly", "yearly", "custom"] }).notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
-  reportData: jsonb("report_data").notNull(),
-  summary: jsonb("summary"),
-  generatedBy: integer("generated_by").references(() => employees.id),
-  isPublished: boolean("is_published").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Bank Statement Integration and Reconciliation
-export const bankAccounts = pgTable("bank_accounts", {
-  id: serial("id").primaryKey(),
-  accountName: varchar("account_name", { length: 255 }).notNull(),
-  bankName: varchar("bank_name", { length: 255 }).notNull(),
-  accountNumber: varchar("account_number", { length: 50 }).notNull(),
-  accountType: text("account_type", { enum: ["checking", "savings", "credit", "investment"] }).notNull(),
-  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
-  currentBalance: decimal("current_balance", { precision: 15, scale: 2 }).default("0.00"),
-  statementBalance: decimal("statement_balance", { precision: 15, scale: 2 }).default("0.00"),
-  lastReconciled: timestamp("last_reconciled"),
-  chartAccountId: varchar("chart_account_id").references(() => chartOfAccounts.id),
-  isActive: boolean("is_active").default(true),
-  routingNumber: varchar("routing_number", { length: 20 }),
-  swiftCode: varchar("swift_code", { length: 20 }),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const bankStatements = pgTable("bank_statements", {
-  id: serial("id").primaryKey(),
-  bankAccountId: integer("bank_account_id").references(() => bankAccounts.id).notNull(),
-  statementDate: date("statement_date").notNull(),
-  statementPeriodStart: date("statement_period_start").notNull(),
-  statementPeriodEnd: date("statement_period_end").notNull(),
-  openingBalance: decimal("opening_balance", { precision: 15, scale: 2 }).notNull(),
-  closingBalance: decimal("closing_balance", { precision: 15, scale: 2 }).notNull(),
-  fileName: varchar("file_name", { length: 255 }),
-  uploadDate: timestamp("upload_date").defaultNow(),
-  processedDate: timestamp("processed_date"),
-  reconciliationStatus: text("reconciliation_status", { enum: ["pending", "in_progress", "completed", "discrepancy"] }).default("pending"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const bankTransactions = pgTable("bank_transactions", {
-  id: serial("id").primaryKey(),
-  bankAccountId: integer("bank_account_id").references(() => bankAccounts.id).notNull(),
-  statementId: integer("statement_id").references(() => bankStatements.id),
-  transactionDate: date("transaction_date").notNull(),
-  description: varchar("description", { length: 500 }).notNull(),
-  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
-  transactionType: text("transaction_type", { enum: ["debit", "credit"] }).notNull(),
-  balance: decimal("balance", { precision: 15, scale: 2 }),
-  reference: varchar("reference", { length: 100 }),
-  category: varchar("category", { length: 100 }),
-  matchedTransactionId: integer("matched_transaction_id").references(() => transactions.id),
-  reconciliationStatus: text("reconciliation_status", { enum: ["unmatched", "matched", "disputed"] }).default("unmatched"),
-  reconciliationDate: timestamp("reconciliation_date"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Tax Preparation and Compliance
-export const taxCategories = pgTable("tax_categories", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  taxCode: varchar("tax_code", { length: 50 }),
-  deductible: boolean("deductible").default(false),
-  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }),
-  jurisdictionType: text("jurisdiction_type", { enum: ["federal", "state", "local", "international"] }).notNull(),
-  jurisdiction: varchar("jurisdiction", { length: 100 }).notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const taxReturns = pgTable("tax_returns", {
-  id: serial("id").primaryKey(),
-  taxYear: integer("tax_year").notNull(),
-  returnType: text("return_type", { enum: ["individual", "corporate", "partnership", "llc"] }).notNull(),
-  jurisdiction: varchar("jurisdiction", { length: 100 }).notNull(),
-  filingStatus: varchar("filing_status", { length: 50 }),
-  preparerName: varchar("preparer_name", { length: 255 }),
-  preparerLicense: varchar("preparer_license", { length: 100 }),
-  status: text("status", { enum: ["draft", "review", "filed", "amended", "audit"] }).default("draft"),
-  grossIncome: decimal("gross_income", { precision: 15, scale: 2 }).default("0.00"),
-  totalDeductions: decimal("total_deductions", { precision: 15, scale: 2 }).default("0.00"),
-  taxableIncome: decimal("taxable_income", { precision: 15, scale: 2 }).default("0.00"),
-  taxOwed: decimal("tax_owed", { precision: 15, scale: 2 }).default("0.00"),
-  taxPaid: decimal("tax_paid", { precision: 15, scale: 2 }).default("0.00"),
-  refundOwed: decimal("refund_owed", { precision: 15, scale: 2 }).default("0.00"),
-  filingDate: date("filing_date"),
-  dueDate: date("due_date").notNull(),
-  extensionDate: date("extension_date"),
-  auditFlag: boolean("audit_flag").default(false),
-  notes: text("notes"),
-  attachments: text("attachments").array(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const taxDeductions = pgTable("tax_deductions", {
-  id: serial("id").primaryKey(),
-  taxReturnId: integer("tax_return_id").references(() => taxReturns.id).notNull(),
-  categoryId: integer("category_id").references(() => taxCategories.id).notNull(),
-  description: varchar("description", { length: 500 }).notNull(),
-  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
-  transactionId: integer("transaction_id").references(() => transactions.id),
-  documentationPath: varchar("documentation_path", { length: 500 }),
-  verificationStatus: text("verification_status", { enum: ["pending", "verified", "rejected"] }).default("pending"),
-  auditRisk: text("audit_risk", { enum: ["low", "medium", "high"] }).default("low"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const taxCompliance = pgTable("tax_compliance", {
-  id: serial("id").primaryKey(),
-  complianceType: text("compliance_type", { enum: ["quarterly_filing", "annual_filing", "sales_tax", "payroll_tax", "estimated_tax"] }).notNull(),
-  jurisdiction: varchar("jurisdiction", { length: 100 }).notNull(),
-  taxPeriod: varchar("tax_period", { length: 50 }).notNull(),
-  dueDate: date("due_date").notNull(),
-  filedDate: date("filed_date"),
-  status: text("status", { enum: ["pending", "filed", "late", "amended"] }).default("pending"),
-  amountDue: decimal("amount_due", { precision: 15, scale: 2 }).default("0.00"),
-  amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).default("0.00"),
-  penalties: decimal("penalties", { precision: 15, scale: 2 }).default("0.00"),
-  interest: decimal("interest", { precision: 15, scale: 2 }).default("0.00"),
-  confirmationNumber: varchar("confirmation_number", { length: 100 }),
-  remindersSent: integer("reminders_sent").default(0),
-  nextReminderDate: date("next_reminder_date"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const appointments = pgTable("appointments", {
-  id: serial("id").primaryKey(),
-  tenantId: text("tenant_id").notNull(),
-  title: text("title").notNull(),
-  description: text("description"),
-  contactName: text("contact_name").notNull(),
-  contactEmail: text("contact_email"),
-  contactPhone: text("contact_phone"),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time").notNull(),
-  duration: integer("duration").notNull().default(30), // in minutes
-  type: text("type").notNull().default("meeting"), // meeting, call, demo, consultation
-  location: text("location"),
-  meetingUrl: text("meeting_url"),
-  status: text("status").notNull().default("scheduled"), // scheduled, confirmed, cancelled, completed
-  reminderSent: boolean("reminder_sent").default(false),
-  notes: text("notes"),
-  createdBy: text("created_by").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Security Feature Management System
-export const securityToggles = pgTable("security_toggles", {
-  id: serial("id").primaryKey(),
-  tenantId: text("tenant_id").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  category: text("category").notNull(), // "authentication", "authorization", "audit", "compliance"
-  feature: text("feature").notNull(), // "mfa", "session_timeout", "audit_logging", etc.
-  enabled: boolean("enabled").default(false),
-  configuration: jsonb("configuration").$type<Record<string, any>>().default({}),
-  lastModifiedBy: text("last_modified_by").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_security_toggles_tenant").on(table.tenantId),
-  index("idx_security_toggles_feature").on(table.feature),
-]);
-
-export const securityRules = pgTable("security_rules", {
-  id: serial("id").primaryKey(),
-  tenantId: text("tenant_id").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  ruleType: text("rule_type").notNull(), // "access_control", "rate_limit", "ip_whitelist", "user_restriction"
-  conditions: jsonb("conditions").$type<Record<string, any>>().notNull(),
-  actions: jsonb("actions").$type<Record<string, any>>().notNull(),
-  priority: integer("priority").default(0), // Higher priority = executed first
-  enabled: boolean("enabled").default(true),
-  lastTriggered: timestamp("last_triggered"),
-  triggerCount: integer("trigger_count").default(0),
-  createdBy: text("created_by").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_security_rules_tenant").on(table.tenantId),
-  index("idx_security_rules_type").on(table.ruleType),
-  index("idx_security_rules_priority").on(table.priority),
-]);
-
-// Access Control Matrix for granular permission management
-export const accessControlMatrix = pgTable("access_control_matrix", {
-  id: serial("id").primaryKey(),
-  tenantId: text("tenant_id").notNull(),
-  resource: text("resource").notNull(), // "contacts", "deals", "reports", etc.
-  operation: text("operation").notNull(), // "create", "read", "update", "delete", "execute"
-  role: text("role").notNull(), // "admin", "manager", "user", "viewer"
-  permission: text("permission").notNull(), // "allow", "deny", "conditional"
-  conditions: jsonb("conditions").$type<Record<string, any>>().default({}),
-  priority: integer("priority").default(0),
-  enabled: boolean("enabled").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  createdBy: text("created_by").notNull(),
-}, (table) => [
-  index("idx_access_control_tenant").on(table.tenantId),
-  index("idx_access_control_resource").on(table.resource),
-  index("idx_access_control_role").on(table.role),
-]);
-
-
-
-// Financial Management Types
-export type FinancialTransaction = typeof transactions.$inferSelect;
-export type InsertFinancialTransaction = typeof transactions.$inferInsert;
-export type Currency = typeof currencies.$inferSelect;
-export type InsertCurrency = typeof currencies.$inferInsert;
-export type Budget = typeof budgets.$inferSelect;
-export type InsertBudget = typeof budgets.$inferInsert;
-export type InvoiceGeneration = typeof invoiceGeneration.$inferSelect;
-export type InsertInvoiceGeneration = typeof invoiceGeneration.$inferInsert;
-export type InvoiceLineItem = typeof invoiceLineItems.$inferSelect;
-export type InsertInvoiceLineItem = typeof invoiceLineItems.$inferInsert;
-export type FinancialReport = typeof financialReports.$inferSelect;
-export type InsertFinancialReport = typeof financialReports.$inferInsert;
-export type BankAccount = typeof bankAccounts.$inferSelect;
-export type InsertBankAccount = typeof bankAccounts.$inferInsert;
-export type BankStatement = typeof bankStatements.$inferSelect;
-export type InsertBankStatement = typeof bankStatements.$inferInsert;
-export type BankTransaction = typeof bankTransactions.$inferSelect;
-export type InsertBankTransaction = typeof bankTransactions.$inferInsert;
-export type TaxCategory = typeof taxCategories.$inferSelect;
-export type InsertTaxCategory = typeof taxCategories.$inferInsert;
-export type TaxReturn = typeof taxReturns.$inferSelect;
-export type InsertTaxReturn = typeof taxReturns.$inferInsert;
-export type TaxDeduction = typeof taxDeductions.$inferSelect;
-export type InsertTaxDeduction = typeof taxDeductions.$inferInsert;
-export type TaxCompliance = typeof taxCompliance.$inferSelect;
-export type InsertTaxCompliance = typeof taxCompliance.$inferInsert;
-
-// Tax Rates Table
-export const taxRates = pgTable("tax_rates", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(), // e.g., "US Sales Tax", "VAT", "GST"
-  rate: decimal("rate", { precision: 5, scale: 4 }).notNull(), // Tax rate as decimal (0.0825 for 8.25%)
-  type: text("type").notNull(), // "sales_tax", "vat", "gst", "income_tax"
-  jurisdiction: text("jurisdiction").notNull(), // "US-CA", "UK", "AU", etc.
-  region: text("region"), // State, Province, County
-  city: text("city"),
-  zipCode: text("zip_code"),
-  isActive: boolean("is_active").default(true),
-  effectiveDate: timestamp("effective_date").defaultNow(),
-  expiryDate: timestamp("expiry_date"),
-  description: text("description"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Tax Calculation Rules Table
-export const taxCalculationRules = pgTable("tax_calculation_rules", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  priority: integer("priority").default(0), // Higher priority rules override lower
-  conditions: jsonb("conditions"), // JSON rules for when to apply
-  taxRateId: integer("tax_rate_id").references(() => taxRates.id),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertTaxRateSchema = createInsertSchema(taxRates);
-export type InsertTaxRate = z.infer<typeof insertTaxRateSchema>;
-export type TaxRate = typeof taxRates.$inferSelect;
-
-export const insertTaxCalculationRuleSchema = createInsertSchema(taxCalculationRules);
-export type InsertTaxCalculationRule = z.infer<typeof insertTaxCalculationRuleSchema>;
-export type TaxCalculationRule = typeof taxCalculationRules.$inferSelect;
-
-// Security System Schema Types
-export const insertSecurityToggleSchema = createInsertSchema(securityToggles).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertSecurityToggle = z.infer<typeof insertSecurityToggleSchema>;
-export type SecurityToggle = typeof securityToggles.$inferSelect;
-
-export const insertSecurityRuleSchema = createInsertSchema(securityRules).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastTriggered: true,
-  triggerCount: true,
-});
-export type InsertSecurityRule = z.infer<typeof insertSecurityRuleSchema>;
-export type SecurityRule = typeof securityRules.$inferSelect;
-
-export const insertAccessControlMatrixSchema = createInsertSchema(accessControlMatrix).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertAccessControlMatrix = z.infer<typeof insertAccessControlMatrixSchema>;
-export type AccessControlMatrix = typeof accessControlMatrix.$inferSelect;
-
-export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
-  id: true,
-  timestamp: true,
-});
-export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
-export type AuditLog = typeof auditLogs.$inferSelect;
-
-// Super Admin Dashboard Schema Types
-export const insertTenantSubscriptionSchema = createInsertSchema(tenantSubscriptions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertTenantSubscription = z.infer<typeof insertTenantSubscriptionSchema>;
-export type TenantSubscription = typeof tenantSubscriptions.$inferSelect;
-
-// Audit log schema and types already defined in Super Admin section above
-
-export const insertSystemMetricSchema = createInsertSchema(systemMetrics).omit({
-  id: true,
-  timestamp: true,
-});
-export type InsertSystemMetric = z.infer<typeof insertSystemMetricSchema>;
-export type SystemMetric = typeof systemMetrics.$inferSelect;
-
-export const insertTenantSchema = createInsertSchema(tenants).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertTenant = z.infer<typeof insertTenantSchema>;
-export type Tenant = typeof tenants.$inferSelect;
-
-// User schema and types
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastLoginAt: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-// Types
-export type Contact = typeof contacts.$inferSelect;
-export type InsertContact = z.infer<typeof insertContactSchema>;
-export type Account = typeof accounts.$inferSelect;
-export type InsertAccount = z.infer<typeof insertAccountSchema>;
-export type Lead = typeof leads.$inferSelect;
-export type InsertLead = z.infer<typeof insertLeadSchema>;
-export type Deal = typeof deals.$inferSelect;
-export type InsertDeal = z.infer<typeof insertDealSchema>;
-export type Task = typeof tasks.$inferSelect;
-export type InsertTask = z.infer<typeof insertTaskSchema>;
-export type Campaign = typeof campaigns.$inferSelect;
-export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
-export type Ticket = typeof tickets.$inferSelect;
-export type InsertTicket = z.infer<typeof insertTicketSchema>;
-export type Invoice = typeof invoices.$inferSelect;
-export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
-export type Employee = typeof employees.$inferSelect;
-export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
-export type SentimentAnalysis = typeof sentimentAnalyses.$inferSelect;
-export type InsertSentimentAnalysis = z.infer<typeof insertSentimentAnalysisSchema>;
-
-// Advanced feature schemas
-export const insertWorkflowSchema = createInsertSchema(workflows).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertReportSchema = createInsertSchema(reports).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  tenantId: z.string().optional(),
-  createdBy: z.string().nullable().optional(),
-});
-
-export const insertSalesForecastSchema = createInsertSchema(salesForecasts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertRoleSchema = createInsertSchema(roles).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updateRoleSchema = createInsertSchema(roles).omit({
-  id: true,
-  tenantId: true,
-  isSystemRole: true,
-  createdAt: true,
-  updatedAt: true,
-}).partial();
-
-export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
-  id: true,
-  assignedAt: true,
-});
-
-export const insertEmailSequenceSchema = createInsertSchema(emailSequences).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertLeadScoringSchema = createInsertSchema(leadScoring).omit({
-  id: true,
-  lastCalculated: true,
-});
-
-// Duplicate schema exports removed - using enhanced versions above
-
-export const insertQuoteSchema = createInsertSchema(quotes).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// Duplicate audit log schema removed - using Super Admin version above
-
-export const insertAppointmentSchema = createInsertSchema(appointments).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// Advanced feature types
-export type Workflow = typeof workflows.$inferSelect;
-export type InsertWorkflow = z.infer<typeof insertWorkflowSchema>;
-export type Report = typeof reports.$inferSelect;
-export type InsertReport = z.infer<typeof insertReportSchema>;
-export type SalesForecast = typeof salesForecasts.$inferSelect;
-export type InsertSalesForecast = z.infer<typeof insertSalesForecastSchema>;
-export type Role = typeof roles.$inferSelect;
-export type InsertRole = z.infer<typeof insertRoleSchema>;
-export type UserRole = typeof userRoles.$inferSelect;
-export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
-export type EmailSequence = typeof emailSequences.$inferSelect;
-export type InsertEmailSequence = z.infer<typeof insertEmailSequenceSchema>;
-export type LeadScoring = typeof leadScoring.$inferSelect;
-export type InsertLeadScoring = z.infer<typeof insertLeadScoringSchema>;
-export type Quote = typeof quotes.$inferSelect;
-export type InsertQuote = z.infer<typeof insertQuoteSchema>;
-// Duplicate audit log types removed - using Super Admin version above
-export type Appointment = typeof appointments.$inferSelect;
-export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
-
-// Subscription Plans
-export const subscriptionPlans = pgTable("subscription_plans", {
-  id: varchar("id").primaryKey(),
-  name: varchar("name").notNull(),
-  displayName: varchar("display_name").notNull(),
-  description: text("description"),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  billingCycle: varchar("billing_cycle").notNull(), // monthly, annual
-  features: jsonb("features").$type<string[]>().notNull(),
-  limits: jsonb("limits").$type<{
-    users: number;
-    contacts: number;
-    storage: number; // GB
-    emails: number; // per month
-    sms: number; // per month
-    forms: number;
-    apiCalls: number; // per month
-  }>().notNull(),
-  isActive: boolean("is_active").default(true),
-  sortOrder: integer("sort_order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// User Subscriptions
-export const userSubscriptions = pgTable("user_subscriptions", {
-  id: varchar("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
-  planId: varchar("plan_id").notNull(),
-  status: varchar("status").notNull(), // active, inactive, trial, expired, cancelled, locked
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date"),
-  trialEndDate: timestamp("trial_end_date"),
-  autoRenew: boolean("auto_renew").default(true),
-  paymentMethod: varchar("payment_method"), // stripe, manual, etc
-  paymentMethodId: varchar("payment_method_id"), // Stripe payment method ID
-  stripeSubscriptionId: varchar("stripe_subscription_id"),
-  stripeCustomerId: varchar("stripe_customer_id"),
-  paidAt: timestamp("paid_at"), // When first payment was made
-  lockedAt: timestamp("locked_at"), // When account was locked
-  lockReason: varchar("lock_reason"), // trial_expired, payment_failed, etc
-  trialWarningsSent: integer("trial_warnings_sent").default(0), // Number of warnings sent
-  lastWarningAt: timestamp("last_warning_at"), // When last warning was sent
-  metadata: jsonb("metadata").$type<Record<string, any>>(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Package Features
-export const packageFeatures = pgTable("package_features", {
-  id: varchar("id").primaryKey(),
-  name: varchar("name").notNull(),
-  displayName: varchar("display_name").notNull(),
-  description: text("description"),
-  category: varchar("category").notNull(), // core, crm, marketing, analytics, etc
-  isCore: boolean("is_core").default(false),
-  minPlanRequired: varchar("min_plan_required").notNull(), // starter, professional, enterprise, ultimate
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Plan Feature Access
-export const planFeatureAccess = pgTable("plan_feature_access", {
-  id: varchar("id").primaryKey(),
-  planId: varchar("plan_id").notNull(),
-  featureId: varchar("feature_id").notNull(),
-  isEnabled: boolean("is_enabled").default(true),
-  customLimits: jsonb("custom_limits").$type<Record<string, any>>(),
-});
-
-// Usage Tracking
-export const usageTracking = pgTable("usage_tracking", {
-  id: varchar("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
-  subscriptionId: varchar("subscription_id").notNull(),
-  metric: varchar("metric").notNull(), // users, contacts, emails_sent, etc
-  value: integer("value").notNull(),
-  period: varchar("period").notNull(), // monthly, daily
-  periodStart: timestamp("period_start").notNull(),
-  periodEnd: timestamp("period_end").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Subscription schemas
-export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans);
-export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions);
-export const insertPackageFeatureSchema = createInsertSchema(packageFeatures);
-export const insertPlanFeatureAccessSchema = createInsertSchema(planFeatureAccess);
-export const insertUsageTrackingSchema = createInsertSchema(usageTracking);
-
-// Customer Journey Visualization Tables
-export const customerJourneyStages = pgTable("customer_journey_stages", {
-  id: varchar("id").primaryKey(),
-  name: varchar("name").notNull(),
-  displayName: varchar("display_name").notNull(),
-  description: text("description"),
-  stageType: varchar("stage_type").notNull(), // lead, prospect, customer, advocate, churned
-  sortOrder: integer("sort_order").default(0),
-  color: varchar("color").default("#3B82F6"), // hex color for visualization
-  icon: varchar("icon").default("user"), // lucide icon name
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const customerJourneyEvents = pgTable("customer_journey_events", {
-  id: varchar("id").primaryKey(),
-  contactId: varchar("contact_id").references(() => contacts.id).notNull(),
-  eventType: varchar("event_type").notNull(), // stage_change, interaction, milestone, touchpoint
-  eventName: varchar("event_name").notNull(),
-  description: text("description"),
-  fromStage: varchar("from_stage"), // for stage_change events
-  toStage: varchar("to_stage"), // for stage_change events
-  metadata: jsonb("metadata").$type<{
-    channel?: string; // email, phone, web, social, in-person
-    source?: string; // campaign, referral, organic, etc.
-    value?: number; // monetary value if applicable
-    duration?: number; // time spent in minutes
-    outcome?: string; // success, failure, pending
-    tags?: string[];
-    customFields?: Record<string, any>;
-  }>(),
-  triggeredBy: varchar("triggered_by"), // user_id or system
-  eventDate: timestamp("event_date").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_journey_events_contact").on(table.contactId),
-  index("idx_journey_events_date").on(table.eventDate),
-  index("idx_journey_events_type").on(table.eventType),
-]);
-
-export const customerJourneyMilestones = pgTable("customer_journey_milestones", {
-  id: varchar("id").primaryKey(),
-  name: varchar("name").notNull(),
-  displayName: varchar("display_name").notNull(),
-  description: text("description"),
-  stageId: varchar("stage_id").references(() => customerJourneyStages.id).notNull(),
-  triggerConditions: jsonb("trigger_conditions").$type<{
-    eventTypes?: string[];
-    timeInStage?: number; // minutes
-    interactionCount?: number;
-    dealValue?: number;
-    customCriteria?: Record<string, any>;
-  }>(),
-  isAutomatic: boolean("is_automatic").default(true), // auto-triggered vs manual
-  points: integer("points").default(0), // scoring points for achieving milestone
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const customerJourneyProgress = pgTable("customer_journey_progress", {
-  id: varchar("id").primaryKey(),
-  contactId: varchar("contact_id").references(() => contacts.id).notNull(),
-  currentStage: varchar("current_stage").references(() => customerJourneyStages.id).notNull(),
-  stageEntryDate: timestamp("stage_entry_date").notNull(),
-  totalDurationInStage: integer("total_duration_in_stage").default(0), // minutes
-  interactionCount: integer("interaction_count").default(0),
-  lastInteractionDate: timestamp("last_interaction_date"),
-  journeyScore: integer("journey_score").default(0), // accumulated points
-  completedMilestones: jsonb("completed_milestones").$type<string[]>().default([]),
-  nextPredictedStage: varchar("next_predicted_stage"),
-  stageConfidence: real("stage_confidence"), // AI confidence in current stage (0-1)
-  estimatedTimeToNextStage: integer("estimated_time_to_next_stage"), // minutes
-  riskScore: real("risk_score"), // churn/drop-off risk (0-1)
-  metadata: jsonb("metadata").$type<{
-    preferences?: Record<string, any>;
-    behaviors?: string[];
-    segments?: string[];
-    predictions?: Record<string, any>;
-  }>(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_journey_progress_contact").on(table.contactId),
-  index("idx_journey_progress_stage").on(table.currentStage),
-]);
-
-// Journey Analytics and Insights
-export const journeyAnalytics = pgTable("journey_analytics", {
-  id: varchar("id").primaryKey(),
-  period: varchar("period").notNull(), // daily, weekly, monthly
-  periodStart: timestamp("period_start").notNull(),
-  periodEnd: timestamp("period_end").notNull(),
-  metrics: jsonb("metrics").$type<{
-    totalContacts: number;
-    stageDistribution: Record<string, number>;
-    conversionRates: Record<string, number>; // stage to stage conversion
-    averageStageTime: Record<string, number>; // average time in each stage
-    dropOffRates: Record<string, number>;
-    topEvents: Array<{ event: string; count: number }>;
-    journeyVelocity: number; // overall speed through journey
-    completionRate: number; // percentage reaching final stage
-  }>(),
-  insights: jsonb("insights").$type<{
-    trends: string[];
-    opportunities: string[];
-    risks: string[];
-    recommendations: string[];
-  }>(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_journey_analytics_period").on(table.period, table.periodStart),
-]);
-
-// Insert schemas for journey tables
-export const insertCustomerJourneyStageSchema = createInsertSchema(customerJourneyStages);
-export const insertCustomerJourneyEventSchema = createInsertSchema(customerJourneyEvents);
-export const insertCustomerJourneyMilestoneSchema = createInsertSchema(customerJourneyMilestones);
-export const insertCustomerJourneyProgressSchema = createInsertSchema(customerJourneyProgress);
-export const insertJourneyAnalyticsSchema = createInsertSchema(journeyAnalytics);
-
-// Types for journey tables
-export type CustomerJourneyStage = typeof customerJourneyStages.$inferSelect;
-export type CustomerJourneyEvent = typeof customerJourneyEvents.$inferSelect;
-export type CustomerJourneyMilestone = typeof customerJourneyMilestones.$inferSelect;
-export type CustomerJourneyProgress = typeof customerJourneyProgress.$inferSelect;
-export type JourneyAnalytics = typeof journeyAnalytics.$inferSelect;
-
-export type InsertCustomerJourneyStage = z.infer<typeof insertCustomerJourneyStageSchema>;
-export type InsertCustomerJourneyEvent = z.infer<typeof insertCustomerJourneyEventSchema>;
-export type InsertCustomerJourneyMilestone = z.infer<typeof insertCustomerJourneyMilestoneSchema>;
-export type InsertCustomerJourneyProgress = z.infer<typeof insertCustomerJourneyProgressSchema>;
-export type InsertJourneyAnalytics = z.infer<typeof insertJourneyAnalyticsSchema>;
-
-// Subscription types
-export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
-export type UserSubscription = typeof userSubscriptions.$inferSelect;
-export type PackageFeature = typeof packageFeatures.$inferSelect;
-export type PlanFeatureAccess = typeof planFeatureAccess.$inferSelect;
-export type UsageTracking = typeof usageTracking.$inferSelect;
-
-export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
-export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
-export type InsertPackageFeature = z.infer<typeof insertPackageFeatureSchema>;
-export type InsertPlanFeatureAccess = z.infer<typeof insertPlanFeatureAccessSchema>;
-export type InsertUsageTracking = z.infer<typeof insertUsageTrackingSchema>;
-
-// ===============================================
-// ADVANCED CRM FEATURES FOR MARKET LEADERSHIP
-// ===============================================
-
-// Advanced Lead Management with AI Scoring
-export const crmLeads = pgTable("crm_leads", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
-  firstName: varchar("first_name", { length: 100 }),
-  lastName: varchar("last_name", { length: 100 }),
-  company: varchar("company", { length: 255 }),
-  phone: varchar("phone", { length: 50 }),
-  source: varchar("source", { length: 100 }), // organic, paid, referral, etc
-  status: varchar("status", { length: 50 }).default("new"), // new, contacted, qualified, converted
-  
-  // AI-Powered Lead Scoring
-  aiScore: integer("ai_score").default(0), // 0-100 score
-  predictedValue: decimal("predicted_value", { precision: 10, scale: 2 }).default("0"),
-  conversionProbability: decimal("conversion_probability", { precision: 5, scale: 2 }).default("0"), // 0-100%
-  
-  // Behavioral Data
-  websiteVisits: integer("website_visits").default(0),
-  emailOpens: integer("email_opens").default(0),
-  emailClicks: integer("email_clicks").default(0),
-  lastActivity: timestamp("last_activity"),
-  
-  // Geographic and Demographic
-  country: varchar("country", { length: 2 }), // ISO country code
-  city: varchar("city", { length: 100 }),
-  industry: varchar("industry", { length: 100 }),
-  companySize: varchar("company_size", { length: 50 }),
-  
-  // Metadata
-  assignedTo: varchar("assigned_to").references(() => users.id),
-  notes: text("notes"),
-  tags: text("tags").array(), // ["hot", "enterprise", "technical"]
-  customFields: jsonb("custom_fields").default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Advanced Pipeline Management
-export const pipelines = pgTable("pipelines", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  stages: jsonb("stages").notNull(), // [{id, name, probability, color}]
-  isDefault: boolean("is_default").default(false),
-  currency: varchar("currency", { length: 3 }).default("USD"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Advanced Deals with AI Predictions
-export const crmDeals = pgTable("crm_deals", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  amount: decimal("amount", { precision: 12, scale: 2 }),
-  currency: varchar("currency", { length: 3 }).default("USD"),
-  
-  // Pipeline Management
-  pipelineId: varchar("pipeline_id").references(() => pipelines.id),
-  stageId: varchar("stage_id", { length: 50 }),
-  probability: integer("probability").default(0), // 0-100%
-  
-  // Relationships
-  contactId: varchar("contact_id"),
-  companyId: varchar("company_id"),
-  assignedTo: varchar("assigned_to").references(() => users.id),
-  
-  // AI Predictions
-  aiCloseDate: timestamp("ai_close_date"), // AI predicted close date
-  aiCloseProbability: decimal("ai_close_probability", { precision: 5, scale: 2 }),
-  riskLevel: varchar("risk_level", { length: 20 }).default("low"), // low, medium, high
-  
-  // Dates
+  stage: text("stage").notNull().default("prospecting"), // prospecting, qualification, proposal, negotiation, closed_won, closed_lost
+  value: decimal("value", { precision: 12, scale: 2 }).default("0"),
+  currency: text("currency").default("USD"),
+  probability: integer("probability").default(0), // 0-100
   expectedCloseDate: timestamp("expected_close_date"),
-  actualCloseDate: timestamp("actual_close_date"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  
-  // Additional fields
-  source: varchar("source", { length: 100 }),
-  lostReason: varchar("lost_reason", { length: 255 }),
+  closedAt: timestamp("closed_at"),
   notes: text("notes"),
-  customFields: jsonb("custom_fields").default({}),
-});
-
-// Enhanced Contact Management
-export const crmContacts = pgTable("crm_contacts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  email: varchar("email", { length: 255 }).unique(),
-  firstName: varchar("first_name", { length: 100 }),
-  lastName: varchar("last_name", { length: 100 }),
-  phone: varchar("phone", { length: 50 }),
-  mobile: varchar("mobile", { length: 50 }),
-  
-  // Professional Info
-  jobTitle: varchar("job_title", { length: 150 }),
-  department: varchar("department", { length: 100 }),
-  companyId: varchar("company_id"),
-  
-  // Communication Preferences
-  preferredChannel: varchar("preferred_channel", { length: 50 }).default("email"), // email, phone, whatsapp, sms
-  timezone: varchar("timezone", { length: 50 }),
-  language: varchar("language", { length: 10 }).default("en"),
-  
-  // Social Media
-  linkedinUrl: varchar("linkedin_url", { length: 500 }),
-  twitterHandle: varchar("twitter_handle", { length: 100 }),
-  facebookUrl: varchar("facebook_url", { length: 500 }),
-  
-  // Engagement Data
-  lastContactDate: timestamp("last_contact_date"),
-  contactFrequency: integer("contact_frequency").default(0), // days between contacts
-  engagementScore: integer("engagement_score").default(0), // 0-100
-  
-  // Metadata
-  tags: text("tags").array(),
-  status: varchar("status", { length: 50 }).default("active"), // active, inactive, bounced
-  source: varchar("source", { length: 100 }),
-  assignedTo: varchar("assigned_to").references(() => users.id),
-  customFields: jsonb("custom_fields").default({}),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  assignedTo: uuid("assigned_to").references(() => users.id),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => [
+  index("idx_deals_tenant").on(t.tenantId),
+  index("idx_deals_stage").on(t.tenantId, t.stage),
+]);
 
-// Company/Account Management
-export const companies = pgTable("companies", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  website: varchar("website", { length: 500 }),
-  industry: varchar("industry", { length: 100 }),
-  
-  // Business Information
-  employeeCount: integer("employee_count"),
-  annualRevenue: decimal("annual_revenue", { precision: 15, scale: 2 }),
-  currency: varchar("currency", { length: 3 }).default("USD"),
-  
-  // Contact Information
-  phone: varchar("phone", { length: 50 }),
-  email: varchar("email", { length: 255 }),
-  
-  // Address
-  street: varchar("street", { length: 255 }),
-  city: varchar("city", { length: 100 }),
-  state: varchar("state", { length: 100 }),
-  postalCode: varchar("postal_code", { length: 20 }),
-  country: varchar("country", { length: 2 }), // ISO code
-  
-  // Business Details
-  businessType: varchar("business_type", { length: 100 }), // corporation, partnership, etc
-  taxId: varchar("tax_id", { length: 50 }),
-  registrationNumber: varchar("registration_number", { length: 100 }),
-  
-  // CRM Data
-  status: varchar("status", { length: 50 }).default("active"),
-  customerSince: timestamp("customer_since"),
-  lastActivity: timestamp("last_activity"),
-  assignedTo: varchar("assigned_to").references(() => users.id),
-  
-  // AI Insights
-  healthScore: integer("health_score").default(50), // 0-100
-  churnRisk: varchar("churn_risk", { length: 20 }).default("low"), // low, medium, high
-  lifetimeValue: decimal("lifetime_value", { precision: 15, scale: 2 }).default("0"),
-  
-  // Metadata
-  tags: text("tags").array(),
-  customFields: jsonb("custom_fields").default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Activities and Interactions
-export const crmActivities = pgTable("crm_activities", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  type: varchar("type", { length: 50 }).notNull(), // call, email, meeting, task, note
-  title: varchar("title", { length: 255 }),
+// ═══════════════════════════════════════════════════
+// TASKS
+// ═══════════════════════════════════════════════════
+export const tasks = pgTable("tasks", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
   description: text("description"),
-  
-  // Relationships
-  contactId: varchar("contact_id"),
-  companyId: varchar("company_id"),
-  dealId: varchar("deal_id"),
-  leadId: varchar("lead_id"),
-  
-  // Activity Details
-  status: varchar("status", { length: 50 }).default("completed"), // scheduled, completed, cancelled
-  priority: varchar("priority", { length: 20 }).default("medium"), // low, medium, high
-  duration: integer("duration"), // minutes
-  
-  // Scheduling
+  status: text("status").default("todo"), // todo, in_progress, done, cancelled
+  priority: text("priority").default("medium"), // low, medium, high, urgent
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  dealId: uuid("deal_id").references(() => deals.id),
+  assignedTo: uuid("assigned_to").references(() => users.id),
+  createdBy: uuid("created_by").references(() => users.id),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("idx_tasks_tenant").on(t.tenantId),
+  index("idx_tasks_assignee").on(t.assignedTo),
+]);
+
+// ═══════════════════════════════════════════════════
+// ACCOUNTS (Companies)
+// ═══════════════════════════════════════════════════
+export const accounts = pgTable("accounts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  website: text("website"),
+  industry: text("industry"),
+  size: text("size"), // 1-10, 11-50, 51-200, 201-500, 500+
+  revenue: decimal("revenue", { precision: 15, scale: 2 }),
+  phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
+  city: text("city"),
+  country: text("country"),
+  logo: text("logo"),
+  status: text("status").default("active"),
+  notes: text("notes"),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  assignedTo: uuid("assigned_to").references(() => users.id),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("idx_accounts_tenant").on(t.tenantId),
+]);
+
+// ═══════════════════════════════════════════════════
+// ACTIVITIES (notes, calls, emails, meetings)
+// ═══════════════════════════════════════════════════
+export const activities = pgTable("activities", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  type: text("type").notNull(), // note, call, email, meeting, task_completed
+  title: text("title").notNull(),
+  description: text("description"),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  dealId: uuid("deal_id").references(() => deals.id),
+  leadId: uuid("lead_id").references(() => leads.id),
+  accountId: uuid("account_id").references(() => accounts.id),
+  createdBy: uuid("created_by").references(() => users.id),
   scheduledAt: timestamp("scheduled_at"),
   completedAt: timestamp("completed_at"),
-  dueDate: timestamp("due_date"),
-  
-  // Communication Data
-  direction: varchar("direction", { length: 10 }), // inbound, outbound
-  channel: varchar("channel", { length: 50 }), // email, phone, whatsapp, meeting
-  outcome: varchar("outcome", { length: 100 }), // connected, left_voicemail, no_answer, etc
-  
-  // AI Analysis
-  sentimentScore: decimal("sentiment_score", { precision: 3, scale: 2 }), // -1 to 1
-  keywords: text("keywords").array(),
-  actionItems: jsonb("action_items"), // extracted action items from AI
-  
-  // Metadata
-  createdBy: varchar("created_by").references(() => users.id),
-  assignedTo: varchar("assigned_to").references(() => users.id),
-  isPrivate: boolean("is_private").default(false),
-  customFields: jsonb("custom_fields").default({}),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => [
+  index("idx_activities_tenant").on(t.tenantId),
+  index("idx_activities_contact").on(t.contactId),
+]);
 
-// Email Marketing and Automation
-export const emailCampaigns = pgTable("email_campaigns", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  subject: varchar("subject", { length: 255 }),
+// ═══════════════════════════════════════════════════
+// EMAIL CAMPAIGNS
+// ═══════════════════════════════════════════════════
+export const campaigns = pgTable("campaigns", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  subject: text("subject"),
+  type: text("type").default("email"), // email, sms, linkedin
+  status: text("status").default("draft"), // draft, scheduled, sending, sent, paused
   content: text("content"),
-  templateId: varchar("template_id"),
-  
-  // Campaign Settings
-  type: varchar("type", { length: 50 }).default("one_time"), // one_time, drip, trigger
-  status: varchar("status", { length: 50 }).default("draft"), // draft, scheduled, sending, sent, paused
-  
-  // Scheduling
   scheduledAt: timestamp("scheduled_at"),
   sentAt: timestamp("sent_at"),
-  
-  // Targeting
-  segmentId: varchar("segment_id"),
   recipientCount: integer("recipient_count").default(0),
-  
-  // Performance Metrics
-  openRate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
-  clickRate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
-  bounceRate: decimal("bounce_rate", { precision: 5, scale: 2 }).default("0"),
-  unsubscribeRate: decimal("unsubscribe_rate", { precision: 5, scale: 2 }).default("0"),
-  
-  // AI Optimization
-  aiOptimized: boolean("ai_optimized").default(false),
-  aiSubjectLine: varchar("ai_subject_line", { length: 255 }),
-  aiSendTime: timestamp("ai_send_time"),
-  
-  createdBy: varchar("created_by").references(() => users.id),
+  openCount: integer("open_count").default(0),
+  clickCount: integer("click_count").default(0),
+  replyCount: integer("reply_count").default(0),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// CRM Workflow Automation
-export const crmWorkflows = pgTable("crm_workflows", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  
-  // Workflow Configuration
-  trigger: jsonb("trigger").notNull(), // {type: "contact_created", conditions: [...]}
-  actions: jsonb("actions").notNull(), // [{type: "send_email", config: {...}}, ...]
-  
-  // Status and Control
-  isActive: boolean("is_active").default(true),
-  version: integer("version").default(1),
-  
-  // Performance
-  executionCount: integer("execution_count").default(0),
-  successRate: decimal("success_rate", { precision: 5, scale: 2 }).default("100"),
-  lastExecuted: timestamp("last_executed"),
-  
-  // Metadata
-  createdBy: varchar("created_by").references(() => users.id),
-  tags: text("tags").array(),
-  category: varchar("category", { length: 100 }), // sales, marketing, support
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Communication Channels
-export const communicationChannels = pgTable("communication_channels", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  type: varchar("type", { length: 50 }).notNull(), // whatsapp, sms, email, voice
-  name: varchar("name", { length: 255 }),
-  
-  // Configuration
-  config: jsonb("config").notNull(), // channel-specific settings
-  isActive: boolean("is_active").default(true),
-  
-  // Usage Statistics
-  messagesSent: integer("messages_sent").default(0),
-  messagesReceived: integer("messages_received").default(0),
-  lastUsed: timestamp("last_used"),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// AI Predictions and Insights
-export const aiInsights = pgTable("ai_insights", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  entityType: varchar("entity_type", { length: 50 }).notNull(), // lead, deal, contact, company
-  entityId: varchar("entity_id").notNull(),
-  
-  // Insight Data
-  insightType: varchar("insight_type", { length: 100 }).notNull(), // churn_risk, upsell_opportunity, etc
-  confidence: decimal("confidence", { precision: 5, scale: 2 }), // 0-100%
-  value: jsonb("value"), // insight-specific data
-  
-  // Recommendations
-  recommendations: jsonb("recommendations"), // suggested actions
-  impact: varchar("impact", { length: 20 }), // low, medium, high
-  
-  // Lifecycle
-  isActive: boolean("is_active").default(true),
-  acknowledgedBy: varchar("acknowledged_by").references(() => users.id),
-  acknowledgedAt: timestamp("acknowledged_at"),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  expiresAt: timestamp("expires_at"),
-});
-
-// CRM Reports and Analytics
-export const crmReports = pgTable("crm_reports", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  
-  // Report Configuration
-  type: varchar("type", { length: 50 }).notNull(), // sales, marketing, activity, custom
-  config: jsonb("config").notNull(), // filters, grouping, metrics
-  
-  // Scheduling
-  isScheduled: boolean("is_scheduled").default(false),
-  schedule: jsonb("schedule"), // cron-like schedule
-  recipients: text("recipients").array(), // email addresses
-  
-  // Access Control
-  isPublic: boolean("is_public").default(false),
-  sharedWith: text("shared_with").array(), // user emails
-  
-  // Metadata
-  createdBy: varchar("created_by").references(() => users.id),
-  lastGenerated: timestamp("last_generated"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Integration Management
-export const integrations = pgTable("integrations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  type: varchar("type", { length: 100 }).notNull(), // zapier, webhook, api, email
-  
-  // Configuration
-  config: jsonb("config").notNull(),
-  isActive: boolean("is_active").default(true),
-  
-  // Authentication
-  authType: varchar("auth_type", { length: 50 }), // oauth, api_key, basic
-  credentials: jsonb("credentials"), // encrypted credentials
-  
-  // Performance
-  lastSync: timestamp("last_sync"),
-  syncStatus: varchar("sync_status", { length: 50 }).default("active"), // active, error, paused
-  errorCount: integer("error_count").default(0),
-  
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Custom Fields Definition
-export const customFields = pgTable("custom_fields", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  entityType: varchar("entity_type", { length: 50 }).notNull(), // lead, contact, company, deal
-  name: varchar("name", { length: 255 }).notNull(),
-  label: varchar("label", { length: 255 }),
-  
-  // Field Configuration
-  fieldType: varchar("field_type", { length: 50 }).notNull(), // text, number, date, select, multi_select
-  isRequired: boolean("is_required").default(false),
-  defaultValue: text("default_value"),
-  
-  // Select field options
-  options: jsonb("options"), // for select/multi_select fields
-  
-  // Validation
-  validation: jsonb("validation"), // regex, min/max, etc
-  
-  // Display
-  displayOrder: integer("display_order").default(0),
-  isVisible: boolean("is_visible").default(true),
-  
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// WhatsApp Integration
-export const whatsappMessages = pgTable("whatsapp_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id"),
-  
-  // Message Data
-  messageId: varchar("message_id", { length: 255 }), // WhatsApp message ID
-  direction: varchar("direction", { length: 10 }).notNull(), // inbound, outbound
-  messageType: varchar("message_type", { length: 50 }).default("text"), // text, image, document, etc
-  content: text("content"),
-  
-  // Status
-  status: varchar("status", { length: 50 }).default("pending"), // pending, sent, delivered, read, failed
-  timestamp: timestamp("timestamp").defaultNow(),
-  
-  // Metadata
-  phoneNumber: varchar("phone_number", { length: 20 }),
-  mediaUrl: varchar("media_url", { length: 500 }),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Mobile App User Sessions
-export const mobileSessions = pgTable("mobile_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id),
-  
-  // Session Data
-  deviceType: varchar("device_type", { length: 50 }), // ios, android
-  deviceId: varchar("device_id", { length: 255 }),
-  appVersion: varchar("app_version", { length: 20 }),
-  
-  // Activity
-  lastActivity: timestamp("last_activity").defaultNow(),
-  isActive: boolean("is_active").default(true),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Advanced CRM Types
-export type CrmLead = typeof crmLeads.$inferSelect;
-export type InsertCrmLead = typeof crmLeads.$inferInsert;
-export type Pipeline = typeof pipelines.$inferSelect;
-export type InsertPipeline = typeof pipelines.$inferInsert;
-export type CrmDeal = typeof crmDeals.$inferSelect;
-export type InsertCrmDeal = typeof crmDeals.$inferInsert;
-export type CrmContact = typeof crmContacts.$inferSelect;
-export type InsertCrmContact = typeof crmContacts.$inferInsert;
-export type Company = typeof companies.$inferSelect;
-export type InsertCompany = typeof companies.$inferInsert;
-export type CrmActivity = typeof crmActivities.$inferSelect;
-export type InsertCrmActivity = typeof crmActivities.$inferInsert;
-export type EmailCampaign = typeof emailCampaigns.$inferSelect;
-export type InsertEmailCampaign = typeof emailCampaigns.$inferInsert;
-export type CrmWorkflow = typeof crmWorkflows.$inferSelect;
-export type InsertCrmWorkflow = typeof crmWorkflows.$inferInsert;
-export type WhatsappMessage = typeof whatsappMessages.$inferSelect;
-export type InsertWhatsappMessage = typeof whatsappMessages.$inferInsert;
-
-// Insert schemas for CRM features
-export const insertCrmLeadSchema = createInsertSchema(crmLeads);
-export const insertPipelineSchema = createInsertSchema(pipelines);
-export const insertCrmDealSchema = createInsertSchema(crmDeals);
-export const insertCrmContactSchema = createInsertSchema(crmContacts);
-export const insertCompanySchema = createInsertSchema(companies);
-export const insertCrmActivitySchema = createInsertSchema(crmActivities);
-export const insertEmailCampaignSchema = createInsertSchema(emailCampaigns);
-export const insertCrmWorkflowSchema = createInsertSchema(crmWorkflows);
-export const insertWhatsappMessageSchema = createInsertSchema(whatsappMessages);
-
-// Tenant Payment Configuration Schemas and Types
-export const insertTenantPaymentConfigSchema = createInsertSchema(tenantPaymentConfigs, {
-  stripePublicKey: z.string().startsWith("pk_").optional(),
-  stripeSecretKey: z.string().startsWith("sk_").optional(),
-  visaApiKey: z.string().min(1).optional(),
-  visaMerchantId: z.string().min(1).optional(),
-  defaultProvider: z.enum(["stripe", "visa"]).default("stripe"),
-  testMode: z.boolean().default(true),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const selectTenantPaymentConfigSchema = createInsertSchema(tenantPaymentConfigs);
-
-export const insertTenantPaymentTransactionSchema = createInsertSchema(tenantPaymentTransactions, {
-  amount: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid amount format"),
-  currency: z.string().length(3, "Currency must be 3 characters"),
-  status: z.enum(["pending", "completed", "failed", "refunded"]),
-  provider: z.enum(["stripe", "visa"]),
-}).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const selectTenantPaymentTransactionSchema = createInsertSchema(tenantPaymentTransactions);
-
-// TypeScript types for tenant payment system
-export type TenantPaymentConfig = typeof tenantPaymentConfigs.$inferSelect;
-export type InsertTenantPaymentConfig = z.infer<typeof insertTenantPaymentConfigSchema>;
-export type TenantPaymentTransaction = typeof tenantPaymentTransactions.$inferSelect;
-export type InsertTenantPaymentTransaction = z.infer<typeof insertTenantPaymentTransactionSchema>;
-
-// Payment provider status interface
-export interface PaymentProviderStatus {
-  stripe: {
-    enabled: boolean;
-    configured: boolean;
-    testMode: boolean;
-    lastUsed?: string;
-  };
-  visa: {
-    enabled: boolean;
-    configured: boolean;
-    testMode: boolean;
-    lastUsed?: string;
-  };
-}
-
-// Payment configuration validation
-export const paymentConfigValidationSchema = z.object({
-  provider: z.enum(["stripe", "visa"]),
-  testMode: z.boolean(),
-  stripeConfig: z.object({
-    publicKey: z.string().startsWith("pk_").optional(),
-    secretKey: z.string().startsWith("sk_").optional(),
-    webhookSecret: z.string().optional(),
-  }).optional(),
-  visaConfig: z.object({
-    apiKey: z.string().min(1).optional(),
-    merchantId: z.string().min(1).optional(),
-  }).optional(),
-});
-
-export type PaymentConfigValidation = z.infer<typeof paymentConfigValidationSchema>;
-
-// ==================== E-COMMERCE HEALTH MONITORING ====================
-
-// E-commerce platform health metrics
-export const ecommerceHealthMetrics = pgTable("ecommerce_health_metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  storeId: integer("store_id"),
-  metricType: text("metric_type").notNull(), // sales, inventory, performance, customer, system
-  metricName: text("metric_name").notNull(),
-  metricValue: decimal("metric_value", { precision: 15, scale: 2 }).notNull(),
-  metricUnit: text("metric_unit").default("count"), // count, percentage, currency, time, bytes
-  
-  // Threshold management
-  warningThreshold: decimal("warning_threshold", { precision: 15, scale: 2 }),
-  criticalThreshold: decimal("critical_threshold", { precision: 15, scale: 2 }),
-  healthStatus: text("health_status").default("healthy"), // healthy, warning, critical, unknown
-  
-  // Time-based data
-  recordedAt: timestamp("recorded_at").defaultNow(),
-  timeWindow: text("time_window").default("1h"), // 1h, 24h, 7d, 30d
-  
-  // Contextual data
-  metadata: jsonb("metadata").$type<{
-    source?: string;
-    category?: string;
-    tags?: string[];
-    description?: string;
-    calculation?: string;
-  }>().default({}),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_ecommerce_health_tenant").on(table.tenantId),
-  index("idx_ecommerce_health_store").on(table.storeId),
-  index("idx_ecommerce_health_type").on(table.metricType),
-  index("idx_ecommerce_health_recorded").on(table.recordedAt),
-  index("idx_ecommerce_health_status").on(table.healthStatus),
+}, (t) => [
+  index("idx_campaigns_tenant").on(t.tenantId),
 ]);
 
-// E-commerce system alerts
-export const ecommerceSystemAlerts = pgTable("ecommerce_system_alerts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  storeId: integer("store_id"),
-  alertType: text("alert_type").notNull(), // performance, inventory, sales, security, system
-  severity: text("severity").notNull(), // low, medium, high, critical
-  
-  // Alert details
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  source: text("source").notNull(), // system, user, integration, monitor
-  
-  // Resolution tracking
-  status: text("status").default("open"), // open, acknowledged, resolved, suppressed
-  acknowledgedBy: varchar("acknowledged_by").references(() => users.id),
-  acknowledgedAt: timestamp("acknowledged_at"),
-  resolvedBy: varchar("resolved_by").references(() => users.id),
-  resolvedAt: timestamp("resolved_at"),
-  resolution: text("resolution"),
-  
-  // Context and metadata
-  affectedComponents: jsonb("affected_components").$type<string[]>().default([]),
-  metadata: jsonb("metadata").$type<{
-    threshold?: number;
-    actualValue?: number;
-    expectedValue?: number;
-    impact?: string;
-    recommendation?: string;
-    relatedAlerts?: string[];
-  }>().default({}),
-  
-  // Notification tracking
-  notificationsSent: jsonb("notifications_sent").$type<Array<{
-    channel: string;
-    recipient: string;
-    sentAt: string;
-    status: string;
-  }>>().default([]),
-  
+// ═══════════════════════════════════════════════════
+// INVOICES
+// ═══════════════════════════════════════════════════
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  number: text("number").notNull(),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  accountId: uuid("account_id").references(() => accounts.id),
+  dealId: uuid("deal_id").references(() => deals.id),
+  status: text("status").default("draft"), // draft, sent, paid, overdue, cancelled
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).default("0"),
+  tax: decimal("tax", { precision: 12, scale: 2 }).default("0"),
+  total: decimal("total", { precision: 12, scale: 2 }).default("0"),
+  currency: text("currency").default("USD"),
+  dueDate: timestamp("due_date"),
+  paidAt: timestamp("paid_at"),
+  notes: text("notes"),
+  items: jsonb("items").$type<Array<{ description: string; quantity: number; unitPrice: number; total: number }>>().default([]),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_ecommerce_alerts_tenant").on(table.tenantId),
-  index("idx_ecommerce_alerts_store").on(table.storeId),
-  index("idx_ecommerce_alerts_type").on(table.alertType),
-  index("idx_ecommerce_alerts_severity").on(table.severity),
-  index("idx_ecommerce_alerts_status").on(table.status),
-  index("idx_ecommerce_alerts_created").on(table.createdAt),
+}, (t) => [
+  index("idx_invoices_tenant").on(t.tenantId),
 ]);
 
-// E-commerce performance snapshots
-export const ecommercePerformanceSnapshots = pgTable("ecommerce_performance_snapshots", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  storeId: integer("store_id"),
-  snapshotType: text("snapshot_type").notNull(), // hourly, daily, weekly, monthly
-  
-  // Sales metrics
-  totalSales: decimal("total_sales", { precision: 15, scale: 2 }).default("0.00"),
-  orderCount: integer("order_count").default(0),
-  averageOrderValue: decimal("average_order_value", { precision: 15, scale: 2 }).default("0.00"),
-  conversionRate: decimal("conversion_rate", { precision: 5, scale: 2 }).default("0.00"),
-  
-  // Traffic metrics
-  totalVisitors: integer("total_visitors").default(0),
-  uniqueVisitors: integer("unique_visitors").default(0),
-  pageViews: integer("page_views").default(0),
-  bounceRate: decimal("bounce_rate", { precision: 5, scale: 2 }).default("0.00"),
-  
-  // Performance metrics
-  averageLoadTime: decimal("average_load_time", { precision: 8, scale: 3 }).default("0.000"),
-  uptime: decimal("uptime", { precision: 5, scale: 2 }).default("100.00"),
-  errorRate: decimal("error_rate", { precision: 5, scale: 2 }).default("0.00"),
-  
-  // Inventory metrics
-  totalProducts: integer("total_products").default(0),
-  lowStockProducts: integer("low_stock_products").default(0),
-  outOfStockProducts: integer("out_of_stock_products").default(0),
-  
-  // Customer metrics
-  newCustomers: integer("new_customers").default(0),
-  returningCustomers: integer("returning_customers").default(0),
-  customerSatisfaction: decimal("customer_satisfaction", { precision: 5, scale: 2 }).default("0.00"),
-  
-  // Financial metrics
-  totalRevenue: decimal("total_revenue", { precision: 15, scale: 2 }).default("0.00"),
-  totalCosts: decimal("total_costs", { precision: 15, scale: 2 }).default("0.00"),
-  profitMargin: decimal("profit_margin", { precision: 5, scale: 2 }).default("0.00"),
-  
-  // Time range
-  periodStart: timestamp("period_start").notNull(),
-  periodEnd: timestamp("period_end").notNull(),
-  
-  // Metadata
-  dataQuality: decimal("data_quality", { precision: 5, scale: 2 }).default("100.00"),
-  calculatedAt: timestamp("calculated_at").defaultNow(),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_ecommerce_snapshots_tenant").on(table.tenantId),
-  index("idx_ecommerce_snapshots_store").on(table.storeId),
-  index("idx_ecommerce_snapshots_type").on(table.snapshotType),
-  index("idx_ecommerce_snapshots_period").on(table.periodStart, table.periodEnd),
-]);
-
-// Zod schemas for health monitoring
-export const ecommerceHealthMetricInsertSchema = createInsertSchema(ecommerceHealthMetrics);
-export const ecommerceSystemAlertInsertSchema = createInsertSchema(ecommerceSystemAlerts);
-export const ecommercePerformanceSnapshotInsertSchema = createInsertSchema(ecommercePerformanceSnapshots);
-
-export type EcommerceHealthMetric = typeof ecommerceHealthMetrics.$inferSelect;
-export type EcommerceSystemAlert = typeof ecommerceSystemAlerts.$inferSelect;
-export type EcommercePerformanceSnapshot = typeof ecommercePerformanceSnapshots.$inferSelect;
-
-export type InsertEcommerceHealthMetric = z.infer<typeof ecommerceHealthMetricInsertSchema>;
-export type InsertEcommerceSystemAlert = z.infer<typeof ecommerceSystemAlertInsertSchema>;
-export type InsertEcommercePerformanceSnapshot = z.infer<typeof ecommercePerformanceSnapshotInsertSchema>;
-
-// ==================== AI EMOTIONAL INTELLIGENCE SYSTEM ====================
-
-// Customer Emotional Intelligence tables
-export const customerEmotionalProfiles = pgTable("customer_emotional_profiles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id").notNull(),
-  interactionDate: timestamp("interaction_date").defaultNow().notNull(),
-  primaryEmotion: varchar("primary_emotion"),
-  sentimentScore: decimal("sentiment_score", { precision: 3, scale: 2 }),
-  stressIndicators: jsonb("stress_indicators").$type<string[]>(),
-  preferredCommunicationStyle: varchar("preferred_communication_style"),
-  emotionalTriggers: jsonb("emotional_triggers").$type<string[]>(),
-  satisfactionTrend: varchar("satisfaction_trend"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
-});
-
-export const emotionalAnalysisLogs = pgTable("emotional_analysis_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id"),
-  interactionId: varchar("interaction_id"),
-  channel: varchar("channel"), // email, chat, phone, social
-  analysisType: varchar("analysis_type"), // sentiment, emotion, voice
-  analysisResult: jsonb("analysis_result"),
-  confidence: decimal("confidence", { precision: 3, scale: 2 }),
-  urgencyLevel: varchar("urgency_level"),
-  recommendedActions: jsonb("recommended_actions").$type<string[]>(),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const agentPerformanceMetrics = pgTable("agent_performance_metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  agentId: varchar("agent_id").notNull(),
-  metricType: varchar("metric_type"), // resolution_time, satisfaction, emotional_handling
-  metricValue: decimal("metric_value", { precision: 5, scale: 2 }),
-  period: varchar("period"), // daily, weekly, monthly
-  date: timestamp("date").defaultNow(),
-  emotionalContexts: jsonb("emotional_contexts").$type<string[]>(),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const ticketRoutingDecisions = pgTable("ticket_routing_decisions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  ticketId: varchar("ticket_id").notNull(),
-  customerId: varchar("customer_id"),
-  emotionalAnalysis: jsonb("emotional_analysis"),
-  assignedAgent: varchar("assigned_agent"),
-  priority: varchar("priority"),
-  routingReason: text("routing_reason"),
-  actualResolutionTime: integer("actual_resolution_time"),
-  customerSatisfaction: decimal("customer_satisfaction", { precision: 3, scale: 2 }),
-  routingAccuracy: decimal("routing_accuracy", { precision: 3, scale: 2 }),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const churnPredictions = pgTable("churn_predictions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id").notNull().unique(),
-  riskLevel: varchar("risk_level"), // HIGH, MEDIUM, LOW
-  confidence: decimal("confidence", { precision: 3, scale: 2 }),
-  riskFactors: jsonb("risk_factors").$type<string[]>(),
-  recommendedInterventions: jsonb("recommended_interventions").$type<string[]>(),
-  predictionDate: timestamp("prediction_date").defaultNow(),
-  actualChurnDate: timestamp("actual_churn_date"),
-  predictionAccuracy: varchar("prediction_accuracy"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
-});
-
-// Create insert schemas for emotional intelligence tables
-export const insertCustomerEmotionalProfileSchema = createInsertSchema(customerEmotionalProfiles).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertEmotionalAnalysisLogSchema = createInsertSchema(emotionalAnalysisLogs).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertAgentPerformanceMetricsSchema = createInsertSchema(agentPerformanceMetrics).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertTicketRoutingDecisionSchema = createInsertSchema(ticketRoutingDecisions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertChurnPredictionSchema = createInsertSchema(churnPredictions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// Types for emotional intelligence
-export type CustomerEmotionalProfile = typeof customerEmotionalProfiles.$inferSelect;
-export type InsertCustomerEmotionalProfile = z.infer<typeof insertCustomerEmotionalProfileSchema>;
-export type EmotionalAnalysisLog = typeof emotionalAnalysisLogs.$inferSelect;
-export type InsertEmotionalAnalysisLog = z.infer<typeof insertEmotionalAnalysisLogSchema>;
-export type AgentPerformanceMetric = typeof agentPerformanceMetrics.$inferSelect;
-export type InsertAgentPerformanceMetric = z.infer<typeof insertAgentPerformanceMetricsSchema>;
-export type TicketRoutingDecision = typeof ticketRoutingDecisions.$inferSelect;
-export type InsertTicketRoutingDecision = z.infer<typeof insertTicketRoutingDecisionSchema>;
-export type ChurnPrediction = typeof churnPredictions.$inferSelect;
-export type InsertChurnPrediction = z.infer<typeof insertChurnPredictionSchema>;
-
-// ================================
-// SALES CHANNELS & INTEGRATIONS  
-// ================================
-
-// Sales channel integrations (TikTok, Facebook, Instagram, Google Ads, etc.)
-export const salesChannels = pgTable("sales_channels", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
-  userId: varchar("user_id").references(() => users.id).notNull(), // Who connected this channel
-  platformId: text("platform_id").notNull(), // tiktok, facebook_business, instagram_business, google_ads, etc.
-  platformName: text("platform_name").notNull(), // Human-readable name
-  status: text("status").notNull().default("disconnected"), // connected, disconnected, error, pending_auth
-  
-  // Platform-specific configuration (encrypted in production)
-  config: jsonb("config").$type<{
-    apiKey?: string;
-    accessToken?: string;
-    refreshToken?: string;
-    clientId?: string;
-    clientSecret?: string;
-    accountId?: string;
-    pixelId?: string;
-    businessManagerId?: string;
-    webhookUrl?: string;
-    settings?: Record<string, any>;
-  }>().default({}),
-  
-  lastSync: timestamp("last_sync"),
-  syncStats: jsonb("sync_stats").$type<{
-    totalLeads: number;
-    totalOrders: number;
-    totalRevenue: number;
-    lastSyncResult: 'success' | 'error' | 'partial';
-    lastError?: string;
-  }>().default({
-    totalLeads: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    lastSyncResult: 'success'
-  }),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_sales_channels_tenant").on(table.tenantId),
-  index("idx_sales_channels_platform").on(table.platformId),
-  index("idx_sales_channels_status").on(table.status),
-]);
-
-// Sales channel metrics and analytics
-export const salesChannelMetrics = pgTable("sales_channel_metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  channelId: varchar("channel_id").references(() => salesChannels.id).notNull(),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
-  
-  // Time period for this metric snapshot
-  metricDate: date("metric_date").notNull(),
-  period: text("period").notNull().default("daily"), // daily, weekly, monthly
-  
-  // Performance metrics
-  impressions: integer("impressions").default(0),
-  clicks: integer("clicks").default(0),
-  conversions: integer("conversions").default(0),
-  revenue: decimal("revenue", { precision: 12, scale: 2 }).default("0.00"),
-  cost: decimal("cost", { precision: 12, scale: 2 }).default("0.00"),
-  
-  // Calculated metrics
-  ctr: real("ctr").default(0), // Click-through rate
-  cpc: decimal("cpc", { precision: 8, scale: 2 }).default("0.00"), // Cost per click
-  cpm: decimal("cpm", { precision: 8, scale: 2 }).default("0.00"), // Cost per mille
-  roas: real("roas").default(0), // Return on ad spend
-  conversionRate: real("conversion_rate").default(0),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_sales_channel_metrics_tenant").on(table.tenantId),
-  index("idx_sales_channel_metrics_channel").on(table.channelId),
-  index("idx_sales_channel_metrics_date").on(table.metricDate),
-]);
-
-// Sales channel leads/contacts integration
-export const salesChannelLeads = pgTable("sales_channel_leads", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  channelId: varchar("channel_id").references(() => salesChannels.id).notNull(),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(), // CRITICAL: Tenant isolation
-  contactId: varchar("contact_id").references(() => contacts.id), // Link to CRM contact
-  
-  // Lead source data
-  platformLeadId: text("platform_lead_id").notNull(), // ID from the platform
-  campaignId: text("campaign_id"),
-  campaignName: text("campaign_name"),
-  adSetId: text("ad_set_id"),
-  adSetName: text("ad_set_name"),
-  adId: text("ad_id"),
-  adName: text("ad_name"),
-  
-  // Lead information
-  email: text("email"),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  phone: text("phone"),
-  company: text("company"),
-  
-  // Lead metadata
-  leadSource: text("lead_source"), // organic, paid, social, etc.
-  leadValue: decimal("lead_value", { precision: 12, scale: 2 }),
-  leadStatus: text("lead_status").default("new"), // new, contacted, qualified, converted
-  
-  // Platform-specific data
-  platformData: jsonb("platform_data").$type<Record<string, any>>().default({}),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_sales_channel_leads_tenant").on(table.tenantId),
-  index("idx_sales_channel_leads_channel").on(table.channelId),
-  index("idx_sales_channel_leads_email").on(table.email),
-  index("idx_sales_channel_leads_platform").on(table.platformLeadId),
-]);
-
-// Schema exports for sales channels
-export type SalesChannel = typeof salesChannels.$inferSelect;
-export type InsertSalesChannel = typeof salesChannels.$inferInsert;
-export type SalesChannelMetrics = typeof salesChannelMetrics.$inferSelect;
-export type InsertSalesChannelMetrics = typeof salesChannelMetrics.$inferInsert;
-export type SalesChannelLead = typeof salesChannelLeads.$inferSelect;
-export type InsertSalesChannelLead = typeof salesChannelLeads.$inferInsert;
-
-// Insert schemas for validation
-export const insertSalesChannelSchema = createInsertSchema(salesChannels);
-export const insertSalesChannelMetricsSchema = createInsertSchema(salesChannelMetrics);
-export const insertSalesChannelLeadSchema = createInsertSchema(salesChannelLeads);
-
-// ================================
-// AI CAMPAIGN STUDIO & CONTENT GENERATION
-// ================================
-
-// AI-generated content (ads and emails)
-export const aiContents = pgTable("ai_contents", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  
-  type: text("type").notNull(),
-  channel: text("channel"),
-  campaignId: varchar("campaign_id"),
-  salesChannelId: varchar("sales_channel_id").references(() => salesChannels.id),
-  
-  input: jsonb("input").$type<{
-    url?: string;
-    contactIds?: string[];
-    audience?: string;
-    productIds?: string[];
-    tone?: string;
-    objective?: string;
-    numVariants?: number;
-  }>().default({}),
-  
-  prompt: text("prompt"),
-  
-  output: jsonb("output").$type<{
-    headline?: string;
-    body?: string;
-    cta?: string;
-    subject?: string;
-    variants?: Array<{
-      headline?: string;
-      body?: string;
-      cta?: string;
-      subject?: string;
-      hashtags?: string[];
-    }>;
-    hashtags?: string[];
-    images?: string[];
-  }>().default({}),
-  
-  status: text("status").notNull().default("draft"),
-  
-  modelUsed: text("model_used"),
-  costCents: integer("cost_cents").default(0),
-  tokensIn: integer("tokens_in").default(0),
-  tokensOut: integer("tokens_out").default(0),
-  
-  scheduledFor: timestamp("scheduled_for"),
-  publishedAt: timestamp("published_at"),
-  
-  performance: jsonb("performance").$type<{
-    impressions?: number;
-    clicks?: number;
-    conversions?: number;
-    engagement?: number;
-  }>().default({}),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_ai_contents_tenant").on(table.tenantId),
-  index("idx_ai_contents_user").on(table.userId),
-  index("idx_ai_contents_type").on(table.type),
-  index("idx_ai_contents_status").on(table.status),
-  index("idx_ai_contents_channel").on(table.channel),
-  index("idx_ai_contents_campaign").on(table.campaignId),
-  index("idx_ai_contents_sales_channel").on(table.salesChannelId),
-  index("idx_ai_contents_tenant_created").on(table.tenantId, table.createdAt),
-]);
-
-// AI Campaign grouping
-export const aiCampaigns = pgTable("ai_campaigns", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  
-  name: text("name").notNull(),
-  description: text("description"),
-  goal: text("goal"),
-  
-  channels: jsonb("channels").$type<string[]>().default([]),
-  
-  schedule: jsonb("schedule").$type<{
-    startDate?: string;
-    endDate?: string;
-    frequency?: string;
-  }>().default({}),
-  
-  budget: decimal("budget", { precision: 12, scale: 2 }),
-  spent: decimal("spent", { precision: 12, scale: 2 }).default("0.00"),
-  
-  status: text("status").notNull().default("active"),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_ai_campaigns_tenant").on(table.tenantId),
-  index("idx_ai_campaigns_status").on(table.status),
-]);
-
-// AI Usage tracking
+// ═══════════════════════════════════════════════════
+// AI USAGE TRACKING
+// ═══════════════════════════════════════════════════
 export const aiUsage = pgTable("ai_usage", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id),
-  
-  provider: text("provider").notNull(),
-  model: text("model"),
-  
-  tokensIn: integer("tokens_in").default(0),
-  tokensOut: integer("tokens_out").default(0),
-  costCents: integer("cost_cents").default(0),
-  
-  requestType: text("request_type"),
-  success: boolean("success").default(true),
-  errorMessage: text("error_message"),
-  
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id),
+  type: text("type").notNull(), // email_generation, lead_scoring, contact_enrichment, etc.
+  tokens: integer("tokens").default(0),
+  cost: decimal("cost", { precision: 8, scale: 6 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_ai_usage_tenant").on(table.tenantId),
-  index("idx_ai_usage_provider").on(table.provider),
-  index("idx_ai_usage_created").on(table.createdAt),
-  index("idx_ai_usage_tenant_created").on(table.tenantId, table.createdAt),
-  index("idx_ai_usage_tenant_provider").on(table.tenantId, table.provider),
+}, (t) => [
+  index("idx_ai_usage_tenant").on(t.tenantId),
 ]);
 
-// ==================== A/B TESTING SYSTEM ====================
+// ═══════════════════════════════════════════════════
+// AI AGENTS
+// ═══════════════════════════════════════════════════
+export const agentTypes = [
+  "chief_of_staff", "sales", "marketing", "customer_support",
+  "finance", "hr_recruiting", "operations", "compliance",
+  "bi_insights", "devops", "product", "research"
+] as const;
+export type AgentType = typeof agentTypes[number];
 
-// Main test definitions
-export const abTests = pgTable("ab_tests", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+export const agents = pgTable("agents", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  type: text("type").notNull(), // one of agentTypes
   name: text("name").notNull(),
-  description: text("description"),
-  type: text("type").notNull(), // landing_page, email_campaign, product_page, form
-  targetUrl: text("target_url"),
-  status: text("status").notNull().default("draft"), // draft, running, paused, completed
-  trafficSplit: jsonb("traffic_split").$type<Record<string, number>>().default({}), // {A: 50, B: 50}
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  winnerVariantId: varchar("winner_variant_id"),
-  configuration: jsonb("configuration").$type<{
-    audienceFilters?: Record<string, any>;
-    targetingRules?: Record<string, any>;
-    conversionGoals?: string[];
-  }>().default({}),
-  createdBy: varchar("created_by").references(() => users.id).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_ab_tests_tenant").on(table.tenantId),
-  index("idx_ab_tests_tenant_status").on(table.tenantId, table.status),
-  index("idx_ab_tests_status").on(table.status),
-  index("idx_ab_tests_type").on(table.type),
-  index("idx_ab_tests_created_by").on(table.createdBy),
-]);
-
-// Test variants
-export const abVariants = pgTable("ab_variants", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  name: text("name").notNull(), // Control, Variant B, etc.
-  description: text("description"),
-  content: jsonb("content").$type<{
-    html?: string;
-    emailTemplate?: string;
-    productDetails?: Record<string, any>;
-    formFields?: any[];
-  }>().default({}),
-  isControl: boolean("is_control").default(false),
-  trafficAllocation: integer("traffic_allocation").notNull(), // percentage 0-100
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_ab_variants_test").on(table.testId),
-  index("idx_ab_variants_test_control").on(table.testId, table.isControl),
-]);
-
-// Visitor session tracking
-export const abSessions = pgTable("ab_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  variantId: varchar("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
-  sessionId: text("session_id").notNull(), // browser fingerprint/cookie
-  assignedAt: timestamp("assigned_at").defaultNow(),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-}, (table) => [
-  index("idx_ab_sessions_test").on(table.testId),
-  index("idx_ab_sessions_variant").on(table.variantId),
-  index("idx_ab_sessions_test_variant").on(table.testId, table.variantId),
-  index("idx_ab_sessions_session_id").on(table.sessionId),
-  index("idx_ab_sessions_test_session").on(table.testId, table.sessionId),
-]);
-
-// Event tracking
-export const abEvents = pgTable("ab_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  sessionId: varchar("session_id").references(() => abSessions.id, { onDelete: "cascade" }).notNull(),
-  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  variantId: varchar("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
-  eventType: text("event_type").notNull(), // impression, click, interaction
-  eventData: jsonb("event_data").$type<Record<string, any>>().default({}),
-  timestamp: timestamp("timestamp").defaultNow(),
-}, (table) => [
-  index("idx_ab_events_session").on(table.sessionId),
-  index("idx_ab_events_test").on(table.testId),
-  index("idx_ab_events_variant").on(table.variantId),
-  index("idx_ab_events_test_variant").on(table.testId, table.variantId),
-  index("idx_ab_events_timestamp").on(table.timestamp),
-  index("idx_ab_events_type").on(table.eventType),
-]);
-
-// Conversion tracking
-export const abConversions = pgTable("ab_conversions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  sessionId: varchar("session_id").references(() => abSessions.id, { onDelete: "cascade" }).notNull(),
-  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  variantId: varchar("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
-  conversionType: text("conversion_type").notNull(), // form_submit, purchase, lead_capture, signup
-  conversionValue: decimal("conversion_value", { precision: 12, scale: 2 }),
-  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
-  convertedAt: timestamp("converted_at").defaultNow(),
-}, (table) => [
-  index("idx_ab_conversions_session").on(table.sessionId),
-  index("idx_ab_conversions_test").on(table.testId),
-  index("idx_ab_conversions_variant").on(table.variantId),
-  index("idx_ab_conversions_test_variant").on(table.testId, table.variantId),
-  index("idx_ab_conversions_type").on(table.conversionType),
-  index("idx_ab_conversions_converted_at").on(table.convertedAt),
-]);
-
-// Pre-computed analytics
-export const abMetricsCache = pgTable("ab_metrics_cache", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  testId: varchar("test_id").references(() => abTests.id, { onDelete: "cascade" }).notNull(),
-  variantId: varchar("variant_id").references(() => abVariants.id, { onDelete: "cascade" }).notNull(),
-  impressions: integer("impressions").default(0),
-  clicks: integer("clicks").default(0),
-  conversions: integer("conversions").default(0),
-  conversionRate: decimal("conversion_rate", { precision: 10, scale: 4 }),
-  uplift: decimal("uplift", { precision: 10, scale: 4 }), // vs control
-  pValue: decimal("p_value", { precision: 10, scale: 6 }),
-  confidenceLevel: decimal("confidence_level", { precision: 5, scale: 2 }),
-  revenue: decimal("revenue", { precision: 12, scale: 2 }),
-  calculatedAt: timestamp("calculated_at").defaultNow(),
-}, (table) => [
-  index("idx_ab_metrics_test").on(table.testId),
-  index("idx_ab_metrics_variant").on(table.variantId),
-  index("idx_ab_metrics_test_variant").on(table.testId, table.variantId),
-  index("idx_ab_metrics_calculated_at").on(table.calculatedAt),
-]);
-
-// ==================== CLIENT PORTAL SYSTEM ====================
-
-// Client Accounts - Maps to CRM contacts, white-labelable per tenant
-export const clientAccounts = pgTable("client_accounts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  crmContactId: varchar("crm_contact_id").references(() => contacts.id, { onDelete: "set null" }),
-  accountName: text("account_name").notNull(),
-  accountEmail: text("account_email").notNull(),
-  status: text("status").notNull().default('active'),
-  whiteLabelSettings: jsonb("white_label_settings").$type<{
-    companyName?: string;
-    logoUrl?: string;
-    primaryColor?: string;
-    customDomain?: string;
-  }>().default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_client_accounts_tenant").on(table.tenantId),
-  index("idx_client_accounts_email").on(table.accountEmail),
-]);
-
-// Client Portal Users - Individual login accounts for client contacts
-export const clientPortalUsers = pgTable("client_portal_users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  email: text("email").notNull().unique(), // UNIQUE globally - one client email across all tenants
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  passwordHash: text("password_hash").notNull(),
-  role: text("role").default("viewer"),
   isActive: boolean("is_active").default(true),
-  lastLoginAt: timestamp("last_login_at"),
-  magicLinkToken: text("magic_link_token"),
-  magicLinkExpires: timestamp("magic_link_expires"),
+  personality: text("personality"), // custom personality overrides
+  totalSessions: integer("total_sessions").default(0),
+  totalMessages: integer("total_messages").default(0),
+  lastActiveAt: timestamp("last_active_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Long-term agent memories — persisted facts the agent has learned
+export const agentMemories = pgTable("agent_memories", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  agentType: text("agent_type").notNull(),
+  category: text("category").notNull(), // "business_context", "user_preference", "learned_fact", "goal", "relationship", "process"
+  key: text("key").notNull(), // short identifier
+  value: text("value").notNull(), // the actual memory content
+  importance: integer("importance").default(5), // 1-10
+  source: text("source"), // "conversation", "crm_data", "user_explicit", "inferred"
+  relatedEntityId: uuid("related_entity_id"), // contact/deal/lead id if applicable
+  relatedEntityType: text("related_entity_type"), // "contact", "deal", "lead"
+  expiresAt: timestamp("expires_at"),
+  usageCount: integer("usage_count").default(0),
+  lastUsedAt: timestamp("last_used_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_client_portal_users_client_account").on(table.clientAccountId),
-  index("idx_client_portal_users_tenant").on(table.tenantId),
+}, (t) => [
+  index("idx_memories_tenant_agent").on(t.tenantId, t.agentType),
+  index("idx_memories_category").on(t.tenantId, t.agentType, t.category),
 ]);
 
-// Client Portal Sessions
-export const clientPortalSessions = pgTable("client_portal_sessions", {
-  id: text("id").primaryKey(),
-  clientUserId: varchar("client_user_id").notNull().references(() => clientPortalUsers.id, { onDelete: "cascade" }),
-  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_client_portal_sessions_client_user").on(table.clientUserId),
-  index("idx_client_portal_sessions_tenant").on(table.tenantId),
-]);
-
-// Client Project Access - Controls which projects a client can see
-export const clientProjectAccess = pgTable("client_project_access", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
-  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
-  accessLevel: text("access_level").default("read"),
-  grantedAt: timestamp("granted_at").defaultNow(),
-  grantedBy: varchar("granted_by").references(() => users.id),
-}, (table) => [
-  index("idx_client_project_access_tenant").on(table.tenantId),
-  index("idx_client_project_access_client").on(table.clientAccountId, table.projectId),
-  index("idx_client_project_access_project").on(table.projectId),
-]);
-
-// Client Invoice Access - Controls which invoices a client can see
-export const clientInvoiceAccess = pgTable("client_invoice_access", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
-  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
-  accessLevel: text("access_level").default("read"),
-  grantedAt: timestamp("granted_at").defaultNow(),
-  grantedBy: varchar("granted_by").references(() => users.id),
-}, (table) => [
-  index("idx_client_invoice_access_tenant").on(table.tenantId),
-  index("idx_client_invoice_access_client").on(table.clientAccountId, table.invoiceId),
-  index("idx_client_invoice_access_invoice").on(table.invoiceId),
-]);
-
-// Client Deliverables - Documents/files shared with clients
-export const clientDeliverables = pgTable("client_deliverables", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
-  projectId: varchar("project_id").references(() => projects.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  description: text("description"),
-  fileType: text("file_type"),
-  fileUrl: text("file_url").notNull(),
-  fileSize: integer("file_size"),
-  uploadedBy: varchar("uploaded_by").references(() => users.id),
-  status: text("status").default("available"),
-  downloadCount: integer("download_count").default(0),
-  lastDownloadedAt: timestamp("last_downloaded_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_client_deliverables_tenant").on(table.tenantId),
-  index("idx_client_deliverables_client").on(table.clientAccountId),
-  index("idx_client_deliverables_project").on(table.projectId),
-]);
-
-// Client Messages - Communication thread
-export const clientMessages = pgTable("client_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
-  threadId: varchar("thread_id"),
-  senderType: text("sender_type").notNull(),
-  senderId: varchar("sender_id").notNull(),
-  senderName: text("sender_name").notNull(),
-  message: text("message").notNull(),
-  attachments: jsonb("attachments").$type<{url: string; name: string; type: string}[]>().default([]),
-  isRead: boolean("is_read").default(false),
-  readAt: timestamp("read_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_client_messages_tenant").on(table.tenantId),
-  index("idx_client_messages_client").on(table.clientAccountId),
-  index("idx_client_messages_thread").on(table.threadId),
-]);
-
-// Client Notifications
-export const clientNotifications = pgTable("client_notifications", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
-  clientAccountId: varchar("client_account_id").notNull().references(() => clientAccounts.id, { onDelete: "cascade" }),
-  clientUserId: varchar("client_user_id").notNull().references(() => clientPortalUsers.id, { onDelete: "cascade" }),
-  type: text("type").notNull(),
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  linkUrl: text("link_url"),
-  isRead: boolean("is_read").default(false),
-  readAt: timestamp("read_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_client_notifications_tenant").on(table.tenantId),
-  index("idx_client_notifications_client_account").on(table.clientAccountId),
-  index("idx_client_notifications_client_user").on(table.clientUserId),
-]);
-
-// Schema exports for Client Portal
-export type ClientAccount = typeof clientAccounts.$inferSelect;
-export type InsertClientAccount = typeof clientAccounts.$inferInsert;
-export type ClientPortalUser = typeof clientPortalUsers.$inferSelect;
-export type InsertClientPortalUser = typeof clientPortalUsers.$inferInsert;
-export type ClientPortalSession = typeof clientPortalSessions.$inferSelect;
-export type InsertClientPortalSession = typeof clientPortalSessions.$inferInsert;
-export type ClientProjectAccess = typeof clientProjectAccess.$inferSelect;
-export type InsertClientProjectAccess = typeof clientProjectAccess.$inferInsert;
-export type ClientInvoiceAccess = typeof clientInvoiceAccess.$inferSelect;
-export type InsertClientInvoiceAccess = typeof clientInvoiceAccess.$inferInsert;
-export type ClientDeliverable = typeof clientDeliverables.$inferSelect;
-export type InsertClientDeliverable = typeof clientDeliverables.$inferInsert;
-export type ClientMessage = typeof clientMessages.$inferSelect;
-export type InsertClientMessage = typeof clientMessages.$inferInsert;
-export type ClientNotification = typeof clientNotifications.$inferSelect;
-export type InsertClientNotification = typeof clientNotifications.$inferInsert;
-
-// Insert schemas for validation
-export const insertClientAccountSchema = createInsertSchema(clientAccounts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertClientPortalUserSchema = createInsertSchema(clientPortalUsers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertClientPortalSessionSchema = createInsertSchema(clientPortalSessions).omit({
-  createdAt: true,
-});
-
-export const insertClientProjectAccessSchema = createInsertSchema(clientProjectAccess).omit({
-  id: true,
-  grantedAt: true,
-});
-
-export const insertClientInvoiceAccessSchema = createInsertSchema(clientInvoiceAccess).omit({
-  id: true,
-  grantedAt: true,
-});
-
-export const insertClientDeliverableSchema = createInsertSchema(clientDeliverables).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertClientMessageSchema = createInsertSchema(clientMessages).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertClientNotificationSchema = createInsertSchema(clientNotifications).omit({
-  id: true,
-  createdAt: true,
-});
-
-// Schema exports for A/B Testing
-export type AbTest = typeof abTests.$inferSelect;
-export type InsertAbTest = typeof abTests.$inferInsert;
-export type AbVariant = typeof abVariants.$inferSelect;
-export type InsertAbVariant = typeof abVariants.$inferInsert;
-export type AbSession = typeof abSessions.$inferSelect;
-export type InsertAbSession = typeof abSessions.$inferInsert;
-export type AbEvent = typeof abEvents.$inferSelect;
-export type InsertAbEvent = typeof abEvents.$inferInsert;
-export type AbConversion = typeof abConversions.$inferSelect;
-export type InsertAbConversion = typeof abConversions.$inferInsert;
-export type AbMetricsCache = typeof abMetricsCache.$inferSelect;
-export type InsertAbMetricsCache = typeof abMetricsCache.$inferInsert;
-
-// Insert schemas for validation
-export const insertAbTestSchema = createInsertSchema(abTests).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAbVariantSchema = createInsertSchema(abVariants).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAbSessionSchema = createInsertSchema(abSessions).omit({
-  id: true,
-  assignedAt: true,
-});
-
-export const insertAbEventSchema = createInsertSchema(abEvents).omit({
-  id: true,
-  timestamp: true,
-});
-
-export const insertAbConversionSchema = createInsertSchema(abConversions).omit({
-  id: true,
-  convertedAt: true,
-});
-
-export const insertAbMetricsCacheSchema = createInsertSchema(abMetricsCache).omit({
-  id: true,
-  calculatedAt: true,
-});
-
-// Schema exports for AI content
-export type AIContent = typeof aiContents.$inferSelect;
-export type InsertAIContent = typeof aiContents.$inferInsert;
-export type AICampaign = typeof aiCampaigns.$inferSelect;
-export type InsertAICampaign = typeof aiCampaigns.$inferInsert;
-export type AIUsage = typeof aiUsage.$inferSelect;
-export type InsertAIUsage = typeof aiUsage.$inferInsert;
-
-// Insert schemas for validation
-export const insertAIContentSchema = createInsertSchema(aiContents).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAICampaignSchema = createInsertSchema(aiCampaigns).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAIUsageSchema = createInsertSchema(aiUsage).omit({
-  id: true,
-  createdAt: true,
-});
-// ==================== RESOURCE MANAGEMENT ENHANCEMENT ====================
-
-// Team capacity planning - track employee capacity
-export const teamCapacity = pgTable("team_capacity", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  weekStartDate: date("week_start_date").notNull(), // Monday of the week
-  weeklyCapacityHours: integer("weekly_capacity_hours").default(40), // Default 40 hours/week
-  availableHours: integer("available_hours").notNull(), // After PTO and holidays
-  allocatedHours: integer("allocated_hours").default(0), // Hours assigned to projects
-  utilizationPercent: integer("utilization_percent").default(0), // allocated/available * 100
-  status: text("status").default("active"), // active, on_leave, unavailable
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_team_capacity_tenant").on(table.tenantId),
-  index("idx_team_capacity_user").on(table.userId),
-  index("idx_team_capacity_week").on(table.weekStartDate),
-]);
-
-// Employee skills for resource matching
-export const employeeSkills = pgTable("employee_skills", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  skillName: text("skill_name").notNull(), // JavaScript, Project Management, Design, etc.
-  skillCategory: text("skill_category").notNull(), // technical, soft_skills, domain_knowledge, tools
-  proficiencyLevel: integer("proficiency_level").notNull(), // 1-5 (1=beginner, 5=expert)
-  yearsOfExperience: integer("years_of_experience").default(0),
-  certifications: jsonb("certifications").$type<Array<{
-    name: string;
-    issuedBy: string;
-    issuedDate: string;
-    expiryDate?: string;
-  }>>().default([]),
-  lastUsedDate: date("last_used_date"),
-  endorsements: integer("endorsements").default(0), // Number of peer endorsements
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_employee_skills_tenant").on(table.tenantId),
-  index("idx_employee_skills_user").on(table.userId),
-  index("idx_employee_skills_name").on(table.skillName),
-  index("idx_employee_skills_category").on(table.skillCategory),
-]);
-
-// Resource forecasting for project planning
-export const resourceForecasts = pgTable("resource_forecasts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  forecastName: text("forecast_name").notNull(),
-  forecastPeriod: text("forecast_period").notNull(), // Q1-2025, Jan-2025, etc.
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  totalRequiredHours: integer("total_required_hours").default(0),
-  totalAvailableHours: integer("total_available_hours").default(0),
-  projectedUtilization: integer("projected_utilization").default(0), // Percentage
-  skillRequirements: jsonb("skill_requirements").$type<Array<{
-    skillName: string;
-    requiredHours: number;
-    availableHours: number;
-    gap: number; // Positive=surplus, Negative=shortage
-  }>>().default([]),
-  departmentBreakdown: jsonb("department_breakdown").$type<Record<string, {
-    requiredHours: number;
-    availableHours: number;
-  }>>().default({}),
-  recommendations: jsonb("recommendations").$type<Array<{
-    type: string; // hire, train, reallocate
-    priority: string; // high, medium, low
-    description: string;
-    estimatedImpact: string;
-  }>>().default([]),
-  status: text("status").default("draft"), // draft, active, archived
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_resource_forecasts_tenant").on(table.tenantId),
-  index("idx_resource_forecasts_period").on(table.forecastPeriod),
-  index("idx_resource_forecasts_status").on(table.status),
-]);
-
-// Workload snapshots for historical analytics
-export const workloadSnapshots = pgTable("workload_snapshots", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  snapshotDate: date("snapshot_date").notNull(),
-  totalAllocatedHours: integer("total_allocated_hours").default(0),
-  totalCapacityHours: integer("total_capacity_hours").default(40),
-  utilizationPercent: integer("utilization_percent").default(0),
-  activeProjectsCount: integer("active_projects_count").default(0),
-  activeTasksCount: integer("active_tasks_count").default(0),
-  overdueTasksCount: integer("overdue_tasks_count").default(0),
-  workloadStatus: text("workload_status").default("balanced"), // underutilized, balanced, overallocated, critical
-  projectBreakdown: jsonb("project_breakdown").$type<Array<{
-    projectId: string;
-    projectName: string;
-    allocatedHours: number;
-    utilizationPercent: number;
-  }>>().default([]),
-  skillUtilization: jsonb("skill_utilization").$type<Record<string, number>>().default({}), // skill -> hours used
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_workload_snapshots_tenant").on(table.tenantId),
-  index("idx_workload_snapshots_user").on(table.userId),
-  index("idx_workload_snapshots_date").on(table.snapshotDate),
-  index("idx_workload_snapshots_status").on(table.workloadStatus),
-]);
-
-// Zod schemas and types for resource management
-export const insertTeamCapacitySchema = createInsertSchema(teamCapacity).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertTeamCapacity = z.infer<typeof insertTeamCapacitySchema>;
-export type TeamCapacity = typeof teamCapacity.$inferSelect;
-
-export const insertEmployeeSkillSchema = createInsertSchema(employeeSkills).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertEmployeeSkill = z.infer<typeof insertEmployeeSkillSchema>;
-export type EmployeeSkill = typeof employeeSkills.$inferSelect;
-
-export const insertResourceForecastSchema = createInsertSchema(resourceForecasts).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertResourceForecast = z.infer<typeof insertResourceForecastSchema>;
-export type ResourceForecast = typeof resourceForecasts.$inferSelect;
-
-export const insertWorkloadSnapshotSchema = createInsertSchema(workloadSnapshots).omit({ id: true, createdAt: true });
-export type InsertWorkloadSnapshot = z.infer<typeof insertWorkloadSnapshotSchema>;
-export type WorkloadSnapshot = typeof workloadSnapshots.$inferSelect;
-
-// ============================
-// AI-POWERED FUNNEL BUILDER
-// ============================
-
-// AI generation metadata - centralized tracking for all AI content
-export const aiGenerations = pgTable("ai_generations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  provider: text("provider").notNull(), // argilette, anthropic, google, etc.
-  model: text("model").notNull(), // gpt-4o, claude-sonnet-4, etc.
-  tokensUsed: integer("tokens_used"),
-  durationMs: integer("duration_ms"),
-  prompt: text("prompt"),
-  generationType: text("generation_type").notNull(), // funnel, landing_page, ad_copy, email, automation
-  generatedBy: varchar("generated_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_ai_generations_tenant").on(table.tenantId),
-  index("idx_ai_generations_type").on(table.generationType),
-]);
-
-// Main funnel container
-export const funnelProjects = pgTable("funnel_projects", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  offerDescription: text("offer_description"), // Original offer input for AI generation
-  status: text("status").default("draft"), // draft, active, paused, archived
-  isTemplate: boolean("is_template").default(false),
-  templateCategory: text("template_category"), // e-commerce, saas, consulting, etc.
-  activeVersionId: varchar("active_version_id"), // References funnel_versions
-  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_funnel_projects_tenant").on(table.tenantId),
-  index("idx_funnel_projects_status").on(table.status),
-  index("idx_funnel_projects_template").on(table.isTemplate),
-]);
-
-// Funnel versions for cloning and version control
-export const funnelVersions = pgTable("funnel_versions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  funnelId: varchar("funnel_id").references(() => funnelProjects.id).notNull(),
-  versionNumber: integer("version_number").notNull(),
-  sourceFunnelId: varchar("source_funnel_id"), // For cloned funnels
-  clonedFromVersionId: varchar("cloned_from_version_id"),
-  versionName: text("version_name"),
-  settings: jsonb("settings").$type<{
-    colors?: Record<string, string>;
-    fonts?: Record<string, string>;
-    spacing?: Record<string, string>;
-    tracking?: Record<string, string>;
-  }>().default({}),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_funnel_versions_funnel").on(table.funnelId),
-  index("idx_funnel_versions_number").on(table.funnelId, table.versionNumber),
-]);
-
-// Funnel steps - conversion stages
-export const funnelSteps = pgTable("funnel_steps", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
-  name: text("name").notNull(),
-  stepType: text("step_type").notNull(), // landing, email, phone, meeting, close, thank_you
-  orderIndex: integer("order_index").notNull(),
-  description: text("description"),
-  crmLinkage: jsonb("crm_linkage").$type<{
-    targetType?: 'contact' | 'lead' | 'deal' | 'task';
-    targetId?: string;
-    stageName?: string;
-  }>().default({}),
-  conversionGoal: text("conversion_goal"), // form_submit, call_scheduled, purchase, etc.
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_funnel_steps_version").on(table.versionId),
-  index("idx_funnel_steps_order").on(table.versionId, table.orderIndex),
-]);
-
-// Landing pages per step
-export const landingPages = pgTable("landing_pages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  stepId: varchar("step_id").references(() => funnelSteps.id).notNull(),
-  headline: text("headline").notNull(),
-  subheadline: text("subheadline"),
-  heroContent: text("hero_content"),
-  heroImageUrl: text("hero_image_url"),
-  benefits: jsonb("benefits").$type<Array<{
-    title: string;
-    description: string;
-  }>>().default([]),
-  testimonials: jsonb("testimonials").$type<Array<{
-    name: string;
-    role: string;
-    content: string;
-    rating?: number;
-  }>>().default([]),
-  ctaText: text("cta_text").notNull(),
-  ctaUrl: text("cta_url"),
-  faqs: jsonb("faqs").$type<Array<{
-    question: string;
-    answer: string;
-  }>>().default([]),
-  formFields: jsonb("form_fields").$type<Array<{
-    name: string;
-    type: string;
-    label: string;
-    required?: boolean;
-  }>>().default([]),
-  stylePreset: text("style_preset"),
-  customCss: text("custom_css"),
-  customScripts: text("custom_scripts"),
-  metadata: jsonb("metadata").$type<{
-    seoTitle?: string;
-    seoDescription?: string;
-    openGraphImage?: string;
-  }>().default({}),
-  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_landing_pages_step").on(table.stepId),
-]);
-
-// Landing page version history
-export const landingPageVersions = pgTable("landing_page_versions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  landingPageId: varchar("landing_page_id").references(() => landingPages.id).notNull(),
-  versionNumber: integer("version_number").notNull(),
-  headline: text("headline").notNull(),
-  content: jsonb("content").$type<any>().default({}),
-  editedBy: varchar("edited_by").references(() => users.id),
-  editSummary: text("edit_summary"),
-  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_landing_page_versions_page").on(table.landingPageId),
-]);
-
-// Ad copy for multiple platforms (each variant is a separate record)
-export const funnelAds = pgTable("funnel_ads", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
-  platform: text("platform").notNull(), // facebook, google, linkedin, instagram, twitter
-  adType: text("ad_type"), // single_image, carousel, video, text
-  variantName: text("variant_name"),
-  headline: text("headline").notNull(),
-  bodyText: text("body_text").notNull(),
-  ctaText: text("cta_text").notNull(),
-  targetUrl: text("target_url"),
-  imageUrl: text("image_url"),
-  targeting: jsonb("targeting").$type<Record<string, any>>().default({}),
-  targetAudience: text("target_audience"),
-  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_funnel_ads_version").on(table.versionId),
-  index("idx_funnel_ads_platform").on(table.platform),
-]);
-
-// Email sequences
-export const funnelEmails = pgTable("funnel_emails", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
-  sequenceName: text("sequence_name").notNull(),
-  sequenceOrder: integer("sequence_order").notNull(),
-  delayDays: integer("delay_days").default(0),
-  subjectLine: text("subject_line").notNull(),
-  previewText: text("preview_text"),
-  bodyHtml: text("body_html").notNull(),
-  bodyText: text("body_text"),
-  ctaText: text("cta_text"),
-  ctaUrl: text("cta_url"),
-  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_funnel_emails_version").on(table.versionId),
-  index("idx_funnel_emails_sequence").on(table.versionId, table.sequenceOrder),
-]);
-
-// Automation workflows
-export const automationWorkflows = pgTable("automation_workflows", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  triggerType: text("trigger_type").notNull(), // form_submit, page_visit, email_click, time_delay, deal_stage
-  triggerConditions: jsonb("trigger_conditions").$type<Record<string, any>>().default({}),
-  actions: jsonb("actions").$type<Array<Record<string, any>>>().default([]).notNull(),
-  isActive: boolean("is_active").default(true),
-  aiGenerationId: varchar("ai_generation_id").references(() => aiGenerations.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_funnel_workflows_version").on(table.versionId),
-  index("idx_funnel_workflows_active").on(table.isActive),
-]);
-
-// Workflow steps
-export const workflowSteps = pgTable("workflow_steps", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  workflowId: varchar("workflow_id").references(() => automationWorkflows.id).notNull(),
-  name: text("name").notNull(),
-  stepType: text("step_type").notNull(), // action, condition, wait
-  orderIndex: integer("order_index").notNull(),
-  conditions: jsonb("conditions").$type<Array<{
-    field: string;
-    operator: string;
-    value: any;
-  }>>().default([]),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_workflow_steps_workflow").on(table.workflowId),
-  index("idx_workflow_steps_order").on(table.workflowId, table.orderIndex),
-]);
-
-// Workflow actions
-export const workflowActions = pgTable("workflow_actions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  stepId: varchar("step_id").references(() => workflowSteps.id).notNull(),
-  actionType: text("action_type").notNull(), // send_email, create_task, update_deal, create_contact, send_sms, webhook
-  targetType: text("target_type"), // contact, deal, task, lead
-  targetId: varchar("target_id"),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  dealId: varchar("deal_id").references(() => deals.id),
-  taskTemplateId: varchar("task_template_id").references(() => tasks.id),
-  config: jsonb("config").$type<Record<string, any>>().default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_workflow_actions_step").on(table.stepId),
-  index("idx_workflow_actions_contact").on(table.contactId),
-  index("idx_workflow_actions_deal").on(table.dealId),
-]);
-
-// Published funnels - live deployments
-export const funnelPublications = pgTable("funnel_publications", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  funnelId: varchar("funnel_id").references(() => funnelProjects.id).notNull(),
-  versionId: varchar("version_id").references(() => funnelVersions.id).notNull(),
-  publishedUrl: text("published_url").notNull().unique(),
-  customDomain: text("custom_domain"),
-  environment: text("environment").default("production"), // production, staging, preview
-  status: text("status").default("active"), // active, inactive, archived
-  publishedBy: varchar("published_by").references(() => users.id),
-  publishedAt: timestamp("published_at").defaultNow(),
-  lastDeployedAt: timestamp("last_deployed_at"),
-}, (table) => [
-  index("idx_funnel_publications_funnel").on(table.funnelId),
-  index("idx_funnel_publications_version").on(table.versionId),
-  index("idx_funnel_publications_status").on(table.status),
-]);
-
-// Analytics - step metrics
-export const funnelStepMetrics = pgTable("funnel_step_metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  stepId: varchar("step_id").references(() => funnelSteps.id).notNull(),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  date: date("date").notNull(),
-  visitors: integer("visitors").default(0),
-  conversions: integer("conversions").default(0),
-  revenue: decimal("revenue", { precision: 12, scale: 2 }).default("0"),
-  conversionRate: decimal("conversion_rate", { precision: 5, scale: 2 }),
-  attribution: jsonb("attribution").$type<Record<string, any>>().default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_funnel_step_metrics_step").on(table.stepId),
-  index("idx_funnel_step_metrics_date").on(table.date),
-  index("idx_funnel_step_metrics_tenant").on(table.tenantId),
-]);
-
-// Conversion events - granular tracking
-export const funnelConversionEvents = pgTable("funnel_conversion_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  stepId: varchar("step_id").references(() => funnelSteps.id).notNull(),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  eventType: text("event_type").notNull(), // page_view, form_submit, button_click, conversion
-  sessionId: text("session_id"),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  referrer: text("referrer"),
-  revenue: decimal("revenue", { precision: 12, scale: 2 }),
-  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_funnel_conversion_events_step").on(table.stepId),
-  index("idx_funnel_conversion_events_contact").on(table.contactId),
-  index("idx_funnel_conversion_events_type").on(table.eventType),
-  index("idx_funnel_conversion_events_tenant").on(table.tenantId),
-  index("idx_funnel_conversion_events_created").on(table.createdAt),
-]);
-
-// Zod schemas and types for funnel system
-export const insertAiGenerationSchema = createInsertSchema(aiGenerations).omit({ id: true, createdAt: true });
-export type InsertAiGeneration = z.infer<typeof insertAiGenerationSchema>;
-export type AiGeneration = typeof aiGenerations.$inferSelect;
-
-export const insertFunnelProjectSchema = createInsertSchema(funnelProjects).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertFunnelProject = z.infer<typeof insertFunnelProjectSchema>;
-export type FunnelProject = typeof funnelProjects.$inferSelect;
-
-export const insertFunnelVersionSchema = createInsertSchema(funnelVersions).omit({ id: true, createdAt: true });
-export type InsertFunnelVersion = z.infer<typeof insertFunnelVersionSchema>;
-export type FunnelVersion = typeof funnelVersions.$inferSelect;
-
-export const insertFunnelStepSchema = createInsertSchema(funnelSteps).omit({ id: true, createdAt: true });
-export type InsertFunnelStep = z.infer<typeof insertFunnelStepSchema>;
-export type FunnelStep = typeof funnelSteps.$inferSelect;
-
-export const insertLandingPageSchema = createInsertSchema(landingPages).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertLandingPage = z.infer<typeof insertLandingPageSchema>;
-export type LandingPage = typeof landingPages.$inferSelect;
-
-export const insertLandingPageVersionSchema = createInsertSchema(landingPageVersions).omit({ id: true, createdAt: true });
-export type InsertLandingPageVersion = z.infer<typeof insertLandingPageVersionSchema>;
-export type LandingPageVersion = typeof landingPageVersions.$inferSelect;
-
-export const insertFunnelAdSchema = createInsertSchema(funnelAds).omit({ id: true, createdAt: true });
-export type InsertFunnelAd = z.infer<typeof insertFunnelAdSchema>;
-export type FunnelAd = typeof funnelAds.$inferSelect;
-
-export const insertFunnelEmailSchema = createInsertSchema(funnelEmails).omit({ id: true, createdAt: true });
-export type InsertFunnelEmail = z.infer<typeof insertFunnelEmailSchema>;
-export type FunnelEmail = typeof funnelEmails.$inferSelect;
-
-export const insertAutomationWorkflowSchema = createInsertSchema(automationWorkflows).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertAutomationWorkflow = z.infer<typeof insertAutomationWorkflowSchema>;
-export type AutomationWorkflow = typeof automationWorkflows.$inferSelect;
-
-export const insertWorkflowStepSchema = createInsertSchema(workflowSteps).omit({ id: true, createdAt: true });
-export type InsertWorkflowStep = z.infer<typeof insertWorkflowStepSchema>;
-export type WorkflowStep = typeof workflowSteps.$inferSelect;
-
-export const insertWorkflowActionSchema = createInsertSchema(workflowActions).omit({ id: true, createdAt: true });
-export type InsertWorkflowAction = z.infer<typeof insertWorkflowActionSchema>;
-export type WorkflowAction = typeof workflowActions.$inferSelect;
-
-export const insertFunnelPublicationSchema = createInsertSchema(funnelPublications).omit({ id: true, publishedAt: true });
-export type InsertFunnelPublication = z.infer<typeof insertFunnelPublicationSchema>;
-export type FunnelPublication = typeof funnelPublications.$inferSelect;
-
-export const insertFunnelStepMetricSchema = createInsertSchema(funnelStepMetrics).omit({ id: true, createdAt: true });
-export type InsertFunnelStepMetric = z.infer<typeof insertFunnelStepMetricSchema>;
-export type FunnelStepMetric = typeof funnelStepMetrics.$inferSelect;
-
-export const insertFunnelConversionEventSchema = createInsertSchema(funnelConversionEvents).omit({ id: true, createdAt: true });
-export type InsertFunnelConversionEvent = z.infer<typeof insertFunnelConversionEventSchema>;
-export type FunnelConversionEvent = typeof funnelConversionEvents.$inferSelect;
-
-// Re-export SEO schemas from server/argilette/seo-schema.ts for client use
-export { 
-  keywords,
-  insertKeywordSchema,
-  type Keyword,
-  type InsertKeyword,
-  backlinks,
-  insertBacklinkSchema,
-  type Backlink,
-  type InsertBacklink,
-  competitors,
-  insertCompetitorSchema,
-  type Competitor,
-  type InsertCompetitor,
-  seoIssues,
-  insertSeoIssueSchema,
-  type SeoIssue,
-  type InsertSeoIssue,
-  keywordRankHistory,
-  insertKeywordRankHistorySchema,
-  type KeywordRankHistory,
-  type InsertKeywordRankHistory,
-  competitorRankSnapshots,
-  insertCompetitorRankSnapshotSchema,
-  type CompetitorRankSnapshot,
-  type InsertCompetitorRankSnapshot,
-  auditScans,
-  insertAuditScanSchema,
-  type AuditScan,
-  type InsertAuditScan,
-  pageMetrics,
-  insertPageMetricSchema,
-  type PageMetric,
-  type InsertPageMetric,
-  localRankings,
-  insertLocalRankingSchema,
-  type LocalRanking,
-  type InsertLocalRanking,
-  googleBusinessProfiles,
-  insertGoogleBusinessProfileSchema,
-  type GoogleBusinessProfile,
-  type InsertGoogleBusinessProfile,
-  localCitations,
-  insertLocalCitationSchema,
-  type LocalCitation,
-  type InsertLocalCitation,
-  aiSearchPlatforms,
-  insertAiSearchPlatformSchema,
-  type AiSearchPlatform,
-  type InsertAiSearchPlatform,
-  aiBrandMentions,
-  insertAiBrandMentionSchema,
-  type AiBrandMention,
-  type InsertAiBrandMention,
-  aiCitations,
-  insertAiCitationSchema,
-  type AiCitation,
-  type InsertAiCitation,
-  aiSentimentAnalysis,
-  insertAiSentimentAnalysisSchema,
-  type AiSentimentAnalysis,
-  type InsertAiSentimentAnalysis,
-  socialSearchMetrics,
-  insertSocialSearchMetricSchema,
-  type SocialSearchMetric,
-  type InsertSocialSearchMetric,
-  multiPlatformPerformance,
-  insertMultiPlatformPerformanceSchema,
-  type MultiPlatformPerformance,
-  type InsertMultiPlatformPerformance
-} from "../server/argilette/seo-schema";
-
-// ========================================
-// AI EMPLOYEE SYSTEM
-// ========================================
-
-// Activities - Log all customer interactions across channels
-export const activities = pgTable("activities", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  dealId: varchar("deal_id"), // Note: deals.id is actually VARCHAR in database
-  type: text("type").notNull(), // email, chat, social, call, linkedin, twitter, facebook
-  channel: text("channel").notNull(), // inbound, outbound
-  direction: text("direction").notNull(), // inbound, outbound
-  content: text("content").notNull(),
-  meta: jsonb("meta").$type<{
-    postId?: string;
-    threadId?: string;
-    sentiment?: string;
-    intent?: string;
-    platform?: string;
-    attachments?: string[];
-  }>().default({}),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_activities_tenant").on(table.tenantId),
-  index("idx_activities_contact").on(table.contactId),
-  index("idx_activities_deal").on(table.dealId),
-  index("idx_activities_type").on(table.type),
-]);
-
-// AI Operations - Track AI jobs, rate limiting, and audit logs
-export const aiOperations = pgTable("ai_operations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  operationType: text("operation_type").notNull(), // social_post, email_reply, lead_score, chat_response
-  status: text("status").default("pending"), // pending, processing, completed, failed
-  priority: integer("priority").default(5), // 1-10, higher = more urgent
-  input: jsonb("input").$type<Record<string, any>>().default({}),
-  output: jsonb("output").$type<Record<string, any>>(),
-  error: text("error"),
-  tokensUsed: integer("tokens_used"),
-  processingTime: integer("processing_time"), // milliseconds
-  scheduledFor: timestamp("scheduled_for"),
-  startedAt: timestamp("started_at"),
-  completedAt: timestamp("completed_at"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_ai_ops_tenant").on(table.tenantId),
-  index("idx_ai_ops_status").on(table.status),
-  index("idx_ai_ops_type").on(table.operationType),
-  index("idx_ai_ops_scheduled").on(table.scheduledFor),
-]);
-
-// Social Posts - AI-generated and scheduled social media content
-export const socialPosts = pgTable("social_posts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  platform: text("platform").notNull(), // linkedin, twitter, facebook, instagram
-  content: text("content").notNull(),
-  mediaUrls: text("media_urls").array().default([]),
-  hashtags: text("hashtags").array().default([]),
-  status: text("status").default("draft"), // draft, scheduled, published, failed
-  scheduledFor: timestamp("scheduled_for"),
-  publishedAt: timestamp("published_at"),
-  externalPostId: text("external_post_id"), // Platform's post ID
-  analytics: jsonb("analytics").$type<{
-    impressions?: number;
-    engagement?: number;
-    clicks?: number;
-    shares?: number;
-    comments?: number;
-    likes?: number;
-  }>().default({}),
-  aiGenerationId: varchar("ai_generation_id").references(() => aiOperations.id),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_social_posts_tenant").on(table.tenantId),
-  index("idx_social_posts_platform").on(table.platform),
-  index("idx_social_posts_status").on(table.status),
-  index("idx_social_posts_scheduled").on(table.scheduledFor),
-]);
-
-// Email Threads - Track email conversations for context
-export const emailThreads = pgTable("email_threads", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id).notNull(),
-  dealId: varchar("deal_id"), // Note: deals.id is actually VARCHAR in database
-  subject: text("subject").notNull(),
-  fromEmail: text("from_email").notNull(),
-  toEmail: text("to_email").notNull(),
-  ccEmails: text("cc_emails").array().default([]),
-  body: text("body").notNull(),
-  direction: text("direction").notNull(), // inbound, outbound
-  intent: text("intent"), // positive, neutral, objection, pricing, unsubscribe, ooo, bounce
-  sentiment: text("sentiment"), // positive, neutral, negative
-  aiProcessed: boolean("ai_processed").default(false),
-  aiResponse: text("ai_response"),
-  threadId: text("thread_id"), // External email thread ID
-  inReplyTo: varchar("in_reply_to").references(() => emailThreads.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_email_threads_tenant").on(table.tenantId),
-  index("idx_email_threads_contact").on(table.contactId),
-  index("idx_email_threads_deal").on(table.dealId),
-  index("idx_email_threads_intent").on(table.intent),
-  index("idx_email_threads_thread").on(table.threadId),
-]);
-
-// Chat Sessions - Track website chat conversations
-export const chatSessions = pgTable("chat_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  sessionId: text("session_id").notNull().unique(),
-  status: text("status").default("active"), // active, qualified, converted, abandoned
-  leadQuality: integer("lead_quality").default(0), // 0-100 AI score
-  messages: jsonb("messages").$type<Array<{
-    role: 'user' | 'bot';
-    content: string;
-    timestamp: string;
-  }>>().default([]),
-  qualificationData: jsonb("qualification_data").$type<{
-    pain?: string;
-    goal?: string;
-    timeframe?: string;
-    budget?: string;
-    authority?: string;
-  }>().default({}),
-  lastMessageAt: timestamp("last_message_at").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-  closedAt: timestamp("closed_at"),
-}, (table) => [
-  index("idx_chat_sessions_tenant").on(table.tenantId),
-  index("idx_chat_sessions_contact").on(table.contactId),
-  index("idx_chat_sessions_status").on(table.status),
-]);
-
-// AI Employee Schemas
-export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
-export const insertAiOperationSchema = createInsertSchema(aiOperations).omit({ id: true, createdAt: true });
-export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertEmailThreadSchema = createInsertSchema(emailThreads).omit({ id: true, createdAt: true });
-export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({ id: true, createdAt: true });
-
-// AI Employee Types
-export type Activity = typeof activities.$inferSelect;
-export type AiOperation = typeof aiOperations.$inferSelect;
-export type SocialPost = typeof socialPosts.$inferSelect;
-export type EmailThread = typeof emailThreads.$inferSelect;
-export type ChatSession = typeof chatSessions.$inferSelect;
-
-export type InsertActivity = z.infer<typeof insertActivitySchema>;
-export type InsertAiOperation = z.infer<typeof insertAiOperationSchema>;
-export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
-export type InsertEmailThread = z.infer<typeof insertEmailThreadSchema>;
-export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
-
-// ============================================
-// APOLLO.IO-MATCHING FEATURES
-// ============================================
-
-// Email Sequence Templates - Multi-step automated email campaigns
-export const sequenceTemplates = pgTable("sequence_templates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  category: text("category"), // outreach, nurture, follow-up, re-engagement
-  isActive: boolean("is_active").default(true),
-  settings: jsonb("settings").$type<{
-    sendingWindow?: { startHour: number; endHour: number; timezone: string };
-    skipWeekends?: boolean;
-    trackOpens?: boolean;
-    trackClicks?: boolean;
-    stopOnReply?: boolean;
-    stopOnMeeting?: boolean;
-    dailyLimit?: number;
-  }>().default({}),
-  stats: jsonb("stats").$type<{
-    totalEnrolled?: number;
-    activeEnrollments?: number;
-    completed?: number;
-    openRate?: number;
-    clickRate?: number;
-    replyRate?: number;
-    bounceRate?: number;
-  }>().default({}),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_seq_templates_tenant").on(table.tenantId),
-  index("idx_seq_templates_active").on(table.isActive),
-]);
-
-// Sequence Steps - Individual steps in a sequence
-export const sequenceSteps = pgTable("sequence_steps", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  sequenceId: varchar("sequence_id").references(() => sequenceTemplates.id).notNull(),
-  stepNumber: integer("step_number").notNull(),
-  stepType: text("step_type").notNull(), // email, linkedin_view, linkedin_connect, linkedin_message, call, manual_task, wait
-  name: text("name"),
-  delayDays: integer("delay_days").default(1),
-  delayHours: integer("delay_hours").default(0),
-  // Email content
-  subject: text("subject"),
-  body: text("body"),
-  // A/B Testing
-  variantA: jsonb("variant_a").$type<{ subject?: string; body?: string }>(),
-  variantB: jsonb("variant_b").$type<{ subject?: string; body?: string }>(),
-  abTestEnabled: boolean("ab_test_enabled").default(false),
-  abWinner: text("ab_winner"), // a, b, or null if not yet determined
-  // Conditional logic
-  conditions: jsonb("conditions").$type<{
-    skipIfOpened?: boolean;
-    skipIfClicked?: boolean;
-    skipIfReplied?: boolean;
-    customConditions?: Array<{ field: string; operator: string; value: string }>;
-  }>().default({}),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_seq_steps_sequence").on(table.sequenceId),
-  index("idx_seq_steps_number").on(table.stepNumber),
-]);
-
-// Sequence Enrollments - Contacts enrolled in sequences
-export const sequenceEnrollments = pgTable("sequence_enrollments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  sequenceId: varchar("sequence_id").references(() => sequenceTemplates.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id).notNull(),
-  status: text("status").default("active"), // active, paused, completed, bounced, replied, unsubscribed, manually_removed
-  currentStepId: varchar("current_step_id").references(() => sequenceSteps.id),
-  currentStepNumber: integer("current_step_number").default(1),
-  nextActionAt: timestamp("next_action_at"),
-  enrolledBy: varchar("enrolled_by").references(() => users.id),
-  stats: jsonb("stats").$type<{
-    emailsSent?: number;
-    opens?: number;
-    clicks?: number;
-    replies?: number;
-    bounces?: number;
-  }>().default({}),
-  pausedAt: timestamp("paused_at"),
-  completedAt: timestamp("completed_at"),
-  pauseReason: text("pause_reason"),
-  enrolledAt: timestamp("enrolled_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_seq_enrollments_tenant").on(table.tenantId),
-  index("idx_seq_enrollments_sequence").on(table.sequenceId),
-  index("idx_seq_enrollments_contact").on(table.contactId),
-  index("idx_seq_enrollments_status").on(table.status),
-  index("idx_seq_enrollments_next_action").on(table.nextActionAt),
-]);
-
-// Sequence Events - Track all events in sequences
-export const sequenceEvents = pgTable("sequence_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  enrollmentId: varchar("enrollment_id").references(() => sequenceEnrollments.id).notNull(),
-  stepId: varchar("step_id").references(() => sequenceSteps.id),
-  eventType: text("event_type").notNull(), // email_sent, email_opened, email_clicked, email_replied, email_bounced, linkedin_sent, call_made, task_completed
-  variant: text("variant"), // a, b (for A/B testing)
-  metadata: jsonb("metadata").$type<{
-    subject?: string;
-    linkClicked?: string;
-    openCount?: number;
-    deviceType?: string;
-    location?: string;
-  }>(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_seq_events_tenant").on(table.tenantId),
-  index("idx_seq_events_enrollment").on(table.enrollmentId),
-  index("idx_seq_events_type").on(table.eventType),
-  index("idx_seq_events_created").on(table.createdAt),
-]);
-
-// Engagement Events - Track all contact engagement for intent signals
-export const engagementEvents = pgTable("engagement_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  accountId: varchar("account_id").references(() => accounts.id),
-  eventType: text("event_type").notNull(), // email_open, email_click, page_view, form_submit, download, meeting_booked, demo_request
-  source: text("source"), // email, website, ad, social, direct
-  channel: text("channel"), // email, linkedin, twitter, website, phone
-  score: integer("score").default(1), // Weight for intent scoring
-  metadata: jsonb("metadata").$type<{
-    url?: string;
-    pageTitle?: string;
-    referrer?: string;
-    duration?: number;
-    emailSubject?: string;
-    campaignId?: string;
-    formId?: string;
-    downloadAsset?: string;
-    ipAddress?: string;
-    userAgent?: string;
-    location?: { city?: string; region?: string; country?: string };
-  }>(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_engagement_tenant").on(table.tenantId),
-  index("idx_engagement_contact").on(table.contactId),
-  index("idx_engagement_account").on(table.accountId),
-  index("idx_engagement_type").on(table.eventType),
-  index("idx_engagement_created").on(table.createdAt),
-]);
-
-// Intent Scores - Aggregated buyer intent scores per account
-export const intentScores = pgTable("intent_scores", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  accountId: varchar("account_id").references(() => accounts.id),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  overallScore: integer("overall_score").default(0), // 0-100
-  scoreBreakdown: jsonb("score_breakdown").$type<{
-    emailEngagement?: number;
-    websiteActivity?: number;
-    contentDownloads?: number;
-    socialEngagement?: number;
-    meetingIntent?: number;
-    buyingSignals?: number;
-  }>().default({}),
-  trend: text("trend"), // rising, stable, declining
-  lastActivityAt: timestamp("last_activity_at"),
-  signalCount: integer("signal_count").default(0),
-  topSignals: jsonb("top_signals").$type<Array<{
-    type: string;
-    description: string;
-    score: number;
-    timestamp: string;
-  }>>().default([]),
-  calculatedAt: timestamp("calculated_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_intent_scores_tenant").on(table.tenantId),
-  index("idx_intent_scores_account").on(table.accountId),
-  index("idx_intent_scores_contact").on(table.contactId),
-  index("idx_intent_scores_overall").on(table.overallScore),
-]);
-
-// Contact Enrichment Jobs - Track enrichment requests
-export const enrichmentJobs = pgTable("enrichment_jobs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  accountId: varchar("account_id").references(() => accounts.id),
-  jobType: text("job_type").notNull(), // contact_enrich, company_enrich, email_find, email_validate, phone_find
-  status: text("status").default("pending"), // pending, processing, completed, failed
-  provider: text("provider"), // dataforseo, clearbit, zoominfo, apollo, internal
-  inputData: jsonb("input_data").$type<{
-    email?: string;
-    domain?: string;
-    linkedinUrl?: string;
-    name?: string;
-    company?: string;
-  }>(),
-  resultData: jsonb("result_data").$type<{
-    // Contact data
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-    directDial?: string;
-    mobilePhone?: string;
-    linkedinUrl?: string;
-    title?: string;
-    seniority?: string;
-    department?: string;
-    // Company data
-    companyName?: string;
-    industry?: string;
-    employeeCount?: number;
-    revenue?: string;
-    founded?: number;
-    website?: string;
-    description?: string;
-    technologies?: string[];
-    location?: { city?: string; state?: string; country?: string };
-    socialProfiles?: { linkedin?: string; twitter?: string; facebook?: string };
-  }>(),
-  confidence: real("confidence"), // 0-1 confidence score
-  creditsUsed: integer("credits_used").default(0),
-  errorMessage: text("error_message"),
-  startedAt: timestamp("started_at"),
-  completedAt: timestamp("completed_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_enrich_jobs_tenant").on(table.tenantId),
-  index("idx_enrich_jobs_contact").on(table.contactId),
-  index("idx_enrich_jobs_status").on(table.status),
-  index("idx_enrich_jobs_type").on(table.jobType),
-]);
-
-// B2B Prospect Database - Cached prospect data
-export const prospectDatabase = pgTable("prospect_database", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  // Personal info
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  fullName: text("full_name"),
-  email: text("email"),
-  emailVerified: boolean("email_verified").default(false),
-  emailVerifiedAt: timestamp("email_verified_at"),
-  phone: text("phone"),
-  directDial: text("direct_dial"),
-  mobilePhone: text("mobile_phone"),
-  linkedinUrl: text("linkedin_url"),
-  twitterUrl: text("twitter_url"),
-  // Professional info
+// Conversation sessions
+export const agentSessions = pgTable("agent_sessions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  agentType: text("agent_type").notNull(),
   title: text("title"),
-  seniority: text("seniority"), // c_level, vp, director, manager, senior, entry
-  department: text("department"), // sales, marketing, engineering, hr, finance, operations
-  // Company info
-  companyName: text("company_name"),
-  companyDomain: text("company_domain"),
-  companyLinkedin: text("company_linkedin"),
+  summary: text("summary"), // AI-generated summary of the session
+  messageCount: integer("message_count").default(0),
+  tokensUsed: integer("tokens_used").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("idx_sessions_tenant_agent").on(t.tenantId, t.agentType),
+  index("idx_sessions_user").on(t.userId),
+]);
+
+// Individual messages in sessions
+export const agentMessages = pgTable("agent_messages", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: uuid("session_id").references(() => agentSessions.id, { onDelete: "cascade" }).notNull(),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  role: text("role").notNull(), // "user" | "assistant"
+  content: text("content").notNull(),
+  tokensUsed: integer("tokens_used").default(0),
+  // Tool calls made during this message
+  toolCalls: jsonb("tool_calls").$type<Array<{ tool: string; input: any; output: any }>>().default([]),
+  // Memories triggered during this message
+  memoriesUsed: jsonb("memories_used").$type<string[]>().default([]),
+  // New memories created from this message
+  memoriesCreated: jsonb("memories_created").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("idx_messages_session").on(t.sessionId),
+]);
+
+// Agent-generated tasks (agents can create tasks autonomously)
+export const agentTasks = pgTable("agent_tasks", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  agentType: text("agent_type").notNull(),
+  sessionId: uuid("session_id").references(() => agentSessions.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").default("pending"), // pending, in_progress, completed, failed
+  priority: text("priority").default("medium"),
+  result: text("result"), // outcome/result when completed
+  assignedToUserId: uuid("assigned_to_user_id").references(() => users.id),
+  dueAt: timestamp("due_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("idx_agent_tasks_tenant").on(t.tenantId),
+]);
+
+// Agent lead generation results
+export const agentLeadGenResults = pgTable("agent_lead_gen_results", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  sessionId: uuid("session_id").references(() => agentSessions.id),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  email: text("email"),
+  company: text("company"),
+  jobTitle: text("job_title"),
+  phone: text("phone"),
+  source: text("source"), // "linkedin_scrape", "website_visitor", "ai_prospected", "referral_chain"
+  score: integer("score").default(0),
+  enrichmentData: jsonb("enrichment_data").$type<Record<string, any>>().default({}),
+  outreachStatus: text("outreach_status").default("pending"), // pending, contacted, replied, converted, rejected
+  importedAsLeadId: uuid("imported_as_lead_id").references(() => leads.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Agent = typeof agents.$inferSelect;
+export type AgentMemory = typeof agentMemories.$inferSelect;
+export type AgentSession = typeof agentSessions.$inferSelect;
+export type AgentMessage = typeof agentMessages.$inferSelect;
+export type AgentTask = typeof agentTasks.$inferSelect;
+
+// ═══════════════════════════════════════════════════
+// ZOD SCHEMAS
+// ═══════════════════════════════════════════════════
+export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertContactSchema = createInsertSchema(contacts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertDealSchema = createInsertSchema(deals).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAccountSchema = createInsertSchema(accounts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
+export const insertCampaignSchema = createInsertSchema(campaigns).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true, updatedAt: true });
+
+// ═══════════════════════════════════════════════════
+// LEAD INTELLIGENCE — ZoomInfo-grade prospecting
+// ═══════════════════════════════════════════════════
+
+// Enriched company database
+export const companies = pgTable("companies", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  domain: text("domain"),
+  website: text("website"),
   industry: text("industry"),
   subIndustry: text("sub_industry"),
+  size: text("size"), // 1-10,11-50,51-200,201-500,500-1000,1000+
   employeeCount: integer("employee_count"),
-  employeeRange: text("employee_range"), // 1-10, 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5000+
-  revenue: text("revenue"), // revenue range
-  revenueRange: text("revenue_range"),
+  revenue: text("revenue"), // <1M, 1-10M, 10-50M, 50-100M, 100M+
   founded: integer("founded"),
-  companyType: text("company_type"), // public, private, nonprofit, government
-  // Location
+  hqCity: text("hq_city"),
+  hqState: text("hq_state"),
+  hqCountry: text("hq_country"),
+  description: text("description"),
+  linkedinUrl: text("linkedin_url"),
+  twitterUrl: text("twitter_url"),
+  crunchbaseUrl: text("crunchbase_url"),
+  techStack: jsonb("tech_stack").$type<string[]>().default([]),
+  keywords: jsonb("keywords").$type<string[]>().default([]),
+  fundingStage: text("funding_stage"), // seed, series-a, series-b, ipo, bootstrapped
+  totalFunding: text("total_funding"),
+  lastFundingDate: text("last_funding_date"),
+  intentSignals: jsonb("intent_signals").$type<Array<{ signal: string; strength: number; date: string }>>().default([]),
+  score: integer("score").default(0), // 0-100 ICP fit score
+  tags: jsonb("tags").$type<string[]>().default([]),
+  dataSource: text("data_source").default("enriched"),
+  lastEnrichedAt: timestamp("last_enriched_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("idx_companies_tenant").on(t.tenantId),
+  index("idx_companies_domain").on(t.domain),
+]);
+
+// Enriched prospect contacts
+export const prospects = pgTable("prospects", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  companyId: uuid("company_id").references(() => companies.id),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name"),
+  email: text("email"),
+  emailStatus: text("email_status").default("unknown"), // valid, invalid, catch-all, unknown
+  workEmail: text("work_email"),
+  personalEmail: text("personal_email"),
+  phone: text("phone"),
+  directPhone: text("direct_phone"),
+  mobilePhone: text("mobile_phone"),
+  jobTitle: text("job_title"),
+  seniority: text("seniority"), // c-suite, vp, director, manager, individual
+  department: text("department"), // sales, marketing, engineering, finance, hr, ops
+  company: text("company"),
+  companyDomain: text("company_domain"),
+  linkedinUrl: text("linkedin_url"),
+  twitterUrl: text("twitter_url"),
+  location: text("location"),
   city: text("city"),
-  state: text("state"),
   country: text("country"),
-  region: text("region"),
-  // Technology
-  technologies: text("technologies").array().default([]),
-  techCategories: text("tech_categories").array().default([]),
-  // Data quality
-  dataSource: text("data_source"), // dataforseo, linkedin, manual, import
-  dataConfidence: real("data_confidence"), // 0-1
-  lastVerifiedAt: timestamp("last_verified_at"),
-  // Import tracking
-  importedToCrm: boolean("imported_to_crm").default(false),
-  crmContactId: varchar("crm_contact_id"),
-  // Metadata
+  timezone: text("timezone"),
+  bio: text("bio"),
+  score: integer("score").default(0), // 0-100 lead score
+  intentScore: integer("intent_score").default(0), // buying intent 0-100
+  buyingSignals: jsonb("buying_signals").$type<Array<{ signal: string; strength: number; date: string }>>().default([]),
+  techStack: jsonb("tech_stack").$type<string[]>().default([]),
+  skills: jsonb("skills").$type<string[]>().default([]),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  // Outreach tracking
+  outreachStatus: text("outreach_status").default("new"), // new, contacted, replied, meeting_booked, not_interested, converted
+  lastContactedAt: timestamp("last_contacted_at"),
+  sequenceId: uuid("sequence_id"),
+  // CRM link
+  importedAsLeadId: uuid("imported_as_lead_id").references(() => leads.id),
+  importedAsContactId: uuid("imported_as_contact_id").references(() => contacts.id),
+  dataSource: text("data_source").default("enriched"),
+  lastEnrichedAt: timestamp("last_enriched_at"),
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_prospect_tenant").on(table.tenantId),
-  index("idx_prospect_email").on(table.email),
-  index("idx_prospect_company").on(table.companyName),
-  index("idx_prospect_industry").on(table.industry),
-  index("idx_prospect_seniority").on(table.seniority),
-  index("idx_prospect_location").on(table.city, table.country),
+}, (t) => [
+  index("idx_prospects_tenant").on(t.tenantId),
+  index("idx_prospects_email").on(t.tenantId, t.email),
+  index("idx_prospects_company").on(t.companyId),
 ]);
 
-// Saved Prospect Filters - Save search filters
-export const savedFilters = pgTable("saved_filters", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
+// Saved prospect searches / lists
+export const prospectLists = pgTable("prospect_lists", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
-  filterType: text("filter_type").default("contact"), // contact, company, prospect
+  description: text("description"),
   filters: jsonb("filters").$type<{
-    // Personal filters
-    name?: string;
-    email?: string;
-    title?: string[];
-    seniority?: string[];
-    department?: string[];
-    // Company filters
-    companyName?: string[];
-    industry?: string[];
-    employeeRange?: string[];
-    revenueRange?: string[];
+    industries?: string[];
+    titles?: string[];
+    seniorities?: string[];
+    companySizes?: string[];
+    countries?: string[];
     technologies?: string[];
-    // Location filters
-    city?: string[];
-    state?: string[];
-    country?: string[];
-    region?: string[];
-    // Advanced filters
-    hasEmail?: boolean;
-    hasPhone?: boolean;
-    hasLinkedin?: boolean;
-    leadScore?: { min?: number; max?: number };
-    intentScore?: { min?: number; max?: number };
-    lastActivityDays?: number;
-    createdDateRange?: { from?: string; to?: string };
-    // Custom fields
-    tags?: string[];
-    status?: string[];
-    assignedTo?: string[];
-  }>().notNull(),
-  resultCount: integer("result_count"),
-  isDefault: boolean("is_default").default(false),
-  createdBy: varchar("created_by").references(() => users.id),
+    keywords?: string[];
+    intentTopics?: string[];
+    fundingStages?: string[];
+    revenueRanges?: string[];
+  }>().default({}),
+  prospectCount: integer("prospect_count").default(0),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_saved_filters_tenant").on(table.tenantId),
-  index("idx_saved_filters_type").on(table.filterType),
-]);
+});
 
-// Email Validations - Track email validation results
-export const emailValidations = pgTable("email_validations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  email: text("email").notNull(),
-  isValid: boolean("is_valid"),
-  status: text("status"), // valid, invalid, risky, unknown, catch_all, disposable
-  deliverability: text("deliverability"), // deliverable, undeliverable, risky
-  isDisposable: boolean("is_disposable").default(false),
-  isCatchAll: boolean("is_catch_all").default(false),
-  isRoleAccount: boolean("is_role_account").default(false),
-  isFreeProvider: boolean("is_free_provider").default(false),
-  mxRecord: text("mx_record"),
-  smtpCheck: boolean("smtp_check"),
-  provider: text("provider"), // dataforseo, neverbounce, zerobounce
-  confidence: real("confidence"),
-  errorMessage: text("error_message"),
-  validatedAt: timestamp("validated_at").defaultNow(),
-  expiresAt: timestamp("expires_at"),
-}, (table) => [
-  index("idx_email_val_tenant").on(table.tenantId),
-  index("idx_email_val_email").on(table.email),
-  index("idx_email_val_status").on(table.status),
-]);
-
-// Dialer Calls - Track all phone calls
-export const dialerCalls = pgTable("dialer_calls", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  phoneNumber: text("phone_number").notNull(),
-  direction: text("direction").notNull(), // inbound, outbound
-  status: text("status").default("pending"), // pending, ringing, in_progress, completed, failed, no_answer, busy, voicemail
-  outcome: text("outcome"), // connected, voicemail, no_answer, busy, wrong_number, callback_requested, meeting_booked
-  duration: integer("duration"), // in seconds
-  twilioCallSid: text("twilio_call_sid"),
-  twilioRecordingSid: text("twilio_recording_sid"),
-  recordingUrl: text("recording_url"),
-  transcriptionStatus: text("transcription_status"), // pending, processing, completed, failed
-  transcription: text("transcription"),
-  aiSummary: text("ai_summary"),
-  sentiment: text("sentiment"), // positive, neutral, negative
-  keyPoints: jsonb("key_points").$type<string[]>().default([]),
-  nextSteps: jsonb("next_steps").$type<string[]>().default([]),
-  notes: text("notes"),
-  startedAt: timestamp("started_at"),
-  answeredAt: timestamp("answered_at"),
-  endedAt: timestamp("ended_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_dialer_calls_tenant").on(table.tenantId),
-  index("idx_dialer_calls_contact").on(table.contactId),
-  index("idx_dialer_calls_user").on(table.userId),
-  index("idx_dialer_calls_status").on(table.status),
-  index("idx_dialer_calls_created").on(table.createdAt),
-]);
-
-// LinkedIn Actions - Track LinkedIn automation
-export const linkedinActions = pgTable("linkedin_actions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  sequenceEnrollmentId: varchar("sequence_enrollment_id").references(() => sequenceEnrollments.id),
-  actionType: text("action_type").notNull(), // profile_view, connect_request, message, post_like, post_comment, inmails
-  status: text("status").default("pending"), // pending, completed, failed, rate_limited
-  linkedinProfileUrl: text("linkedin_profile_url"),
-  messageContent: text("message_content"),
-  connectionNote: text("connection_note"),
-  response: text("response"), // accepted, pending, ignored
-  errorMessage: text("error_message"),
-  scheduledFor: timestamp("scheduled_for"),
-  completedAt: timestamp("completed_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_linkedin_actions_tenant").on(table.tenantId),
-  index("idx_linkedin_actions_contact").on(table.contactId),
-  index("idx_linkedin_actions_user").on(table.userId),
-  index("idx_linkedin_actions_type").on(table.actionType),
-  index("idx_linkedin_actions_status").on(table.status),
-]);
-
-// Extension Sessions - Track Chrome extension usage
-export const extensionSessions = pgTable("extension_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  sessionToken: text("session_token").notNull().unique(),
-  extensionVersion: text("extension_version"),
-  browserInfo: text("browser_info"),
-  isActive: boolean("is_active").default(true),
-  lastActiveAt: timestamp("last_active_at").defaultNow(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_ext_sessions_tenant").on(table.tenantId),
-  index("idx_ext_sessions_user").on(table.userId),
-  index("idx_ext_sessions_token").on(table.sessionToken),
-]);
-
-// Extension Events - Track extension scraping activity
-export const extensionEvents = pgTable("extension_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  sessionId: varchar("session_id").references(() => extensionSessions.id).notNull(),
-  eventType: text("event_type").notNull(), // linkedin_profile_scraped, linkedin_search_scraped, email_found, contact_saved
-  sourceUrl: text("source_url"),
-  scrapedData: jsonb("scraped_data").$type<{
-    firstName?: string;
-    lastName?: string;
-    title?: string;
-    company?: string;
-    linkedinUrl?: string;
-    email?: string;
-    phone?: string;
-    location?: string;
-    headline?: string;
-    connections?: number;
-  }>(),
-  savedToContactId: varchar("saved_to_contact_id").references(() => contacts.id),
-  savedToProspectId: varchar("saved_to_prospect_id").references(() => prospectDatabase.id),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_ext_events_session").on(table.sessionId),
-  index("idx_ext_events_type").on(table.eventType),
-  index("idx_ext_events_created").on(table.createdAt),
-]);
-
-// Conversation Intelligence - AI analysis of calls/meetings
-export const conversationIntelligence = pgTable("conversation_intelligence", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  callId: varchar("call_id").references(() => dialerCalls.id),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  dealId: varchar("deal_id"),
-  conversationType: text("conversation_type").notNull(), // call, meeting, video_call
-  duration: integer("duration"), // in seconds
-  participants: jsonb("participants").$type<Array<{
-    name: string;
-    email?: string;
-    role: string;
-    speakingTime?: number;
+// Email sequences for outreach
+export const sequences = pgTable("sequences", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").default("draft"), // draft, active, paused, archived
+  steps: jsonb("steps").$type<Array<{
+    id: string; stepNumber: number; type: string; // email, linkedin, call, task
+    delayDays: number; subject?: string; body?: string; taskTitle?: string;
   }>>().default([]),
-  transcription: text("transcription"),
-  summary: text("summary"),
-  sentiment: text("sentiment"), // positive, neutral, negative
-  sentimentScore: real("sentiment_score"), // -1 to 1
-  topics: jsonb("topics").$type<Array<{
-    topic: string;
-    confidence: number;
-    mentions: number;
-  }>>().default([]),
-  actionItems: jsonb("action_items").$type<Array<{
-    item: string;
-    assignee?: string;
-    dueDate?: string;
-  }>>().default([]),
-  questions: jsonb("questions").$type<string[]>().default([]),
-  objections: jsonb("objections").$type<Array<{
-    objection: string;
-    response?: string;
-    handled: boolean;
-  }>>().default([]),
-  competitorMentions: jsonb("competitor_mentions").$type<string[]>().default([]),
-  nextSteps: jsonb("next_steps").$type<string[]>().default([]),
-  dealSignals: jsonb("deal_signals").$type<{
-    buyingIntent?: string;
-    budgetDiscussed?: boolean;
-    timelineDiscussed?: boolean;
-    decisionMakers?: string[];
-    painPoints?: string[];
-  }>(),
-  recordingUrl: text("recording_url"),
-  occurredAt: timestamp("occurred_at").notNull(),
-  analyzedAt: timestamp("analyzed_at"),
+  totalEnrolled: integer("total_enrolled").default(0),
+  totalReplied: integer("total_replied").default(0),
+  totalConverted: integer("total_converted").default(0),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_conv_intel_tenant").on(table.tenantId),
-  index("idx_conv_intel_call").on(table.callId),
-  index("idx_conv_intel_contact").on(table.contactId),
-  index("idx_conv_intel_deal").on(table.dealId),
-  index("idx_conv_intel_type").on(table.conversationType),
-]);
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_sequences_tenant").on(t.tenantId)]);
 
-// Apollo.io Feature Schemas
-export const insertSequenceTemplateSchema = createInsertSchema(sequenceTemplates).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSequenceStepSchema = createInsertSchema(sequenceSteps).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSequenceEnrollmentSchema = createInsertSchema(sequenceEnrollments).omit({ id: true, enrolledAt: true, updatedAt: true });
-export const insertSequenceEventSchema = createInsertSchema(sequenceEvents).omit({ id: true, createdAt: true });
-export const insertEngagementEventSchema = createInsertSchema(engagementEvents).omit({ id: true, createdAt: true });
-export const insertIntentScoreSchema = createInsertSchema(intentScores).omit({ id: true, calculatedAt: true, updatedAt: true });
-export const insertEnrichmentJobSchema = createInsertSchema(enrichmentJobs).omit({ id: true, createdAt: true });
-export const insertProspectSchema = createInsertSchema(prospectDatabase).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSavedFilterSchema = createInsertSchema(savedFilters).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertEmailValidationSchema = createInsertSchema(emailValidations).omit({ id: true, validatedAt: true });
-export const insertDialerCallSchema = createInsertSchema(dialerCalls).omit({ id: true, createdAt: true });
-export const insertLinkedinActionSchema = createInsertSchema(linkedinActions).omit({ id: true, createdAt: true });
-export const insertExtensionSessionSchema = createInsertSchema(extensionSessions).omit({ id: true, createdAt: true });
-export const insertExtensionEventSchema = createInsertSchema(extensionEvents).omit({ id: true, createdAt: true });
-export const insertConversationIntelligenceSchema = createInsertSchema(conversationIntelligence).omit({ id: true, createdAt: true });
-
-// Apollo.io Feature Types
-export type SequenceTemplate = typeof sequenceTemplates.$inferSelect;
-export type SequenceStep = typeof sequenceSteps.$inferSelect;
-export type SequenceEnrollment = typeof sequenceEnrollments.$inferSelect;
-export type SequenceEvent = typeof sequenceEvents.$inferSelect;
-export type EngagementEvent = typeof engagementEvents.$inferSelect;
-export type IntentScore = typeof intentScores.$inferSelect;
-export type EnrichmentJob = typeof enrichmentJobs.$inferSelect;
-export type Prospect = typeof prospectDatabase.$inferSelect;
-export type SavedFilter = typeof savedFilters.$inferSelect;
-export type EmailValidation = typeof emailValidations.$inferSelect;
-export type DialerCall = typeof dialerCalls.$inferSelect;
-export type LinkedinAction = typeof linkedinActions.$inferSelect;
-export type ExtensionSession = typeof extensionSessions.$inferSelect;
-export type ExtensionEvent = typeof extensionEvents.$inferSelect;
-export type ConversationIntelligence = typeof conversationIntelligence.$inferSelect;
-
-export type InsertSequenceTemplate = z.infer<typeof insertSequenceTemplateSchema>;
-export type InsertSequenceStep = z.infer<typeof insertSequenceStepSchema>;
-export type InsertSequenceEnrollment = z.infer<typeof insertSequenceEnrollmentSchema>;
-export type InsertSequenceEvent = z.infer<typeof insertSequenceEventSchema>;
-export type InsertEngagementEvent = z.infer<typeof insertEngagementEventSchema>;
-export type InsertIntentScore = z.infer<typeof insertIntentScoreSchema>;
-export type InsertEnrichmentJob = z.infer<typeof insertEnrichmentJobSchema>;
-export type InsertProspect = z.infer<typeof insertProspectSchema>;
-export type InsertSavedFilter = z.infer<typeof insertSavedFilterSchema>;
-export type InsertEmailValidation = z.infer<typeof insertEmailValidationSchema>;
-export type InsertDialerCall = z.infer<typeof insertDialerCallSchema>;
-export type InsertLinkedinAction = z.infer<typeof insertLinkedinActionSchema>;
-export type InsertExtensionSession = z.infer<typeof insertExtensionSessionSchema>;
-export type InsertExtensionEvent = z.infer<typeof insertExtensionEventSchema>;
-export type InsertConversationIntelligence = z.infer<typeof insertConversationIntelligenceSchema>;
-
-// ============================================
-// Sales Intelligence Features
-// ============================================
-
-// Website Visitor Identification - Track anonymous companies visiting your site
+// Website visitor tracking
 export const websiteVisitors = pgTable("website_visitors", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  ipHash: text("ip_hash").notNull(), // Hashed IP for privacy
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  visitorId: text("visitor_id"), // anonymous fingerprint
   companyName: text("company_name"),
   companyDomain: text("company_domain"),
-  companyIndustry: text("company_industry"),
-  companySize: text("company_size"), // 1-10, 11-50, 51-200, 201-500, 500+
-  companyRevenue: text("company_revenue"),
-  location: text("location"),
-  pageViews: integer("page_views").default(1),
-  sessionDuration: integer("session_duration").default(0), // seconds
-  pagesVisited: jsonb("pages_visited").$type<string[]>().default([]),
-  referrer: text("referrer"),
-  utmSource: text("utm_source"),
-  utmMedium: text("utm_medium"),
-  utmCampaign: text("utm_campaign"),
-  deviceType: text("device_type"), // desktop, mobile, tablet
-  browserInfo: text("browser_info"),
-  isIdentified: boolean("is_identified").default(false),
-  linkedAccountId: varchar("linked_account_id").references(() => accounts.id),
-  enrichmentData: jsonb("enrichment_data").$type<{
-    employees?: number;
-    foundedYear?: number;
-    technologies?: string[];
-    socialProfiles?: Record<string, string>;
-    confidence?: number;
-  }>(),
-  firstVisitAt: timestamp("first_visit_at").defaultNow(),
-  lastVisitAt: timestamp("last_visit_at").defaultNow(),
-  visitCount: integer("visit_count").default(1),
-}, (table) => [
-  index("idx_website_visitors_tenant").on(table.tenantId),
-  index("idx_website_visitors_company").on(table.companyDomain),
-  index("idx_website_visitors_date").on(table.lastVisitAt),
-]);
-
-// Technographics - Technology stack information for companies
-export const technographics = pgTable("technographics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  accountId: varchar("account_id").references(() => accounts.id),
-  companyDomain: text("company_domain").notNull(),
-  technologies: jsonb("technologies").$type<Array<{
-    category: string; // CRM, Marketing, Analytics, Cloud, Development, etc.
-    name: string;
-    version?: string;
-    confidence: number; // 0-1
-    detectedAt: string;
-  }>>().default([]),
-  categories: jsonb("categories").$type<Record<string, string[]>>().default({}), // { "CRM": ["Salesforce"], "Marketing": ["HubSpot"] }
-  totalTechnologies: integer("total_technologies").default(0),
-  monthlySpend: text("monthly_spend"), // Estimated tech spend
-  lastUpdated: timestamp("last_updated").defaultNow(),
-  dataSource: text("data_source"), // builtwith, stackshare, manual
-  confidence: real("confidence").default(0.8),
+  ipAddress: text("ip_address"),
+  country: text("country"),
+  city: text("city"),
+  pages: jsonb("pages").$type<Array<{ url: string; time: number; title: string }>>().default([]),
+  sessionCount: integer("session_count").default(1),
+  totalTimeOnSite: integer("total_time_on_site").default(0), // seconds
+  lastSeen: timestamp("last_seen").defaultNow(),
+  firstSeen: timestamp("first_seen").defaultNow(),
+  score: integer("score").default(0),
+  identifiedAsProspectId: uuid("identified_as_prospect_id").references(() => prospects.id),
   createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_technographics_tenant").on(table.tenantId),
-  index("idx_technographics_account").on(table.accountId),
-  index("idx_technographics_domain").on(table.companyDomain),
+}, (t) => [index("idx_visitors_tenant").on(t.tenantId)]);
+
+// Technographics — tech stack of prospect companies
+export const technographics = pgTable("technographics", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  companyId: uuid("company_id").references(() => companies.id),
+  companyDomain: text("company_domain"),
+  technology: text("technology").notNull(),
+  category: text("category"), // CRM, ERP, Marketing, Analytics, Engineering, etc.
+  vendor: text("vendor"),
+  confidence: integer("confidence").default(80), // 0-100
+  detectedAt: timestamp("detected_at").defaultNow(),
+}, (t) => [index("idx_technographics_company").on(t.companyId)]);
+
+// Intent signals
+export const intentSignals = pgTable("intent_signals", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  companyDomain: text("company_domain"),
+  companyName: text("company_name"),
+  topic: text("topic").notNull(), // "CRM software", "Sales automation", etc.
+  signalType: text("signal_type").notNull(), // web_research, review_site, job_posting, funding, news
+  strength: integer("strength").default(50), // 0-100
+  description: text("description"),
+  sourceUrl: text("source_url"),
+  detectedAt: timestamp("detected_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+}, (t) => [index("idx_intent_tenant").on(t.tenantId)]);
+
+// ═══════════════════════════════════════════════════
+// CODE HEALING SYSTEM
+// ═══════════════════════════════════════════════════
+
+// System health checks
+export const healthChecks = pgTable("health_checks", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  checkType: text("check_type").notNull(), // database, server, api, auth, storage, ai_service
+  status: text("status").notNull(), // healthy, degraded, critical, offline
+  latencyMs: integer("latency_ms"),
+  message: text("message"),
+  details: jsonb("details").$type<Record<string, any>>().default({}),
+  checkedAt: timestamp("checked_at").defaultNow(),
+}, (t) => [index("idx_health_type").on(t.checkType)]);
+
+// Error log
+export const errorLogs = pgTable("error_logs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id"),
+  severity: text("severity").notNull(), // info, warning, error, critical
+  category: text("category").notNull(), // auth, database, api, validation, integration, agent
+  message: text("message").notNull(),
+  stack: text("stack"),
+  context: jsonb("context").$type<Record<string, any>>().default({}),
+  userId: uuid("user_id"),
+  endpoint: text("endpoint"),
+  resolved: boolean("resolved").default(false),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: text("resolved_by"), // "auto_healer" | user_id
+  healingAttempts: integer("healing_attempts").default(0),
+  healingLog: jsonb("healing_log").$type<Array<{ attempt: number; action: string; result: string; timestamp: string }>>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("idx_errors_severity").on(t.severity),
+  index("idx_errors_resolved").on(t.resolved),
 ]);
 
-// Org Charts - Company organizational structure
-export const orgChartNodes = pgTable("org_chart_nodes", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  accountId: varchar("account_id").references(() => accounts.id).notNull(),
-  contactId: varchar("contact_id").references(() => contacts.id),
+// Auto-healing rules
+export const healingRules = pgTable("healing_rules", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  title: text("title"),
-  department: text("department"),
-  level: text("level"), // C-Level, VP, Director, Manager, Individual Contributor
-  reportingTo: varchar("reporting_to"), // Self-reference for hierarchy
+  description: text("description"),
+  trigger: text("trigger").notNull(), // error pattern / condition
+  pattern: text("pattern").notNull(), // regex or exact match on error message
+  category: text("category").notNull(),
+  action: text("action").notNull(), // restart_service, clear_cache, fix_schema, retry_connection, etc.
+  actionConfig: jsonb("action_config").$type<Record<string, any>>().default({}),
+  isActive: boolean("is_active").default(true),
+  successCount: integer("success_count").default(0),
+  failureCount: integer("failure_count").default(0),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Performance metrics
+export const performanceMetrics = pgTable("performance_metrics", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  metricType: text("metric_type").notNull(), // response_time, memory_usage, cpu_usage, db_connections, error_rate
+  value: decimal("value", { precision: 10, scale: 4 }).notNull(),
+  unit: text("unit"), // ms, MB, %, count
+  endpoint: text("endpoint"),
+  tags: jsonb("tags").$type<Record<string, string>>().default({}),
+  recordedAt: timestamp("recorded_at").defaultNow(),
+}, (t) => [
+  index("idx_metrics_type_time").on(t.metricType, t.recordedAt),
+]);
+
+// ═══════════════════════════════════════════════════
+// SEO PLATFORM (Ubersuggest-grade)
+// ═══════════════════════════════════════════════════
+export const seoProjects = pgTable("seo_projects", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  domain: text("domain").notNull(),
+  country: text("country").default("US"),
+  language: text("language").default("en"),
+  competitors: jsonb("competitors").$type<string[]>().default([]),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_seo_projects_tenant").on(t.tenantId)]);
+
+export const keywords = pgTable("keywords", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  projectId: uuid("project_id").references(() => seoProjects.id),
+  keyword: text("keyword").notNull(),
+  searchVolume: integer("search_volume").default(0),
+  difficulty: integer("difficulty").default(0), // 0-100
+  cpc: decimal("cpc", { precision: 8, scale: 2 }).default("0"),
+  currentRank: integer("current_rank"),
+  previousRank: integer("previous_rank"),
+  url: text("url"),
+  intent: text("intent"), // informational, navigational, transactional, commercial
+  country: text("country").default("US"),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_keywords_tenant").on(t.tenantId)]);
+
+export const backlinks = pgTable("backlinks", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  projectId: uuid("project_id").references(() => seoProjects.id),
+  sourceUrl: text("source_url").notNull(),
+  sourceDomain: text("source_domain"),
+  targetUrl: text("target_url").notNull(),
+  anchorText: text("anchor_text"),
+  domainAuthority: integer("domain_authority").default(0),
+  pageAuthority: integer("page_authority").default(0),
+  isDoFollow: boolean("is_do_follow").default(true),
+  isActive: boolean("is_active").default(true),
+  firstSeen: timestamp("first_seen").defaultNow(),
+  lastSeen: timestamp("last_seen").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const seoAudits = pgTable("seo_audits", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  projectId: uuid("project_id").references(() => seoProjects.id),
+  score: integer("score").default(0), // 0-100
+  issues: jsonb("issues").$type<Array<{ type: string; severity: string; description: string; count: number; urls: string[] }>>().default([]),
+  summary: jsonb("summary").$type<{ critical: number; warnings: number; passed: number; totalPages: number }>().default({ critical: 0, warnings: 0, passed: 0, totalPages: 0 }),
+  crawledAt: timestamp("crawled_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const contentIdeas = pgTable("content_ideas", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  projectId: uuid("project_id").references(() => seoProjects.id),
+  title: text("title").notNull(),
+  keyword: text("keyword"),
+  searchVolume: integer("search_volume").default(0),
+  difficulty: integer("difficulty").default(0),
+  contentType: text("content_type").default("blog"), // blog, video, infographic, guide
+  outline: jsonb("outline").$type<string[]>().default([]),
+  status: text("status").default("idea"), // idea, writing, published
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ═══════════════════════════════════════════════════
+// E-COMMERCE
+// ═══════════════════════════════════════════════════
+export const stores = pgTable("stores", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").unique(),
+  description: text("description"),
+  logo: text("logo"),
+  banner: text("banner"),
+  currency: text("currency").default("USD"),
+  primaryColor: text("primary_color").default("#3b82f6"),
+  isPublished: boolean("is_published").default(false),
+  domain: text("domain"),
+  settings: jsonb("settings").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_stores_tenant").on(t.tenantId)]);
+
+export const products = pgTable("products", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  storeId: uuid("store_id").references(() => stores.id),
+  name: text("name").notNull(),
+  slug: text("slug"),
+  description: text("description"),
+  shortDescription: text("short_description"),
+  sku: text("sku"),
+  barcode: text("barcode"),
+  price: decimal("price", { precision: 12, scale: 2 }).notNull().default("0"),
+  compareAtPrice: decimal("compare_at_price", { precision: 12, scale: 2 }),
+  cost: decimal("cost", { precision: 12, scale: 2 }),
+  currency: text("currency").default("USD"),
+  category: text("category"),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  images: jsonb("images").$type<string[]>().default([]),
+  weight: decimal("weight", { precision: 8, scale: 2 }),
+  dimensions: jsonb("dimensions").$type<{ length?: number; width?: number; height?: number }>().default({}),
+  inventory: integer("inventory").default(0),
+  lowStockThreshold: integer("low_stock_threshold").default(10),
+  trackInventory: boolean("track_inventory").default(true),
+  isAvailable: boolean("is_available").default(true),
+  isFeatured: boolean("is_featured").default(false),
+  aiScore: integer("ai_score").default(0), // AI recommendation score
+  attributes: jsonb("attributes").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_products_tenant").on(t.tenantId)]);
+
+export const orders = pgTable("orders", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  storeId: uuid("store_id").references(() => stores.id),
+  orderNumber: text("order_number").notNull(),
+  status: text("status").default("pending"), // pending, processing, shipped, delivered, cancelled, refunded
+  customerName: text("customer_name"),
+  customerEmail: text("customer_email"),
+  customerPhone: text("customer_phone"),
+  shippingAddress: jsonb("shipping_address").$type<Record<string, any>>().default({}),
+  items: jsonb("items").$type<Array<{ productId: string; name: string; qty: number; price: number; total: number }>>().default([]),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).default("0"),
+  tax: decimal("tax", { precision: 12, scale: 2 }).default("0"),
+  shipping: decimal("shipping", { precision: 12, scale: 2 }).default("0"),
+  total: decimal("total", { precision: 12, scale: 2 }).default("0"),
+  currency: text("currency").default("USD"),
+  paymentStatus: text("payment_status").default("unpaid"), // unpaid, paid, refunded
+  paymentMethod: text("payment_method"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_orders_tenant").on(t.tenantId)]);
+
+// ═══════════════════════════════════════════════════
+// FINANCIAL MANAGEMENT
+// ═══════════════════════════════════════════════════
+export const transactions = pgTable("transactions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  type: text("type").notNull(), // income, expense, transfer
+  category: text("category"),
+  description: text("description").notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  currency: text("currency").default("USD"),
+  exchangeRate: decimal("exchange_rate", { precision: 10, scale: 6 }).default("1"),
+  amountUsd: decimal("amount_usd", { precision: 15, scale: 2 }),
+  date: timestamp("date").notNull(),
+  accountId: text("account_id"),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  invoiceId: uuid("invoice_id").references(() => invoices.id),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  reconciled: boolean("reconciled").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [index("idx_transactions_tenant").on(t.tenantId)]);
+
+export const bankAccounts = pgTable("bank_accounts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  type: text("type").default("checking"), // checking, savings, credit, crypto
+  currency: text("currency").default("USD"),
+  balance: decimal("balance", { precision: 15, scale: 2 }).default("0"),
+  institution: text("institution"),
+  accountNumber: text("account_number"), // last 4 digits only
+  isActive: boolean("is_active").default(true),
+  lastSyncAt: timestamp("last_sync_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const taxRates = pgTable("tax_rates", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  rate: decimal("rate", { precision: 6, scale: 4 }).notNull(), // e.g. 0.2000 for 20%
+  country: text("country"),
+  region: text("region"),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ═══════════════════════════════════════════════════
+// HR & OPERATIONS
+// ═══════════════════════════════════════════════════
+export const employees = pgTable("employees", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name"),
   email: text("email"),
   phone: text("phone"),
-  linkedinUrl: text("linkedin_url"),
-  isDecisionMaker: boolean("is_decision_maker").default(false),
-  influenceScore: real("influence_score").default(0.5), // 0-1
-  engagementStatus: text("engagement_status"), // engaged, contacted, cold
-  notes: text("notes"),
-  photoUrl: text("photo_url"),
-  trustScore: real("trust_score").default(0.7), // Data confidence
-  lastVerified: timestamp("last_verified"),
+  avatar: text("avatar"),
+  department: text("department"),
+  jobTitle: text("job_title"),
+  employmentType: text("employment_type").default("full_time"), // full_time, part_time, contractor
+  status: text("status").default("active"), // active, inactive, on_leave
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  salary: decimal("salary", { precision: 12, scale: 2 }),
+  currency: text("currency").default("USD"),
+  managerId: uuid("manager_id"),
+  skills: jsonb("skills").$type<string[]>().default([]),
+  location: text("location"),
+  timezone: text("timezone"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_org_chart_tenant").on(table.tenantId),
-  index("idx_org_chart_account").on(table.accountId),
-  index("idx_org_chart_parent").on(table.reportingTo),
-]);
+}, (t) => [index("idx_employees_tenant").on(t.tenantId)]);
 
-// Company News & Alerts
-export const companyNewsEvents = pgTable("company_news_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  accountId: varchar("account_id").references(() => accounts.id),
-  companyDomain: text("company_domain"),
-  eventType: text("event_type").notNull(), // funding, acquisition, hiring, layoffs, product_launch, leadership_change, expansion, award
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").default("planning"), // planning, active, on_hold, completed, cancelled
+  priority: text("priority").default("medium"),
+  color: text("color").default("#3b82f6"),
+  startDate: timestamp("start_date"),
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+  budget: decimal("budget", { precision: 12, scale: 2 }),
+  progress: integer("progress").default(0), // 0-100
+  ownerId: uuid("owner_id").references(() => users.id),
+  members: jsonb("members").$type<string[]>().default([]),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  dealId: uuid("deal_id").references(() => deals.id),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_projects_tenant").on(t.tenantId)]);
+
+export const projectTasks = pgTable("project_tasks", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   title: text("title").notNull(),
   description: text("description"),
-  source: text("source"), // news_api, linkedin, crunchbase, manual
-  sourceUrl: text("source_url"),
-  publishedAt: timestamp("published_at"),
-  sentiment: text("sentiment"), // positive, neutral, negative
-  sentimentScore: real("sentiment_score"), // -1 to 1
-  significance: text("significance"), // high, medium, low
-  fundingAmount: text("funding_amount"), // For funding events
-  fundingRound: text("funding_round"), // Series A, B, C, etc.
-  isFollowed: boolean("is_followed").default(false),
-  isRead: boolean("is_read").default(false),
-  alertSent: boolean("alert_sent").default(false),
-  metadata: jsonb("metadata").$type<{
-    investors?: string[];
-    acquirer?: string;
-    acquired?: string;
-    newExecutive?: { name: string; title: string };
-    hireCount?: number;
-    layoffCount?: number;
-    location?: string;
-  }>(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_company_news_tenant").on(table.tenantId),
-  index("idx_company_news_account").on(table.accountId),
-  index("idx_company_news_type").on(table.eventType),
-  index("idx_company_news_date").on(table.publishedAt),
-]);
-
-// CRM Data Health Dashboard
-export const crmDataQualitySnapshots = pgTable("crm_data_quality_snapshots", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  snapshotDate: timestamp("snapshot_date").defaultNow(),
-  overallScore: real("overall_score").notNull(), // 0-100
-  contactsScore: real("contacts_score").default(0),
-  accountsScore: real("accounts_score").default(0),
-  leadsScore: real("leads_score").default(0),
-  dealsScore: real("deals_score").default(0),
-  metrics: jsonb("metrics").$type<{
-    totalContacts: number;
-    contactsWithEmail: number;
-    contactsWithPhone: number;
-    contactsWithCompany: number;
-    duplicateContacts: number;
-    staleContacts: number; // Not updated in 90 days
-    totalAccounts: number;
-    accountsWithIndustry: number;
-    accountsWithWebsite: number;
-    accountsWithRevenue: number;
-    duplicateAccounts: number;
-    totalLeads: number;
-    leadsWithSource: number;
-    staleLeads: number;
-    totalDeals: number;
-    dealsWithValue: number;
-    dealsWithCloseDate: number;
-  }>(),
-  suggestions: jsonb("suggestions").$type<Array<{
-    type: string;
-    priority: string;
-    message: string;
-    count: number;
-    action: string;
-  }>>().default([]),
-  enrichmentOpportunities: integer("enrichment_opportunities").default(0),
-  duplicateRecords: integer("duplicate_records").default(0),
-  staleRecords: integer("stale_records").default(0),
-  missingFields: jsonb("missing_fields").$type<Record<string, number>>().default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("idx_data_quality_tenant").on(table.tenantId),
-  index("idx_data_quality_date").on(table.snapshotDate),
-]);
-
-// Account Scoring - AI-powered account prioritization
-export const accountScores = pgTable("account_scores", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: varchar("tenant_id").references(() => tenants.id).notNull(),
-  accountId: varchar("account_id").references(() => accounts.id).notNull(),
-  overallScore: real("overall_score").notNull(), // 0-100
-  tier: text("tier"), // A, B, C, D
-  signals: jsonb("signals").$type<{
-    intentScore: number;
-    engagementScore: number;
-    fitScore: number;
-    techStackFit: number;
-    revenueScore: number;
-    growthSignals: number;
-    websiteActivityScore: number;
-  }>(),
-  weights: jsonb("weights").$type<{
-    intent: number;
-    engagement: number;
-    fit: number;
-    techStack: number;
-    revenue: number;
-    growth: number;
-    websiteActivity: number;
-  }>(),
-  factors: jsonb("factors").$type<Array<{
-    name: string;
-    value: number;
-    impact: string; // positive, negative, neutral
-    description: string;
-  }>>().default([]),
-  aiExplanation: text("ai_explanation"),
-  recommendedActions: jsonb("recommended_actions").$type<string[]>().default([]),
-  predictedCloseRate: real("predicted_close_rate"),
-  predictedDealSize: text("predicted_deal_size"),
-  lastCalculated: timestamp("last_calculated").defaultNow(),
-  modelVersion: text("model_version").default("v1"),
+  status: text("status").default("todo"),
+  priority: text("priority").default("medium"),
+  assigneeId: uuid("assignee_id").references(() => users.id),
+  startDate: timestamp("start_date"),
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+  estimatedHours: decimal("estimated_hours", { precision: 6, scale: 2 }),
+  actualHours: decimal("actual_hours", { precision: 6, scale: 2 }),
+  parentId: uuid("parent_id"),
+  order: integer("order").default(0),
+  dependencies: jsonb("dependencies").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_account_scores_tenant").on(table.tenantId),
-  index("idx_account_scores_account").on(table.accountId),
-  index("idx_account_scores_score").on(table.overallScore),
-  index("idx_account_scores_tier").on(table.tier),
-]);
+}, (t) => [index("idx_project_tasks_project").on(t.projectId)]);
 
-// Sales Intelligence Schemas
-export const insertWebsiteVisitorSchema = createInsertSchema(websiteVisitors).omit({ id: true, firstVisitAt: true, lastVisitAt: true });
-export const insertTechnographicsSchema = createInsertSchema(technographics).omit({ id: true, createdAt: true, lastUpdated: true });
-export const insertOrgChartNodeSchema = createInsertSchema(orgChartNodes).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCompanyNewsEventSchema = createInsertSchema(companyNewsEvents).omit({ id: true, createdAt: true });
-export const insertCrmDataQualitySnapshotSchema = createInsertSchema(crmDataQualitySnapshots).omit({ id: true, createdAt: true });
-export const insertAccountScoreSchema = createInsertSchema(accountScores).omit({ id: true, createdAt: true, updatedAt: true });
+export const documents = pgTable("documents", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  type: text("type").default("file"), // file, folder, note, template
+  mimeType: text("mime_type"),
+  size: integer("size").default(0), // bytes
+  url: text("url"),
+  content: text("content"), // for notes/text docs
+  parentId: uuid("parent_id"),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  sharedWith: jsonb("shared_with").$type<string[]>().default([]),
+  uploadedBy: uuid("uploaded_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_documents_tenant").on(t.tenantId)]);
 
-// Sales Intelligence Types
-export type WebsiteVisitor = typeof websiteVisitors.$inferSelect;
-export type Technographics = typeof technographics.$inferSelect;
-export type OrgChartNode = typeof orgChartNodes.$inferSelect;
-export type CompanyNewsEvent = typeof companyNewsEvents.$inferSelect;
-export type CrmDataQualitySnapshot = typeof crmDataQualitySnapshots.$inferSelect;
-export type AccountScore = typeof accountScores.$inferSelect;
+// ═══════════════════════════════════════════════════
+// MARKETING
+// ═══════════════════════════════════════════════════
+export const landingPages = pgTable("landing_pages", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  title: text("title"),
+  description: text("description"),
+  template: text("template").default("blank"),
+  blocks: jsonb("blocks").$type<Array<{ id: string; type: string; content: any; style: any }>>().default([]),
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  isPublished: boolean("is_published").default(false),
+  publishedAt: timestamp("published_at"),
+  views: integer("views").default(0),
+  conversions: integer("conversions").default(0),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_landing_pages_tenant").on(t.tenantId)]);
 
-export type InsertWebsiteVisitor = z.infer<typeof insertWebsiteVisitorSchema>;
-export type InsertTechnographics = z.infer<typeof insertTechnographicsSchema>;
-export type InsertOrgChartNode = z.infer<typeof insertOrgChartNodeSchema>;
-export type InsertCompanyNewsEvent = z.infer<typeof insertCompanyNewsEventSchema>;
-export type InsertCrmDataQualitySnapshot = z.infer<typeof insertCrmDataQualitySnapshotSchema>;
-export type InsertAccountScore = z.infer<typeof insertAccountScoreSchema>;
+export const funnels = pgTable("funnels", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  offer: text("offer"), // what are you selling
+  targetAudience: text("target_audience"),
+  status: text("status").default("draft"),
+  steps: jsonb("steps").$type<Array<{ id: string; type: string; name: string; content: any; order: number }>>().default([]),
+  emailSequence: jsonb("email_sequence").$type<Array<{ subject: string; body: string; delayDays: number }>>().default([]),
+  adCopy: jsonb("ad_copy").$type<Array<{ platform: string; headline: string; body: string; cta: string }>>().default([]),
+  landingPageId: uuid("landing_page_id").references(() => landingPages.id),
+  totalLeads: integer("total_leads").default(0),
+  totalConversions: integer("total_conversions").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_funnels_tenant").on(t.tenantId)]);
+
+export const abTests = pgTable("ab_tests", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  hypothesis: text("hypothesis"),
+  status: text("status").default("draft"), // draft, running, paused, completed
+  type: text("type").default("email"), // email, landing_page, ad, headline
+  variants: jsonb("variants").$type<Array<{ id: string; name: string; content: any; visitors: number; conversions: number }>>().default([]),
+  winnerVariantId: text("winner_variant_id"),
+  startedAt: timestamp("started_at"),
+  endedAt: timestamp("ended_at"),
+  significance: decimal("significance", { precision: 6, scale: 4 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [index("idx_ab_tests_tenant").on(t.tenantId)]);
+
+export const reputationReviews = pgTable("reputation_reviews", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  platform: text("platform").notNull(), // google, yelp, g2, trustpilot, capterra
+  reviewerName: text("reviewer_name"),
+  rating: integer("rating").default(5), // 1-5
+  content: text("content"),
+  response: text("response"), // business response
+  sentiment: text("sentiment").default("positive"), // positive, neutral, negative
+  url: text("url"),
+  publishedAt: timestamp("published_at"),
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [index("idx_reviews_tenant").on(t.tenantId)]);
+
+// ═══════════════════════════════════════════════════
+// ENTERPRISE FEATURES
+// ═══════════════════════════════════════════════════
+export const clientPortalAccess = pgTable("client_portal_access", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  email: text("email").notNull(),
+  accessToken: text("access_token"),
+  permissions: jsonb("permissions").$type<string[]>().default(["view_projects", "view_invoices"]),
+  lastLoginAt: timestamp("last_login_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const whitelabelSettings = pgTable("whitelabel_settings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull().unique(),
+  brandName: text("brand_name"),
+  logo: text("logo"),
+  favicon: text("favicon"),
+  primaryColor: text("primary_color").default("#3b82f6"),
+  secondaryColor: text("secondary_color").default("#8b5cf6"),
+  customDomain: text("custom_domain"),
+  customCss: text("custom_css"),
+  emailFromName: text("email_from_name"),
+  emailFromAddress: text("email_from_address"),
+  supportEmail: text("support_email"),
+  privacyUrl: text("privacy_url"),
+  termsUrl: text("terms_url"),
+  hideArgiletteBranding: boolean("hide_argilette_branding").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ─── Additional Types ─────────────────────────────────
+export type SeoProject = typeof seoProjects.$inferSelect;
+export type Keyword = typeof keywords.$inferSelect;
+export type Store = typeof stores.$inferSelect;
+export type Product = typeof products.$inferSelect;
+export type Order = typeof orders.$inferSelect;
+export type Transaction = typeof transactions.$inferSelect;
+export type Employee = typeof employees.$inferSelect;
+export type Project = typeof projects.$inferSelect;
+export type ProjectTask = typeof projectTasks.$inferSelect;
+export type Document = typeof documents.$inferSelect;
+export type LandingPage = typeof landingPages.$inferSelect;
+export type Funnel = typeof funnels.$inferSelect;
+export type AbTest = typeof abTests.$inferSelect;
+
+export type InsertTenant = typeof tenants.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+export type Contact = typeof contacts.$inferSelect;
+export type InsertContact = typeof contacts.$inferInsert;
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = typeof leads.$inferInsert;
+export type Deal = typeof deals.$inferSelect;
+export type InsertDeal = typeof deals.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = typeof tasks.$inferInsert;
+export type Account = typeof accounts.$inferSelect;
+export type InsertAccount = typeof accounts.$inferInsert;
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = typeof activities.$inferInsert;
+export type Campaign = typeof campaigns.$inferSelect;
+export type InsertCampaign = typeof campaigns.$inferInsert;
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;
+export type Company = typeof companies.$inferSelect;
+export type Prospect = typeof prospects.$inferSelect;
+export type ProspectList = typeof prospectLists.$inferSelect;
+export type Sequence = typeof sequences.$inferSelect;
+export type HealthCheck = typeof healthChecks.$inferSelect;
+export type ErrorLog = typeof errorLogs.$inferSelect;
 

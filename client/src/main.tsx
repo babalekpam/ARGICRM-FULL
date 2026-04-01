@@ -1,19 +1,10 @@
 import React from "react";
-import { createRoot } from "react-dom/client";
+import ReactDOM from "react-dom/client";
+import App from "./App";
 import "./index.css";
-import App from "./App.tsx";
 
-console.log('Loading NODE CRM application...');
-
-const rootElement = document.getElementById("root");
-if (rootElement) {
-  const root = createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-  console.log('NODE CRM application loaded successfully');
-} else {
-  console.error('Root element not found');
-}
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

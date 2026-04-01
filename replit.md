@@ -1,7 +1,7 @@
-# NODE CRM
+# ARGILETTE CRM v2.0
 
 ## Overview
-NODE CRM is an AI-powered, full-stack customer relationship management platform for global markets. It integrates real-time sentiment analysis, AI campaign generation, multi-cultural optimization, advanced financial management, and e-commerce functionalities. The platform aims for autonomous AI operations, competitive pricing, and robust data security, providing a comprehensive solution for businesses worldwide. Its business vision is to provide an all-encompassing, secure, and globally adaptable CRM solution that leverages AI for operational efficiency and market responsiveness, operating under the domain ARGILETTE.org.
+ARGILETTE CRM v2.0 is a complete rebuild — a fully integrated AI-powered B2B intelligence and CRM platform. The system combines autonomous AI agents, real-time lead intelligence, SEO tools, e-commerce, financial management, and a self-healing code system. Uploaded and replaced April 2026. Operating under the domain ARGILETTE.org.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

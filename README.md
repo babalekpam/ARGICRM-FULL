@@ -1,71 +1,188 @@
-# NODE CRM Suite
+# 🚀 ARGILETTE CRM — Plug & Play Replit Setup
 
-An Emotional Intelligence CRM platform that combines customer relationship management with advanced sentiment analysis capabilities.
+> **Multi-tenant SaaS CRM** — Complete authentication, contacts, leads, deals, campaigns, invoicing, and team management.
 
-## Quick Start
+---
 
+## ⚡ Replit Setup (5 minutes)
+
+### Step 1 — Import the project
+1. Go to [replit.com](https://replit.com) → **Create Repl** → **Import from ZIP**
+2. Upload `ARGILETTE-CRM-REPLIT-READY.zip`
+3. Select **Node.js** as the language
+
+### Step 2 — Add Secrets (Environment Variables)
+In Replit, go to **Tools → Secrets** and add:
+
+| Secret Key | Value | Required |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://...` (from Neon.tech) | ✅ YES |
+| `SESSION_SECRET` | Any random 64-char string | ✅ YES |
+| `JWT_SECRET` | Any random 64-char string | ✅ YES |
+| `ANTHROPIC_API_KEY` | `sk-ant-...` | Optional (AI features) |
+| `OPENAI_API_KEY` | `sk-...` | Optional |
+| `STRIPE_SECRET_KEY` | `sk_test_...` | Optional (billing) |
+
+**Get a free PostgreSQL database:** [neon.tech](https://neon.tech) → New Project → Copy connection string
+
+### Step 3 — Run
 ```bash
-# Start the complete NODE CRM Suite
-./start-bit.sh
+npm install && npm run db:push && npm run seed && npm run dev
 ```
 
-## Architecture
+Or just click the **▶ Run** button — the `.replit` file handles everything.
 
-### Backend Services
-- **CRM Backend**: Node.js/Express server on port 3000
-- **AI Service**: Python Flask API on port 5001
-- **Database**: PostgreSQL for contacts, MongoDB for emotion logs (with in-memory fallback)
+---
 
-### Frontend
-- **React Application**: Modern UI for contact management and sentiment analysis
-- **Features**: Contact CRUD, message sentiment analysis, dashboard analytics
+## 🔐 Default Login Credentials
 
-## API Endpoints
+| Account | Email | Password |
+|---|---|---|
+| Platform Owner | `abel@argilette.com` | `ArgiletteSecure2024!` |
+| Demo Account | `demo@argilette.com` | `Demo123456!` |
 
-### Contacts
-- `GET /api/contacts` - List all contacts
-- `POST /api/contacts` - Create new contact
-- `PUT /api/contacts/:id` - Update contact
-- `DELETE /api/contacts/:id` - Delete contact
+---
 
-### Sentiment Analysis
-- `POST /api/contacts/:id/analyze` - Analyze message sentiment for contact
-- `GET /api/contacts/:id/emotions` - Get emotion history for contact
+## 🏗️ Architecture
 
-### Health Check
-- `GET /health` - Service health status
+```
+argilette-saas/
+├── client/                 # React 18 + TypeScript frontend
+│   ├── src/
+│   │   ├── pages/          # 13 fully functional pages
+│   │   ├── components/     # Layout, UI components
+│   │   ├── contexts/       # Auth context
+│   │   └── lib/            # API client, queryClient
+│   └── index.html
+│
+├── server/                 # Express.js + TypeScript backend
+│   ├── index.ts            # Server entry point
+│   ├── routes.ts           # All API routes
+│   ├── storage.ts          # Database queries (Drizzle ORM)
+│   ├── db.ts               # PostgreSQL connection
+│   ├── seed.ts             # Demo data seeder
+│   ├── vite.ts             # Vite dev middleware
+│   ├── middleware/
+│   │   └── auth.ts         # JWT auth + role middleware
+│   └── routes/
+│       └── auth.ts         # Login, register, invite
+│
+└── shared/
+    └── schema.ts           # Database schema + types
+```
 
-## Features
+---
 
-✓ Contact management with full CRUD operations  
-✓ Real-time sentiment analysis of customer messages  
-✓ PostgreSQL database integration  
-✓ MongoDB support for emotion logs with fallback  
-✓ Python Flask AI service with transformers  
-✓ Built-in sentiment analysis algorithm  
-✓ Professional React frontend  
-✓ Responsive design  
+## 📦 Features
 
-## Development
+| Module | What it does |
+|---|---|
+| **Multi-tenant Auth** | Register workspaces, JWT login, role-based access |
+| **Contacts** | Full CRUD, search, filter by status/source |
+| **Leads** | Pipeline leads with scoring (0-100) and value tracking |
+| **Deals** | Kanban + list view, 6-stage pipeline, value tracking |
+| **Tasks** | 3-column kanban (Todo/In Progress/Done), due dates, priorities |
+| **Accounts** | Company management with industry/size classification |
+| **Campaigns** | Email/SMS/LinkedIn campaign creation and tracking |
+| **Invoices** | Multi-currency invoicing (USD, EUR, XOF/CFA, GBP) |
+| **Team** | Invite members, assign roles (admin/manager/user/viewer) |
+| **Settings** | Profile editing, workspace branding, plan details |
+| **Dashboard** | Live stats: contacts, leads, deals pipeline, tasks, activity feed |
 
-The application follows the exact structure specified in the NODE CRM MVP code overview:
+---
 
-- **server.cjs**: Node.js/Express CRM backend
-- **emotion-api/app.py**: Python Flask sentiment analysis service  
-- **client/src/**: React frontend application
-- **Database**: PostgreSQL for structured data, MongoDB for logs
+## 🛡️ Security
 
-## Service Management
+- JWT tokens (7-day expiry) stored in localStorage
+- bcrypt password hashing (12 rounds)
+- All routes authenticated + tenant-isolated at DB level
+- Rate limiting in production (20 auth req/15min, 500 API req/15min)
+- Role hierarchy: `platform_owner > super_admin > admin > manager > user > viewer`
+- Platform owner (`abel@argilette.com`) has unrestricted access to all tenants
 
-Start all services: `./start-bit.sh`
+---
 
-View logs:
-- CRM Backend: `tail -f crm.log`
-- AI Service: `tail -f emotion-api/ai.log`
+## 💳 Subscription Plans
 
-## Technology Stack
+| Plan | Users | Contacts | Price |
+|---|---|---|---|
+| Trial | 3 | 500 | Free (14 days) |
+| Starter | 5 | 2,000 | $69.99/mo |
+| Pro | 25 | 10,000 | $179.99/mo |
+| Business | Unlimited | 50,000 | $349.99/mo |
+| Enterprise | Unlimited | Unlimited | $899.99/mo |
 
-- **Backend**: Node.js, Express.js, PostgreSQL, MongoDB
-- **AI/ML**: Python, Flask, transformers (with built-in fallback)
-- **Frontend**: React, TypeScript, Axios
-- **Database**: PostgreSQL (via pg), MongoDB (via mongodb driver)
+---
+
+## 🔧 Scripts
+
+```bash
+npm run dev        # Start development server (port 5000)
+npm run build      # Build for production  
+npm run start      # Start production server
+npm run db:push    # Push schema to database (run after changes)
+npm run seed       # Seed demo data
+```
+
+---
+
+## 📡 API Reference
+
+### Auth
+```
+POST /api/auth/register    — Create workspace + admin user
+POST /api/auth/login       — Login (returns JWT token)
+GET  /api/auth/me          — Get current user + tenant
+POST /api/auth/logout      — Logout
+POST /api/auth/invite      — Invite team member (admin only)
+```
+
+### CRM
+```
+GET/POST        /api/contacts
+GET/PUT/DELETE  /api/contacts/:id
+GET/POST        /api/leads
+GET/PUT/DELETE  /api/leads/:id
+GET/POST        /api/deals
+GET/PUT/DELETE  /api/deals/:id
+GET/POST        /api/tasks
+GET/PUT/DELETE  /api/tasks/:id
+GET/POST        /api/accounts
+GET/PUT/DELETE  /api/accounts/:id
+GET/POST        /api/activities
+GET/POST        /api/campaigns
+GET/POST        /api/invoices
+```
+
+### Admin
+```
+GET  /api/dashboard          — Stats + recent activity
+GET  /api/users              — List team members
+PUT  /api/users/:id          — Update user role/status
+DELETE /api/users/:id        — Remove user
+GET  /api/settings           — Workspace settings
+PUT  /api/settings           — Update workspace settings
+PUT  /api/profile            — Update own profile
+GET  /api/admin/tenants      — All tenants (platform owner only)
+GET  /api/health             — Health check
+```
+
+---
+
+## 🌍 Deployment
+
+### Replit (recommended)
+The `.replit` file is pre-configured. Just add secrets and hit Run.
+
+### VPS / Docker
+```bash
+npm run build
+NODE_ENV=production PORT=5000 node dist/index.js
+```
+
+### Environment Variables
+See `.env.example` for the complete list.
+
+---
+
+Built by Abel Nkawula · ARGILETTE LLC · argilette.com
