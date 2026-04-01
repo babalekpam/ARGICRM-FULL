@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate, requireRole, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
-import { healthChecks, errorLogs, performanceMetrics } from "@shared/schema";
+import { healthChecks, errorLogs, performanceMetrics } from "@shared/schema-extended";
 import { eq, desc, and, sql, gte, lt } from "drizzle-orm";
 import {
   runAllHealthChecks, runHealthCheck, getPerformanceSummary,

@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
-import { seoProjects, keywords, backlinks, seoAudits, contentIdeas } from "@shared/schema";
+import { keywords, backlinks } from "@shared/schema";
+import { seoProjects, seoAudits, contentIdeas } from "@shared/schema-extended";
 import { eq, and, desc, sql, like, gte } from "drizzle-orm";
 import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
 

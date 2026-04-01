@@ -17,11 +17,12 @@
 
 import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "./ai-adapter.js";
 import { db } from "../db.js";
+import { leads, contacts } from "@shared/schema";
 import {
   companies, prospects, prospectLists, sequences, websiteVisitors,
-  technographics, intentSignals, leads, contacts,
-  type Company, type Prospect
-} from "@shared/schema";
+  technographics, intentSignals,
+  type Company, type Prospect,
+} from "@shared/schema-extended";
 import { eq, and, desc, sql, like, or, gte, lte, inArray } from "drizzle-orm";
 import { logError } from "./healing.js";
 

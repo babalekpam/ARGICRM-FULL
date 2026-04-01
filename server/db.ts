@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "@shared/schema";
+import * as schemaExtended from "@shared/schema-extended";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set. Add it to your .env file or Replit Secrets.");
@@ -24,5 +25,5 @@ pool.on("connect", (client) => {
   });
 });
 
-export const db = drizzle(pool, { schema });
+export const db = drizzle(pool, { schema: { ...schema, ...schemaExtended } });
 export { pool };

@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
-import { tenants, users, contacts, leads, deals, agentSessions, agentMessages } from "@shared/schema";
+import { tenants, users, contacts, leads, deals } from "@shared/schema";
+import { agentSessions, agentMessages } from "@shared/schema-extended";
 import { eq, desc, sql, gte } from "drizzle-orm";
 
 const router = Router();

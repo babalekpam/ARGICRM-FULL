@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
-import { agentSessions, agentMessages, agentMemories, agentTasks, agentLeadGenResults, leads } from "@shared/schema";
+import { leads } from "@shared/schema";
+import { agentSessions, agentMessages, agentMemories, agentTasks, agentLeadGenResults } from "@shared/schema-extended";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { runAgent, runLeadGenCampaign, saveMemory, AGENT_DEFINITIONS, type AgentType } from "../services/agents.js";
 

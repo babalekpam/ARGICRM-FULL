@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { db } from "./db.js";
-import { tenants, users, pipelines } from "@shared/schema";
+import { tenants, users } from "@shared/schema";
+import { pipelines } from "@shared/schema-extended";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 

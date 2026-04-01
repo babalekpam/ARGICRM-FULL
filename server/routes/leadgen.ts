@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
-import { prospects, companies, intentSignals, technographics } from "@shared/schema";
+import { prospects, companies, intentSignals, technographics } from "@shared/schema-extended";
 import { eq, and, desc, sql } from "drizzle-orm";
 import {
   runAutonomousLeadGen, discoverCompanies, enrichCompanyFull,

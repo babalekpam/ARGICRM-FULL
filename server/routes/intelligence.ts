@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
+import { leads, contacts } from "@shared/schema";
 import {
   companies, prospects, prospectLists, sequences, websiteVisitors,
-  intentSignals, technographics, leads, contacts
-} from "@shared/schema";
+  intentSignals, technographics,
+} from "@shared/schema-extended";
 import { eq, and, desc, sql, like, or, gte, inArray } from "drizzle-orm";
 import {
   enrichCompany, discoverContacts, searchProspects,

@@ -1,14 +1,17 @@
 import { eq, and, desc, asc, like, or, count, sum, gte, lte, sql } from "drizzle-orm";
 import { db } from "./db.js";
 import {
-  tenants, users, contacts, leads, deals, tasks, accounts, activities,
-  campaigns, invoices, pipelines, aiUsage,
-  type Tenant, type InsertTenant, type User, type InsertUser,
+  tenants, users, contacts, leads, deals, tasks, accounts, activities, campaigns,
+  type User, type InsertUser,
   type Contact, type InsertContact, type Lead, type InsertLead,
   type Deal, type InsertDeal, type Task, type InsertTask,
   type Account, type InsertAccount, type Activity, type InsertActivity,
-  type Campaign, type InsertCampaign, type Invoice, type InsertInvoice,
+  type Campaign, type InsertCampaign,
 } from "@shared/schema";
+import {
+  invoices, pipelines, aiUsage,
+  type Invoice, type InsertInvoice,
+} from "@shared/schema-extended";
 
 // ═══════════════════════════════════════════════════
 // TENANTS

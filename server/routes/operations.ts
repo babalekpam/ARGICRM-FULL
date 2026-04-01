@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { authenticate, requireRole, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
-import { employees, projects, projectTasks, documents, landingPages, funnels, abTests, reputationReviews, whitelabelSettings, clientPortalAccess } from "@shared/schema";
+import { projects, landingPages, abTests } from "@shared/schema";
+import { employees, projectTasks, documents, funnels, reputationReviews, whitelabelSettings, clientPortalAccess } from "@shared/schema-extended";
 import { eq, and, desc, sql, asc } from "drizzle-orm";
 import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
 

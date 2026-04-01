@@ -12,7 +12,7 @@
  */
 
 import { db, pool } from "../db.js";
-import { healthChecks, errorLogs, healingRules, performanceMetrics } from "@shared/schema";
+import { healthChecks, errorLogs, healingRules, performanceMetrics } from "@shared/schema-extended";
 import { eq, desc, and, sql, gte, lt } from "drizzle-orm";
 import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "./ai-adapter.js";
 import { EventEmitter } from "events";

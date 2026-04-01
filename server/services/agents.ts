@@ -1,10 +1,12 @@
 import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "./ai-adapter.js";
 import { db } from "../db.js";
 import {
-  agentMemories, agentSessions, agentMessages, agentTasks, agentLeadGenResults,
   contacts, leads, deals, tasks, accounts, activities, campaigns, users, tenants,
-  type AgentType
 } from "@shared/schema";
+import {
+  agentMemories, agentSessions, agentMessages, agentTasks, agentLeadGenResults,
+  type AgentType,
+} from "@shared/schema-extended";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 
 

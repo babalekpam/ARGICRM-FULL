@@ -19,8 +19,8 @@ import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "./ai-a
 import { db } from "../db.js";
 import {
   prospects, companies, intentSignals, technographics, sequences,
-  type Prospect, type Company
-} from "@shared/schema";
+  type Prospect, type Company,
+} from "@shared/schema-extended";
 import { eq, and } from "drizzle-orm";
 import {
   searchDuckDuckGo, searchOpenCorporates, lookupDomain,

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
-import { transactions, bankAccounts, taxRates, invoices } from "@shared/schema";
+import { transactions, bankAccounts, taxRates, invoices } from "@shared/schema-extended";
 import { eq, and, desc, sql, gte, lte, sum } from "drizzle-orm";
 import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
 
