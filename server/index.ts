@@ -9,6 +9,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes.js";
 
+// Prevent database disconnections or unhandled promise rejections from crashing the process
+process.on("uncaughtException", (err) => {
+  console.error("[SERVER] Uncaught exception (non-fatal):", err.message);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[SERVER] Unhandled rejection (non-fatal):", reason);
+});
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === "production";
 const PORT = Number(process.env.PORT) || 5000;

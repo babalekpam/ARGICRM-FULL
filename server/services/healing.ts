@@ -527,13 +527,17 @@ export function startHealingScheduler() {
       recordMetric("memory_heap_percent", Math.round((mem.heapUsed / mem.heapTotal) * 100), "%");
 
       // 3. Retry unresolved errors
-      const unresolved = await db.select()
-        .from(errorLogs)
-        .where(and(eq(errorLogs.resolved, false), lt(errorLogs.healingAttempts, 3)))
-        .limit(10);
+      try {
+        const unresolved = await db.select()
+          .from(errorLogs)
+          .where(and(eq(errorLogs.resolved, false), lt(errorLogs.healingAttempts, 3)))
+          .limit(10);
 
-      for (const err of unresolved) {
-        await attemptAutoHeal(err.id, err.message, err.category, err.stack);
+        for (const err of unresolved) {
+          await attemptAutoHeal(err.id, err.message, err.category, err.stack);
+        }
+      } catch {
+        // Table may not exist yet during initial deployment — skip silently
       }
 
       // 4. Log summary
