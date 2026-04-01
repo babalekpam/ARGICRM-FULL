@@ -95,7 +95,8 @@ export async function runHealthCheck(checkType: string): Promise<{
         }
         const client = await pool.connect();
         await client.query("SELECT 1");
-        const [tableCount] = await db.execute(sql`SELECT count(*) as n FROM information_schema.tables WHERE table_schema = 'public'`);
+        const countResult = await client.query("SELECT count(*) as n FROM information_schema.tables WHERE table_schema = 'public'");
+        const tableCount = countResult.rows[0];
         client.release();
         recordSuccess("database");
         const latency = Date.now() - start;
