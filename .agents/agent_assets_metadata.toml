@@ -6,3 +6,21 @@ id = "meH1wiUPjdXMORplzCTQJ"
 uri = "file://argilette-project.zip"
 type = "unspecified"
 title = "ARGILETTE Project - Full Source Code"
+
+[[outputs]]
+id = "ihKq10SYxc9Kbk3ZQ3Y2G"
+uri = "file://argilette-part1-client.zip"
+type = "unspecified"
+title = "Part 1 - Frontend (client/)"
+
+[[outputs]]
+id = "sJ6VmmG8RVVKTvL4eDNK6"
+uri = "file://argilette-part2-server.zip"
+type = "unspecified"
+title = "Part 2 - Backend (server/ + shared/)"
+
+[[outputs]]
+id = "5Rpy2XsHRlExKC06BkLn9"
+uri = "file://argilette-part3-config.zip"
+type = "unspecified"
+title = "Part 3 - Config + Public files"
