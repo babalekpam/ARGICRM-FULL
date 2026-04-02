@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /security
+
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /contacts
+Disallow: /deals
+Disallow: /tasks
+Disallow: /campaigns
+Disallow: /reports
+Disallow: /settings
+Disallow: /team
+Disallow: /leads
+Disallow: /ops/
+
+Sitemap: https://www.argilette.org/sitemap.xml
