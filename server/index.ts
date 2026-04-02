@@ -178,6 +178,51 @@ async function main() {
     next();
   });
 
+  // ─── Social media bot pre-renderer ────────────────────
+  // Returns a 200 with full OG meta tags for crawlers (Facebook, Twitter, etc.)
+  const SOCIAL_BOTS = /facebookexternalhit|facebot|twitterbot|linkedinbot|whatsapp|slackbot|discordbot|telegrambot|pinterest|googlebot|bingbot/i;
+
+  const OG_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARGILETTE CRM | AI-Powered CRM for Sales Teams &amp; Agencies</title>
+  <meta name="description" content="Full CRM + 6 AI employees + white-label branding. Sell it under your own name at your own price, or use it for your team. 90% cheaper than piecing it together." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="ARGILETTE CRM" />
+  <meta property="og:url" content="https://www.argilette.org/" />
+  <meta property="og:title" content="ARGILETTE CRM | AI-Powered CRM for Sales Teams &amp; Agencies" />
+  <meta property="og:description" content="Full CRM + 6 AI employees + white-label branding. Sell it under your own name at your own price, or use it for your team. 90% cheaper than piecing it together." />
+  <meta property="og:image" content="https://www.argilette.org/assets/og-image.png?v=3" />
+  <meta property="og:image:width" content="1075" />
+  <meta property="og:image:height" content="418" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="ARGILETTE CRM — AI-Powered CRM for Sales Teams and Agencies" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@argilette" />
+  <meta name="twitter:title" content="ARGILETTE CRM | AI-Powered CRM for Sales Teams &amp; Agencies" />
+  <meta name="twitter:description" content="Full CRM + 6 AI employees + white-label branding. Sell it under your own name. 90% cheaper than alternatives." />
+  <meta name="twitter:image" content="https://www.argilette.org/assets/og-image.png?v=3" />
+  <link rel="canonical" href="https://www.argilette.org/" />
+</head>
+<body>
+  <h1>ARGILETTE CRM</h1>
+  <p>AI-Powered CRM for Sales Teams and Agencies. Full CRM + 6 AI employees + white-label branding.</p>
+  <a href="https://www.argilette.org/">Visit ARGILETTE CRM</a>
+</body>
+</html>`;
+
+  app.use((req, res, next) => {
+    const ua = req.headers["user-agent"] || "";
+    if (SOCIAL_BOTS.test(ua) && req.method === "GET" && !req.path.startsWith("/api/")) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      return res.status(200).send(OG_HTML);
+    }
+    next();
+  });
+
   // ─── Register all API routes ───────────────────────────
   const server = await registerRoutes(app);
 
