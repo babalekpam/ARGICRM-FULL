@@ -61,11 +61,10 @@ Return ONLY a JSON array (no markdown):
         tenantId: req.user!.tenantId,
         projectId: projectId || null,
         keyword: kw.keyword,
-        searchVolume: kw.searchVolume,
-        difficulty: kw.difficulty,
-        cpc: String(kw.cpc),
-        intent: kw.intent,
-        country,
+        searchVolume: kw.searchVolume ?? 0,
+        difficulty: kw.difficulty ?? 0,
+        cpc: kw.cpc ?? 0,
+        trend: kw.trend ?? "stable",
       }).returning();
       saved.push(k);
     }
@@ -142,7 +141,7 @@ router.post("/backlinks/analyze", authenticate, async (req: AuthRequest, res) =>
     let generated: any[] = [];
     if (process.env.ANTHROPIC_API_KEY) {
       const msg = await complete({ messages: [{ role: "user", content: `Generate a realistic backlink profile analysis for domain "${domain}". Return ONLY JSON array of 10 backlinks:
-[{"sourceUrl":"https://example.com/post","sourceDomain":"example.com","targetUrl":"https://${domain}","anchorText":"related anchor","domainAuthority":45,"pageAuthority":38,"isDoFollow":true,"isActive":true}]` }], maxTokens: 800 });
+[{"url":"https://example.com/post","anchorText":"related anchor","domainScore":45,"date":"2024-01-15","source":"organic"}]` }], maxTokens: 800 });
       generated = JSON.parse(msg.replace(/```json|```/g, "").trim());
     } else {
       return res.status(503).json({ error: "ANTHROPIC_API_KEY required for backlink analysis." });
@@ -150,7 +149,15 @@ router.post("/backlinks/analyze", authenticate, async (req: AuthRequest, res) =>
 
     const saved = [];
     for (const bl of generated) {
-      const [b] = await db.insert(backlinks).values({ tenantId: req.user!.tenantId, projectId: projectId || null, ...bl }).returning();
+      const [b] = await db.insert(backlinks).values({
+        tenantId: req.user!.tenantId,
+        projectId: projectId || null,
+        url: bl.url || bl.sourceUrl || "",
+        anchorText: bl.anchorText,
+        domainScore: bl.domainScore ?? bl.domainAuthority ?? 0,
+        date: bl.date || new Date().toISOString().split("T")[0],
+        source: bl.source || "ai",
+      }).returning();
       saved.push(b);
     }
     res.json(saved);
@@ -158,7 +165,7 @@ router.post("/backlinks/analyze", authenticate, async (req: AuthRequest, res) =>
 });
 
 router.get("/backlinks", authenticate, async (req: AuthRequest, res) => {
-  const rows = await db.select().from(backlinks).where(eq(backlinks.tenantId, req.user!.tenantId)).orderBy(desc(backlinks.domainAuthority)).limit(200);
+  const rows = await db.select().from(backlinks).where(eq(backlinks.tenantId, req.user!.tenantId)).orderBy(desc(backlinks.domainScore)).limit(200);
   const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(backlinks).where(eq(backlinks.tenantId, req.user!.tenantId));
   res.json({ data: rows, total: Number(total) });
 });

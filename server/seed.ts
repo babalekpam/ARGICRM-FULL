@@ -9,18 +9,16 @@ async function seed() {
   console.log("🌱 Seeding database (clean — no mock data)...\n");
 
   // ─── Platform Owner Tenant ──────────────────────────────
-  let platformTenant = await db.query.tenants.findFirst({ where: eq(tenants.slug, "argilette") });
+  let platformTenant = await db.query.tenants.findFirst({ where: eq(tenants.name, "ARGILETTE") });
 
   if (!platformTenant) {
     [platformTenant] = await db.insert(tenants).values({
       name: "ARGILETTE",
       domain: "argilette.argilette.com",
-      slug: "argilette",
       subscriptionPlan: "enterprise",
       subscriptionStatus: "active",
+      plan: "enterprise",
       maxUsers: 999,
-      maxContacts: 999999,
-      primaryColor: "#3b82f6",
       isActive: true,
       settings: { timezone: "America/Chicago", currency: "USD", language: "en" },
     }).returning();
@@ -44,7 +42,7 @@ async function seed() {
       role: "platform_owner",
       isActive: true,
       emailVerified: true,
-      permissions: ["*"],
+      isAdmin: true,
     });
     console.log("✅ Owner created:", ownerEmail);
   } else {

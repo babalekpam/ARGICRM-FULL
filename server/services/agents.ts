@@ -545,7 +545,7 @@ export async function executeTool(toolName: string, params: any, tenantId: strin
     }
     case "get_leads": {
       const rows = await db.select().from(leads).where(eq(leads.tenantId, tenantId)).orderBy(desc(leads.createdAt)).limit(params?.limit || 20);
-      return rows.map(l => ({ id: l.id, name: `${l.firstName} ${l.lastName || ""}`.trim(), email: l.email, company: l.company, status: l.status, score: l.score, source: l.source, estimatedValue: l.estimatedValue }));
+      return rows.map(l => ({ id: l.id, name: `${l.firstName} ${l.lastName || ""}`.trim(), email: l.email, company: l.company, status: l.status, score: l.score, source: l.source }));
     }
     case "get_contacts": {
       const rows = await db.select().from(contacts).where(eq(contacts.tenantId, tenantId)).orderBy(desc(contacts.createdAt)).limit(params?.limit || 20);

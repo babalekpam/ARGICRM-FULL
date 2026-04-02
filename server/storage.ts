@@ -22,7 +22,7 @@ export async function getTenantByDomain(domain: string) {
 }
 
 export async function getTenantBySlug(slug: string) {
-  const [tenant] = await db.select().from(tenants).where(eq(tenants.slug, slug));
+  const [tenant] = await db.select().from(tenants).where(eq(tenants.domain, slug));
   return tenant;
 }
 

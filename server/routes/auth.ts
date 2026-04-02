@@ -21,7 +21,7 @@ router.post("/register", async (req, res) => {
     const body = schema.parse(req.body);
 
     // Check domain availability
-    const existing = await storage.getTenantBySlug(body.domain);
+    const existing = await storage.getTenantByDomain(`${body.domain}.argilette.com`);
     if (existing) return res.status(409).json({ error: "This domain is already taken. Choose another." });
 
     // Also check if email exists across ANY tenant to prevent confusion
@@ -34,12 +34,11 @@ router.post("/register", async (req, res) => {
     const tenant = await storage.createTenant({
       name: body.companyName,
       domain: `${body.domain}.argilette.com`,
-      slug: body.domain,
       subscriptionPlan: body.plan,
       subscriptionStatus: "trialing",
+      plan: body.plan === "trial" ? "free" : body.plan,
       trialEndsAt,
       maxUsers: 3,
-      maxContacts: 500,
       isActive: true,
       settings: { timezone: "UTC", currency: "USD", language: "en" },
     });
@@ -53,8 +52,7 @@ router.post("/register", async (req, res) => {
       passwordHash,
       role: "super_admin",
       isActive: true,
-      emailVerified: true, // Auto-verify for now
-      permissions: ["*"], // Super admin gets all permissions
+      emailVerified: true,
     });
 
     const token = generateToken({
@@ -70,7 +68,7 @@ router.post("/register", async (req, res) => {
     res.status(201).json({
       token,
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
-      tenant: { id: tenant.id, name: tenant.name, domain: tenant.domain, slug: tenant.slug, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt },
+      tenant: { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt },
     });
   } catch (err: any) {
     if (err.name === "ZodError") return res.status(400).json({ error: "Validation failed", details: err.errors });
@@ -92,7 +90,7 @@ router.post("/login", async (req, res) => {
 
     if (!user || !user.isActive) return res.status(401).json({ error: "Invalid email or password" });
 
-    const valid = await verifyPassword(password, user.passwordHash);
+    const valid = await verifyPassword(password, user.passwordHash ?? "");
     if (!valid) return res.status(401).json({ error: "Invalid email or password" });
 
     const tenant = await storage.getTenantById(user.tenantId);
@@ -107,13 +105,13 @@ router.post("/login", async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      permissions: user.permissions || [],
+      permissions: [],
     });
 
     res.json({
       token,
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
-      tenant: { id: tenant.id, name: tenant.name, domain: tenant.domain, slug: tenant.slug, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt },
+      tenant: { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt },
     });
   } catch (err: any) {
     if (err.name === "ZodError") return res.status(400).json({ error: "Invalid email or password format" });
@@ -131,8 +129,8 @@ router.get("/me", authenticate, async (req: AuthRequest, res) => {
     const tenant = await storage.getTenantById(user.tenantId);
 
     res.json({
-      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, avatar: user.avatar },
-      tenant: tenant ? { id: tenant.id, name: tenant.name, domain: tenant.domain, slug: tenant.slug, plan: tenant.subscriptionPlan, logo: tenant.logo, primaryColor: tenant.primaryColor, trialEndsAt: tenant.trialEndsAt, settings: tenant.settings } : null,
+      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, profileImageUrl: user.profileImageUrl },
+      tenant: tenant ? { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt, settings: tenant.settings } : null,
     });
   } catch (err) {
     console.error("Get me error:", err);
@@ -182,7 +180,6 @@ router.post("/invite", authenticate, async (req: AuthRequest, res) => {
       role: body.role,
       isActive: true,
       emailVerified: true,
-      permissions: [],
     });
 
     res.status(201).json({ user: { id: user.id, email: user.email, firstName: user.firstName, role: user.role } });

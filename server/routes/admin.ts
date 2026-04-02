@@ -83,8 +83,8 @@ router.put("/tenants/:id/status", authenticate, requireOwner, async (req: AuthRe
 
 // ── Update tenant plan ──────────────────────────────────────────
 router.put("/tenants/:id/plan", authenticate, requireOwner, async (req: AuthRequest, res) => {
-  const { plan, maxUsers, maxContacts } = req.body;
-  const [t] = await db.update(tenants).set({ subscriptionPlan: plan, maxUsers, maxContacts, subscriptionStatus: "active", updatedAt: new Date() }).where(eq(tenants.id, req.params.id)).returning();
+  const { plan, maxUsers } = req.body;
+  const [t] = await db.update(tenants).set({ subscriptionPlan: plan, plan, maxUsers, subscriptionStatus: "active", updatedAt: new Date() }).where(eq(tenants.id, req.params.id)).returning();
   res.json(t);
 });
 

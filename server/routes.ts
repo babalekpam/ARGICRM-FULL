@@ -287,24 +287,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const tenant = await storage.getTenantById(req.user!.tenantId);
       if (!tenant) return res.status(404).json({ error: "Workspace not found" });
-      res.json({ name: tenant.name, domain: tenant.domain, slug: tenant.slug, logo: tenant.logo, primaryColor: tenant.primaryColor, settings: tenant.settings, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt });
+      res.json({ name: tenant.name, domain: tenant.domain, settings: tenant.settings, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt });
     } catch (err) { res.status(500).json({ error: "Failed to fetch settings" }); }
   });
 
   app.put("/api/settings", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
     try {
-      const { name, logo, primaryColor, settings } = req.body;
-      const tenant = await storage.updateTenant(req.user!.tenantId, { name, logo, primaryColor, settings });
-      res.json({ name: tenant.name, logo: tenant.logo, primaryColor: tenant.primaryColor, settings: tenant.settings });
+      const { name, settings } = req.body;
+      const tenant = await storage.updateTenant(req.user!.tenantId, { name, settings });
+      res.json({ name: tenant.name, settings: tenant.settings });
     } catch (err) { res.status(500).json({ error: "Failed to update settings" }); }
   });
 
   // ─── Profile ──────────────────────────────────────────
   app.put("/api/profile", authenticate, async (req: AuthRequest, res) => {
     try {
-      const { firstName, lastName, avatar, timezone, preferredLanguage } = req.body;
-      const user = await storage.updateUser(req.user!.id, { firstName, lastName, avatar, timezone, preferredLanguage });
-      res.json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, avatar: user.avatar });
+      const { firstName, lastName, profileImageUrl, preferredLanguage } = req.body;
+      const user = await storage.updateUser(req.user!.id, { firstName, lastName, profileImageUrl, preferredLanguage });
+      res.json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profileImageUrl: user.profileImageUrl });
     } catch (err) { res.status(500).json({ error: "Failed to update profile" }); }
   });
 
