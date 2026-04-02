@@ -4,7 +4,7 @@ import {
   Users, TrendingUp, Zap, Shield, Globe, BarChart2,
   CheckCircle, ArrowRight, Star, Megaphone,
   ChevronRight, Bot, Target, DollarSign, Mail,
-  Phone, Building2, Activity, Play, X
+  Phone, Building2, Activity, Play, X, Paintbrush
 } from "lucide-react";
 
 const STATS = [
@@ -521,6 +521,118 @@ export default function LandingPage() {
               >Start your free trial <ArrowRight size={18} /></a>
             </Link>
             <p style={{ marginTop: 18, fontSize: 13, color: "#475569" }}>14 days free · No credit card · Cancel anytime</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── WHITE LABEL / AGENCY ────────────────────────────── */}
+      <section style={{ padding: "96px 40px", background: "linear-gradient(180deg, #080d1a 0%, #0d1224 100%)", position: "relative", overflow: "hidden" }}>
+        {/* Background decoration */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(99,102,241,0.12) 0%, transparent 70%)", pointerEvents: "none" }}/>
+        <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
+
+          {/* Badge */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 100, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, fontWeight: 600, color: "#818cf8" }}>
+              <Paintbrush size={13}/> WHITE LABEL &amp; AGENCY
+            </div>
+          </div>
+
+          <h2 style={{ textAlign: "center", fontSize: "clamp(28px,4vw,44px)", fontWeight: 800, color: "#f1f5f9", marginBottom: 16, lineHeight: 1.2 }}>
+            Sell it as your own.<br/>
+            <span style={{ background: "linear-gradient(90deg,#6366f1,#a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Keep 100% of the revenue.</span>
+          </h2>
+          <p style={{ textAlign: "center", fontSize: 17, color: "#64748b", maxWidth: 580, margin: "0 auto 60px" }}>
+            Agencies and resellers can white-label ARGILETTE CRM under their own brand — logo, colours, domain, emails. Your clients never see our name.
+          </p>
+
+          {/* Feature grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 20, marginBottom: 60 }}>
+            {[
+              { icon: "🎨", color: "#6366f1", title: "Full brand replacement", desc: "Your logo, your colours, your favicon. Every pixel matches your brand identity." },
+              { icon: "🌐", color: "#3b82f6", title: "Custom domain", desc: "Point crm.yourcompany.com to your workspace. SSL provisioned automatically." },
+              { icon: "✉️", color: "#10b981", title: "Branded emails", desc: "Welcome, invite, and receipt emails all sent from your company name and domain." },
+              { icon: "🏢", color: "#f59e0b", title: "Isolated workspaces", desc: "Each client gets their own secure, isolated environment. No data bleed." },
+              { icon: "💰", color: "#8b5cf6", title: "Your pricing, your margin", desc: "We charge you wholesale. You set your own price and keep the difference." },
+              { icon: "🔧", color: "#06b6d4", title: "API access", desc: "Connect to your existing client portals, reporting dashboards, or billing systems." },
+            ].map(f => (
+              <div key={f.title} style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "24px 22px" }}>
+                <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 6 }}>{f.title}</div>
+                <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>{f.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Comparison */}
+          <div style={{ background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: "36px 40px", marginBottom: 52 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 32, alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#6366f1", letterSpacing: "0.08em", marginBottom: 16 }}>WITHOUT WHITE LABEL</div>
+                {["Your clients see ARGILETTE branding", "ARGILETTE support contact shown", "Our name in emails and documents", "Limited to argilette.org domain"].map(t => (
+                  <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, fontSize: 13, color: "#64748b" }}>
+                    <div style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(239,68,68,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ color: "#f87171", fontSize: 10, fontWeight: 700 }}>✕</span>
+                    </div>
+                    {t}
+                  </div>
+                ))}
+              </div>
+              <div style={{ width: 1, height: 120, background: "rgba(255,255,255,0.08)" }}/>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#10b981", letterSpacing: "0.08em", marginBottom: 16 }}>WITH WHITE LABEL</div>
+                {["Your logo and brand everywhere", "Your support email on every screen", "Your name in all transactional emails", "crm.yourdomain.com with SSL"].map(t => (
+                  <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, fontSize: 13, color: "#94a3b8" }}>
+                    <div style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(34,197,94,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <CheckCircle size={9} color="#4ade80"/>
+                    </div>
+                    {t}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Agency pricing card */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20, marginBottom: 52 }}>
+            {[
+              { name: "Agency Starter", price: "$499", period: "/mo", seats: "Up to 10 client workspaces", highlight: false,
+                features: ["Full white-label", "Custom domain per workspace", "Branded emails", "Priority support", "Agency dashboard"] },
+              { name: "Agency Pro", price: "$999", period: "/mo", seats: "Up to 30 client workspaces", highlight: true,
+                features: ["Everything in Starter", "API access", "Custom onboarding flow", "Dedicated account manager", "SLA guarantee", "Volume discounts"] },
+              { name: "Enterprise", price: "Custom", period: "", seats: "Unlimited workspaces", highlight: false,
+                features: ["Unlimited white-label seats", "On-premise option", "Custom contract", "Co-branding available", "Revenue share model"] },
+            ].map(plan => (
+              <div key={plan.name} style={{ background: plan.highlight ? "linear-gradient(145deg,rgba(99,102,241,0.15),rgba(139,92,246,0.08))" : "rgba(255,255,255,0.025)", border: `1px solid ${plan.highlight ? "rgba(99,102,241,0.4)" : "rgba(255,255,255,0.07)"}`, borderRadius: 14, padding: "28px 24px", position: "relative" }}>
+                {plan.highlight && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(90deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 14px", borderRadius: 100, whiteSpace: "nowrap" }}>MOST POPULAR</div>}
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 4 }}>{plan.name}</div>
+                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 16 }}>{plan.seats}</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}>
+                  <span style={{ fontSize: 34, fontWeight: 800, color: "#f1f5f9" }}>{plan.price}</span>
+                  <span style={{ fontSize: 13, color: "#64748b" }}>{plan.period}</span>
+                </div>
+                {plan.features.map(f => (
+                  <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9, fontSize: 13, color: "#94a3b8" }}>
+                    <CheckCircle size={12} color="#6366f1"/>{f}
+                  </div>
+                ))}
+                <Link href="/contact">
+                  <a style={{ display: "block", textAlign: "center", marginTop: 20, padding: "10px", borderRadius: 8, background: plan.highlight ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "rgba(99,102,241,0.1)", color: plan.highlight ? "#fff" : "#818cf8", border: plan.highlight ? "none" : "1px solid rgba(99,102,241,0.3)", fontSize: 13, fontWeight: 600, textDecoration: "none", cursor: "pointer" }}>
+                    {plan.price === "Custom" ? "Contact sales" : "Get started"}
+                  </a>
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 14, color: "#475569", marginBottom: 20 }}>Already a Business or Enterprise customer? White-label is included — just go to <strong style={{ color: "#818cf8" }}>Settings → White Label</strong> to activate it.</p>
+            <Link href="/contact">
+              <a style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                Talk to our agency team <ArrowRight size={16}/>
+              </a>
+            </Link>
           </div>
         </div>
       </section>

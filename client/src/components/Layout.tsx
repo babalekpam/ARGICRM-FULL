@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
+import { useWhiteLabel } from "../contexts/WhiteLabelContext";
 import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard, Users, UserPlus, TrendingUp, CheckSquare,
@@ -147,6 +148,7 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
 
 export default function Layout({ children, title, subtitle, actions }: LayoutProps) {
   const { user, tenant, logout } = useAuth();
+  const { logoUrl, brandName } = useWhiteLabel();
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -171,10 +173,10 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
       <div style={{ padding: "14px 12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10, justifyContent: collapsed ? "center" : "space-between", flexShrink: 0 }}>
         {!collapsed && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <img src="/assets/logo.png" alt="ARGI CRM" style={{ width: 88, height: "auto", objectFit: "contain" }} />
+            <img src={logoUrl || "/assets/logo.png"} alt={brandName} style={{ width: 88, height: "auto", objectFit: "contain" }} />
           </div>
         )}
-        {collapsed && <img src="/assets/logo.png" alt="ARGI CRM" style={{ width: 44, height: "auto", objectFit: "contain" }} />}
+        {collapsed && <img src={logoUrl || "/assets/logo.png"} alt={brandName} style={{ width: 44, height: "auto", objectFit: "contain" }} />}
         <button onClick={() => setCollapsed(!collapsed)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "flex", borderRadius: 6, flexShrink: 0 }}>
           <ChevronLeft size={14} style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
         </button>
