@@ -4,6 +4,7 @@ import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/api";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { WhiteLabelProvider } from "./contexts/WhiteLabelContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
@@ -111,11 +112,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <WhiteLabelProvider>
-          <AppRoutes />
-        </WhiteLabelProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <WhiteLabelProvider>
+            <AppRoutes />
+          </WhiteLabelProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

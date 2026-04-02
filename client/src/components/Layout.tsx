@@ -2,13 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import { useWhiteLabel } from "../contexts/WhiteLabelContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard, Users, UserPlus, TrendingUp, CheckSquare,
   Building2, Megaphone, FileText, Settings, LogOut, ChevronLeft,
   Bell, Menu, Shield, Zap, Crown, ChevronRight, UsersRound,
   Bot, Search, Activity, ShoppingCart, DollarSign, Briefcase,
-  Globe, Target, Brain, BarChart2, Workflow, Sparkles, Command, X
+  Globe, Target, Brain, BarChart2, Workflow, Sparkles, Command, X,
+  Sun, Moon
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -149,6 +151,7 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
 export default function Layout({ children, title, subtitle, actions }: LayoutProps) {
   const { user, tenant, logout } = useAuth();
   const { logoUrl, brandName } = useWhiteLabel();
+  const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -330,6 +333,14 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
               )}
             </button>
             {actions}
+            <button
+              data-testid="button-theme-toggle"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 8, display: "flex", borderRadius: 8 }}
+            >
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
             <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 8, display: "flex", borderRadius: 8 }}>
               <Bell size={16} />
             </button>
