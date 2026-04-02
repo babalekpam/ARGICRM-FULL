@@ -6,7 +6,7 @@ import {
   Building2, Megaphone, FileText, Settings, LogOut, ChevronLeft,
   Bell, Menu, Shield, Zap, Crown, ChevronRight, UsersRound,
   Bot, Search, Activity, ShoppingCart, DollarSign, Briefcase,
-  Globe, Target, Brain, BarChart2
+  Globe, Target, Brain, BarChart2, Workflow, Sparkles
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -22,10 +22,18 @@ const NAV_SECTIONS = [
     ]
   },
   {
+    label: "Intelligence",
+    items: [
+      { label: "Analytics", icon: BarChart2, path: "/analytics" },
+      { label: "AI Tools", icon: Sparkles, path: "/ai-tools" },
+      { label: "Automation", icon: Workflow, path: "/workflows" },
+      { label: "Lead Intelligence", icon: Search, path: "/intelligence" },
+      { label: "AI Agents", icon: Bot, path: "/agents" },
+    ]
+  },
+  {
     label: "Sales & Marketing",
     items: [
-      { label: "AI Agents", icon: Bot, path: "/agents" },
-      { label: "Lead Intelligence", icon: Search, path: "/intelligence" },
       { label: "Marketing Hub", icon: Megaphone, path: "/marketing" },
       { label: "Campaigns", icon: Target, path: "/campaigns" },
       { label: "Invoices", icon: FileText, path: "/invoices" },
@@ -44,7 +52,6 @@ const NAV_SECTIONS = [
     items: [
       { label: "Projects", icon: Briefcase, path: "/projects" },
       { label: "Employees", icon: UsersRound, path: "/employees" },
-      { label: "Documents", icon: FileText, path: "/projects" },
     ]
   },
   {

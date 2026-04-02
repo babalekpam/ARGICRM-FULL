@@ -26,6 +26,9 @@ import FinancePage from "./pages/Finance";
 import { ProjectsPage, EmployeesPage, MarketingPage } from "./pages/Operations";
 import LeadGenPage from "./pages/LeadGen";
 import SuperAdminPage from "./pages/SuperAdmin";
+import AnalyticsPage from "./pages/Analytics";
+import AIToolsPage from "./pages/AITools";
+import WorkflowsPage from "./pages/Workflows";
 import NotFoundPage from "./pages/NotFound";
 
 function Guard({ children }: { children: React.ReactNode }) {
@@ -71,6 +74,9 @@ function AppRoutes() {
       <Route path="/employees">{() => <Guard><EmployeesPage /></Guard>}</Route>
       <Route path="/marketing">{() => <Guard><MarketingPage /></Guard>}</Route>
       <Route path="/superadmin">{() => <Guard><SuperAdminPage /></Guard>}</Route>
+      <Route path="/analytics">{() => <Guard><AnalyticsPage /></Guard>}</Route>
+      <Route path="/ai-tools">{() => <Guard><AIToolsPage /></Guard>}</Route>
+      <Route path="/workflows">{() => <Guard><WorkflowsPage /></Guard>}</Route>
       <Route>{() => <NotFoundPage />}</Route>
     </Switch>
   );

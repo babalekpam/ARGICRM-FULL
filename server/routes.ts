@@ -13,12 +13,21 @@ import ecommerceRouter from "./routes/ecommerce.js";
 import financeRouter from "./routes/finance.js";
 import operationsRouter from "./routes/operations.js";
 import leadgenRouter from "./routes/leadgen.js";
+import aiRouter from "./routes/ai.js";
+import analyticsRouter from "./routes/analytics.js";
+import workflowsRouter from "./routes/workflows.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Core Auth ──────────────────────────────────────
   app.use("/api/auth", authRouter);
   // ─── AI Agents ─────────────────────────────────────
   app.use("/api/agents", agentRouter);
+  // ─── AI Tools (deal intelligence, email, meeting) ──
+  app.use("/api/ai", aiRouter);
+  // ─── Analytics ─────────────────────────────────────
+  app.use("/api/analytics", analyticsRouter);
+  // ─── Workflow Automation ────────────────────────────
+  app.use("/api/workflows", workflowsRouter);
   // ─── Lead Intelligence ─────────────────────────────
   app.use("/api/intelligence", intelligenceRouter);
   // ─── Code Healing ──────────────────────────────────
