@@ -319,6 +319,10 @@ export async function updateCampaign(id: string, tenantId: string, data: Partial
   return campaign;
 }
 
+export async function deleteCampaign(id: string, tenantId: string) {
+  await db.delete(campaigns).where(and(eq(campaigns.id, id), eq(campaigns.tenantId, tenantId)));
+}
+
 // ═══════════════════════════════════════════════════
 // INVOICES
 // ═══════════════════════════════════════════════════
@@ -334,6 +338,10 @@ export async function createInvoice(data: InsertInvoice): Promise<Invoice> {
 export async function updateInvoice(id: string, tenantId: string, data: Partial<InsertInvoice>) {
   const [invoice] = await db.update(invoices).set({ ...data, updatedAt: new Date() }).where(and(eq(invoices.id, id), eq(invoices.tenantId, tenantId))).returning();
   return invoice;
+}
+
+export async function deleteInvoice(id: string, tenantId: string) {
+  await db.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.tenantId, tenantId)));
 }
 
 // ═══════════════════════════════════════════════════

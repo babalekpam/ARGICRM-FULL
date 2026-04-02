@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard, Users, UserPlus, TrendingUp, CheckSquare,
   Building2, Megaphone, FileText, Settings, LogOut, ChevronLeft,
   Bell, Menu, Shield, Zap, Crown, ChevronRight, UsersRound,
   Bot, Search, Activity, ShoppingCart, DollarSign, Briefcase,
-  Globe, Target, Brain, BarChart2, Workflow, Sparkles
+  Globe, Target, Brain, BarChart2, Workflow, Sparkles, Command, X
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -72,12 +73,94 @@ interface LayoutProps {
   actions?: React.ReactNode;
 }
 
+function GlobalSearch({ onClose }: { onClose: () => void }) {
+  const [q, setQ] = useState("");
+  const [, setLocation] = useLocation();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const { data: results } = useQuery<any>({
+    queryKey: ["/api/search", q],
+    queryFn: async () => {
+      if (q.trim().length < 2) return null;
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { credentials: "include" });
+      return res.json();
+    },
+    enabled: q.trim().length >= 2,
+  });
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  function go(path: string) { setLocation(path); onClose(); }
+
+  const sections = [
+    { key: "contacts", label: "Contacts", path: (i: any) => `/contacts`, icon: Users },
+    { key: "leads", label: "Leads", path: (i: any) => `/leads`, icon: UserPlus },
+    { key: "deals", label: "Deals", path: (i: any) => `/deals`, icon: TrendingUp },
+    { key: "accounts", label: "Accounts", path: (i: any) => `/accounts`, icon: Building2 },
+  ];
+
+  const hasResults = results && sections.some(s => (results[s.key]?.length || 0) > 0);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 80 }} onClick={onClose}>
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, width: "100%", maxWidth: 560, boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+          <Search size={16} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+          <input ref={inputRef} data-testid="input-global-search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search contacts, leads, deals, accounts…" style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15 }} />
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", padding: 2 }}><X size={14} /></button>
+        </div>
+        <div style={{ maxHeight: 400, overflowY: "auto" }}>
+          {q.trim().length < 2 ? (
+            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>Type to search across your CRM…</div>
+          ) : !hasResults ? (
+            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>No results for "{q}"</div>
+          ) : sections.map(s => {
+            const items = results?.[s.key] || [];
+            if (!items.length) return null;
+            const Icon = s.icon;
+            return (
+              <div key={s.key}>
+                <div style={{ padding: "8px 16px 4px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)" }}>{s.label}</div>
+                {items.map((item: any) => (
+                  <button key={item.id} onClick={() => go(s.path(item))} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "10px 16px", background: "none", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-overlay)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <div style={{ width: 30, height: 30, borderRadius: 7, background: "var(--bg-overlay)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={13} style={{ color: "var(--text-muted)" }} /></div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>{item.firstName ? `${item.firstName} ${item.lastName || ""}`.trim() : item.name || item.email || "—"}</div>
+                      {item.company && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{item.company}</div>}
+                      {item.email && !item.company && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{item.email}</div>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: 12, fontSize: 11, color: "var(--text-muted)" }}>
+          <span>↵ to navigate</span><span>Esc to close</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Layout({ children, title, subtitle, actions }: LayoutProps) {
   const { user, tenant, logout } = useAuth();
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const isPlatformOwner = user?.role === "platform_owner";
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setSearchOpen(true); }
+      if (e.key === "Escape") setSearchOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, []);
   const isTrial = tenant?.plan === "trial" || tenant?.plan === "trialing";
 
   const initials = [user?.firstName, user?.lastName].filter(Boolean).map(n => n![0]).join("") || user?.email?.[0]?.toUpperCase() || "?";
@@ -222,12 +305,21 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Global search trigger */}
+            <button data-testid="button-global-search" onClick={() => setSearchOpen(true)} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", color: "var(--text-muted)", fontSize: 12 }}>
+              <Search size={13} />
+              <span style={{ fontSize: 12 }}>Search…</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 2, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 4px", fontSize: 10, fontFamily: "monospace" }}>
+                <Command size={9} />K
+              </span>
+            </button>
             {actions}
             <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 8, display: "flex", borderRadius: 8 }}>
               <Bell size={16} />
             </button>
           </div>
         </header>
+        {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
 
         {/* Page content */}
         <main style={{ flex: 1, padding: "20px", overflowY: "auto" }} className="animate-fade-in">

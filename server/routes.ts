@@ -242,9 +242,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/campaigns", authenticate, async (req: AuthRequest, res) => {
     try {
-      const campaign = await storage.createCampaign({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
+      const campaign = await storage.createCampaign({ ...req.body, tenantId: req.user!.tenantId });
       res.status(201).json(campaign);
     } catch (err) { res.status(500).json({ error: "Failed to create campaign" }); }
+  });
+
+  app.put("/api/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
+    try {
+      const campaign = await storage.updateCampaign(req.params.id, req.user!.tenantId, req.body);
+      res.json(campaign);
+    } catch (err) { res.status(500).json({ error: "Failed to update campaign" }); }
+  });
+
+  app.delete("/api/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteCampaign(req.params.id, req.user!.tenantId);
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to delete campaign" }); }
   });
 
   // ─── Invoices ─────────────────────────────────────────
@@ -260,6 +274,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const invoice = await storage.createInvoice({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
       res.status(201).json(invoice);
     } catch (err) { res.status(500).json({ error: "Failed to create invoice" }); }
+  });
+
+  app.put("/api/invoices/:id", authenticate, async (req: AuthRequest, res) => {
+    try {
+      const invoice = await storage.updateInvoice(req.params.id, req.user!.tenantId, req.body);
+      res.json(invoice);
+    } catch (err) { res.status(500).json({ error: "Failed to update invoice" }); }
+  });
+
+  app.delete("/api/invoices/:id", authenticate, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteInvoice(req.params.id, req.user!.tenantId);
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to delete invoice" }); }
   });
 
   // ─── Dashboard ─────────────────────────────────────────
@@ -362,6 +390,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/ai/provider", authenticate, async (req: AuthRequest, res) => {
     const { getProviderInfo } = await import("./services/ai-adapter.js");
     res.json(getProviderInfo());
+  });
+
+  // ─── Global Search ────────────────────────────────
+  app.get("/api/search", authenticate, async (req: AuthRequest, res) => {
+    try {
+      const q = (req.query.q as string || "").trim().toLowerCase();
+      if (!q || q.length < 2) return res.json({ contacts: [], leads: [], deals: [], accounts: [] });
+      const tid = req.user!.tenantId;
+      const [cts, lds, dls, acts] = await Promise.all([
+        storage.getContacts(tid, { search: q, limit: 5 }),
+        storage.getLeads(tid, { search: q, limit: 5 }),
+        storage.getDeals(tid, { limit: 50 }),
+        storage.getAccounts(tid, { search: q, limit: 5 }),
+      ]);
+      const filteredDeals = dls.filter((d: any) => d.name?.toLowerCase().includes(q) || d.contactName?.toLowerCase().includes(q)).slice(0, 5);
+      res.json({ contacts: cts, leads: lds, deals: filteredDeals, accounts: acts });
+    } catch (err) { res.status(500).json({ error: "Search failed" }); }
+  });
+
+  // ─── Change Password ───────────────────────────────
+  app.post("/api/auth/change-password", authenticate, async (req: AuthRequest, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) return res.status(400).json({ error: "Both passwords required" });
+      if (newPassword.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
+      const user = await storage.getUserById(req.user!.id);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      const { verifyPassword, hashPassword } = await import("./middleware/auth.js");
+      const valid = await verifyPassword(currentPassword, user.passwordHash || "");
+      if (!valid) return res.status(401).json({ error: "Current password is incorrect" });
+      const hash = await hashPassword(newPassword);
+      await storage.updateUser(req.user!.id, { passwordHash: hash });
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to change password" }); }
+  });
+
+  // ─── Invite Team Member ────────────────────────────
+  app.post("/api/team/invite", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const { email, firstName, lastName, role } = req.body;
+      if (!email) return res.status(400).json({ error: "Email is required" });
+      const existing = await storage.getUserByEmailGlobal(email);
+      if (existing) return res.status(409).json({ error: "A user with this email already exists" });
+      const { hashPassword } = await import("./middleware/auth.js");
+      const tempPassword = Math.random().toString(36).slice(-10) + "A1!";
+      const hash = await hashPassword(tempPassword);
+      const newUser = await storage.createUser({
+        email, firstName: firstName || "", lastName: lastName || "",
+        role: role || "user", tenantId: req.user!.tenantId,
+        passwordHash: hash, isActive: true, emailVerified: false,
+      });
+      res.status(201).json({ id: newUser.id, email: newUser.email, firstName: newUser.firstName, role: newUser.role, tempPassword });
+    } catch (err: any) { res.status(500).json({ error: err.message || "Failed to invite user" }); }
   });
 
   app.get("/api/health", (_req, res) => {
