@@ -7,7 +7,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["sh", "-c", "node clear-and-push.cjs && npm run build"]
+build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
 [[ports]]

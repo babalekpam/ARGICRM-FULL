@@ -26,7 +26,11 @@ async function runStartupMigrations() {
   if (process.env.NODE_ENV !== "production") return;
   try {
     const { Pool } = await import("pg");
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.DATABASE_URL?.includes("neon") ? { rejectUnauthorized: false } : false });
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+    });
     const client = await pool.connect();
     const statements = [
       `CREATE TABLE IF NOT EXISTS "agents" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"name" text NOT NULL,"role" text NOT NULL,"description" text,"capabilities" jsonb DEFAULT '[]'::jsonb,"model" text DEFAULT 'claude-opus-4-5',"created_at" timestamp DEFAULT now())`,
