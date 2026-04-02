@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
-import { Eye, EyeOff, ArrowRight, Zap } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -36,14 +36,6 @@ export default function LoginPage() {
             </div>
             <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 8px" }}>Welcome back</h1>
             <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: 0 }}>Sign in to your workspace</p>
-          </div>
-
-          {/* Demo credentials hint */}
-          <div style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, padding: "10px 14px", marginBottom: 24, display: "flex", alignItems: "center", gap: 8 }}>
-            <Zap size={14} style={{ color: "#60a5fa", flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: "#93c5fd" }}>
-              Demo: <strong>demo@argilette.com</strong> / <strong>Demo123456!</strong>
-            </span>
           </div>
 
           <form onSubmit={submit}>
