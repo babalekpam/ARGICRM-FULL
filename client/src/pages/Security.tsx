@@ -106,7 +106,7 @@ export default function Security() {
         ]} />
 
         <Pillar icon={AlertTriangle} title="Vulnerability Management" color="#ef4444" items={[
-          "Responsible disclosure program — report vulnerabilities to security@argilette.com",
+          "Responsible disclosure program — report vulnerabilities to info@argilette.com",
           "Regular penetration testing by independent third-party security firms",
           "Dependency scanning and automated patching for known CVEs",
           "Static Application Security Testing (SAST) on every pull request",
@@ -124,7 +124,7 @@ export default function Security() {
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Security Contact</div>
-              <a href="mailto:security@argilette.com" style={{ color: "#e2e8f0", fontSize: 15, textDecoration: "none" }}>security@argilette.com</a>
+              <a href="mailto:info@argilette.com" style={{ color: "#e2e8f0", fontSize: 15, textDecoration: "none" }}>info@argilette.com</a>
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>PGP Key</div>

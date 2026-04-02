@@ -88,7 +88,7 @@ export default function Privacy() {
         </Section>
 
         <Section title="4. Data Retention">
-          <P>We retain your personal information for as long as your account is active or as needed to provide you Services. You may request deletion of your data at any time by contacting us at <a href="mailto:privacy@argilette.com" style={{ color: "#3b82f6" }}>privacy@argilette.com</a>. We will respond within 30 days.</P>
+          <P>We retain your personal information for as long as your account is active or as needed to provide you Services. You may request deletion of your data at any time by contacting us at <a href="mailto:info@argilette.com" style={{ color: "#3b82f6" }}>info@argilette.com</a>. We will respond within 30 days.</P>
           <P>Some information may be retained as required by law, for fraud prevention, or for legitimate business purposes such as resolving disputes or enforcing our agreements.</P>
         </Section>
 
@@ -127,7 +127,7 @@ export default function Privacy() {
             "Restriction: Request that we restrict processing of your data",
             "Opt-out of sale: California residents may opt out of the sale of personal information (we do not sell data)",
           ]} />
-          <P>To exercise any of these rights, contact us at <a href="mailto:privacy@argilette.com" style={{ color: "#3b82f6" }}>privacy@argilette.com</a>.</P>
+          <P>To exercise any of these rights, contact us at <a href="mailto:info@argilette.com" style={{ color: "#3b82f6" }}>info@argilette.com</a>.</P>
         </Section>
 
         <Section title="9. Cookies">
@@ -145,7 +145,7 @@ export default function Privacy() {
         <Section title="12. Contact Us">
           <P>For privacy-related questions or to exercise your rights, contact our Data Protection Officer:</P>
           <UL items={[
-            "Email: privacy@argilette.com",
+            "Email: info@argilette.com",
             "Address: ARGILETTE LLC, Privacy Team",
             "Response time: Within 30 business days",
           ]} />

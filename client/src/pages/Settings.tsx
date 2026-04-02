@@ -164,7 +164,7 @@ export default function SettingsPage() {
                 </div>
                 <div style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"12px 16px",display:"flex",gap:10,alignItems:"flex-start"}}>
                   <Shield size={14} style={{color:"var(--text-muted)",marginTop:1,flexShrink:0}}/>
-                  <div style={{fontSize:12,color:"var(--text-muted)"}}>To change your domain or plan, contact support at support@argilette.com</div>
+                  <div style={{fontSize:12,color:"var(--text-muted)"}}>To change your domain or plan, contact us at info@argilette.com</div>
                 </div>
                 <div style={{display:"flex",justifyContent:"flex-end"}}><SaveButton loading={updateOrg.isPending} saved={orgSaved}/></div>
               </form>

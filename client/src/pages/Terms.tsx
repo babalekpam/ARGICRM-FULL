@@ -71,7 +71,7 @@ export default function Terms() {
           <P><strong style={{ color: "#e2e8f0" }}>Subscription Fees:</strong> Access to the Services requires a paid subscription. Fees are charged in advance on a monthly or annual basis, depending on your selected plan.</P>
           <P><strong style={{ color: "#e2e8f0" }}>Payment:</strong> All payments are processed securely by Stripe. By providing payment information, you authorize us to charge the applicable fees to your payment method.</P>
           <P><strong style={{ color: "#e2e8f0" }}>Auto-Renewal:</strong> Subscriptions automatically renew at the end of each billing period unless cancelled before the renewal date.</P>
-          <P><strong style={{ color: "#e2e8f0" }}>Refunds:</strong> We offer a 14-day free trial. After the trial, fees are non-refundable except where required by law. Contact <a href="mailto:billing@argilette.com" style={{ color: "#8b5cf6" }}>billing@argilette.com</a> for billing disputes.</P>
+          <P><strong style={{ color: "#e2e8f0" }}>Refunds:</strong> We offer a 14-day free trial. After the trial, fees are non-refundable except where required by law. Contact <a href="mailto:info@argilette.com" style={{ color: "#8b5cf6" }}>info@argilette.com</a> for billing disputes.</P>
           <P><strong style={{ color: "#e2e8f0" }}>Price Changes:</strong> We may change our pricing with 30 days' notice. Continued use of the Services after a price change constitutes acceptance of the new pricing.</P>
         </Section>
 
@@ -139,7 +139,7 @@ export default function Terms() {
         </Section>
 
         <Section title="13. Contact">
-          <P>For questions about these Terms, contact us at <a href="mailto:legal@argilette.com" style={{ color: "#8b5cf6" }}>legal@argilette.com</a>.</P>
+          <P>For questions about these Terms, contact us at <a href="mailto:info@argilette.com" style={{ color: "#8b5cf6" }}>info@argilette.com</a>.</P>
         </Section>
       </div>
 
