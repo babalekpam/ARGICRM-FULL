@@ -134,7 +134,12 @@ async function main() {
 
   app.use(cors({
     origin: isProd
-      ? [process.env.APP_URL || "https://argilette.org", /\.argilette\.org$/, /\.argilette\.com$/]
+      ? [
+          process.env.APP_URL || "https://argilette.org",
+          "https://www.argilette.org",
+          /\.argilette\.org$/,
+          /\.argilette\.com$/,
+        ]
       : true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

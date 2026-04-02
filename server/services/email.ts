@@ -92,7 +92,7 @@ export async function sendWelcomeEmail(opts: {
     </div>
     ${trialNote}
     <p>You can start adding contacts, managing deals, and tracking your pipeline right away.</p>
-    <a href="https://argilette.org" class="btn">Go to my workspace</a>
+    <a href="https://www.argilette.org" class="btn">Go to my workspace</a>
     <p style="margin-top:24px">If you have any questions, our team is here to help. Just reply to this email.</p>
   `);
 
@@ -121,7 +121,7 @@ export async function sendTeamInviteEmail(opts: {
     <p style="font-size:13px;color:#64748b;margin-bottom:4px">Temporary password:</p>
     <div class="code">${tempPassword}</div>
     <div class="warning">For your security, please change this password immediately after your first login.</div>
-    <a href="https://argilette.org" class="btn">Accept Invitation & Log In</a>
+    <a href="https://www.argilette.org" class="btn">Accept Invitation & Log In</a>
   `);
 
   await send(to, `You're invited to join ${workspaceName} on Argilette`, html);
