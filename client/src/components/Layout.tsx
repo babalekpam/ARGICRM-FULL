@@ -29,6 +29,7 @@ const NAV_SECTIONS = [
       { label: "Automation", icon: Workflow, path: "/workflows" },
       { label: "Lead Intelligence", icon: Search, path: "/intelligence" },
       { label: "AI Agents", icon: Bot, path: "/agents" },
+      { label: "Skills Library", icon: Brain, path: "/skills" },
     ]
   },
   {

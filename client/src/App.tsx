@@ -29,6 +29,7 @@ import SuperAdminPage from "./pages/SuperAdmin";
 import AnalyticsPage from "./pages/Analytics";
 import AIToolsPage from "./pages/AITools";
 import WorkflowsPage from "./pages/Workflows";
+import SkillsPage from "./pages/Skills";
 import NotFoundPage from "./pages/NotFound";
 
 function Guard({ children }: { children: React.ReactNode }) {
@@ -77,6 +78,7 @@ function AppRoutes() {
       <Route path="/analytics">{() => <Guard><AnalyticsPage /></Guard>}</Route>
       <Route path="/ai-tools">{() => <Guard><AIToolsPage /></Guard>}</Route>
       <Route path="/workflows">{() => <Guard><WorkflowsPage /></Guard>}</Route>
+      <Route path="/skills">{() => <Guard><SkillsPage /></Guard>}</Route>
       <Route>{() => <NotFoundPage />}</Route>
     </Switch>
   );

@@ -16,6 +16,7 @@ import leadgenRouter from "./routes/leadgen.js";
 import aiRouter from "./routes/ai.js";
 import analyticsRouter from "./routes/analytics.js";
 import workflowsRouter from "./routes/workflows.js";
+import skillsRouter from "./routes/skills.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Core Auth ──────────────────────────────────────
@@ -28,6 +29,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/analytics", analyticsRouter);
   // ─── Workflow Automation ────────────────────────────
   app.use("/api/workflows", workflowsRouter);
+  // ─── Skills Library ────────────────────────────────
+  app.use("/api/skills", skillsRouter);
   // ─── Lead Intelligence ─────────────────────────────
   app.use("/api/intelligence", intelligenceRouter);
   // ─── Code Healing ──────────────────────────────────
