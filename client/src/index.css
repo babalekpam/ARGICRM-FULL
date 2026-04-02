@@ -327,6 +327,11 @@ code, pre { font-family: 'JetBrains Mono', monospace; }
   50% { transform: translateY(-6px); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .animate-slide-up { animation: slide-up 0.35s ease-out; }
 .animate-fade-in { animation: fade-in 0.25s ease-out; }
 .animate-slide-in-right { animation: slide-in-right 0.3s ease-out; }

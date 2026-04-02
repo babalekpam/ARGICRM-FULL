@@ -339,6 +339,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { res.status(500).json({ error: "Failed to update settings" }); }
   });
 
+  // ─── SMTP Settings ─────────────────────────────────────
+  app.get("/api/settings/smtp", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const tenant = await storage.getTenantById(req.user!.tenantId);
+      if (!tenant) return res.status(404).json({ error: "Workspace not found" });
+      const smtp = (tenant.settings as any)?.smtp || {};
+      // Never send password back to frontend — return masked version
+      res.json({ ...smtp, pass: smtp.pass ? "••••••••" : "" });
+    } catch (err) { res.status(500).json({ error: "Failed to fetch SMTP settings" }); }
+  });
+
+  app.put("/api/settings/smtp", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const { host, port, secure, user, pass, senderName, senderEmail } = req.body;
+      const tenant = await storage.getTenantById(req.user!.tenantId);
+      if (!tenant) return res.status(404).json({ error: "Workspace not found" });
+      const currentSettings: any = tenant.settings || {};
+      const currentSmtp: any = currentSettings.smtp || {};
+      // If pass is the masked sentinel, keep existing password
+      const finalPass = (pass && pass !== "••••••••") ? pass : currentSmtp.pass;
+      const updatedSettings = {
+        ...currentSettings,
+        smtp: { host, port: Number(port) || 587, secure: Boolean(secure), user, pass: finalPass, senderName, senderEmail },
+      };
+      await storage.updateTenant(req.user!.tenantId, { settings: updatedSettings });
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to save SMTP settings" }); }
+  });
+
+  app.post("/api/settings/smtp/test", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const { testTenantSmtp } = await import("./services/email");
+      const tenant = await storage.getTenantById(req.user!.tenantId);
+      if (!tenant) return res.status(404).json({ error: "Workspace not found" });
+      const smtp = (tenant.settings as any)?.smtp;
+      if (!smtp?.host || !smtp?.user || !smtp?.pass) {
+        return res.status(400).json({ error: "SMTP settings are incomplete. Save your settings first." });
+      }
+      await testTenantSmtp(smtp);
+      res.json({ success: true, message: "Connection successful! Your SMTP settings are working." });
+    } catch (err: any) {
+      res.status(400).json({ error: `Connection failed: ${err.message}` });
+    }
+  });
+
   // ─── Profile ──────────────────────────────────────────
   app.put("/api/profile", authenticate, async (req: AuthRequest, res) => {
     try {

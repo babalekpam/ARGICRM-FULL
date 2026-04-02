@@ -2,6 +2,47 @@ import nodemailer from "nodemailer";
 
 const FROM = "ARGILETTE CRM <info@argilette.com>";
 
+// ─── Per-Tenant SMTP sending ──────────────────────────────────────────────────
+export interface TenantSmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  senderName: string;
+  senderEmail: string;
+}
+
+export async function testTenantSmtp(cfg: TenantSmtpConfig): Promise<void> {
+  const t = nodemailer.createTransport({
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure,
+    auth: { user: cfg.user, pass: cfg.pass },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+  });
+  await t.verify();
+  t.close();
+}
+
+export async function sendWithTenantSmtp(
+  cfg: TenantSmtpConfig,
+  to: string | string[],
+  subject: string,
+  html: string,
+): Promise<void> {
+  const t = nodemailer.createTransport({
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure,
+    auth: { user: cfg.user, pass: cfg.pass },
+  });
+  const from = `${cfg.senderName} <${cfg.senderEmail}>`;
+  await t.sendMail({ from, to, subject, html });
+  t.close();
+}
+
 const transporter = nodemailer.createTransport({
   host: "smtp.zoho.com",
   port: 465,

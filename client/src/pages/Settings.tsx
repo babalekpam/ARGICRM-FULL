@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import Layout from "../components/Layout";
-import { User, Building2, Lock, Bell, Shield, CheckCircle, AlertCircle, Eye, EyeOff, Globe, Mail, Phone, Paintbrush, ExternalLink } from "lucide-react";
+import { User, Building2, Lock, Bell, Shield, CheckCircle, AlertCircle, Eye, EyeOff, Globe, Mail, Phone, Paintbrush, ExternalLink, Wifi, WifiOff, Loader2 } from "lucide-react";
 
 const TABS = [
   { id:"profile", label:"Profile", icon:User },
@@ -11,6 +11,7 @@ const TABS = [
   { id:"security", label:"Security", icon:Lock },
   { id:"notifications", label:"Notifications", icon:Bell },
   { id:"branding", label:"White Label", icon:Paintbrush },
+  { id:"email", label:"Email / SMTP", icon:Mail },
 ];
 
 function SaveButton({ loading, saved }: { loading: boolean; saved: boolean }) {
@@ -36,9 +37,14 @@ export default function SettingsPage() {
   const [orgSaved, setOrgSaved] = useState(false);
   const [brandSaved, setBrandSaved] = useState(false);
   const [brand, setBrand] = useState({ companyName:"", logoUrl:"", faviconUrl:"", primaryColor:"#6366f1", secondaryColor:"#8b5cf6", customDomain:"", supportEmail:"" });
+  const [smtp, setSmtp] = useState({ host:"", port:"587", secure:false, user:"", pass:"", senderName:"", senderEmail:"" });
+  const [smtpSaved, setSmtpSaved] = useState(false);
+  const [smtpTest, setSmtpTest] = useState<{status:"idle"|"loading"|"ok"|"fail", msg:string}>({ status:"idle", msg:"" });
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
 
   const { data: settings } = useQuery<any>({ queryKey:["/api/settings"] });
   const { data: wlData } = useQuery<any>({ queryKey:["/api/ops/whitelabel"] });
+  const { data: smtpData } = useQuery<any>({ queryKey:["/api/settings/smtp"] });
 
   useEffect(()=>{
     if(user){ setProfile({ firstName:user.firstName||"", lastName:user.lastName||"", email:user.email||"", preferredLanguage:user.preferredLanguage||"en" }); }
@@ -51,6 +57,10 @@ export default function SettingsPage() {
   useEffect(()=>{
     if(wlData && wlData.id){ setBrand({ companyName:wlData.companyName||"", logoUrl:wlData.logoUrl||"", faviconUrl:wlData.faviconUrl||"", primaryColor:wlData.primaryColor||"#6366f1", secondaryColor:wlData.secondaryColor||"#8b5cf6", customDomain:wlData.customDomain||"", supportEmail:wlData.supportEmail||"" }); }
   },[wlData]);
+
+  useEffect(()=>{
+    if(smtpData){ setSmtp({ host:smtpData.host||"", port:String(smtpData.port||587), secure:Boolean(smtpData.secure), user:smtpData.user||"", pass:smtpData.pass||"", senderName:smtpData.senderName||"", senderEmail:smtpData.senderEmail||"" }); }
+  },[smtpData]);
 
   const updateProfile = useMutation({
     mutationFn:(d:any)=>apiRequest("PUT","/api/profile",d),
@@ -66,6 +76,23 @@ export default function SettingsPage() {
     mutationFn:(d:any)=>apiRequest("PUT","/api/ops/whitelabel",d),
     onSuccess:()=>{ queryClient.invalidateQueries({queryKey:["/api/ops/whitelabel"]}); setBrandSaved(true); setTimeout(()=>setBrandSaved(false),3000); }
   });
+
+  const updateSmtp = useMutation({
+    mutationFn:(d:any)=>apiRequest("PUT","/api/settings/smtp",d),
+    onSuccess:()=>{ queryClient.invalidateQueries({queryKey:["/api/settings/smtp"]}); setSmtpSaved(true); setTimeout(()=>setSmtpSaved(false),3000); }
+  });
+
+  async function testSmtp() {
+    setSmtpTest({ status:"loading", msg:"" });
+    try {
+      const res = await apiRequest("POST","/api/settings/smtp/test",{});
+      setSmtpTest({ status:"ok", msg:(res as any).message||"Connection successful!" });
+    } catch(e:any) {
+      setSmtpTest({ status:"fail", msg:e.message||"Connection failed" });
+    }
+  }
+
+  function submitSmtp(e:React.FormEvent){ e.preventDefault(); updateSmtp.mutate({ ...smtp, port:Number(smtp.port) }); }
 
   const changePwd = useMutation({
     mutationFn:(d:any)=>apiRequest("POST","/api/auth/change-password",d),
@@ -344,6 +371,118 @@ export default function SettingsPage() {
                       </div>
                       <span style={{color:item.done?"var(--text-primary)":"var(--text-muted)"}}>{item.label}</span>
                       {!item.done&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:"rgba(245,158,11,0.1)",color:"#fbbf24",marginLeft:"auto"}}>Soon</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {tab==="email"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+              {/* Header Banner */}
+              <div style={{background:"linear-gradient(135deg,rgba(16,185,129,0.1),rgba(6,182,212,0.06))",border:"1px solid rgba(16,185,129,0.2)",borderRadius:10,padding:"20px 24px",display:"flex",gap:16,alignItems:"center"}}>
+                <div style={{width:44,height:44,borderRadius:10,background:"linear-gradient(135deg,#10b981,#06b6d4)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <Mail size={20} color="#fff"/>
+                </div>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,marginBottom:3}}>Email / SMTP Configuration</div>
+                  <div style={{fontSize:13,color:"var(--text-muted)"}}>Connect your own email server. All campaign emails will be sent from your domain, not ARGILETTE's.</div>
+                </div>
+              </div>
+
+              {/* SMTP Form */}
+              <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
+                <div style={{fontSize:14,fontWeight:700,marginBottom:4}}>SMTP Server</div>
+                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20}}>Your email provider credentials. Works with Gmail, Outlook, Zoho, SendGrid, Mailgun, or any SMTP service.</div>
+
+                <form onSubmit={submitSmtp} style={{display:"flex",flexDirection:"column",gap:14}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                    <div>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>SMTP Host</label>
+                      <input data-testid="input-smtp-host" value={smtp.host} onChange={e=>setSmtp(p=>({...p,host:e.target.value}))} placeholder="smtp.gmail.com" required style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Port</label>
+                      <select data-testid="select-smtp-port" value={smtp.port} onChange={e=>setSmtp(p=>({...p,port:e.target.value,secure:e.target.value==="465"}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>
+                        <option value="587">587 (STARTTLS — recommended)</option>
+                        <option value="465">465 (SSL)</option>
+                        <option value="25">25 (Plain — not recommended)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Username / Email</label>
+                      <input data-testid="input-smtp-user" value={smtp.user} onChange={e=>setSmtp(p=>({...p,user:e.target.value}))} placeholder="you@yourdomain.com" type="email" required style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Password / App Password</label>
+                      <div style={{position:"relative"}}>
+                        <input data-testid="input-smtp-pass" value={smtp.pass} onChange={e=>setSmtp(p=>({...p,pass:e.target.value}))} type={showSmtpPass?"text":"password"} placeholder="Enter password or app password" style={{width:"100%",padding:"9px 36px 9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                        <button type="button" onClick={()=>setShowSmtpPass(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex"}}>{showSmtpPass?<EyeOff size={14}/>:<Eye size={14}/>}</button>
+                      </div>
+                      <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>For Gmail, use an App Password (not your main password)</div>
+                    </div>
+                  </div>
+
+                  <div style={{borderTop:"1px solid var(--border)",paddingTop:16,marginTop:4}}>
+                    <div style={{fontSize:13,fontWeight:600,marginBottom:12,color:"var(--text-secondary)"}}>Sender Identity</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                      <div>
+                        <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Sender Name</label>
+                        <input data-testid="input-smtp-sender-name" value={smtp.senderName} onChange={e=>setSmtp(p=>({...p,senderName:e.target.value}))} placeholder="Acme Corp" required style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                        <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>Appears as the "From" name in inboxes</div>
+                      </div>
+                      <div>
+                        <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Sender Email</label>
+                        <input data-testid="input-smtp-sender-email" value={smtp.senderEmail} onChange={e=>setSmtp(p=>({...p,senderEmail:e.target.value}))} placeholder="campaigns@yourdomain.com" type="email" required style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                        <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>Must match or be authorised by your SMTP user</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Test result */}
+                  {smtpTest.status==="ok"&&(
+                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.2)",borderRadius:8,fontSize:13,color:"#4ade80"}}>
+                      <Wifi size={14}/>{smtpTest.msg}
+                    </div>
+                  )}
+                  {smtpTest.status==="fail"&&(
+                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,fontSize:13,color:"#f87171"}}>
+                      <WifiOff size={14}/>{smtpTest.msg}
+                    </div>
+                  )}
+
+                  <div style={{display:"flex",justifyContent:"flex-end",gap:10,flexWrap:"wrap"}}>
+                    <button type="button" data-testid="button-test-smtp" onClick={testSmtp} disabled={smtpTest.status==="loading"} style={{display:"flex",alignItems:"center",gap:6,background:"transparent",color:"var(--text-secondary)",border:"1px solid var(--border)",borderRadius:8,padding:"9px 18px",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                      {smtpTest.status==="loading"?<><Loader2 size={13} style={{animation:"spin 1s linear infinite"}}/>Testing…</>:<><Wifi size={13}/>Test Connection</>}
+                    </button>
+                    <SaveButton loading={updateSmtp.isPending} saved={smtpSaved}/>
+                  </div>
+                </form>
+              </div>
+
+              {/* Quick guides */}
+              <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
+                <div style={{fontSize:14,fontWeight:700,marginBottom:16}}>Provider Quick Reference</div>
+                <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                  {[
+                    {name:"Gmail",host:"smtp.gmail.com",port:"587",note:"Requires App Password (2FA must be on)"},
+                    {name:"Outlook / Microsoft 365",host:"smtp.office365.com",port:"587",note:"Use your Microsoft account credentials"},
+                    {name:"Zoho Mail",host:"smtp.zoho.com",port:"465",note:"SSL — use your Zoho email & password"},
+                    {name:"SendGrid",host:"smtp.sendgrid.net",port:"587",note:"Username is 'apikey', password is your API key"},
+                    {name:"Mailgun",host:"smtp.mailgun.org",port:"587",note:"Use your Mailgun SMTP credentials from dashboard"},
+                  ].map((p,i,arr)=>(
+                    <div key={p.name} style={{display:"flex",gap:12,padding:"11px 0",borderBottom:i<arr.length-1?"1px solid var(--border)":"none",alignItems:"flex-start"}}>
+                      <div style={{width:7,height:7,borderRadius:"50%",background:"var(--brand)",marginTop:5,flexShrink:0}}/>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",gap:16,flexWrap:"wrap",alignItems:"baseline"}}>
+                          <span style={{fontSize:13,fontWeight:600}}>{p.name}</span>
+                          <span style={{fontSize:12,color:"var(--text-muted)",fontFamily:"monospace"}}>{p.host}:{p.port}</span>
+                        </div>
+                        <div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{p.note}</div>
+                      </div>
                     </div>
                   ))}
                 </div>
