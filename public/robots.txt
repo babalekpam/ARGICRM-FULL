@@ -34,7 +34,7 @@ Allow: /*.svg
 Allow: /*.webp
 
 # Sitemap location
-Sitemap: https://argilette.org/sitemap.xml
+Sitemap: https://www.argilette.org/sitemap.xml
 
 # Crawl delay (optional - prevents overwhelming the server)
 Crawl-delay: 1
