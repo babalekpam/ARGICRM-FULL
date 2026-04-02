@@ -65,7 +65,7 @@ export default function Contact() {
             <Channel icon={Mail} title="General Inquiries" desc="Sales, partnerships, press" detail="info@argilette.com" color="#3b82f6" href="mailto:info@argilette.com" />
             <Channel icon={Headphones} title="Customer Support" desc="Technical issues, billing, account help" detail="info@argilette.com" color="#10b981" href="mailto:info@argilette.com" />
             <Channel icon={LifeBuoy} title="Enterprise Sales" desc="Custom plans, white-label, API access" detail="info@argilette.com" color="#8b5cf6" href="mailto:info@argilette.com" />
-            <Channel icon={Globe} title="Headquarters" desc="ARGILETTE LLC" detail="Delaware, United States" color="#f59e0b" />
+            <Channel icon={Globe} title="Headquarters" desc="ARGILETTE LLC" detail="Missouri, United States" color="#f59e0b" />
           </div>
 
           <h2 style={{ fontSize: 13, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>Response Times</h2>

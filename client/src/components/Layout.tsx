@@ -103,7 +103,7 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
   const hasResults = results && sections.some(s => (results[s.key]?.length || 0) > 0);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 80 }} onClick={onClose}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: window.innerWidth < 768 ? 20 : 80, padding: window.innerWidth < 768 ? "20px 12px 0" : undefined }} onClick={onClose}>
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, width: "100%", maxWidth: 560, boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
           <Search size={16} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
@@ -153,7 +153,14 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const isPlatformOwner = user?.role === "platform_owner";
+
+  useEffect(() => {
+    function handleResize() { setIsMobile(window.innerWidth < 768); }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -208,6 +215,7 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
                     className={`nav-item ${active ? "active" : ""}`}
                     title={collapsed ? item.label : undefined}
                     style={{ marginBottom: 1 }}
+                    onClick={() => setMobileOpen(false)}
                   >
                     <Icon size={15} style={{ flexShrink: 0 }} />
                     {!collapsed && <span style={{ fontSize: 13 }}>{item.label}</span>}
@@ -264,22 +272,24 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
-      {/* Desktop Sidebar */}
-      <aside style={{
-        width: collapsed ? "60px" : "220px",
-        transition: "width 0.2s ease",
-        flexShrink: 0,
-        background: "var(--bg-card)",
-        borderRight: "1px solid var(--border)",
-        display: "flex",
-        flexDirection: "column",
-        position: "sticky",
-        top: 0,
-        height: "100vh",
-        overflowX: "hidden",
-      }}>
-        <SidebarContent />
-      </aside>
+      {/* Desktop Sidebar — hidden on mobile */}
+      {!isMobile && (
+        <aside style={{
+          width: collapsed ? "60px" : "220px",
+          transition: "width 0.2s ease",
+          flexShrink: 0,
+          background: "var(--bg-card)",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          overflowX: "hidden",
+        }}>
+          <SidebarContent />
+        </aside>
+      )}
 
       {/* Mobile overlay */}
       {mobileOpen && (
@@ -294,26 +304,30 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
       {/* Main */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         {/* Header */}
-        <header style={{ padding: "0 20px", height: "58px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", background: "var(--bg-card)", position: "sticky", top: 0, zIndex: 40, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "flex" }} onClick={() => setMobileOpen(!mobileOpen)}>
-              <Menu size={18} />
-            </button>
+        <header style={{ padding: "0 16px", height: "58px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", background: "var(--bg-card)", position: "sticky", top: 0, zIndex: 40, flexShrink: 0, gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+            {isMobile && (
+              <button data-testid="button-mobile-menu" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "flex", flexShrink: 0 }} onClick={() => setMobileOpen(!mobileOpen)}>
+                <Menu size={20} />
+              </button>
+            )}
             {title && (
-              <div>
-                <h1 style={{ fontSize: "17px", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1.2 }}>{title}</h1>
-                {subtitle && <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>{subtitle}</p>}
+              <div style={{ minWidth: 0 }}>
+                <h1 style={{ fontSize: isMobile ? "15px" : "17px", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</h1>
+                {subtitle && !isMobile && <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>{subtitle}</p>}
               </div>
             )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             {/* Global search trigger */}
-            <button data-testid="button-global-search" onClick={() => setSearchOpen(true)} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", color: "var(--text-muted)", fontSize: 12 }}>
+            <button data-testid="button-global-search" onClick={() => setSearchOpen(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, padding: isMobile ? "6px 8px" : "5px 10px", cursor: "pointer", color: "var(--text-muted)", fontSize: 12 }}>
               <Search size={13} />
-              <span style={{ fontSize: 12 }}>Search…</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 2, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 4px", fontSize: 10, fontFamily: "monospace" }}>
-                <Command size={9} />K
-              </span>
+              {!isMobile && <span style={{ fontSize: 12 }}>Search…</span>}
+              {!isMobile && (
+                <span style={{ display: "flex", alignItems: "center", gap: 2, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 4px", fontSize: 10, fontFamily: "monospace" }}>
+                  <Command size={9} />K
+                </span>
+              )}
             </button>
             {actions}
             <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 8, display: "flex", borderRadius: 8 }}>
@@ -324,7 +338,7 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
         {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
 
         {/* Page content */}
-        <main style={{ flex: 1, padding: "20px", overflowY: "auto" }} className="animate-fade-in">
+        <main style={{ flex: 1, padding: isMobile ? "12px" : "20px", overflowY: "auto" }} className="animate-fade-in">
           {children}
         </main>
       </div>

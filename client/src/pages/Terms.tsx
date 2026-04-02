@@ -131,7 +131,7 @@ export default function Terms() {
         </Section>
 
         <Section title="11. Governing Law">
-          <P>These Terms shall be governed by the laws of the State of Delaware, United States, without regard to its conflict of law provisions. Any disputes shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association.</P>
+          <P>These Terms shall be governed by the laws of the State of Missouri, United States, without regard to its conflict of law provisions. Any disputes shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association.</P>
         </Section>
 
         <Section title="12. Changes to Terms">
