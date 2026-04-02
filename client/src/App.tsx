@@ -37,8 +37,23 @@ import SecurityPage from "./pages/Security";
 import ContactPage from "./pages/Contact";
 import NotFoundPage from "./pages/NotFound";
 
+function useNoIndex() {
+  React.useEffect(() => {
+    let tag = document.querySelector('meta[name="robots"][data-app]') as HTMLMetaElement | null;
+    if (!tag) {
+      tag = document.createElement("meta");
+      tag.setAttribute("name", "robots");
+      tag.setAttribute("data-app", "noindex");
+      document.head.appendChild(tag);
+    }
+    tag.setAttribute("content", "noindex, nofollow");
+    return () => { tag?.remove(); };
+  }, []);
+}
+
 function Guard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
+  useNoIndex();
   if (loading) return null;
   if (!isAuthenticated) return <Redirect to="/login" />;
   return <>{children}</>;

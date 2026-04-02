@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, Mail, MessageSquare, Globe, Clock, CheckCircle, Headphones, BookOpen, LifeBuoy } from "lucide-react";
+import { useSeoPage } from "../hooks/useSeoPage";
 
 const Channel = ({ icon: Icon, title, desc, detail, color, href }: { icon: any; title: string; desc: string; detail: string; color: string; href?: string }) => (
   <a href={href || "#"} style={{ textDecoration: "none", display: "block" }}>
@@ -18,6 +19,7 @@ const Channel = ({ icon: Icon, title, desc, detail, color, href }: { icon: any; 
 );
 
 export default function Contact() {
+  useSeoPage("Contact Us — ARGILETTE CRM", "Get in touch with the ARGILETTE team. Sales inquiries, agency pricing, support and partnerships.");
   const [form, setForm] = useState({ name: "", email: "", company: "", type: "support", message: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 

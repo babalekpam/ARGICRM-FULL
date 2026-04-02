@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ArrowLeft, Shield } from "lucide-react";
+import { useSeoPage } from "../hooks/useSeoPage";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div style={{ marginBottom: 40 }}>
@@ -19,6 +20,7 @@ const UL = ({ items }: { items: string[] }) => (
 );
 
 export default function Privacy() {
+  useSeoPage("Privacy Policy — ARGILETTE CRM", "ARGILETTE LLC privacy policy. How we collect, use and protect your data.");
   return (
     <div style={{ minHeight: "100vh", background: "#0a0d14", color: "#e2e8f0" }}>
       {/* Nav */}

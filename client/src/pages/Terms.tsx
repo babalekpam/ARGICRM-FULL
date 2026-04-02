@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ArrowLeft, FileText } from "lucide-react";
+import { useSeoPage } from "../hooks/useSeoPage";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div style={{ marginBottom: 40 }}>
@@ -19,6 +20,7 @@ const UL = ({ items }: { items: string[] }) => (
 );
 
 export default function Terms() {
+  useSeoPage("Terms of Service — ARGILETTE CRM", "ARGILETTE LLC terms of service. Review your rights and responsibilities when using the ARGILETTE CRM platform.");
   return (
     <div style={{ minHeight: "100vh", background: "#0a0d14", color: "#e2e8f0" }}>
       {/* Nav */}

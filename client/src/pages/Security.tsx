@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ArrowLeft, Lock, Server, Eye, RefreshCw, AlertTriangle, CheckCircle } from "lucide-react";
+import { useSeoPage } from "../hooks/useSeoPage";
 
 const Pillar = ({ icon: Icon, title, color, items }: { icon: any; title: string; color: string; items: string[] }) => (
   <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 24, marginBottom: 20 }}>
@@ -26,6 +27,7 @@ const Cert = ({ name, desc, color }: { name: string; desc: string; color: string
 );
 
 export default function Security() {
+  useSeoPage("Security — ARGILETTE CRM", "ARGILETTE's security practices. Multi-tenant isolation, SOC 2-aligned data protection, audit logs and role-based access control.");
   return (
     <div style={{ minHeight: "100vh", background: "#0a0d14", color: "#e2e8f0" }}>
       {/* Nav */}

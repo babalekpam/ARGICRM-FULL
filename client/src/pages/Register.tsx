@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import { ArrowRight, ArrowLeft, Check, Building2, User, Lock, Zap } from "lucide-react";
+import { useSeoPage } from "../hooks/useSeoPage";
 
 const PLANS = [
   { id: "trial", name: "Free Trial", price: "$0", desc: "14 days, no card needed", features: ["3 users", "500 contacts", "Basic CRM"], color: "#64748b" },
@@ -11,6 +12,7 @@ const PLANS = [
 ];
 
 export default function RegisterPage() {
+  useSeoPage("Get Started Free — ARGILETTE CRM", "Create your ARGILETTE CRM workspace in 2 minutes. Start a free 14-day trial. No credit card required.");
   const { register } = useAuth();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ companyName: "", domain: "", firstName: "", lastName: "", email: "", password: "", plan: "trial" });

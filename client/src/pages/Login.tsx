@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { useSeoPage } from "../hooks/useSeoPage";
 
 export default function LoginPage() {
+  useSeoPage("Sign In — ARGILETTE CRM", "Sign in to your ARGILETTE CRM workspace. Manage contacts, deals, campaigns and AI agents.");
   const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
