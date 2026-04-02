@@ -30,6 +30,10 @@ import AnalyticsPage from "./pages/Analytics";
 import AIToolsPage from "./pages/AITools";
 import WorkflowsPage from "./pages/Workflows";
 import SkillsPage from "./pages/Skills";
+import PrivacyPage from "./pages/Privacy";
+import TermsPage from "./pages/Terms";
+import SecurityPage from "./pages/Security";
+import ContactPage from "./pages/Contact";
 import NotFoundPage from "./pages/NotFound";
 
 function Guard({ children }: { children: React.ReactNode }) {
@@ -79,6 +83,10 @@ function AppRoutes() {
       <Route path="/ai-tools">{() => <Guard><AIToolsPage /></Guard>}</Route>
       <Route path="/workflows">{() => <Guard><WorkflowsPage /></Guard>}</Route>
       <Route path="/skills">{() => <Guard><SkillsPage /></Guard>}</Route>
+      <Route path="/privacy">{() => <PrivacyPage />}</Route>
+      <Route path="/terms">{() => <TermsPage />}</Route>
+      <Route path="/security">{() => <SecurityPage />}</Route>
+      <Route path="/contact">{() => <ContactPage />}</Route>
       <Route>{() => <NotFoundPage />}</Route>
     </Switch>
   );

@@ -533,11 +533,18 @@ export default function LandingPage() {
             <p style={{ fontSize: 13, color: "#475569", margin: 0 }}>© 2026 ARGILETTE LLC. All rights reserved.</p>
           </div>
           <div style={{ display: "flex", gap: 28 }}>
-            {["Privacy", "Terms", "Security", "Contact"].map(l => (
-              <a key={l} href="#" style={{ fontSize: 13, color: "#475569", textDecoration: "none" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#94a3b8")}
-                onMouseLeave={e => (e.currentTarget.style.color = "#475569")}
-              >{l}</a>
+            {[
+              { label: "Privacy", path: "/privacy" },
+              { label: "Terms", path: "/terms" },
+              { label: "Security", path: "/security" },
+              { label: "Contact", path: "/contact" },
+            ].map(({ label, path }) => (
+              <Link key={label} href={path}>
+                <span style={{ fontSize: 13, color: "#475569", textDecoration: "none", cursor: "pointer" }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLSpanElement).style.color = "#94a3b8")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLSpanElement).style.color = "#475569")}
+                >{label}</span>
+              </Link>
             ))}
           </div>
         </div>
