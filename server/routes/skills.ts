@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
-import { ask, complete, isAIAvailable } from "../services/ai-adapter.js";
+import { isAIAvailable } from "../services/ai-adapter.js";
+import { askForTenant } from "../services/tenant-ai.js";
 import {
   ALL_SKILLS, SKILLS_BY_DOMAIN, DOMAIN_META, getSkillStats,
   getSkillById, getSkillsByAgent, searchSkills, buildPrompt
@@ -77,7 +78,7 @@ router.post("/:skillId/run", authenticate, async (req: AuthRequest, res) => {
       ? "Return ONLY valid JSON. No markdown, no explanation."
       : `You are an expert AI assistant specialized in ${skill.domain.replace("_", " ")}. Follow the instructions precisely and deliver exceptional quality output.`;
 
-    const result = await ask(prompt, systemPrompt, false);
+    const result = await askForTenant(req.user!.tenantId, prompt, systemPrompt, false);
 
     res.json({
       skillId: skill.id,
@@ -143,7 +144,8 @@ router.post("/suggest", authenticate, async (req: AuthRequest, res) => {
     // Use AI to suggest relevant skills
     if (context && isAIAvailable()) {
       const skillNames = ALL_SKILLS.map(s => `${s.id}: ${s.name} (${s.domain})`).join("\n");
-      const suggestion = await ask(
+      const suggestion = await askForTenant(
+        req.user!.tenantId,
         `Given this business context: "${context}"\n\nWhich 5 of these skills would be most useful right now?\n${skillNames}\n\nReturn ONLY a comma-separated list of skill IDs.`,
         "You are a business advisor. Return only the skill IDs, nothing else.",
         true

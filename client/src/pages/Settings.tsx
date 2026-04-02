@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import Layout from "../components/Layout";
-import { User, Building2, Lock, Bell, Shield, CheckCircle, AlertCircle, Eye, EyeOff, Globe, Mail, Phone, Paintbrush, ExternalLink, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { User, Building2, Lock, Bell, Shield, CheckCircle, AlertCircle, Eye, EyeOff, Globe, Mail, Phone, Paintbrush, ExternalLink, Wifi, WifiOff, Loader2, Brain, Key, Trash2 } from "lucide-react";
 
 const TABS = [
   { id:"profile", label:"Profile", icon:User },
@@ -12,6 +12,7 @@ const TABS = [
   { id:"notifications", label:"Notifications", icon:Bell },
   { id:"branding", label:"White Label", icon:Paintbrush },
   { id:"email", label:"Email / SMTP", icon:Mail },
+  { id:"ai", label:"AI Usage", icon:Brain },
 ];
 
 function SaveButton({ loading, saved }: { loading: boolean; saved: boolean }) {
@@ -45,6 +46,12 @@ export default function SettingsPage() {
   const { data: settings } = useQuery<any>({ queryKey:["/api/settings"] });
   const { data: wlData } = useQuery<any>({ queryKey:["/api/ops/whitelabel"] });
   const { data: smtpData } = useQuery<any>({ queryKey:["/api/settings/smtp"] });
+  const { data: aiData, refetch: refetchAI } = useQuery<any>({ queryKey:["/api/settings/ai"] });
+  const [aiKey, setAiKey] = useState("");
+  const [aiProvider, setAiProvider] = useState("openai");
+  const [aiSaved, setAiSaved] = useState(false);
+  const [showAiKey, setShowAiKey] = useState(false);
+  const [removingKey, setRemovingKey] = useState(false);
 
   useEffect(()=>{
     if(user){ setProfile({ firstName:user.firstName||"", lastName:user.lastName||"", email:user.email||"", preferredLanguage:user.preferredLanguage||"en" }); }
@@ -488,6 +495,149 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {tab==="ai"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              {/* Usage card */}
+              <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
+                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>AI Usage</div>
+                <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:20}}>
+                  {aiData?.hasApiKey
+                    ? "Using your own API key — unlimited requests."
+                    : `Platform AI quota for your current plan.`}
+                </div>
+
+                {!aiData?.hasApiKey&&(
+                  <div style={{marginBottom:20}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <span style={{fontSize:13,fontWeight:600}}>Monthly Requests</span>
+                      <span style={{fontSize:13,color:"var(--text-muted)"}}>
+                        {aiData?.usageCount ?? 0} / {aiData?.usageLimit === -1 ? "∞" : aiData?.usageLimit ?? 50}
+                      </span>
+                    </div>
+                    {aiData?.usageLimit !== -1 && (
+                      <div style={{height:8,background:"var(--border)",borderRadius:4,overflow:"hidden"}}>
+                        <div style={{
+                          height:"100%",
+                          width:`${Math.min(100, ((aiData?.usageCount||0)/(aiData?.usageLimit||50))*100)}%`,
+                          background: (aiData?.usageCount||0) >= (aiData?.usageLimit||50)*0.9 ? "#ef4444" : (aiData?.usageCount||0) >= (aiData?.usageLimit||50)*0.7 ? "#f59e0b" : "var(--accent)",
+                          borderRadius:4,
+                          transition:"width 0.4s ease",
+                        }}/>
+                      </div>
+                    )}
+                    <div style={{fontSize:12,color:"var(--text-muted)",marginTop:6}}>
+                      Resets on the 1st of each month. Add your own API key below for unlimited access.
+                    </div>
+                  </div>
+                )}
+
+                {aiData?.hasApiKey&&(
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:8,marginBottom:16}}>
+                    <CheckCircle size={15} style={{color:"#22c55e",flexShrink:0}}/>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#22c55e"}}>Own API key active</div>
+                      <div style={{fontSize:12,color:"var(--text-muted)"}}>Provider: {aiData.provider || "openai"} · All AI requests use your key</div>
+                    </div>
+                    <button
+                      data-testid="button-remove-ai-key"
+                      onClick={async()=>{
+                        setRemovingKey(true);
+                        try{ await apiRequest("DELETE","/api/settings/ai/key",{}); refetchAI(); setAiKey(""); }
+                        finally{ setRemovingKey(false); }
+                      }}
+                      disabled={removingKey}
+                      style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:6,background:"transparent",color:"#ef4444",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                      {removingKey?<Loader2 size={12} style={{animation:"spin 1s linear infinite"}}/>:<Trash2 size={12}/>}
+                      Remove
+                    </button>
+                  </div>
+                )}
+
+                {/* Plan limits reference */}
+                <div style={{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"14px 16px"}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>Plan Quotas</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                    {[["Trial / Free","50 req/mo"],["Starter","200 req/mo"],["Professional","500 req/mo"],["Business","1,000 req/mo"],["Enterprise","Unlimited"],["Own API Key","Unlimited"]].map(([plan,quota])=>(
+                      <div key={plan} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
+                        <span style={{fontSize:12,color:"var(--text-secondary)"}}>{plan}</span>
+                        <span style={{fontSize:12,fontWeight:600}}>{quota}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Own API Key card */}
+              <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <Key size={16} style={{color:"var(--accent)"}}/>
+                  <div style={{fontSize:16,fontWeight:700}}>Add Your Own API Key</div>
+                </div>
+                <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:20}}>
+                  Plug in your own key from any major provider for unlimited AI access. Your key is stored securely and never exposed.
+                </div>
+                <form onSubmit={async(e)=>{
+                  e.preventDefault();
+                  await apiRequest("PUT","/api/settings/ai",{ provider:aiProvider, apiKey:aiKey });
+                  queryClient.invalidateQueries({queryKey:["/api/settings/ai"]});
+                  setAiSaved(true); setAiKey(""); setTimeout(()=>setAiSaved(false),3000);
+                }} style={{display:"flex",flexDirection:"column",gap:14}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                    <div>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Provider</label>
+                      <select data-testid="select-ai-provider" value={aiProvider} onChange={e=>setAiProvider(e.target.value)} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>
+                        <option value="openai">OpenAI (GPT-4o)</option>
+                        <option value="anthropic">Anthropic (Claude)</option>
+                        <option value="google">Google (Gemini)</option>
+                        <option value="groq">Groq (Llama 3.3)</option>
+                        <option value="mistral">Mistral</option>
+                        <option value="cohere">Cohere</option>
+                        <option value="together">Together AI</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>API Key</label>
+                      <div style={{position:"relative"}}>
+                        <input
+                          data-testid="input-ai-key"
+                          value={aiKey}
+                          onChange={e=>setAiKey(e.target.value)}
+                          type={showAiKey?"text":"password"}
+                          placeholder={aiData?.hasApiKey?"Key saved (enter new to replace)":"sk-... or your provider key"}
+                          style={{width:"100%",padding:"9px 36px 9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}
+                        />
+                        <button type="button" onClick={()=>setShowAiKey(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex"}}>
+                          {showAiKey?<EyeOff size={14}/>:<Eye size={14}/>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"flex-end"}}>
+                    <SaveButton loading={false} saved={aiSaved}/>
+                  </div>
+                </form>
+
+                {/* Provider key links */}
+                <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid var(--border)"}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>Get API Keys</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                    {[
+                      {name:"OpenAI",url:"https://platform.openai.com/api-keys"},
+                      {name:"Anthropic",url:"https://console.anthropic.com/keys"},
+                      {name:"Google AI",url:"https://aistudio.google.com/app/apikey"},
+                      {name:"Groq (free)",url:"https://console.groq.com/keys"},
+                      {name:"Mistral",url:"https://console.mistral.ai/api-keys"},
+                    ].map(p=>(
+                      <a key={p.name} href={p.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:12,color:"var(--accent)",background:"rgba(99,102,241,0.08)",border:"1px solid rgba(99,102,241,0.2)",borderRadius:6,padding:"5px 10px",textDecoration:"none",fontWeight:500}}>
+                        {p.name}<ExternalLink size={10}/>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

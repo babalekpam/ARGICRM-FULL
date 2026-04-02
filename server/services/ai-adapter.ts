@@ -203,6 +203,7 @@ export interface AICompletionOpts {
   temperature?: number;
   fast?: boolean; // use faster/cheaper model variant
   provider?: AIProvider; // force a specific provider
+  tenantApiKey?: string; // tenant's own API key (bypasses platform key)
 }
 
 export async function complete(opts: AICompletionOpts): Promise<string> {
@@ -261,7 +262,7 @@ async function callAnthropic(config: ProviderConfig, model: string, opts: AIComp
     },
     {
       headers: {
-        "x-api-key": process.env.ANTHROPIC_API_KEY!,
+        "x-api-key": opts.tenantApiKey || process.env.ANTHROPIC_API_KEY!,
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
@@ -276,7 +277,7 @@ async function callAnthropic(config: ProviderConfig, model: string, opts: AIComp
 async function callOpenAICompatible(
   config: ProviderConfig, providerName: AIProvider, model: string, opts: AICompletionOpts
 ): Promise<string> {
-  const apiKey = process.env[config.envKey];
+  const apiKey = opts.tenantApiKey || process.env[config.envKey];
   const messages = opts.messages.map(m => ({ role: m.role, content: m.content }));
 
   // Prepend system message if provided

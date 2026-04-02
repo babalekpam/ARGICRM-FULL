@@ -384,6 +384,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─── AI Settings ───────────────────────────────────────
+  app.get("/api/settings/ai", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const { getTenantAIConfig, PLAN_LIMITS } = await import("./services/tenant-ai.js");
+      const config = await getTenantAIConfig(req.user!.tenantId);
+      res.json({
+        plan: config.plan,
+        provider: config.provider,
+        hasApiKey: config.hasOwnKey,
+        usageCount: config.usageCount,
+        usageLimit: config.limit,
+      });
+    } catch (err) { res.status(500).json({ error: "Failed to fetch AI settings" }); }
+  });
+
+  app.put("/api/settings/ai", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const { provider, apiKey } = req.body;
+      const tenant = await storage.getTenantById(req.user!.tenantId);
+      if (!tenant) return res.status(404).json({ error: "Workspace not found" });
+      const currentSettings: any = tenant.settings || {};
+      const currentAi: any = currentSettings.ai || {};
+      const finalKey = (apiKey && apiKey !== "••••••••") ? apiKey : currentAi.apiKey;
+      await storage.updateTenant(req.user!.tenantId, {
+        settings: {
+          ...currentSettings,
+          ai: { ...currentAi, provider: provider || null, apiKey: finalKey || null },
+        },
+      });
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to save AI settings" }); }
+  });
+
+  app.delete("/api/settings/ai/key", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const tenant = await storage.getTenantById(req.user!.tenantId);
+      if (!tenant) return res.status(404).json({ error: "Workspace not found" });
+      const currentSettings: any = tenant.settings || {};
+      const currentAi: any = currentSettings.ai || {};
+      await storage.updateTenant(req.user!.tenantId, {
+        settings: { ...currentSettings, ai: { ...currentAi, apiKey: null, provider: null } },
+      });
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to remove API key" }); }
+  });
+
   // ─── Profile ──────────────────────────────────────────
   app.put("/api/profile", authenticate, async (req: AuthRequest, res) => {
     try {

@@ -3,7 +3,8 @@ import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
 import { deals, contacts, leads, tasks } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { ask, askJSON, isAIAvailable } from "../services/ai-adapter.js";
+import { isAIAvailable } from "../services/ai-adapter.js";
+import { askJSONForTenant } from "../services/tenant-ai.js";
 
 const router = Router();
 
@@ -53,7 +54,7 @@ Risks: ${risks.join(", ") || "none detected"}
 
 Respond with JSON: { "summary": "2-sentence deal assessment", "nextActions": ["action1","action2","action3"], "talkingPoints": ["point1","point2"], "closingProbability": 0-100, "recommendation": "one sentence recommendation" }`;
 
-      aiInsights = await askJSON(prompt);
+      aiInsights = await askJSONForTenant(tenantId, prompt);
     }
 
     res.json({
@@ -112,9 +113,9 @@ Respond with JSON: { "subject": "email subject", "body": "full email body with p
       });
     }
 
-    const result = await askJSON(prompt);
+    const result = await askJSONForTenant(req.user!.tenantId, prompt);
     res.json(result);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status((err as any).status || 500).json({ error: err.message }); }
 });
 
 // ── Meeting Summarizer ──────────────────────────────────────────
@@ -156,9 +157,9 @@ Respond with JSON:
       });
     }
 
-    const result = await askJSON(prompt);
+    const result = await askJSONForTenant(req.user!.tenantId, prompt);
     res.json(result);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status((err as any).status || 500).json({ error: err.message }); }
 });
 
 // ── Company Enrichment ──────────────────────────────────────────
@@ -201,9 +202,9 @@ Respond with JSON: {
       });
     }
 
-    const result = await askJSON(prompt);
+    const result = await askJSONForTenant(req.user!.tenantId, prompt);
     res.json(result);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status((err as any).status || 500).json({ error: err.message }); }
 });
 
 // ── Contact Enrichment ─────────────────────────────────────────
@@ -243,9 +244,9 @@ Respond with JSON: {
       });
     }
 
-    const result = await askJSON(prompt);
+    const result = await askJSONForTenant(req.user!.tenantId, prompt);
     res.json(result);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status((err as any).status || 500).json({ error: err.message }); }
 });
 
 // ── AI Status ─────────────────────────────────────────────────

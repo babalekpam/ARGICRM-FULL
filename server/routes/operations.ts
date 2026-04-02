@@ -4,7 +4,8 @@ import { db } from "../db.js";
 import { projects, landingPages, abTests } from "@shared/schema";
 import { employees, projectTasks, documents, funnels, reputationReviews, whitelabelSettings, clientPortalAccess } from "@shared/schema-extended";
 import { eq, and, desc, sql, asc } from "drizzle-orm";
-import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
+import { isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
+import { completeForTenant } from "../services/tenant-ai.js";
 
 const router = Router();
 
@@ -107,7 +108,7 @@ router.post("/documents/:id/summarize", authenticate, async (req: AuthRequest, r
 
   if (!isAIAvailable()) return res.json({ summary: doc.content.slice(0, 200) + "..." });
 
-  const msg = await complete({ messages: [{ role: "user", content: `Summarize this document in 3-5 bullet points:\n\n${doc.content.slice(0, 3000)}` }], maxTokens: 400 });
+  const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Summarize this document in 3-5 bullet points:\n\n${doc.content.slice(0, 3000)}` }], maxTokens: 400 });
   res.json({ summary: msg });
 });
 
@@ -142,7 +143,7 @@ router.post("/landing-pages/generate", authenticate, async (req: AuthRequest, re
     return res.json(page);
   }
 
-  const msg = await complete({ messages: [{ role: "user", content: `Create a high-converting landing page for: "${offer}" targeting "${audience || "B2B teams"}". Tone: ${tone}.
+  const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Create a high-converting landing page for: "${offer}" targeting "${audience || "B2B teams"}". Tone: ${tone}.
 
 Return ONLY JSON:
 {
@@ -171,7 +172,7 @@ router.post("/funnels/generate", authenticate, async (req: AuthRequest, res) => 
     let funnelData: any;
 
     if (process.env.ANTHROPIC_API_KEY) {
-      const msg = await complete({ messages: [{ role: "user", content: `Generate a complete marketing funnel for: "${offer}" targeting "${audience || "B2B decision-makers"}". Goal: ${goal}.
+      const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Generate a complete marketing funnel for: "${offer}" targeting "${audience || "B2B decision-makers"}". Goal: ${goal}.
 
 Return ONLY JSON:
 {
@@ -270,7 +271,7 @@ router.post("/reviews/:id/respond", authenticate, async (req: AuthRequest, res) 
   // AI-generated response if not provided
   if (!response && process.env.ANTHROPIC_API_KEY) {
     const [review] = await db.select().from(reputationReviews).where(eq(reputationReviews.id, req.params.id));
-    const msg = await complete({ messages: [{ role: "user", content: `Write a professional, empathetic business response to this ${review.sentiment} review (rating: ${review.rating}/5): "${review.content}". Keep it under 100 words, genuine, no generic phrases.` }], maxTokens: 200 });
+    const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Write a professional, empathetic business response to this ${review.sentiment} review (rating: ${review.rating}/5): "${review.content}". Keep it under 100 words, genuine, no generic phrases.` }], maxTokens: 200 });
     response = msg;
   }
 

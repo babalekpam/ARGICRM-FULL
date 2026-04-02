@@ -4,7 +4,8 @@ import { db } from "../db.js";
 import { stores } from "@shared/schema";
 import { products, orders } from "@shared/schema-extended";
 import { eq, and, desc, sql, like, lte } from "drizzle-orm";
-import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
+import { isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
+import { completeForTenant } from "../services/tenant-ai.js";
 
 const router = Router();
 
@@ -68,7 +69,7 @@ router.post("/products/ai-optimize", authenticate, async (req: AuthRequest, res)
       return res.json({ suggestions: ["Improve product description", "Add more images", "Consider bundle pricing", "Optimize for SEO with better title"] });
     }
 
-    const msg = await complete({ messages: [{ role: "user", content: `Optimize this e-commerce product listing:
+    const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Optimize this e-commerce product listing:
 Name: ${product.name}
 Description: ${product.description || "None"}
 Price: ${product.price} ${product.currency}

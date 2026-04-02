@@ -4,7 +4,8 @@ import { db } from "../db.js";
 import { keywords, backlinks } from "@shared/schema";
 import { seoProjects, seoAudits, contentIdeas } from "@shared/schema-extended";
 import { eq, and, desc, sql, like, gte } from "drizzle-orm";
-import { ask, askJSON, complete, isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
+import { isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
+import { completeForTenant } from "../services/tenant-ai.js";
 
 const router = Router();
 
@@ -36,8 +37,8 @@ router.post("/keywords/research", authenticate, async (req: AuthRequest, res) =>
     if (!seed) return res.status(400).json({ error: "seed keyword required" });
 
     let generated: any[] = [];
-    if (process.env.ANTHROPIC_API_KEY) {
-      const msg = await complete({ messages: [{ role: "user", content: `You are a professional SEO tool. Generate ${limit} keyword variations and related keywords for: "${seed}"
+    if (isAIAvailable()) {
+      const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `You are a professional SEO tool. Generate ${limit} keyword variations and related keywords for: "${seed}"
 
 Return ONLY a JSON array (no markdown):
 [{
@@ -51,7 +52,7 @@ Return ONLY a JSON array (no markdown):
       const text = msg;
       generated = JSON.parse(text.replace(/```json|```/g, "").trim());
     } else {
-      return res.status(503).json({ error: "ANTHROPIC_API_KEY required for keyword research. Add it to your environment secrets." });
+      return res.status(503).json({ error: "No AI provider configured for keyword research." });
     }
 
     // Save to DB
@@ -99,8 +100,8 @@ router.post("/audit", authenticate, async (req: AuthRequest, res) => {
 
     let auditResult: any;
 
-    if (process.env.ANTHROPIC_API_KEY) {
-      const msg = await complete({ messages: [{ role: "user", content: `You are a professional SEO audit tool. Generate a comprehensive SEO audit report for the domain: "${domain}"
+    if (isAIAvailable()) {
+      const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `You are a professional SEO audit tool. Generate a comprehensive SEO audit report for the domain: "${domain}"
 
 Return ONLY JSON:
 {
@@ -113,7 +114,7 @@ Return ONLY JSON:
       const text = msg;
       auditResult = JSON.parse(text.replace(/```json|```/g, "").trim());
     } else {
-      return res.status(503).json({ error: "ANTHROPIC_API_KEY required for site audits." });
+      return res.status(503).json({ error: "No AI provider configured for site audits." });
     }
 
     const [audit] = await db.insert(seoAudits).values({
@@ -139,12 +140,12 @@ router.post("/backlinks/analyze", authenticate, async (req: AuthRequest, res) =>
     const { domain, projectId } = req.body;
 
     let generated: any[] = [];
-    if (process.env.ANTHROPIC_API_KEY) {
-      const msg = await complete({ messages: [{ role: "user", content: `Generate a realistic backlink profile analysis for domain "${domain}". Return ONLY JSON array of 10 backlinks:
+    if (isAIAvailable()) {
+      const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Generate a realistic backlink profile analysis for domain "${domain}". Return ONLY JSON array of 10 backlinks:
 [{"url":"https://example.com/post","anchorText":"related anchor","domainScore":45,"date":"2024-01-15","source":"organic"}]` }], maxTokens: 800 });
       generated = JSON.parse(msg.replace(/```json|```/g, "").trim());
     } else {
-      return res.status(503).json({ error: "ANTHROPIC_API_KEY required for backlink analysis." });
+      return res.status(503).json({ error: "No AI provider configured for backlink analysis." });
     }
 
     const saved = [];
@@ -179,7 +180,7 @@ router.post("/competitor/analyze", authenticate, async (req: AuthRequest, res) =
       return res.status(503).json({ error: "ANTHROPIC_API_KEY required for competitor analysis." });
     }
 
-    const msg = await complete({ messages: [{ role: "user", content: `Analyze competitor domain "${competitor}" vs "${domain}" for SEO. Return ONLY JSON:
+    const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Analyze competitor domain "${competitor}" vs "${domain}" for SEO. Return ONLY JSON:
 {"competitor":"${competitor}","metrics":{"domainAuthority":50,"backlinks":5000,"organicKeywords":2000,"organicTraffic":30000},"topKeywords":[{"keyword":"example","volume":1000,"rank":5}]}` }], maxTokens: 800 });
     const result = JSON.parse(msg.replace(/```json|```/g, "").trim());
     res.json(result);
@@ -195,7 +196,7 @@ router.post("/content/ideas", authenticate, async (req: AuthRequest, res) => {
       return res.status(503).json({ error: "ANTHROPIC_API_KEY required for content ideas generation." });
     }
 
-    const msg = await complete({ messages: [{ role: "user", content: `Generate ${count} SEO content ideas for topic "${topic}" targeting "${audience || "B2B SaaS"}".
+    const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Generate ${count} SEO content ideas for topic "${topic}" targeting "${audience || "B2B SaaS"}".
 
 Return ONLY JSON array:
 [{"title":"Article Title","keyword":"target keyword","searchVolume":2400,"difficulty":42,"contentType":"blog|guide|video|infographic","outline":["Section 1","Section 2","Section 3"]}]` }], maxTokens: 1200 });
