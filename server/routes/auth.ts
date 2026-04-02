@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { authenticate, generateToken, hashPassword, verifyPassword, type AuthRequest } from "../middleware/auth.js";
 import * as storage from "../storage.js";
+import { sendWelcomeEmail, sendTeamInviteEmail, sendPasswordChangedEmail } from "../services/email.js";
 
 const router = Router();
 
@@ -70,6 +71,17 @@ router.post("/register", async (req, res) => {
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
       tenant: { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt },
     });
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail({
+      to: user.email,
+      firstName: user.firstName || "",
+      workspaceName: tenant.name,
+      workspaceDomain: tenant.domain,
+      plan: tenant.subscriptionPlan || "trial",
+      trialEndsAt: tenant.trialEndsAt ?? undefined,
+    }).catch(err => console.error("[EMAIL] Welcome email failed:", err));
+
   } catch (err: any) {
     if (err.name === "ZodError") return res.status(400).json({ error: "Validation failed", details: err.errors });
     console.error("Register error:", err);
@@ -183,6 +195,18 @@ router.post("/invite", authenticate, async (req: AuthRequest, res) => {
     });
 
     res.status(201).json({ user: { id: user.id, email: user.email, firstName: user.firstName, role: user.role } });
+
+    // Send invite email (non-blocking)
+    const inviterTenant = await storage.getTenantById(req.user!.tenantId).catch(() => null);
+    sendTeamInviteEmail({
+      to: user.email,
+      firstName: user.firstName || "",
+      invitedBy: `${req.user!.firstName || ""} ${req.user!.lastName || ""}`.trim() || req.user!.email,
+      workspaceName: inviterTenant?.name || "Argilette",
+      role: user.role,
+      tempPassword: body.password,
+    }).catch(err => console.error("[EMAIL] Invite email failed:", err));
+
   } catch (err: any) {
     if (err.name === "ZodError") return res.status(400).json({ error: "Validation failed", details: err.errors });
     console.error("Invite error:", err);

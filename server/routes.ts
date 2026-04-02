@@ -423,6 +423,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hash = await hashPassword(newPassword);
       await storage.updateUser(req.user!.id, { passwordHash: hash });
       res.json({ success: true });
+
+      // Send confirmation email (non-blocking)
+      const { sendPasswordChangedEmail } = await import("./services/email.js");
+      sendPasswordChangedEmail({ to: user.email, firstName: user.firstName || "" })
+        .catch(e => console.error("[EMAIL] Password-changed email failed:", e));
+
     } catch (err) { res.status(500).json({ error: "Failed to change password" }); }
   });
 
@@ -442,6 +448,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passwordHash: hash, isActive: true, emailVerified: false,
       });
       res.status(201).json({ id: newUser.id, email: newUser.email, firstName: newUser.firstName, role: newUser.role, tempPassword });
+
+      // Send invite email (non-blocking)
+      const { sendTeamInviteEmail } = await import("./services/email.js");
+      const inviterTenant = await storage.getTenantById(req.user!.tenantId).catch(() => null);
+      sendTeamInviteEmail({
+        to: email,
+        firstName: firstName || "",
+        invitedBy: `${req.user!.firstName || ""} ${req.user!.lastName || ""}`.trim() || req.user!.email,
+        workspaceName: inviterTenant?.name || "Argilette",
+        role: role || "user",
+        tempPassword,
+      }).catch(e => console.error("[EMAIL] Team invite email failed:", e));
+
     } catch (err: any) { res.status(500).json({ error: err.message || "Failed to invite user" }); }
   });
 
