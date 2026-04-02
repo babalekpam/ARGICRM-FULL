@@ -75,9 +75,46 @@ async function runStartupMigrations() {
       try { await client.query(stmt); created++; }
       catch (e: any) { if (e.message?.includes("already exists")) skipped++; }
     }
+    if (created > 0) console.log(`[MIGRATE] Created ${created} tables, ${skipped} already existed`);
+
+    // ── Ensure platform owner credentials are correct on every boot ──
+    try {
+      const bcrypt = await import("bcrypt");
+      const ownerEmail = process.env.PLATFORM_OWNER_EMAIL || "abel@argilette.com";
+      const ownerPassword = process.env.PLATFORM_OWNER_PASSWORD || "ArgiletteSecure2024!";
+      const hash = await bcrypt.hash(ownerPassword, 12);
+      const existing = await client.query("SELECT id, tenant_id FROM users WHERE email = $1 LIMIT 1", [ownerEmail]);
+      if (existing.rows.length > 0) {
+        await client.query(
+          "UPDATE users SET password_hash = $1, role = 'platform_owner', is_active = true, email_verified = true WHERE email = $2",
+          [hash, ownerEmail]
+        );
+        console.log(`[MIGRATE] Platform owner credentials refreshed for ${ownerEmail}`);
+      } else {
+        // No user yet — find or create tenant then create user
+        let tenantId: string;
+        const tenantRow = await client.query("SELECT id FROM tenants LIMIT 1");
+        if (tenantRow.rows.length > 0) {
+          tenantId = tenantRow.rows[0].id;
+        } else {
+          const t = await client.query(
+            "INSERT INTO tenants (name, domain, is_active) VALUES ($1, $2, true) RETURNING id",
+            ["ARGILETTE LLC", `tenant-${Date.now()}`]
+          );
+          tenantId = t.rows[0].id;
+        }
+        await client.query(
+          "INSERT INTO users (tenant_id, email, password_hash, role, is_active, email_verified) VALUES ($1, $2, $3, 'platform_owner', true, true)",
+          [tenantId, ownerEmail, hash]
+        );
+        console.log(`[MIGRATE] Platform owner created: ${ownerEmail}`);
+      }
+    } catch (e: any) {
+      console.warn("[MIGRATE] Owner credential setup skipped:", e.message);
+    }
+
     client.release();
     await pool.end();
-    if (created > 0) console.log(`[MIGRATE] Created ${created} tables, ${skipped} already existed`);
   } catch (e: any) {
     console.warn("[MIGRATE] Startup migration skipped:", e.message);
   }
