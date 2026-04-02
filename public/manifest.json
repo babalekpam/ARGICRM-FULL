@@ -1,7 +1,7 @@
 {
-  "name": "NODE CRM - AI-Powered Business Management Platform",
-  "short_name": "NODE CRM",
-  "description": "Advanced AI-powered business management platform with intelligent customer management, sentiment analysis, multi-language support, and comprehensive automation for global businesses.",
+  "name": "ARGILETTE CRM",
+  "short_name": "ARGILETTE",
+  "description": "Full CRM + 6 AI employees + white-label branding. Sell it under your own name or use it for your team.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

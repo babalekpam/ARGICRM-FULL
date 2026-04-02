@@ -74,7 +74,7 @@ export const trialLockMiddleware = async (req: AuthRequest, res: Response, next:
       return res.status(423).json({
         success: false,
         error: 'trial_expired',
-        message: 'Your free trial has expired. Please upgrade to a paid plan to continue using NODE CRM.',
+        message: 'Your free trial has expired. Please upgrade to a paid plan to continue using ARGILETTE CRM.',
         unlockUrl: '/unlock-account'
       });
     }

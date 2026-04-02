@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NODE CRM - Offline</title>
+    <title>ARGILETTE CRM - Offline</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -36,9 +36,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1rem;
             font-weight: bold;
-            color: #667eea;
+            color: #1d4ed8;
         }
         
         h1 {
@@ -56,7 +56,7 @@
         
         .retry-button {
             background: white;
-            color: #667eea;
+            color: #1d4ed8;
             border: none;
             padding: 12px 24px;
             border-radius: 8px;
@@ -114,13 +114,13 @@
 <body>
     <div class="offline-container">
         <div class="logo">
-            NODE
+            ARGI
         </div>
         
         <h1>You're Currently Offline</h1>
         
         <p>
-            Don't worry! NODE CRM works offline too. If you have downloaded your data, 
+            Don't worry! ARGILETTE CRM works offline too. If you have downloaded your data,
             you can continue working. Your changes will sync automatically when you're back online.
         </p>
         
@@ -130,39 +130,35 @@
         
         <div class="features">
             <div class="feature">
-                <div class="feature-icon">📱</div>
+                <div class="feature-icon">+</div>
                 <span>Access your contacts and deals offline</span>
             </div>
             <div class="feature">
-                <div class="feature-icon">💾</div>
+                <div class="feature-icon">+</div>
                 <span>Create and edit records without internet</span>
             </div>
             <div class="feature">
-                <div class="feature-icon">🔄</div>
+                <div class="feature-icon">+</div>
                 <span>Automatic sync when back online</span>
             </div>
             <div class="feature">
-                <div class="feature-icon">🔒</div>
+                <div class="feature-icon">+</div>
                 <span>Secure tenant isolation maintained</span>
             </div>
         </div>
     </div>
 
     <script>
-        // Check online status and show appropriate message
         function updateOnlineStatus() {
             if (navigator.onLine) {
                 window.location.href = '/';
             }
         }
 
-        // Listen for online event
         window.addEventListener('online', updateOnlineStatus);
-        
-        // Check periodically
         setInterval(updateOnlineStatus, 5000);
         
-        console.log('NODE CRM Offline Page Loaded');
+        console.log('ARGILETTE CRM Offline Page Loaded');
     </script>
 </body>
 </html>

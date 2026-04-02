@@ -1,4 +1,4 @@
-// Comprehensive currency definitions for the NODE CRM platform
+// Comprehensive currency definitions for the ARGILETTE CRM platform
 // Includes all African currencies and major global currencies
 
 export interface CurrencyInfo {
