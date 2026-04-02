@@ -14,7 +14,7 @@ async function seed() {
   if (!platformTenant) {
     [platformTenant] = await db.insert(tenants).values({
       name: "ARGILETTE",
-      domain: "argilette.argilette.com",
+      domain: "argilette.argilette.org",
       subscriptionPlan: "enterprise",
       subscriptionStatus: "active",
       plan: "enterprise",

@@ -22,7 +22,7 @@ router.post("/register", async (req, res) => {
     const body = schema.parse(req.body);
 
     // Check domain availability
-    const existing = await storage.getTenantByDomain(`${body.domain}.argilette.com`);
+    const existing = await storage.getTenantByDomain(`${body.domain}.argilette.org`);
     if (existing) return res.status(409).json({ error: "This domain is already taken. Choose another." });
 
     // Also check if email exists across ANY tenant to prevent confusion
@@ -34,7 +34,7 @@ router.post("/register", async (req, res) => {
 
     const tenant = await storage.createTenant({
       name: body.companyName,
-      domain: `${body.domain}.argilette.com`,
+      domain: `${body.domain}.argilette.org`,
       subscriptionPlan: body.plan,
       subscriptionStatus: "trialing",
       plan: body.plan === "trial" ? "free" : body.plan,

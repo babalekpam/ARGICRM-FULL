@@ -99,7 +99,7 @@ async function runStartupMigrations() {
         } else {
           const t = await client.query(
             "INSERT INTO tenants (name, domain, is_active) VALUES ($1, $2, true) RETURNING id",
-            ["ARGILETTE LLC", `tenant-${Date.now()}`]
+            ["ARGILETTE LLC", `argilette.argilette.org`]
           );
           tenantId = t.rows[0].id;
         }
@@ -134,7 +134,7 @@ async function main() {
 
   app.use(cors({
     origin: isProd
-      ? [process.env.APP_URL || "https://argilette.com", /\.argilette\.com$/]
+      ? [process.env.APP_URL || "https://argilette.org", /\.argilette\.org$/, /\.argilette\.com$/]
       : true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

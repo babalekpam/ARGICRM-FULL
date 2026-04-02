@@ -37,7 +37,7 @@ export async function resolveTenant(req: TenantRequest, res: Response, next: Nex
 
     let tenantIdentifier: string | undefined;
 
-    // Method 1: Extract from subdomain (company.argilette.com)
+    // Method 1: Extract from subdomain (company.argilette.org)
     const host = req.get('host') || '';
     const subdomain = host.split('.')[0];
     if (subdomain && subdomain !== 'www' && subdomain !== 'argilette') {
