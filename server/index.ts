@@ -164,6 +164,9 @@ async function runStartupMigrations() {
       await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
       await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS assigned_to_user_id uuid`).catch(() => {});
 
+      // ── Fix seo_audits schema (summary column added later) ──
+      await client.query(`ALTER TABLE seo_audits ADD COLUMN IF NOT EXISTS summary jsonb DEFAULT '{"critical":0,"warnings":0,"passed":0,"totalPages":0}'::jsonb`).catch(() => {});
+
       // ── Email tracking columns on email_sends ──
       await client.query(`ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS link_map jsonb DEFAULT '{}'::jsonb`).catch(() => {});
 
