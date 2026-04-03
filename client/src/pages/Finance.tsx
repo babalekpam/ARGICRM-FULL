@@ -9,7 +9,7 @@ import { apiRequest } from "../lib/api";
 import {
   DollarSign, TrendingUp, TrendingDown, Plus, FileText,
   RefreshCw, Landmark, BarChart2, Calculator, Zap, Edit, Trash2,
-  ArrowUpRight, ArrowDownLeft, Target, Globe
+  ArrowUpRight, ArrowDownLeft, Target, Globe, Upload, CheckCircle2, Bot, X,
 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Link } from "wouter";
@@ -29,6 +29,10 @@ export function FinancePage() {
   const [bankForm, setBankForm] = useState(BLANK_BANK);
   const [saving, setSaving] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [syncModal, setSyncModal] = useState<any | null>(null);
+  const [csvText, setCsvText] = useState("");
+  const [syncResult, setSyncResult] = useState<any>(null);
+  const [syncError, setSyncError] = useState("");
 
   const { data: txData } = useQuery<{ data: any[]; totals: any }>({ queryKey: ["/api/finance/transactions"], enabled: tab === "Transactions" });
   const { data: plReport } = useQuery<any>({ queryKey: ["/api/finance/reports/pl"], enabled: tab === "Reports" });
@@ -53,10 +57,30 @@ export function FinancePage() {
     } finally { setSaving(false); }
   };
 
-  const syncAccount = async (id: string) => {
-    setSyncingId(id);
-    try { await apiRequest("POST", `/api/finance/accounts/${id}/sync`, {}); qc.invalidateQueries({ queryKey: ["/api/finance/transactions"] }); qc.invalidateQueries({ queryKey: ["/api/finance/accounts"] }); }
-    finally { setSyncingId(null); }
+  const openSync = (acct: any) => {
+    setSyncModal(acct);
+    setCsvText("");
+    setSyncResult(null);
+    setSyncError("");
+  };
+  const closeSync = () => { setSyncModal(null); setSyncResult(null); setSyncError(""); };
+
+  const runSync = async () => {
+    if (!syncModal || !csvText.trim()) return;
+    setSyncingId(syncModal.id);
+    setSyncError("");
+    setSyncResult(null);
+    try {
+      const res = await apiRequest<any>("POST", `/api/finance/accounts/${syncModal.id}/sync`, {
+        csvText,
+        currency: syncModal.currency || "USD",
+      });
+      setSyncResult(res);
+      qc.invalidateQueries({ queryKey: ["/api/finance/transactions"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/accounts"] });
+    } catch (e: any) {
+      setSyncError(e?.message || "Import failed — check your CSV format.");
+    } finally { setSyncingId(null); }
   };
 
   const REGION_COLORS: Record<string, string> = { "Global": "#3b82f6", "West Africa": "#10b981", "East Africa": "#f59e0b", "North Africa": "#8b5cf6", "Central Africa": "#06b6d4", "Southern Africa": "#f97316", "Island Nations": "#ec4899", "Asia": "#14b8a6", "Americas": "#6366f1" };
@@ -155,22 +179,52 @@ export function FinancePage() {
       {/* ── BANK ACCOUNTS ── */}
       {tab === "Bank Accounts" && (
         <div>
+          {/* Explain what bank sync does */}
+          <div style={{ padding: "14px 18px", background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12, marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
+            <Bot size={18} style={{ color: "#6366f1", flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>Bank Account Sync — How It Works</div>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                Link a bank account and paste your bank statement CSV export. The platform parses every transaction row and uses AI to automatically categorize each one (Payroll, Rent, Software, Revenue, etc.) before saving them to your bookkeeping ledger. All transactions appear in the Transactions tab immediately after sync.
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+                Supported CSV formats: <strong>date, description, amount</strong> — or — <strong>date, description, debit, credit</strong>. Export from any bank (Chase, GTBank, Ecobank, Barclays, etc.)
+              </div>
+            </div>
+          </div>
+
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
             <button className="btn btn-primary btn-sm" onClick={() => setBankModal(true)}><Plus size={14} /> Add Account</button>
           </div>
-          {!bankAccts?.length ? <Empty icon={Landmark} title="No bank accounts" desc="Connect your bank accounts to sync transactions automatically" /> : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
+
+          {!bankAccts?.length ? (
+            <Empty icon={Landmark} title="No bank accounts linked" desc="Add your first bank account to start syncing transactions for bookkeeping" action={<button className="btn btn-primary" onClick={() => setBankModal(true)}><Plus size={15} /> Add Bank Account</button>} />
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: 14 }}>
               {bankAccts.map((a: any) => (
                 <div key={a.id} className="card" style={{ padding: 20 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 11, background: "rgba(59,130,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏦</div>
-                    <button className="btn btn-secondary btn-sm" disabled={syncingId === a.id} onClick={() => syncAccount(a.id)}>
-                      <RefreshCw size={13} style={{ animation: syncingId === a.id ? "spin 0.6s linear infinite" : "none" }} /> Sync
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(59,130,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Landmark size={20} style={{ color: "#3b82f6" }} />
+                    </div>
+                    <button
+                      data-testid={`button-sync-${a.id}`}
+                      className="btn btn-primary btn-sm"
+                      onClick={() => openSync(a)}
+                      style={{ display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <Upload size={13} /> Import CSV
                     </button>
                   </div>
                   <div style={{ fontWeight: 800, fontSize: 16 }}>{a.name}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{a.institution} · {a.accountType || a.account_type}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981", marginTop: 10 }}>{a.currency} {Number(a.balance || 0).toLocaleString()}</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10 }}>{a.institution} · <span style={{ textTransform: "capitalize" }}>{a.accountType || a.account_type}</span></div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{a.currency} {Number(a.balance || 0).toLocaleString()}</div>
+                  {a.lastSyncedAt && (
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                      <CheckCircle2 size={11} style={{ color: "#10b981" }} />
+                      Last synced {new Date(a.lastSyncedAt).toLocaleDateString()}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -246,6 +300,97 @@ export function FinancePage() {
             <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : "Add Transaction"}</button>
           </div>
         </form>
+      </Modal>
+
+      {/* ── CSV Import / Sync Modal ── */}
+      <Modal open={!!syncModal} onClose={closeSync} title={`Import Transactions — ${syncModal?.name}`}>
+        <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+          {!syncResult ? (
+            <>
+              <div style={{ padding: "12px 14px", background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.18)", borderRadius: 10, fontSize: 12, lineHeight: 1.6, color: "var(--text-secondary)" }}>
+                <strong style={{ color: "var(--text-primary)" }}>How to export your CSV:</strong>
+                <ol style={{ margin: "6px 0 0 16px", padding: 0 }}>
+                  <li>Log in to your bank's internet banking portal</li>
+                  <li>Go to Statements or Transaction History</li>
+                  <li>Select your date range and download as <strong>CSV</strong></li>
+                  <li>Open the file, copy all content, and paste it below</li>
+                </ol>
+                <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
+                  Required columns: <code>date</code>, <code>description</code>, and <code>amount</code> (or <code>debit</code> + <code>credit</code>)
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Paste CSV Content</label>
+                <textarea
+                  data-testid="input-csv-text"
+                  className="input"
+                  rows={10}
+                  style={{ width: "100%", resize: "vertical", fontFamily: "monospace", fontSize: 12 }}
+                  value={csvText}
+                  onChange={e => setCsvText(e.target.value)}
+                  placeholder={`date,description,amount\n2024-01-05,Client Payment - Acme Corp,5000\n2024-01-07,Office Rent,-1200\n2024-01-10,Stripe Payout,3200\n2024-01-12,AWS Cloud Services,-180`}
+                />
+              </div>
+
+              {syncError && (
+                <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 9, color: "#ef4444", fontSize: 13 }}>
+                  {syncError}
+                </div>
+              )}
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: "1px solid var(--border)" }}>
+                <Bot size={14} style={{ color: "#6366f1" }} />
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>AI will auto-categorize each transaction (Payroll, Rent, Revenue, etc.)</span>
+              </div>
+            </>
+          ) : (
+            /* Success state */
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "10px 0" }}>
+              <CheckCircle2 size={44} style={{ color: "#10b981" }} />
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontWeight: 800, fontSize: 18 }}>{syncResult.synced} Transactions Imported</div>
+                <div style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>AI categorized and saved to your bookkeeping ledger</div>
+              </div>
+              {syncResult.transactions?.length > 0 && (
+                <div style={{ width: "100%", maxHeight: 240, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 10 }}>
+                  {syncResult.transactions.slice(0, 20).map((tx: any, i: number) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 14px", borderBottom: "1px solid var(--border)" }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{tx.description}</div>
+                        <div style={{ fontSize: 11, color: "#6366f1" }}>{tx.category}</div>
+                      </div>
+                      <div style={{ fontWeight: 700, color: tx.type === "income" ? "#10b981" : "#ef4444", fontSize: 14 }}>
+                        {tx.type === "income" ? "+" : "-"}{tx.currency} {Number(tx.amount).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>View all transactions in the Transactions tab</div>
+            </div>
+          )}
+        </div>
+        <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          {!syncResult ? (
+            <>
+              <button type="button" className="btn btn-secondary" onClick={closeSync}>Cancel</button>
+              <button
+                data-testid="button-run-sync"
+                type="button"
+                className="btn btn-primary"
+                disabled={!csvText.trim() || !!syncingId}
+                onClick={runSync}
+                style={{ display: "flex", alignItems: "center", gap: 7 }}
+              >
+                <RefreshCw size={13} style={{ animation: syncingId ? "spin 0.6s linear infinite" : "none" }} />
+                {syncingId ? "Importing & categorizing…" : "Import & Sync"}
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-primary" onClick={closeSync}>Done</button>
+          )}
+        </div>
       </Modal>
 
       {/* Bank Account Modal */}

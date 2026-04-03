@@ -92,12 +92,98 @@ router.put("/accounts/:id", authenticate, async (req: AuthRequest, res) => {
   res.json(acct);
 });
 
-// ── Bank Feed Sync ─────────────────────────────────────────────
+// ── Bank Feed Sync (CSV Import + AI Categorization) ─────────────
 router.post("/accounts/:id/sync", authenticate, async (req: AuthRequest, res) => {
-  // Connect to Plaid, Open Banking, or upload CSV transactions
-  // To import transactions, POST to /api/finance/transactions individually
-  // or use /api/finance/import-csv with a CSV payload
-  res.json({ synced: 0, message: "Connect a bank feed via Plaid or import a CSV to sync transactions.", transactions: [] });
+  const { csvText, currency = "USD" } = req.body as { csvText?: string; currency?: string };
+
+  if (!csvText || !csvText.trim()) {
+    return res.status(400).json({ error: "No CSV data provided. Paste your bank statement CSV to import transactions." });
+  }
+
+  // Parse CSV — support common bank export formats:
+  // date, description, amount  OR  date, description, debit, credit
+  const lines = csvText.trim().split(/\r?\n/).filter(l => l.trim());
+  const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+
+  const dateIdx = headers.findIndex(h => h.includes("date") || h.includes("posted"));
+  const descIdx = headers.findIndex(h => h.includes("desc") || h.includes("memo") || h.includes("narration") || h.includes("details"));
+  const amtIdx  = headers.findIndex(h => h === "amount" || h === "amt");
+  const debitIdx  = headers.findIndex(h => h.includes("debit") || h.includes("withdrawal") || h.includes("dr"));
+  const creditIdx = headers.findIndex(h => h.includes("credit") || h.includes("deposit") || h.includes("cr"));
+
+  if (dateIdx < 0 || descIdx < 0) {
+    return res.status(400).json({ error: "CSV must have columns: date, description, and either amount or debit/credit columns." });
+  }
+
+  const rawTxs: { date: string; description: string; amount: number; type: "income" | "expense" }[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(",").map(c => c.trim().replace(/^["']|["']$/g, ""));
+    const dateStr  = cols[dateIdx] || "";
+    const desc     = cols[descIdx] || "";
+    if (!dateStr || !desc) continue;
+
+    let amount = 0;
+    let type: "income" | "expense" = "expense";
+
+    if (amtIdx >= 0) {
+      const raw = parseFloat(cols[amtIdx]?.replace(/[^0-9.-]/g, "") || "0");
+      amount = Math.abs(raw);
+      type   = raw >= 0 ? "income" : "expense";
+    } else if (debitIdx >= 0 || creditIdx >= 0) {
+      const debit  = parseFloat((cols[debitIdx] || "0").replace(/[^0-9.]/g, "")) || 0;
+      const credit = parseFloat((cols[creditIdx] || "0").replace(/[^0-9.]/g, "")) || 0;
+      if (credit > 0)      { amount = credit; type = "income"; }
+      else if (debit > 0)  { amount = debit;  type = "expense"; }
+    }
+
+    if (amount > 0) rawTxs.push({ date: dateStr, description: desc, amount, type });
+  }
+
+  if (!rawTxs.length) {
+    return res.status(400).json({ error: "No valid transactions found in the CSV. Check the format and try again." });
+  }
+
+  // AI Categorization — batch up to 50 rows
+  let categorized: { category: string }[] = rawTxs.map(() => ({ category: "Uncategorized" }));
+  try {
+    const prompt = `You are a bookkeeping assistant. Categorize each bank transaction into a short category label.
+Return ONLY a JSON array with one object per transaction, e.g.:
+[{"category":"Payroll"},{"category":"Software & Subscriptions"},...]
+
+Transactions:
+${rawTxs.slice(0, 50).map((t, i) => `${i + 1}. ${t.type.toUpperCase()} $${t.amount} — ${t.description}`).join("\n")}`;
+
+    const json = await askJSON(prompt, "You are a bookkeeping categorization assistant. Return only valid JSON arrays.");
+    if (Array.isArray(json)) categorized = json;
+  } catch { /* keep Uncategorized if AI unavailable */ }
+
+  // Insert all transactions
+  const toInsert = rawTxs.map((t, i) => ({
+    tenantId: req.user!.tenantId,
+    bankAccountId: req.params.id,
+    type: t.type,
+    description: t.description,
+    amount: String(t.amount),
+    currency,
+    category: categorized[i]?.category || "Uncategorized",
+    date: new Date(t.date),
+  }));
+
+  const inserted = await db.insert(transactions).values(toInsert).returning();
+
+  // Update account lastSyncAt if column exists
+  try {
+    await db.execute(
+      sql`UPDATE bank_accounts SET last_synced_at = now() WHERE id = ${req.params.id} AND tenant_id = ${req.user!.tenantId}`
+    );
+  } catch { /* column may not exist */ }
+
+  res.json({
+    synced: inserted.length,
+    message: `Successfully imported ${inserted.length} transactions with AI-powered categorization.`,
+    transactions: inserted,
+  });
 });
 
 // ── Transactions ────────────────────────────────────────────────

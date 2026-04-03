@@ -5,7 +5,7 @@ import { Modal, FormRow, Empty } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import {
   ShoppingCart, Package, Plus, Store, Zap, AlertTriangle, Edit,
-  Trash2, CheckCircle2, Globe, Copy,
+  Trash2, CheckCircle2, Globe, Copy, Bot,
   Sparkles, ArrowLeft, RefreshCw, DollarSign,
 } from "lucide-react";
 
