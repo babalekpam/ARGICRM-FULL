@@ -14,6 +14,7 @@ import financeRouter from "./routes/finance.js";
 import operationsRouter from "./routes/operations.js";
 import leadgenRouter from "./routes/leadgen.js";
 import aiRouter from "./routes/ai.js";
+import ariaRouter from "./routes/aria.js";
 import analyticsRouter from "./routes/analytics.js";
 import workflowsRouter from "./routes/workflows.js";
 import skillsRouter from "./routes/skills.js";
@@ -47,6 +48,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/leadgen", leadgenRouter);
   // ─── Super Admin ───────────────────────────────────
   app.use("/api/superadmin", adminRouter);
+  // ─── ARIA AI Command Agent ──────────────────────────
+  app.use("/api/aria", ariaRouter);
 
   // ─── Contacts ─────────────────────────────────────────
   app.get("/api/contacts", authenticate, async (req: AuthRequest, res) => {

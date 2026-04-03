@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useWhiteLabel } from "../contexts/WhiteLabelContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useQuery } from "@tanstack/react-query";
+import ARIADialog from "./ARIADialog";
 import {
   LayoutDashboard, Users, UserPlus, TrendingUp, CheckSquare,
   Building2, Megaphone, FileText, Settings, LogOut, ChevronLeft,
@@ -353,6 +354,7 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
           {children}
         </main>
       </div>
+      <ARIADialog />
     </div>
   );
 }

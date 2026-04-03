@@ -1,0 +1,74 @@
+🏗️ PHASE 1 — BUILD THE AI-POWERED STORE BUILDER
+STEP 1 — AI Store Interview (Natural Language Input)
+When the user opens the E-Commerce tab and clicks "Create New Store", do NOT show a blank form. Instead, open an AI chat interface where the user simply describes their store idea in plain language. Example:
+
+"I want to sell handmade African jewelry, targeting women 25–45, with a warm earthy aesthetic and prices between $20–$200."
+
+The AI agent must extract from this description:
+
+Store name (suggest one if not given)
+Product category and niche
+Target audience
+Brand colors, tone, and aesthetic
+Price range
+Preferred language (EN/FR default for ARGILETTE markets)
+
+If any critical detail is missing, the AI must ask one follow-up question at a time — not a form dump. Once all details are collected, show a summary card and ask: "Ready to build your store?"
+
+STEP 2 — AI Builds the Store Automatically
+When the user confirms, the agent autonomously:
+
+Generates the store name, tagline, and brand identity
+Selects a matching theme (minimalist / bold / luxury / marketplace)
+Creates the homepage layout with hero section, featured products placeholder, and footer
+Sets up product categories based on the described niche
+Configures currency (USD default, XOF for Togo/West Africa)
+Generates an About page using the user's description
+Sets up a contact page and basic store policies (shipping, returns, privacy)
+Displays a real-time progress bar showing each build step completing
+
+Show a live log like:
+✔ Store identity created
+✔ Theme selected: Warm Minimalist
+✔ Homepage built
+✔ Product categories configured
+✔ Pages generated
+✔ Store ready
+
+🌐 PHASE 2 — CUSTOM DOMAIN LINKING
+After the store is built, show a "Connect Your Domain" screen:
+
+User enters their own domain (e.g. www.mystore.com)
+Display the exact DNS records they need to add at their registrar:
+
+A Record → point to ArgiCRM server IP
+CNAME Record → www → ArgiCRM subdomain
+
+
+Show a "Verify Domain" button that polls DNS until propagation is confirmed
+Once verified, display: "Your store is live at www.mystore.com"
+
+
+Each store gets a temporary subdomain while the custom domain propagates (e.g. storename.argicrm.app)
+Provide step-by-step DNS instructions for both Namecheap and GoDaddy
+Once the custom domain is live, the temporary subdomain automatically redirects to it
+
+
+📋 TECHNICAL REQUIREMENTS
+
+All store data saved per user account in the ArgiCRM database
+AI store builder uses Anthropic Claude API (claude-sonnet-4-20250514) for the interview and generation steps
+Store creation state machine: idle → interviewing → building → complete → error — no loops, no dead ends
+All routes protected with JWT auth
+Fully mobile responsive
+
+
+✅ COMPLETION CHECKLIST
+
+ AI interview chat flow works end to end
+ Store fully auto-generated from plain text description
+ Temporary subdomain assigned immediately after build
+ Custom domain linking with DNS record display
+ DNS verification polling works and confirms propagation
+ Custom domain goes live and subdomain redirects to it
+ Zero infinite loops on store creation

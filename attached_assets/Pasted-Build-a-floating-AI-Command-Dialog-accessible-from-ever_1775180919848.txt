@@ -1,0 +1,149 @@
+Build a floating AI Command Dialog accessible from every single page of ArgiCRM. This is a single, always-available window where the user can type any instruction in plain language and the AI agent will either execute it directly or dispatch the instruction to the correct module across the platform — without the user ever leaving their current page.
+Think of it as the brain of ArgiCRM — one window to control everything.
+
+🖥️ UI & BEHAVIOR
+Trigger
+
+A floating button fixed to the bottom-right corner of every page, labeled "Ask ARIA" (ARGILETTE's AI agent name)
+Keyboard shortcut: Ctrl + Space or Cmd + Space to open/close
+Clicking the button opens the Command Dialog as a sleek floating panel — it does NOT navigate away or reload the page
+
+Dialog Design
+
+Floating panel, not a full-screen takeover
+Dark professional theme matching ArgiCRM's UI
+Input field at the bottom with placeholder: "What do you want to do?"
+Conversation history displayed above (chat style, scrollable)
+Top-right close button (×) and minimize option
+Shows which module ARIA is currently acting on (e.g. → acting on: CRM / Contacts)
+Real-time typing indicator while ARIA processes
+A small status badge showing: ARIA is ready / ARIA is working... / ARIA is done ✔
+
+
+🤖 ARIA — WHAT THE AI AGENT CAN DO
+ARIA must understand and execute instructions across ALL ArgiCRM modules. Below is the full capability map:
+
+📋 CRM MODULE
+
+"Add a new contact named John Doe, email john@example.com, company Acme"
+"Show me all leads from this week"
+"Move John Doe to the Qualified stage"
+"Delete all contacts with no activity in 90 days"
+"Export my contact list as CSV"
+
+🛍️ E-COMMERCE MODULE
+
+"Create a new store for handmade candles"
+"Add a product called Lavender Candle, price $24.99, category Home & Wellness"
+"Connect my domain www.mycandles.com to my store"
+"Show me my store's orders from today"
+"Change my store theme to minimalist"
+
+📁 PROJECTS MODULE
+
+"Create a new project called Q2 Marketing Campaign"
+"Add a task: design landing page, due Friday, assign to me"
+"Show me all overdue tasks"
+"Mark the NaviMED onboarding project as complete"
+
+💳 BILLING & PAYMENTS MODULE
+
+"Show me all unpaid invoices"
+"Create an invoice for $500 for client ABC Corp"
+"Connect my Stripe account"
+"Send a payment reminder to all overdue clients"
+
+📣 MARKETING MODULE
+
+"Draft an email campaign for my new product launch"
+"Schedule a social post for tomorrow at 9am"
+"Show me my email open rates from last week"
+"Create a 3-touch follow-up sequence for new leads"
+
+⚙️ ACCOUNT & SETTINGS MODULE
+
+"Update my business name to ARGILETTE LLC"
+"Change my notification preferences"
+"Add a new team member: email sarah@argilette.com, role Manager"
+"Show me my current subscription plan"
+
+🌐 CROSS-MODULE COMMANDS
+
+"Give me a full summary of everything that happened today across the platform"
+"What are my top 3 priorities right now?"
+"Show me everything related to client ABC Corp across CRM, billing, and projects"
+"Send a Slack-style internal note to my team about the new store launch"
+
+
+⚙️ TECHNICAL ARCHITECTURE
+AI Engine
+
+Use Anthropic Claude API (claude-sonnet-4-20250514) as the brain
+System prompt must define ARIA's identity, platform context, and full module capability map
+Maintain conversation history within the session so ARIA remembers context across multiple instructions in the same dialog session
+If the user's instruction is ambiguous, ARIA asks one clarifying question before acting
+
+Intent Router
+Build an Intent Router on the backend that:
+
+Receives ARIA's parsed instruction
+Identifies which module and action is targeted
+Calls the correct internal API endpoint to execute the action
+Returns a confirmation or result back to the dialog
+
+Intent categories to handle:
+CREATE · READ · UPDATE · DELETE · EXPORT · SEND · SCHEDULE · SUMMARIZE · NAVIGATE · CONNECT
+Execution vs Instruction Mode
+ARIA operates in two modes:
+
+EXECUTE MODE — ARIA directly performs the action via API call (e.g. creates a contact, adds a product, generates an invoice). Confirm with: "Done — contact John Doe has been added to your CRM."
+INSTRUCTION MODE — For complex or destructive actions (e.g. delete all contacts, send mass email), ARIA describes exactly what it will do and asks: "Should I go ahead?" before executing.
+
+Security
+
+All ARIA actions are authenticated via the logged-in user's JWT token
+ARIA can only act within the permissions of the current user's role
+Log every ARIA action to an audit trail in the database (timestamp, user, instruction, action taken, module affected)
+ARIA must never expose other users' data
+
+
+🧠 ARIA SYSTEM PROMPT (pass this to Claude API)
+You are ARIA, the AI Command Agent embedded inside ArgiCRM, 
+a CRM and business management platform built by ARGILETTE LLC.
+
+Your job is to understand the user's plain-language instructions 
+and execute them across the ArgiCRM platform — including CRM, 
+E-Commerce, Projects, Billing, Marketing, and Account modules.
+
+Rules:
+- Always respond in the same language the user writes in (EN or FR)
+- Be concise and action-oriented — confirm what you did, not just what you will do
+- For destructive or irreversible actions, always confirm before executing
+- If an instruction is unclear, ask exactly ONE clarifying question
+- Never make up data — if something doesn't exist, say so clearly
+- Always tell the user which module you are acting on
+- If a task spans multiple modules, handle them in logical order and report each step
+
+You have access to the following platform actions:
+CRM: create/read/update/delete contacts, leads, deals, pipelines
+E-Commerce: create stores, add products, manage orders, link domains
+Projects: create/manage projects and tasks
+Billing: create invoices, track payments, connect payment accounts
+Marketing: draft campaigns, schedule posts, manage sequences
+Settings: manage account, team members, integrations
+
+Current user context will be injected with each request.
+
+✅ COMPLETION CHECKLIST
+
+ Floating ARIA button visible and accessible on every page
+ Ctrl+Space / Cmd+Space keyboard shortcut opens the dialog
+ Dialog opens without navigating away from current page
+ ARIA understands and routes instructions to all 6 modules
+ Execute Mode works — actions are performed via internal API calls
+ Instruction Mode works — confirms before destructive actions
+ Conversation history maintained within session
+ Audit log records every action ARIA takes
+ JWT auth enforced on all ARIA-triggered actions
+ Mobile responsive — dialog works on phones
+ EN and FR language support

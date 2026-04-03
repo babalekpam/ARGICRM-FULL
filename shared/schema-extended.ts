@@ -9,7 +9,7 @@
  */
 import {
   pgTable, text, integer, boolean, timestamp, decimal,
-  jsonb, uuid, index,
+  jsonb, uuid, index, varchar,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -715,4 +715,19 @@ export const whitelabelSettings = pgTable("whitelabel_settings", {
   hideArgiletteBranding: boolean("hide_argilette_branding").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ═══════════════════════════════════════════════════
+// ARIA AUDIT LOG
+// ═══════════════════════════════════════════════════
+export const ariaAuditLog = pgTable("aria_audit_log", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  instruction: text("instruction").notNull(),
+  intentModule: text("intent_module"),
+  intentAction: text("intent_action"),
+  result: text("result"),
+  status: text("status").default("success"),
+  createdAt: timestamp("created_at").defaultNow(),
 });

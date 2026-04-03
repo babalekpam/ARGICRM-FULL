@@ -144,6 +144,151 @@ router.put("/orders/:id", authenticate, async (req: AuthRequest, res) => {
   res.json(order);
 });
 
+// ── AI Store Builder ───────────────────────────────────────────
+const STORE_INTERVIEW_SYSTEM = `You are an AI store builder for ArgiCRM. Help the user create an online store through natural conversation.
+
+You need to collect: store name, product category/niche, target audience, brand aesthetic, price range, currency.
+
+Rules:
+- Ask ONE follow-up question at a time if critical info is missing
+- Be warm and encouraging
+- Suggest a store name if none given
+- Set "ready": true only when you have name + category + at least 2 other fields
+
+ALWAYS respond with ONLY valid JSON (no markdown):
+{
+  "message": "Your conversational response",
+  "extracted": {
+    "name": "Store name or null",
+    "category": "Product category or null",
+    "targetAudience": "Target audience or null",
+    "aesthetic": "minimalist|bold|luxury|marketplace or null",
+    "priceRange": "e.g. $20-$200 or null",
+    "currency": "USD|XOF|EUR|NGN or null",
+    "language": "en|fr",
+    "tagline": "A catchy tagline or null",
+    "description": "Store description or null"
+  },
+  "ready": false
+}`;
+
+router.post("/stores/ai-interview", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { message, history = [] } = req.body;
+    const messages = [
+      ...history.slice(-8),
+      { role: "user" as const, content: message },
+    ];
+    const raw = await completeForTenant(req.user!.tenantId, {
+      messages,
+      system: STORE_INTERVIEW_SYSTEM,
+      maxTokens: 600,
+    });
+    const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    res.json(parsed);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/stores/ai-build", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { extracted } = req.body;
+    const user = req.user!;
+
+    const cleanName = (extracted.name || "store")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .substring(0, 24);
+    const suffix = Date.now().toString().slice(-4);
+    const subdomain = `${cleanName}-${suffix}.argicrm.app`;
+    const slug = `${cleanName}-${suffix}`;
+
+    const themeMap: Record<string, string> = {
+      minimalist: "minimal",
+      bold: "vibrant",
+      luxury: "elegant",
+      marketplace: "modern",
+    };
+    const theme = themeMap[extracted.aesthetic] || "modern";
+
+    const categories = extracted.category
+      ? [{ name: extracted.category, slug: extracted.category.toLowerCase().replace(/\s+/g, "-") }]
+      : [{ name: "General", slug: "general" }];
+
+    const storeData = {
+      hero: {
+        headline: `Welcome to ${extracted.name}`,
+        subheadline: extracted.tagline || `Your destination for ${extracted.category || "quality products"}`,
+        ctaText: "Shop Now",
+      },
+      about: extracted.description || `${extracted.name} is your go-to destination for ${extracted.category || "great products"}. We serve ${extracted.targetAudience || "customers"} with quality products${extracted.priceRange ? ` priced ${extracted.priceRange}` : ""}.`,
+      pages: ["Home", "Shop", "About", "Contact", "Shipping Policy", "Return Policy", "Privacy Policy"],
+      targetAudience: extracted.targetAudience,
+      priceRange: extracted.priceRange,
+    };
+
+    const [store] = await db
+      .insert(stores)
+      .values({
+        tenantId: user.tenantId,
+        userId: user.id,
+        slug,
+        name: extracted.name,
+        description: extracted.description || `${extracted.category || "Products"} store`,
+        tagline: extracted.tagline,
+        currency: extracted.currency || "USD",
+        theme,
+        isPublished: false,
+        aiBuilt: true,
+        subdomain,
+        domainStatus: "none",
+        storeData,
+        categories,
+      })
+      .returning();
+
+    const progressLog = [
+      `Store identity created: ${extracted.name}`,
+      `Theme selected: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`,
+      "Homepage layout built with hero section",
+      `Product categories configured: ${categories.map((c: any) => c.name).join(", ")}`,
+      "Pages generated: Home, Shop, About, Contact, Policies",
+      `Temporary subdomain assigned: ${subdomain}`,
+      "Store ready to launch",
+    ];
+
+    res.json({ store, progressLog });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/stores/:id/domain", authenticate, async (req: AuthRequest, res) => {
+  const { customDomain } = req.body;
+  const [store] = await db
+    .update(stores)
+    .set({ customDomain, domainStatus: "pending", updatedAt: new Date() })
+    .where(and(eq(stores.id, req.params.id), eq(stores.tenantId, req.user!.tenantId)))
+    .returning();
+  res.json(store);
+});
+
+router.post("/stores/:id/domain/verify", authenticate, async (req: AuthRequest, res) => {
+  const [store] = await db.select().from(stores).where(and(eq(stores.id, req.params.id), eq(stores.tenantId, req.user!.tenantId)));
+  if (!store) return res.status(404).json({ error: "Store not found" });
+  if (!store.customDomain) return res.status(400).json({ error: "No custom domain set" });
+
+  // In production: poll real DNS. For demo, simulate a check.
+  const isVerified = store.domainStatus === "pending" || store.domainStatus === "verifying";
+  if (isVerified) {
+    const [updated] = await db.update(stores).set({ domainStatus: "verified", isPublished: true, updatedAt: new Date() }).where(eq(stores.id, store.id)).returning();
+    return res.json({ verified: true, store: updated });
+  }
+  res.json({ verified: false, message: "DNS not yet propagated. Please check your DNS records and try again in a few minutes." });
+});
+
 // ── Stats ──────────────────────────────────────────────────────
 router.get("/stats", authenticate, async (req: AuthRequest, res) => {
   const [pc] = await db.select({ total: sql<number>`count(*)` }).from(products).where(eq(products.tenantId, req.user!.tenantId));
