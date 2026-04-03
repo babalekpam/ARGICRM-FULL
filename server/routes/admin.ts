@@ -88,6 +88,27 @@ router.put("/tenants/:id/plan", authenticate, requireOwner, async (req: AuthRequ
   res.json(t);
 });
 
+// ── Block tenant (hard block — login denied) ────────────────────
+router.put("/tenants/:id/block", authenticate, requireOwner, async (req: AuthRequest, res) => {
+  const [t] = await db.update(tenants)
+    .set({ isActive: false, subscriptionStatus: "blocked", updatedAt: new Date() })
+    .where(eq(tenants.id, req.params.id))
+    .returning();
+  res.json(t);
+});
+
+// ── Full tenant update (plan + status + seats in one call) ──────
+router.put("/tenants/:id/manage", authenticate, requireOwner, async (req: AuthRequest, res) => {
+  const { plan, maxUsers, subscriptionStatus, isActive } = req.body;
+  const updates: any = { updatedAt: new Date() };
+  if (plan !== undefined)               { updates.subscriptionPlan = plan; updates.plan = plan; }
+  if (maxUsers !== undefined)           updates.maxUsers = Number(maxUsers);
+  if (subscriptionStatus !== undefined) updates.subscriptionStatus = subscriptionStatus;
+  if (isActive !== undefined)           updates.isActive = isActive;
+  const [t] = await db.update(tenants).set(updates).where(eq(tenants.id, req.params.id)).returning();
+  res.json(t);
+});
+
 // ── Platform agent stats ────────────────────────────────────────
 router.get("/agent-stats", authenticate, requireOwner, async (req: AuthRequest, res) => {
   const byAgent = await db.select({ agentType: agentSessions.agentType, sessions: sql<number>`count(*)`, messages: sql<number>`sum(message_count)`, tokens: sql<number>`sum(tokens_used)` })

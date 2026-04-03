@@ -106,7 +106,8 @@ router.post("/login", async (req, res) => {
     if (!valid) return res.status(401).json({ error: "Invalid email or password" });
 
     const tenant = await storage.getTenantById(user.tenantId);
-    if (!tenant?.isActive) return res.status(403).json({ error: "Your workspace is inactive. Contact support." });
+    if (tenant?.subscriptionStatus === "blocked") return res.status(403).json({ error: "This account has been blocked. Contact support@argilette.com." });
+    if (!tenant?.isActive) return res.status(403).json({ error: "Your workspace is suspended. Contact support." });
 
     await storage.updateUserLastLogin(user.id);
 
