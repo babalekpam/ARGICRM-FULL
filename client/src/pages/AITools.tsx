@@ -585,12 +585,14 @@ function LeadFinderTab() {
         </div>
 
         <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(99,102,241,0.06)", borderRadius: 8, fontSize: 12, color: "var(--text-muted)" }}>
-          <strong style={{ color: "#818cf8" }}>Sources searched:</strong> DuckDuckGo · Yellow Pages · OpenCorporates · GitHub · Company websites · Job boards — all free public data
+          <strong style={{ color: "#818cf8" }}>Sources searched:</strong>{" "}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", borderRadius: 4, padding: "1px 7px", fontWeight: 600 }}>Apollo.io</span>
+          {" · "}DuckDuckGo · Tavily · SerpAPI · Yellow Pages · OpenCorporates · GitHub · Company websites · Job boards
         </div>
 
         <button onClick={runSearch} disabled={!form.industry || isRunning} data-testid="btn-find-leads"
           style={{ marginTop: 16, padding: "11px 22px", background: !form.industry || isRunning ? "var(--bg-overlay)" : "linear-gradient(135deg,#6366f1,#8b5cf6)", color: !form.industry || isRunning ? "var(--text-muted)" : "#fff", border: "none", borderRadius: 8, cursor: !form.industry ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-          {isRunning ? <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Searching the web…</> : <><Sparkles size={14} /> Find {form.targetCount} Leads</>}
+          {isRunning ? <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Searching Apollo + web sources…</> : <><Sparkles size={14} /> Find {form.targetCount} Leads</>}
         </button>
 
         {error && <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, fontSize: 13, color: "#f87171" }}>{error}</div>}
@@ -676,11 +678,18 @@ function LeadFinderTab() {
                     <div style={{ fontSize: 10, color: "var(--text-muted)" }}>score</div>
                   </div>
                 )}
-                {p.emailStatus && (
-                  <span style={{ padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: p.emailStatus === "valid" ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", color: p.emailStatus === "valid" ? "#34d399" : "#fbbf24" }}>
-                    {p.emailStatus}
-                  </span>
-                )}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                  {p.dataSource === "apollo" && (
+                    <span style={{ padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 700, background: "rgba(99,102,241,0.12)", color: "#818cf8", letterSpacing: "0.03em" }}>
+                      Apollo
+                    </span>
+                  )}
+                  {p.emailStatus && (
+                    <span style={{ padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: p.emailStatus === "valid" ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", color: p.emailStatus === "valid" ? "#34d399" : "#fbbf24" }}>
+                      {p.emailStatus}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -26,7 +26,9 @@ import {
   searchDuckDuckGo, searchOpenCorporates, lookupDomain,
   verifyEmailDNS, detectTechStack, scrapeCompanyWebsite,
   scrapeYellowPages, searchGitHub, scrapeJobPostings,
-  scrapeLinkedInCompany, generateAndVerifyEmail
+  scrapeLinkedInCompany, generateAndVerifyEmail,
+  searchApolloContacts, searchApolloCompanies, isApolloConfigured,
+  type ApolloContact,
 } from "./scraper.js";
 
 
@@ -198,13 +200,62 @@ export async function discoverContacts(opts: {
   targetTitles: string[];
   targetSeniorities: string[];
   count?: number;
+  location?: string;
+  companySize?: string;
 }): Promise<Prospect[]> {
   const count = opts.count || 3;
   const discovered: Prospect[] = [];
 
-  if (!opts.company.domain) return [];
+  if (!opts.company.domain && !opts.company.name) return [];
 
-  // Search DuckDuckGo for executives at this company
+  // ── APOLLO FIRST: verified contact database ─────────────────
+  if (isApolloConfigured() && opts.company.name) {
+    try {
+      const apolloResults = await searchApolloContacts({
+        titles: opts.targetTitles.slice(0, 5),
+        keywords: opts.company.name,
+        location: opts.location,
+        companySize: opts.companySize,
+        perPage: count * 2,
+      });
+
+      for (const ap of apolloResults) {
+        if (discovered.length >= count) break;
+        // Only keep contacts actually at this company
+        if (!ap.company.toLowerCase().includes(opts.company.name!.toLowerCase().split(" ")[0])) continue;
+
+        const [prospect] = await db.insert(prospects).values({
+          tenantId: opts.tenantId,
+          companyId: opts.company.id,
+          firstName: ap.firstName || ap.name.split(" ")[0] || "",
+          lastName: ap.lastName || ap.name.split(" ").slice(1).join(" ") || "",
+          jobTitle: ap.title || opts.targetTitles[0] || "",
+          company: ap.company || opts.company.name!,
+          companyDomain: ap.companyDomain || opts.company.domain,
+          email: ap.email,
+          emailStatus: ap.emailStatus || "unknown",
+          linkedinUrl: ap.linkedinUrl,
+          city: opts.company.hqCity,
+          country: opts.company.hqCountry,
+          score: ap.email ? 80 : 55,
+          intentScore: 0,
+          dataSource: "apollo",
+          lastEnrichedAt: new Date(),
+        }).onConflictDoNothing().returning();
+
+        if (prospect) discovered.push(prospect);
+      }
+
+      if (discovered.length > 0) {
+        console.log(`[Apollo] Found ${discovered.length} verified contacts for ${opts.company.name}`);
+        return discovered;
+      }
+    } catch (err) {
+      console.warn(`[Apollo] Contact discovery failed for ${opts.company.name}:`, err);
+    }
+  }
+
+  // ── FALLBACK: Web scraping + AI extraction ──────────────────
   for (const title of opts.targetTitles.slice(0, 2)) {
     if (discovered.length >= count) break;
 

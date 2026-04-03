@@ -323,7 +323,178 @@ export async function searchDuckDuckGo(query: string, maxResults = 10): Promise<
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 2. OPENCORPORATES — Free public company registry (80+ countries)
+// 2. APOLLO.IO — Verified contact & company database (275M+ records)
+// Free tier: people search + limited email exports
+// ═══════════════════════════════════════════════════════════════
+
+export interface ApolloContact {
+  name: string;
+  firstName: string;
+  lastName: string;
+  title: string;
+  email: string | null;
+  emailStatus: string;
+  linkedinUrl: string | null;
+  company: string;
+  companyDomain: string | null;
+  location: string | null;
+  source: "apollo";
+}
+
+export interface ApolloCompany {
+  name: string;
+  domain: string | null;
+  industry: string | null;
+  employeeCount: number | null;
+  location: string | null;
+  linkedinUrl: string | null;
+  description: string | null;
+  source: "apollo";
+}
+
+function apolloHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-cache",
+    "x-api-key": process.env.APOLLO_API_KEY || "",
+  };
+}
+
+// Search Apollo for people matching title + industry/location
+export async function searchApolloContacts(opts: {
+  titles?: string[];
+  industry?: string;
+  location?: string;
+  companySize?: string;
+  keywords?: string;
+  perPage?: number;
+}): Promise<ApolloContact[]> {
+  const apiKey = process.env.APOLLO_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const body: any = {
+      page: 1,
+      per_page: Math.min(opts.perPage || 10, 25),
+      prospected_by_current_team: ["no"],
+    };
+
+    if (opts.titles?.length) body.person_titles = opts.titles;
+    if (opts.location) body.person_locations = [opts.location];
+    if (opts.keywords) body.q_keywords = opts.keywords;
+
+    // Map company size string to Apollo employee range
+    if (opts.companySize && opts.companySize !== "Any") {
+      const sizeMap: Record<string, string[]> = {
+        "1-10": ["1,10"],
+        "11-50": ["11,50"],
+        "51-200": ["51,200"],
+        "201-500": ["201,500"],
+        "500+": ["500,10000"],
+      };
+      const range = sizeMap[opts.companySize];
+      if (range) body.organization_num_employees_ranges = range;
+    }
+
+    const res = await axios.post(
+      "https://api.apollo.io/v1/mixed_people/search",
+      body,
+      { headers: apolloHeaders(), timeout: 15000 },
+    );
+
+    const people = res.data?.people || [];
+    console.log(`[Apollo] People search returned ${people.length} contacts`);
+
+    return people.map((p: any) => ({
+      name: p.name || `${p.first_name || ""} ${p.last_name || ""}`.trim(),
+      firstName: p.first_name || "",
+      lastName: p.last_name || "",
+      title: p.title || "",
+      email: p.email || null,
+      emailStatus: p.email_status || "unknown",
+      linkedinUrl: p.linkedin_url || null,
+      company: p.organization?.name || p.employment_history?.[0]?.organization_name || "",
+      companyDomain: p.organization?.website_url?.replace(/^https?:\/\//, "").split("/")[0] || null,
+      location: [p.city, p.state, p.country].filter(Boolean).join(", ") || null,
+      source: "apollo" as const,
+    }));
+
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const msg = err?.response?.data?.message || err.message;
+    if (status === 401) console.warn("[Apollo] Invalid API key");
+    else if (status === 422) console.warn(`[Apollo] Invalid request: ${msg}`);
+    else if (status === 429) console.warn("[Apollo] Rate limit hit");
+    else console.warn(`[Apollo] Error ${status}: ${msg}`);
+    return [];
+  }
+}
+
+// Search Apollo for companies by industry + location
+export async function searchApolloCompanies(opts: {
+  industry?: string;
+  location?: string;
+  companySize?: string;
+  keywords?: string;
+  perPage?: number;
+}): Promise<ApolloCompany[]> {
+  const apiKey = process.env.APOLLO_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const body: any = {
+      page: 1,
+      per_page: Math.min(opts.perPage || 10, 25),
+    };
+
+    if (opts.keywords || opts.industry) body.q_organization_keyword_tags = [opts.industry || opts.keywords || ""].filter(Boolean);
+    if (opts.location) body.organization_locations = [opts.location];
+
+    if (opts.companySize && opts.companySize !== "Any") {
+      const sizeMap: Record<string, string[]> = {
+        "1-10": ["1,10"], "11-50": ["11,50"], "51-200": ["51,200"],
+        "201-500": ["201,500"], "500+": ["500,10000"],
+      };
+      const range = sizeMap[opts.companySize];
+      if (range) body.organization_num_employees_ranges = range;
+    }
+
+    const res = await axios.post(
+      "https://api.apollo.io/v1/mixed_companies/search",
+      body,
+      { headers: apolloHeaders(), timeout: 15000 },
+    );
+
+    const orgs = res.data?.organizations || [];
+    console.log(`[Apollo] Company search returned ${orgs.length} companies`);
+
+    return orgs.map((o: any) => ({
+      name: o.name || "",
+      domain: o.website_url?.replace(/^https?:\/\//, "").split("/")[0] || o.primary_domain || null,
+      industry: o.industry || null,
+      employeeCount: o.estimated_num_employees || null,
+      location: [o.city, o.state, o.country].filter(Boolean).join(", ") || null,
+      linkedinUrl: o.linkedin_url || null,
+      description: o.short_description || null,
+      source: "apollo" as const,
+    }));
+
+  } catch (err: any) {
+    const status = err?.response?.status;
+    if (status === 401) console.warn("[Apollo] Invalid API key");
+    else if (status === 429) console.warn("[Apollo] Rate limit hit");
+    else console.warn(`[Apollo] Company search error ${status}: ${err.message}`);
+    return [];
+  }
+}
+
+// Check if Apollo is configured
+export function isApolloConfigured(): boolean {
+  return !!process.env.APOLLO_API_KEY;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 3. OPENCORPORATES — Free public company registry (80+ countries)
 // ═══════════════════════════════════════════════════════════════
 
 export async function searchOpenCorporates(companyName: string, jurisdiction?: string): Promise<Array<{

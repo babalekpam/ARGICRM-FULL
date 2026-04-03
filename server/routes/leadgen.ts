@@ -12,7 +12,8 @@ import {
   searchDuckDuckGo, verifyEmailDNS, detectTechStack,
   scrapeCompanyWebsite, scrapeYellowPages, searchGitHub,
   scrapeJobPostings, generateAndVerifyEmail, searchOpenCorporates,
-  getSerpApiStatus
+  getSerpApiStatus, searchApolloContacts, searchApolloCompanies,
+  isApolloConfigured,
 } from "../services/scraper.js";
 
 const router = Router();
@@ -308,7 +309,8 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
     intentSignals: Number(ic.total),
     techFindings: Number(tc.total),
     activeJobs: activeJobCount,
-    dataSources: ["DuckDuckGo Search", "Tavily AI Search", "SerpAPI (Google)", "Yellow Pages", "OpenCorporates", "GitHub API", "Company Websites", "Indeed Jobs", "DNS/MX Verification"],
+    dataSources: ["Apollo.io (verified)", "DuckDuckGo Search", "Tavily AI Search", "SerpAPI (Google)", "Yellow Pages", "OpenCorporates", "GitHub API", "Company Websites", "Indeed Jobs", "DNS/MX Verification"],
+    apolloConfigured: isApolloConfigured(),
     tavilyConfigured: !!process.env.TAVILY_API_KEY,
     serpApi: {
       keyCount: serpStatus.length,
@@ -316,6 +318,45 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
       keys: serpStatus,
     },
   });
+});
+
+// ── Apollo direct people search ─────────────────────────────────
+router.post("/apollo/people", authenticate, requireFeature("ai.lead_generation"), async (req: AuthRequest, res) => {
+  const { titles, industry, location, companySize, keywords, perPage } = req.body;
+
+  if (!isApolloConfigured()) {
+    return res.status(503).json({ error: "Apollo.io not configured" });
+  }
+
+  const results = await searchApolloContacts({
+    titles: Array.isArray(titles) ? titles : titles ? [titles] : undefined,
+    industry,
+    location,
+    companySize,
+    keywords,
+    perPage: Math.min(perPage || 25, 25),
+  });
+
+  res.json({ results, total: results.length, source: "apollo" });
+});
+
+// ── Apollo direct company search ────────────────────────────────
+router.post("/apollo/companies", authenticate, requireFeature("ai.lead_generation"), async (req: AuthRequest, res) => {
+  const { industry, location, companySize, keywords, perPage } = req.body;
+
+  if (!isApolloConfigured()) {
+    return res.status(503).json({ error: "Apollo.io not configured" });
+  }
+
+  const results = await searchApolloCompanies({
+    industry,
+    location,
+    companySize,
+    keywords,
+    perPage: Math.min(perPage || 25, 25),
+  });
+
+  res.json({ results, total: results.length, source: "apollo" });
 });
 
 export default router;
