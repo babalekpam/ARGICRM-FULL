@@ -164,8 +164,9 @@ async function runStartupMigrations() {
       await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
       await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS assigned_to_user_id uuid`).catch(() => {});
 
-      // ── Fix seo_audits schema (summary column added later) ──
+      // ── Fix seo_audits schema (columns added after table was created) ──
       await client.query(`ALTER TABLE seo_audits ADD COLUMN IF NOT EXISTS summary jsonb DEFAULT '{"critical":0,"warnings":0,"passed":0,"totalPages":0}'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE seo_audits ADD COLUMN IF NOT EXISTS crawled_at timestamp DEFAULT now()`).catch(() => {});
 
       // ── Make keywords.project_id and backlinks.project_id nullable ──
       await client.query(`ALTER TABLE keywords ALTER COLUMN project_id DROP NOT NULL`).catch(() => {});
