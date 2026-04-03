@@ -58,7 +58,12 @@ async function checkAndIncrementUsage(tenantId: string): Promise<void> {
   const month = currentMonth();
   const usageCount = aiSettings.usageMonth === month ? (aiSettings.usageCount || 0) : 0;
 
-  if (limit !== -1 && usageCount >= limit) {
+  // Enterprise plan (including platform owner) = unlimited
+  if (limit === -1) {
+    return; // no quota enforcement, no usage tracking needed
+  }
+
+  if (usageCount >= limit) {
     const err: any = new Error(
       `Monthly AI quota reached (${usageCount}/${limit} requests). Add your own API key in Settings → AI for unlimited access.`
     );

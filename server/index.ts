@@ -90,6 +90,18 @@ async function runStartupMigrations() {
           "UPDATE users SET password_hash = $1, role = 'platform_owner', is_active = true, email_verified = true WHERE email = $2",
           [hash, ownerEmail]
         );
+        // Ensure the platform owner's tenant is always on the unlimited enterprise plan
+        const ownerRow = existing.rows[0];
+        await client.query(
+          `UPDATE tenants SET
+            subscription_plan = 'enterprise',
+            plan = 'enterprise',
+            max_users = 999999,
+            subscription_status = 'active',
+            updated_at = now()
+          WHERE id = $1`,
+          [ownerRow.tenant_id]
+        );
         console.log(`[MIGRATE] Platform owner credentials refreshed for ${ownerEmail}`);
       } else {
         // No user yet — find or create tenant then create user
