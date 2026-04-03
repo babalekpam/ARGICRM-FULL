@@ -572,7 +572,8 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Own API Key card */}
+              {/* Own API Key card — admin only */}
+              {user?.role === "admin" && (
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                   <Key size={16} style={{color:"var(--accent)"}}/>
@@ -640,6 +641,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           )}
         </div>
