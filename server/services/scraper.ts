@@ -25,6 +25,130 @@ const dnsResolve = promisify(dns.resolve);
 const dnsResolveMx = promisify(dns.resolveMx);
 
 // ═══════════════════════════════════════════════════════════════
+// SERPAPI KEY ROTATION ENGINE
+// Keys stored as SERP_API_KEYS=key1,key2,key3 (comma-separated)
+// Each SerpAPI free key = 100 searches/month, paid = varies
+// Exhausted keys reset after 24h (daily quota window)
+// ═══════════════════════════════════════════════════════════════
+
+interface KeyState {
+  key: string;
+  exhaustedAt: number | null;  // timestamp or null if healthy
+  errorCount: number;
+  totalUsed: number;
+}
+
+const SERP_KEY_RESET_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function loadSerpKeys(): KeyState[] {
+  const raw = process.env.SERP_API_KEYS || "";
+  return raw.split(",").map(k => k.trim()).filter(Boolean).map(key => ({
+    key, exhaustedAt: null, errorCount: 0, totalUsed: 0,
+  }));
+}
+
+// Mutable in-process state — persists for lifetime of server process
+const serpKeyStates: KeyState[] = loadSerpKeys();
+
+function getNextSerpKey(): KeyState | null {
+  const now = Date.now();
+  for (const state of serpKeyStates) {
+    // Reset if 24h have passed since exhaustion
+    if (state.exhaustedAt && now - state.exhaustedAt > SERP_KEY_RESET_MS) {
+      state.exhaustedAt = null;
+      state.errorCount = 0;
+      console.log(`[SerpAPI] Key ...${state.key.slice(-6)} quota reset after 24h`);
+    }
+    if (!state.exhaustedAt) return state;
+  }
+  return null; // All keys exhausted
+}
+
+function markKeyExhausted(state: KeyState, reason: string) {
+  state.exhaustedAt = Date.now();
+  console.warn(`[SerpAPI] Key ...${state.key.slice(-6)} marked exhausted: ${reason}`);
+}
+
+export function getSerpApiStatus(): Array<{ keyHint: string; status: string; totalUsed: number; resetsIn?: string }> {
+  const now = Date.now();
+  return serpKeyStates.map(s => {
+    const resetsIn = s.exhaustedAt
+      ? `${Math.ceil((SERP_KEY_RESET_MS - (now - s.exhaustedAt)) / 3600000)}h`
+      : undefined;
+    return {
+      keyHint: `...${s.key.slice(-6)}`,
+      status: s.exhaustedAt ? "exhausted" : "healthy",
+      totalUsed: s.totalUsed,
+      resetsIn,
+    };
+  });
+}
+
+// ── SerpAPI web search (Google Results via API) ─────────────────
+async function searchWithSerpAPI(
+  query: string,
+  maxResults = 10,
+): Promise<Array<{ title: string; url: string; snippet: string }>> {
+  const keyState = getNextSerpKey();
+  if (!keyState) {
+    console.warn("[SerpAPI] All keys exhausted — skipping SerpAPI fallback");
+    return [];
+  }
+
+  try {
+    const params = new URLSearchParams({
+      q: query,
+      api_key: keyState.key,
+      engine: "google",
+      num: String(Math.min(maxResults, 10)),
+      hl: "en",
+      gl: "us",
+    });
+
+    const res = await axios.get(`https://serpapi.com/search?${params}`, {
+      timeout: 15000,
+      headers: { "Accept": "application/json" },
+    });
+
+    const data = res.data;
+
+    // Check for quota/rate errors in response body
+    if (data?.error) {
+      const errMsg = String(data.error).toLowerCase();
+      if (errMsg.includes("limit") || errMsg.includes("plan") || errMsg.includes("credit") || errMsg.includes("quota")) {
+        markKeyExhausted(keyState, data.error);
+        // Recurse to try next key
+        return searchWithSerpAPI(query, maxResults);
+      }
+      console.warn(`[SerpAPI] API error: ${data.error}`);
+      return [];
+    }
+
+    keyState.totalUsed++;
+    const organicResults = data?.organic_results || [];
+    return organicResults.slice(0, maxResults).map((r: any) => ({
+      title: r.title || "",
+      url: r.link || "",
+      snippet: r.snippet || r.displayed_link || "",
+    }));
+
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const body = err?.response?.data;
+
+    if (status === 429 || (body?.error && String(body.error).toLowerCase().includes("limit"))) {
+      markKeyExhausted(keyState, `HTTP ${status}`);
+      return searchWithSerpAPI(query, maxResults); // try next key
+    }
+
+    keyState.errorCount++;
+    if (keyState.errorCount >= 3) markKeyExhausted(keyState, "3 consecutive errors");
+    console.warn(`[SerpAPI] Request failed: ${err.message}`);
+    return [];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // USER AGENT ROTATION — mimics real browsers
 // ═══════════════════════════════════════════════════════════════
 
@@ -101,10 +225,10 @@ async function fetchJSON(url: string, headers?: Record<string, string>): Promise
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 1. DUCKDUCKGO SEARCH — No API key, no rate limits (mild)
+// 1. WEB SEARCH — DuckDuckGo primary, SerpAPI fallback with key rotation
 // ═══════════════════════════════════════════════════════════════
 
-export async function searchDuckDuckGo(query: string, maxResults = 10): Promise<Array<{ title: string; url: string; snippet: string }>> {
+async function searchDuckDuckGoRaw(query: string, maxResults = 10): Promise<Array<{ title: string; url: string; snippet: string }>> {
   try {
     const encoded = encodeURIComponent(query);
     const html = await fetchPage(`https://html.duckduckgo.com/html/?q=${encoded}&kl=us-en`);
@@ -123,6 +247,23 @@ export async function searchDuckDuckGo(query: string, maxResults = 10): Promise<
   } catch {
     return [];
   }
+}
+
+export async function searchDuckDuckGo(query: string, maxResults = 10): Promise<Array<{ title: string; url: string; snippet: string }>> {
+  // Try DuckDuckGo first
+  const ddgResults = await searchDuckDuckGoRaw(query, maxResults);
+
+  // Fall back to SerpAPI if DDG returned nothing (rate-limited / blocked) or fewer than half requested
+  const FALLBACK_THRESHOLD = Math.max(1, Math.floor(maxResults / 2));
+  if (ddgResults.length < FALLBACK_THRESHOLD && serpKeyStates.length > 0) {
+    const serpResults = await searchWithSerpAPI(query, maxResults);
+    if (serpResults.length > 0) {
+      console.log(`[Search] DDG returned ${ddgResults.length} results — SerpAPI fallback returned ${serpResults.length} for: "${query.slice(0, 60)}"`);
+      return serpResults;
+    }
+  }
+
+  return ddgResults;
 }
 
 // ═══════════════════════════════════════════════════════════════

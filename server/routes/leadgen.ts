@@ -11,7 +11,8 @@ import {
 import {
   searchDuckDuckGo, verifyEmailDNS, detectTechStack,
   scrapeCompanyWebsite, scrapeYellowPages, searchGitHub,
-  scrapeJobPostings, generateAndVerifyEmail, searchOpenCorporates
+  scrapeJobPostings, generateAndVerifyEmail, searchOpenCorporates,
+  getSerpApiStatus
 } from "../services/scraper.js";
 
 const router = Router();
@@ -300,13 +301,19 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
 
   const activeJobCount = Object.values(activeJobs).filter(j => j.status === "running").length;
 
+  const serpStatus = getSerpApiStatus();
   res.json({
     prospects: { total: Number(pc.total), avgScore: Math.round(Number(pc.avgScore) || 0), verified: Number(pc.verified) },
     companies: Number(cc.total),
     intentSignals: Number(ic.total),
     techFindings: Number(tc.total),
     activeJobs: activeJobCount,
-    dataSources: ["DuckDuckGo Search", "Yellow Pages", "OpenCorporates", "GitHub API", "Company Websites", "Indeed Jobs", "DNS/MX Verification"],
+    dataSources: ["DuckDuckGo Search", "SerpAPI (Google)", "Yellow Pages", "OpenCorporates", "GitHub API", "Company Websites", "Indeed Jobs", "DNS/MX Verification"],
+    serpApi: {
+      keyCount: serpStatus.length,
+      healthyKeys: serpStatus.filter(k => k.status === "healthy").length,
+      keys: serpStatus,
+    },
   });
 });
 
