@@ -167,6 +167,8 @@ async function runStartupMigrations() {
       // ── Fix seo_audits schema (columns added after table was created) ──
       await client.query(`ALTER TABLE seo_audits ADD COLUMN IF NOT EXISTS summary jsonb DEFAULT '{"critical":0,"warnings":0,"passed":0,"totalPages":0}'::jsonb`).catch(() => {});
       await client.query(`ALTER TABLE seo_audits ADD COLUMN IF NOT EXISTS crawled_at timestamp DEFAULT now()`).catch(() => {});
+      // url was NOT NULL in original CREATE TABLE but Drizzle schema omits it — make it nullable
+      await client.query(`ALTER TABLE seo_audits ALTER COLUMN url DROP NOT NULL`).catch(() => {});
 
       // ── Make keywords.project_id and backlinks.project_id nullable ──
       await client.query(`ALTER TABLE keywords ALTER COLUMN project_id DROP NOT NULL`).catch(() => {});
