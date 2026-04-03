@@ -349,12 +349,12 @@ async function runAllSources(trigger: "startup" | "scheduled" | "manual" = "sche
 
 export async function startMarketplaceIngestion(): Promise<void> {
   // Run a lightweight initial pull on first startup
-  setTimeout(() => runAllSources("startup"), 15000); // 15s after boot
+  setTimeout(() => runAllSources("startup"), 5 * 60 * 1000); // 5 min after boot (let app settle first)
 
   // Weekly full refresh — every 7 days
   setInterval(() => runAllSources("scheduled"), 7 * 24 * 60 * 60 * 1000);
 
-  console.log("[Marketplace] Ingestion scheduler started — initial run in 15s, weekly thereafter");
+  console.log("[Marketplace] Ingestion scheduler started — initial run in 5min, weekly thereafter");
 }
 
 export async function triggerIngestion(source?: string): Promise<void> {

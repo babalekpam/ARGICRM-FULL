@@ -5,7 +5,8 @@ import {
   Users, TrendingUp, Zap, Shield, Globe, BarChart2,
   CheckCircle, ArrowRight, Star, Megaphone,
   Bot, DollarSign, Paintbrush, Building2,
-  X, ChevronDown, Layers, Repeat, Lock, ChevronUp
+  X, ChevronDown, Layers, Repeat, Lock, ChevronUp,
+  MailOpen, Database, Search, Activity
 } from "lucide-react";
 
 const LANG_OPTIONS = [
@@ -109,6 +110,40 @@ export default function LandingPage() {
     { icon: Megaphone, title: t("landing_feat_f4_title"), desc: t("landing_feat_f4_desc"), color: "#f59e0b" },
     { icon: BarChart2, title: t("landing_feat_f5_title"), desc: t("landing_feat_f5_desc"), color: "#ef4444" },
     { icon: Shield, title: t("landing_feat_f6_title"), desc: t("landing_feat_f6_desc"), color: "#06b6d4" },
+    { icon: Zap, title: t("landing_feat_f7_title"), desc: t("landing_feat_f7_desc"), color: "#6366f1" },
+    { icon: MailOpen, title: t("landing_feat_f8_title"), desc: t("landing_feat_f8_desc"), color: "#ec4899" },
+    { icon: Database, title: t("landing_feat_f9_title"), desc: t("landing_feat_f9_desc"), color: "#f59e0b" },
+  ];
+
+  const INTEL_TOOLS = [
+    {
+      icon: Search,
+      color: "#8b5cf6",
+      title: t("landing_intel_t1_title"),
+      desc: t("landing_intel_t1_desc"),
+      tag: t("landing_intel_t1_tag"),
+    },
+    {
+      icon: MailOpen,
+      color: "#ec4899",
+      title: t("landing_intel_t2_title"),
+      desc: t("landing_intel_t2_desc"),
+      tag: t("landing_intel_t2_tag"),
+    },
+    {
+      icon: Database,
+      color: "#f59e0b",
+      title: t("landing_intel_t3_title"),
+      desc: t("landing_intel_t3_desc"),
+      tag: t("landing_intel_t3_tag"),
+    },
+    {
+      icon: Activity,
+      color: "#10b981",
+      title: t("landing_intel_t4_title"),
+      desc: t("landing_intel_t4_desc"),
+      tag: t("landing_intel_t4_tag"),
+    },
   ];
 
   const AGENCY_FEATURES = [
@@ -354,6 +389,38 @@ export default function LandingPage() {
                   </div>
                   <h3 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 10px" }}>{f.title}</h3>
                   <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.7, margin: 0 }}>{f.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── INTELLIGENCE TOOLS ─────────────────────────────── */}
+      <section style={{ padding: "80px 40px", background: "linear-gradient(180deg,#080d1a,#090e1e)" }}>
+        <div style={S.maxW}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <div style={S.label("#8b5cf6")}>{t("landing_intel_label")}</div>
+            <h2 style={{ ...S.h2, textAlign: "center" }}>{t("landing_intel_h2")}</h2>
+            <p style={{ ...S.sub }}>{t("landing_intel_sub")}</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 20 }}>
+            {INTEL_TOOLS.map(tool => {
+              const Icon = tool.icon;
+              return (
+                <div key={tool.title}
+                  style={{ background: "#0d1426", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "26px 22px", position: "relative", overflow: "hidden", transition: "all 0.25s", cursor: "default" }}
+                  onMouseEnter={e => { e.currentTarget.style.border = `1px solid ${tool.color}40`; e.currentTarget.style.transform = "translateY(-3px)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.border = "1px solid rgba(255,255,255,0.06)"; e.currentTarget.style.transform = "none"; }}
+                >
+                  <div style={{ position: "absolute", top: 16, right: 16, padding: "3px 10px", borderRadius: 100, background: `${tool.color}18`, border: `1px solid ${tool.color}30`, fontSize: 10, fontWeight: 700, color: tool.color, letterSpacing: "0.06em" }}>
+                    {tool.tag}
+                  </div>
+                  <div style={{ width: 46, height: 46, borderRadius: 11, background: `${tool.color}18`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                    <Icon size={21} style={{ color: tool.color }} />
+                  </div>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 10px", color: "#f1f5f9" }}>{tool.title}</h3>
+                  <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.7, margin: 0 }}>{tool.desc}</p>
                 </div>
               );
             })}
