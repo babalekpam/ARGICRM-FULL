@@ -42,9 +42,13 @@ const SERP_KEY_RESET_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function loadSerpKeys(): KeyState[] {
   const raw = process.env.SERP_API_KEYS || "";
-  return raw.split(",").map(k => k.trim()).filter(Boolean).map(key => ({
-    key, exhaustedAt: null, errorCount: 0, totalUsed: 0,
-  }));
+  const keys = raw.split(",").map(k => k.trim()).filter(Boolean);
+  if (keys.length > 0) {
+    console.log(`[SerpAPI] ${keys.length} key(s) loaded — chain order: ${keys.map((k, i) => `#${i + 1}(...${k.slice(-6)})`).join(" → ")}`);
+  } else {
+    console.log("[SerpAPI] No keys configured — DuckDuckGo only");
+  }
+  return keys.map(key => ({ key, exhaustedAt: null, errorCount: 0, totalUsed: 0 }));
 }
 
 // Mutable in-process state — persists for lifetime of server process
