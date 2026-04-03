@@ -125,6 +125,53 @@ async function runStartupMigrations() {
       await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS currency text DEFAULT 'USD'`);
       // Normalize status → is_available
       await client.query(`UPDATE products SET is_available = (status = 'active') WHERE is_available IS NULL`);
+
+      // ── Fix agent_sessions schema (add missing columns) ──
+      await client.query(`ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS agent_type text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS summary text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS message_count integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS tokens_used integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(() => {});
+      // Backfill agent_type from agents table where possible
+      await client.query(`UPDATE agent_sessions s SET agent_type = a.role FROM agents a WHERE s.agent_type IS NULL AND s.agent_id = a.id`).catch(() => {});
+      // Default any still-null agent_type to 'sales'
+      await client.query(`UPDATE agent_sessions SET agent_type = 'sales' WHERE agent_type IS NULL`).catch(() => {});
+      // Add NOT NULL constraint workaround — set default for future inserts
+      await client.query(`ALTER TABLE agent_sessions ALTER COLUMN agent_type SET DEFAULT 'sales'`).catch(() => {});
+
+      // ── Fix agent_memories schema ──
+      await client.query(`ALTER TABLE agent_memories ADD COLUMN IF NOT EXISTS agent_type text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_memories ADD COLUMN IF NOT EXISTS source text DEFAULT 'system'`).catch(() => {});
+      await client.query(`ALTER TABLE agent_memories ADD COLUMN IF NOT EXISTS context jsonb DEFAULT '{}'::jsonb`).catch(() => {});
+      // Backfill agent_type from agents table
+      await client.query(`UPDATE agent_memories m SET agent_type = a.role FROM agents a WHERE m.agent_type IS NULL AND m.agent_id = a.id`).catch(() => {});
+      await client.query(`UPDATE agent_memories SET agent_type = 'sales' WHERE agent_type IS NULL`).catch(() => {});
+      await client.query(`ALTER TABLE agent_memories ALTER COLUMN agent_type SET DEFAULT 'sales'`).catch(() => {});
+
+      // ── Fix agent_messages schema ──
+      await client.query(`ALTER TABLE agent_messages ADD COLUMN IF NOT EXISTS tool_calls jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE agent_messages ADD COLUMN IF NOT EXISTS memories_used jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE agent_messages ADD COLUMN IF NOT EXISTS memories_created jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+
+      // ── Fix agent_tasks schema ──
+      await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS agent_type text DEFAULT 'sales'`).catch(() => {});
+      await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
+      await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS assigned_to_user_id uuid`).catch(() => {});
+
+      // ── Fix agent_lead_gen_results schema ──
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS first_name text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS last_name text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS email text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS job_title text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS phone text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS linkedin_url text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS source text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS score integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS notes text`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT now()`).catch(() => {});
+      await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
+
+      console.log("[MIGRATE] Agent table schemas synced");
     } catch (e: any) { console.warn("[MIGRATE] Column migration warning:", e.message?.slice(0, 80)); }
 
     // ── Ensure platform owner credentials are correct on every boot ──

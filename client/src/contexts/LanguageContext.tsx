@@ -567,7 +567,6 @@ const translations: Record<string, Record<string, string>> = {
     order_confirmed: "Order Confirmed",
     continue_shopping: "Continue Shopping",
     quick_view: "Quick View",
-    out_of_stock: "Out of Stock",
     featured: "Featured",
     in_stock: "In Stock",
     search_products: "Search products...",
@@ -644,10 +643,8 @@ const translations: Record<string, Record<string, string>> = {
     status_processing: "Processing",
     status_shipped: "Shipped",
     status_delivered: "Delivered",
-    status_new: "New",
     status_open: "Open",
     status_won: "Won",
-    status_lost: "Lost",
   },
 
   // ────────────────────────────────────────────────────────────────
@@ -1214,7 +1211,6 @@ const translations: Record<string, Record<string, string>> = {
     order_confirmed: "Commande confirmée !",
     continue_shopping: "Continuer mes achats",
     quick_view: "Aperçu rapide",
-    out_of_stock: "Rupture de stock",
     featured: "Vedette",
     in_stock: "En stock",
     search_products: "Rechercher des produits...",
@@ -1291,10 +1287,8 @@ const translations: Record<string, Record<string, string>> = {
     status_processing: "En traitement",
     status_shipped: "Expédié",
     status_delivered: "Livré",
-    status_new: "Nouveau",
     status_open: "Ouvert",
     status_won: "Gagné",
-    status_lost: "Perdu",
   },
 };
 
