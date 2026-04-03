@@ -36,6 +36,7 @@ const NAV_SECTIONS_DEF = [
       { labelKey: "nav_automation", icon: Workflow, path: "/workflows" },
       { labelKey: "nav_lead_intelligence", icon: Search, path: "/intelligence" },
       { labelKey: "nav_lead_gen", icon: Zap, path: "/leadgen" },
+      { labelKey: "nav_marketplace", icon: Store, path: "/marketplace" },
       { labelKey: "nav_ai_agents", icon: Bot, path: "/agents" },
       { labelKey: "nav_skills_library", icon: Brain, path: "/skills" },
     ]
@@ -51,7 +52,6 @@ const NAV_SECTIONS_DEF = [
   {
     labelKey: "nav_platform",
     items: [
-      { labelKey: "nav_marketplace", icon: Store, path: "/marketplace" },
       { labelKey: "nav_seo_platform", icon: Globe, path: "/seo" },
       { labelKey: "nav_ecommerce", icon: ShoppingCart, path: "/ecommerce" },
       { labelKey: "nav_finance", icon: DollarSign, path: "/finance" },
