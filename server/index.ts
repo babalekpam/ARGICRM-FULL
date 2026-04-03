@@ -78,20 +78,54 @@ async function runStartupMigrations() {
     }
     if (created > 0) console.log(`[MIGRATE] Created ${created} tables, ${skipped} already existed`);
 
-    // ── Add slug column to stores table if missing, backfill existing ──
+    // ── Add missing columns to stores and products tables ──
     try {
+      // Stores columns
       await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS slug varchar`);
-      // Backfill slug from subdomain prefix for stores that have one
-      await client.query(`
-        UPDATE stores SET slug = split_part(subdomain, '.', 1)
-        WHERE slug IS NULL AND subdomain IS NOT NULL AND subdomain != ''
-      `);
+      await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS logo_url text`);
+      await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS banner_url text`);
+      await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS supplier_urls jsonb DEFAULT '[]'::jsonb`);
+      await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS stripe_publishable_key text`);
+      await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS stripe_secret_key text`);
+      await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS shipping_rates jsonb DEFAULT '[]'::jsonb`);
+      await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS policies jsonb DEFAULT '{}'::jsonb`);
+      // Backfill slug from subdomain prefix
+      await client.query(`UPDATE stores SET slug = split_part(subdomain, '.', 1) WHERE slug IS NULL AND subdomain IS NOT NULL AND subdomain != ''`);
       // Backfill slug from name for stores without subdomain
-      await client.query(`
-        UPDATE stores SET slug = regexp_replace(lower(name), '[^a-z0-9]+', '-', 'g') || '-' || right(id::text, 4)
-        WHERE slug IS NULL OR slug = ''
-      `);
-    } catch (e: any) { /* ignore */ }
+      await client.query(`UPDATE stores SET slug = regexp_replace(lower(name), '[^a-z0-9]+', '-', 'g') || '-' || right(id::text, 4) WHERE slug IS NULL OR slug = ''`);
+
+      // Fix whitelabel_settings column name mismatches
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS brand_name text`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS logo text`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS favicon text`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS hide_argilette_branding boolean DEFAULT false`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS email_from_name text`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS email_from_address text`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS privacy_url text`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS terms_url text`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS custom_css text`).catch(() => {});
+      await client.query(`ALTER TABLE whitelabel_settings ADD COLUMN IF NOT EXISTS custom_domain text`).catch(() => {});
+      // Sync company_name → brand_name
+      await client.query(`UPDATE whitelabel_settings SET brand_name = company_name WHERE brand_name IS NULL AND company_name IS NOT NULL`).catch(() => {});
+
+      // Make store_id nullable (allow products without a store)
+      await client.query(`ALTER TABLE products ALTER COLUMN store_id DROP NOT NULL`).catch(() => {});
+
+      // Products columns
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_available boolean DEFAULT true`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_featured boolean DEFAULT false`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS track_inventory boolean DEFAULT true`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS low_stock_threshold integer DEFAULT 10`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS short_description text`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS barcode text`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS slug text`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS dimensions jsonb DEFAULT '{}'::jsonb`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS attributes jsonb DEFAULT '{}'::jsonb`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS ai_score integer DEFAULT 0`);
+      await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS currency text DEFAULT 'USD'`);
+      // Normalize status → is_available
+      await client.query(`UPDATE products SET is_available = (status = 'active') WHERE is_available IS NULL`);
+    } catch (e: any) { console.warn("[MIGRATE] Column migration warning:", e.message?.slice(0, 80)); }
 
     // ── Ensure platform owner credentials are correct on every boot ──
     try {

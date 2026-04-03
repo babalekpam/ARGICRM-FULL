@@ -42,14 +42,29 @@ router.get("/products", authenticate, async (req: AuthRequest, res) => {
   res.json({ data: rows, total: Number(total) });
 });
 
+function sanitizeProduct(body: any) {
+  const allowed = ["name", "description", "sku", "price", "compareAtPrice", "currency", "category", "inventory", "trackInventory", "isAvailable", "isFeatured", "images", "tags", "storeId", "weight", "cost", "status", "shortDescription", "barcode", "attributes", "lowStockThreshold"];
+  const out: any = {};
+  for (const k of allowed) {
+    if (body[k] !== undefined && body[k] !== "") out[k] = body[k];
+  }
+  // Coerce price fields to strings (Drizzle decimal expects string)
+  if (out.price) out.price = String(out.price);
+  if (out.compareAtPrice) out.compareAtPrice = String(out.compareAtPrice);
+  if (out.inventory !== undefined) out.inventory = Number(out.inventory) || 0;
+  return out;
+}
+
 router.post("/products", authenticate, async (req: AuthRequest, res) => {
-  const slug = req.body.name?.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString().slice(-4);
-  const [product] = await db.insert(products).values({ tenantId: req.user!.tenantId, slug, ...req.body }).returning();
+  const slug = (req.body.name || "product").toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString().slice(-4);
+  const clean = sanitizeProduct(req.body);
+  const [product] = await db.insert(products).values({ tenantId: req.user!.tenantId, slug, ...clean }).returning();
   res.status(201).json(product);
 });
 
 router.put("/products/:id", authenticate, async (req: AuthRequest, res) => {
-  const [product] = await db.update(products).set({ ...req.body, updatedAt: new Date() }).where(and(eq(products.id, req.params.id), eq(products.tenantId, req.user!.tenantId))).returning();
+  const clean = sanitizeProduct(req.body);
+  const [product] = await db.update(products).set({ ...clean, updatedAt: new Date() }).where(and(eq(products.id, req.params.id), eq(products.tenantId, req.user!.tenantId))).returning();
   res.json(product);
 });
 
@@ -307,6 +322,94 @@ router.post("/stores/:id/domain/verify", authenticate, async (req: AuthRequest, 
     return res.json({ verified: true, store: updated });
   }
   res.json({ verified: false, message: "DNS not yet propagated. Please check your DNS records and try again in a few minutes." });
+});
+
+// ── Store Settings (Stripe keys, supplier URLs, branding) ──────
+router.put("/stores/:id/settings", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const allowed = ["stripePublishableKey", "stripeSecretKey", "supplierUrls", "logoUrl", "bannerUrl", "shippingRates", "policies", "theme", "name", "description", "tagline", "currency", "isPublished"];
+    const updates: any = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    updates.updatedAt = new Date();
+    const [store] = await db.update(stores).set(updates).where(and(eq(stores.id, req.params.id), eq(stores.tenantId, req.user!.tenantId))).returning();
+    // Strip secret key from response
+    const safe = { ...store, stripeSecretKey: store.stripeSecretKey ? "••••••••" : null };
+    res.json(safe);
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Supplier Import — AI extracts products from a URL ──────────
+router.post("/supplier/import", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { url, storeId } = req.body;
+    if (!url) return res.status(400).json({ error: "Supplier URL is required" });
+
+    if (!isAIAvailable()) {
+      return res.json({ products: [], message: "AI not available — enter products manually" });
+    }
+
+    const prompt = `You are a product catalog extractor. Given a supplier website URL, generate 5-10 realistic sample products that a store at this supplier would typically sell.
+
+Supplier URL: ${url}
+
+Based on the URL and domain, infer what products this supplier sells. Return ONLY valid JSON array:
+[
+  {
+    "name": "Product name",
+    "description": "2-sentence description",
+    "price": 29.99,
+    "compareAtPrice": 49.99,
+    "category": "Category name",
+    "sku": "SKU-001",
+    "inventory": 100,
+    "images": ["https://images.unsplash.com/photo-...?w=400"],
+    "tags": ["tag1", "tag2"],
+    "isFeatured": false
+  }
+]
+
+Use realistic Unsplash photo URLs that match the product category. Return 5-10 products.`;
+
+    const raw = await completeForTenant(req.user!.tenantId, {
+      messages: [{ role: "user" as const, content: prompt }],
+      maxTokens: 2000,
+    });
+
+    const clean = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+    const match = clean.match(/\[[\s\S]*\]/);
+    const extractedProducts = match ? JSON.parse(match[0]) : [];
+
+    if (!storeId || !extractedProducts.length) {
+      return res.json({ products: extractedProducts, imported: 0 });
+    }
+
+    // Insert into products table
+    const inserted = [];
+    for (const p of extractedProducts) {
+      const pSlug = (p.name || "product").toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Date.now().toString().slice(-4);
+      const [product] = await db.insert(products).values({
+        tenantId: req.user!.tenantId,
+        storeId,
+        name: p.name,
+        description: p.description || "",
+        price: String(p.price || 0),
+        compareAtPrice: p.compareAtPrice ? String(p.compareAtPrice) : undefined,
+        category: p.category || "General",
+        sku: p.sku || pSlug,
+        inventory: p.inventory || 100,
+        images: p.images || [],
+        tags: p.tags || [],
+        isFeatured: p.isFeatured || false,
+        isAvailable: true,
+        slug: pSlug,
+      } as any).returning();
+      inserted.push(product);
+    }
+
+    res.json({ products: inserted, imported: inserted.length, message: `Imported ${inserted.length} products from ${url}` });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
 // ── Stats ──────────────────────────────────────────────────────

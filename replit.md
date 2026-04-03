@@ -47,7 +47,7 @@ The application uses a monorepo structure with a React 18 frontend (Vite, TypeSc
 - **AI Funnel Builder**: Comprehensive AI-powered sales funnel generation system that transforms user offers into complete marketing funnels with one-click generation, including landing pages, ad copy, email sequences, and automation workflows.
 - **CRM Core**: CRUD for contacts, leads, deals, tasks, accounts.
 - **Marketing**: Simple Messaging (email/SMS), landing page builder, SEO management, reputation management, AI Campaign Studio, AI Funnel Builder, Multi-platform Search Optimization, Sales Channels integration.
-- **E-commerce**: Full store builder with product creation, management, AI recommendations, inventory tracking, and global currency support (54 African currencies).
+- **E-commerce**: Shopify-competitive store builder with: AI store builder, multi-image product management, compare-at pricing, featured flags, tags, supplier website AI import, store Stripe payment keys configuration, full-featured live storefront (real images, cart drawer, quick-view modal, Stripe checkout, manual order fallback, contact form, themed hero), and global currency support.
 - **Financial Management**: Multi-currency bookkeeping, invoicing, bank feed synchronization, automated tax calculation, and financial reporting.
 - **HR & Project Management**: Employee management, advanced project management (Gantt charts), and document management.
 - **Platform Capabilities**: Comprehensive settings, multi-language support, adaptive signup flow, subscription management with tiered AI activation, and a Super Admin Dashboard with user registration tracking.

@@ -6,13 +6,15 @@ import { apiRequest } from "../lib/api";
 import {
   ShoppingCart, Package, Plus, Store, Zap, AlertTriangle, Edit,
   Trash2, CheckCircle2, Globe, Copy, Bot,
-  Sparkles, ArrowLeft, RefreshCw, DollarSign,
+  Sparkles, ArrowLeft, RefreshCw, DollarSign, Image, Star, Tag, Link, Settings,
 } from "lucide-react";
 
 const TABS = ["Products", "Orders", "Stores", "Inventory"] as const;
 const BLANK_PRODUCT = {
-  name: "", description: "", sku: "", price: "", currency: "USD",
+  name: "", description: "", sku: "", price: "", compareAtPrice: "", currency: "USD",
   category: "", inventory: "100", trackInventory: true, isAvailable: true,
+  isFeatured: false, tags: "", images: "",
+  storeId: "",
 };
 
 type StoreBuilderMode = "list" | "interview" | "building" | "complete" | "domain";
@@ -42,6 +44,19 @@ export default function EcommercePage() {
   const [domainSaving, setDomainSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
+  // Supplier import
+  const [supplierModal, setSupplierModal] = useState(false);
+  const [supplierUrl, setSupplierUrl] = useState("");
+  const [supplierStoreId, setSupplierStoreId] = useState("");
+  const [supplierLoading, setSupplierLoading] = useState(false);
+  const [supplierResult, setSupplierResult] = useState<any>(null);
+
+  // Store settings
+  const [settingsModal, setSettingsModal] = useState(false);
+  const [settingsStore, setSettingsStore] = useState<any>(null);
+  const [settingsForm, setSettingsForm] = useState<any>({});
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
   const { data: stats } = useQuery<any>({ queryKey: ["/api/ecommerce/stats"] });
   const { data: productsData } = useQuery<{ data: any[]; total: number }>({
     queryKey: ["/api/ecommerce/products"],
@@ -70,8 +85,13 @@ export default function EcommercePage() {
     setEditing(p);
     setForm({
       name: p.name, description: p.description || "", sku: p.sku || "",
-      price: p.price, currency: p.currency, category: p.category || "",
-      inventory: String(p.inventory), trackInventory: p.trackInventory, isAvailable: p.isAvailable,
+      price: p.price, compareAtPrice: p.compareAtPrice || "", currency: p.currency || "USD",
+      category: p.category || "", inventory: String(p.inventory ?? 100),
+      trackInventory: p.trackInventory ?? true, isAvailable: p.isAvailable ?? true,
+      isFeatured: p.isFeatured || false,
+      tags: Array.isArray(p.tags) ? p.tags.join(", ") : (p.tags || ""),
+      images: Array.isArray(p.images) ? p.images.join("\n") : (p.images || ""),
+      storeId: p.storeId || "",
     });
     setProductModal(true);
   };
@@ -79,8 +99,22 @@ export default function EcommercePage() {
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true);
     try {
-      if (editing) await apiRequest("PUT", `/api/ecommerce/products/${editing.id}`, form);
-      else await apiRequest("POST", "/api/ecommerce/products", form);
+      // Parse multi-line images and comma-separated tags
+      const imagesArr = form.images
+        ? form.images.split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean)
+        : [];
+      const tagsArr = form.tags
+        ? form.tags.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [];
+      const payload = {
+        ...form,
+        images: imagesArr,
+        tags: tagsArr,
+        compareAtPrice: form.compareAtPrice || undefined,
+        storeId: form.storeId || undefined,
+      };
+      if (editing) await apiRequest("PUT", `/api/ecommerce/products/${editing.id}`, payload);
+      else await apiRequest("POST", "/api/ecommerce/products", payload);
       qc.invalidateQueries({ queryKey: ["/api/ecommerce/products"] });
       qc.invalidateQueries({ queryKey: ["/api/ecommerce/stats"] });
       setProductModal(false);
@@ -192,6 +226,43 @@ export default function EcommercePage() {
     setBuiltStore(store);
     setDomainInput(store.customDomain || "");
     setStoreMode("domain");
+  };
+
+  const runSupplierImport = async () => {
+    if (!supplierUrl) return;
+    setSupplierLoading(true); setSupplierResult(null);
+    try {
+      const result = await apiRequest("POST", "/api/ecommerce/supplier/import", { url: supplierUrl, storeId: supplierStoreId || undefined });
+      setSupplierResult(result);
+      if (result.imported > 0) {
+        qc.invalidateQueries({ queryKey: ["/api/ecommerce/products"] });
+        qc.invalidateQueries({ queryKey: ["/api/ecommerce/stats"] });
+      }
+    } catch (err: any) {
+      setSupplierResult({ error: err.message || "Import failed" });
+    } finally { setSupplierLoading(false); }
+  };
+
+  const openStoreSettings = (store: any) => {
+    setSettingsStore(store);
+    setSettingsForm({
+      stripePublishableKey: store.stripePublishableKey || "",
+      stripeSecretKey: "",
+      logoUrl: store.logoUrl || "",
+      bannerUrl: store.bannerUrl || "",
+    });
+    setSettingsModal(true);
+  };
+
+  const saveStoreSettings = async (e: React.FormEvent) => {
+    e.preventDefault(); setSettingsSaving(true);
+    try {
+      const payload: any = { ...settingsForm };
+      if (!payload.stripeSecretKey) delete payload.stripeSecretKey;
+      await apiRequest("PUT", `/api/ecommerce/stores/${settingsStore.id}/settings`, payload);
+      qc.invalidateQueries({ queryKey: ["/api/ecommerce/stores"] });
+      setSettingsModal(false);
+    } finally { setSettingsSaving(false); }
   };
 
   const STATUS_COLORS: Record<string, string> = {
@@ -620,6 +691,13 @@ export default function EcommercePage() {
 
       {/* ── PRODUCTS ── */}
       {tab === "Products" && (
+        <>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+          <button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={14} /> Add Product</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => { setSupplierResult(null); setSupplierUrl(""); setSupplierModal(true); }} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <Link size={13} /> Import from Supplier
+          </button>
+        </div>
         <div className="card" style={{ overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 80px 120px 100px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
             {["Product", "Price", "Inventory", "Status", "Category", "Actions"].map(h => (
@@ -650,6 +728,7 @@ export default function EcommercePage() {
             ))
           }
         </div>
+        </>
       )}
 
       {/* ── ORDERS ── */}
@@ -769,6 +848,14 @@ export default function EcommercePage() {
                     >
                       Domain
                     </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => openStoreSettings(s)}
+                      style={{ display: "flex", alignItems: "center", gap: 5 }}
+                      title="Store Settings (Stripe, Branding)"
+                    >
+                      <Settings size={13} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -828,25 +915,188 @@ export default function EcommercePage() {
       {/* Product Modal */}
       <Modal open={productModal} onClose={() => setProductModal(false)} title={editing ? "Edit Product" : "Add Product"}>
         <form onSubmit={saveProduct}>
-          <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-            <FormRow label="Product name" required><input className="input" value={form.name} onChange={e => setForm((p: any) => ({ ...p, name: e.target.value }))} required /></FormRow>
-            <FormRow label="Description"><textarea className="input" value={form.description} onChange={e => setForm((p: any) => ({ ...p, description: e.target.value }))} rows={3} /></FormRow>
+          <div style={{ padding: "20px", display: "grid", gap: 14, maxHeight: "70vh", overflowY: "auto" }}>
+            {/* Store assignment */}
+            {storesData && storesData.length > 0 && (
+              <FormRow label="Assign to Store">
+                <select className="input" value={form.storeId} onChange={e => setForm((p: any) => ({ ...p, storeId: e.target.value }))}>
+                  <option value="">No store assigned</option>
+                  {storesData.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </FormRow>
+            )}
+
+            <FormRow label="Product name" required><input className="input" value={form.name} onChange={e => setForm((p: any) => ({ ...p, name: e.target.value }))} required placeholder="e.g. Organic Cotton T-Shirt" /></FormRow>
+            <FormRow label="Description"><textarea className="input" value={form.description} onChange={e => setForm((p: any) => ({ ...p, description: e.target.value }))} rows={3} placeholder="Describe the product…" /></FormRow>
+
+            {/* Pricing row */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <FormRow label="Price" required><input type="number" className="input" value={form.price} onChange={e => setForm((p: any) => ({ ...p, price: e.target.value }))} required /></FormRow>
-              <FormRow label="Currency"><input className="input" value={form.currency} onChange={e => setForm((p: any) => ({ ...p, currency: e.target.value }))} /></FormRow>
-              <FormRow label="SKU"><input className="input" value={form.sku} onChange={e => setForm((p: any) => ({ ...p, sku: e.target.value }))} /></FormRow>
+              <FormRow label="Price" required>
+                <input data-testid="input-product-price" type="number" step="0.01" className="input" value={form.price} onChange={e => setForm((p: any) => ({ ...p, price: e.target.value }))} required placeholder="29.99" />
+              </FormRow>
+              <FormRow label="Compare-at Price">
+                <input data-testid="input-product-compare-price" type="number" step="0.01" className="input" value={form.compareAtPrice} onChange={e => setForm((p: any) => ({ ...p, compareAtPrice: e.target.value }))} placeholder="49.99 (original)" />
+              </FormRow>
+              <FormRow label="Currency">
+                <select className="input" value={form.currency} onChange={e => setForm((p: any) => ({ ...p, currency: e.target.value }))}>
+                  {["USD","EUR","GBP","CAD","AUD","JPY","CHF","CNY"].map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </FormRow>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <FormRow label="Category"><input className="input" value={form.category} onChange={e => setForm((p: any) => ({ ...p, category: e.target.value }))} /></FormRow>
+
+            {/* Category / SKU / Inventory */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <FormRow label="Category"><input className="input" value={form.category} onChange={e => setForm((p: any) => ({ ...p, category: e.target.value }))} placeholder="Apparel" /></FormRow>
+              <FormRow label="SKU"><input className="input" value={form.sku} onChange={e => setForm((p: any) => ({ ...p, sku: e.target.value }))} placeholder="SKU-001" /></FormRow>
               <FormRow label="Inventory"><input type="number" className="input" value={form.inventory} onChange={e => setForm((p: any) => ({ ...p, inventory: e.target.value }))} /></FormRow>
+            </div>
+
+            {/* Tags */}
+            <FormRow label="Tags (comma-separated)">
+              <div style={{ position: "relative" }}>
+                <Tag size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted-foreground)" }} />
+                <input className="input" style={{ paddingLeft: 30 }} value={form.tags} onChange={e => setForm((p: any) => ({ ...p, tags: e.target.value }))} placeholder="sustainable, organic, trending" />
+              </div>
+            </FormRow>
+
+            {/* Images */}
+            <FormRow label="Product Images (one URL per line or comma-separated)">
+              <div style={{ position: "relative" }}>
+                <Image size={14} style={{ position: "absolute", left: 10, top: 14, color: "var(--muted-foreground)" }} />
+                <textarea className="input" style={{ paddingLeft: 30 }} value={form.images} onChange={e => setForm((p: any) => ({ ...p, images: e.target.value }))} rows={3} placeholder={"https://images.unsplash.com/photo-xxx\nhttps://cdn.mystore.com/img.jpg"} />
+              </div>
+              {form.images && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                  {form.images.split(/[\n,]+/).map((url: string) => url.trim()).filter(Boolean).map((url: string, i: number) => (
+                    <img key={i} src={url} alt="preview" style={{ width: 56, height: 56, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  ))}
+                </div>
+              )}
+            </FormRow>
+
+            {/* Flags */}
+            <div style={{ display: "flex", gap: 20 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+                <input type="checkbox" checked={form.isAvailable} onChange={e => setForm((p: any) => ({ ...p, isAvailable: e.target.checked }))} />
+                Available for sale
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+                <Star size={14} style={{ color: form.isFeatured ? "#f59e0b" : "var(--muted-foreground)" }} />
+                <input type="checkbox" checked={form.isFeatured} onChange={e => setForm((p: any) => ({ ...p, isFeatured: e.target.checked }))} />
+                Featured product
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+                <input type="checkbox" checked={form.trackInventory} onChange={e => setForm((p: any) => ({ ...p, trackInventory: e.target.checked }))} />
+                Track inventory
+              </label>
             </div>
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button type="button" className="btn btn-secondary" onClick={() => setProductModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save" : "Add Product"}</button>
+            <button data-testid="button-save-product" type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save Changes" : "Add Product"}</button>
           </div>
         </form>
       </Modal>
+
+      {/* ── Supplier Import Modal ── */}
+      <Modal open={supplierModal} onClose={() => setSupplierModal(false)} title="Import Products from Supplier">
+        <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ padding: "12px 16px", background: "rgba(99,102,241,0.08)", borderRadius: 10, fontSize: 13, color: "var(--text-muted)" }}>
+            <strong style={{ color: "var(--text-primary)" }}>AI-Powered Import</strong>: Enter a supplier website URL and the AI will analyze it to generate matching product listings for your store.
+          </div>
+
+          <FormRow label="Supplier Website URL" required>
+            <div style={{ position: "relative" }}>
+              <Link size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+              <input
+                data-testid="input-supplier-url"
+                className="input"
+                style={{ paddingLeft: 32 }}
+                placeholder="https://supplier.com"
+                value={supplierUrl}
+                onChange={e => setSupplierUrl(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && !supplierLoading && runSupplierImport()}
+              />
+            </div>
+          </FormRow>
+
+          {storesData && storesData.length > 0 && (
+            <FormRow label="Import into Store">
+              <select className="input" value={supplierStoreId} onChange={e => setSupplierStoreId(e.target.value)}>
+                <option value="">Import without store assignment</option>
+                {storesData.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </FormRow>
+          )}
+
+          {supplierResult && !supplierResult.error && (
+            <div style={{ padding: "12px 16px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 10, fontSize: 13 }}>
+              <CheckCircle2 size={14} style={{ color: "#10b981", marginRight: 6 }} />
+              <strong style={{ color: "#059669" }}>{supplierResult.message || `Imported ${supplierResult.imported} products`}</strong>
+            </div>
+          )}
+          {supplierResult?.error && (
+            <div style={{ padding: "12px 16px", background: "rgba(239,68,68,0.08)", borderRadius: 10, fontSize: 13, color: "#dc2626" }}>
+              {supplierResult.error}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <button className="btn btn-secondary" onClick={() => setSupplierModal(false)}>Cancel</button>
+            <button
+              data-testid="button-run-import"
+              className="btn btn-primary"
+              disabled={!supplierUrl || supplierLoading}
+              onClick={runSupplierImport}
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+            >
+              {supplierLoading ? <><RefreshCw size={14} style={{ animation: "spin 0.8s linear infinite" }} /> Importing…</> : <><Sparkles size={14} /> Import Products</>}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Store Settings Modal ── */}
+      {settingsStore && (
+        <Modal open={settingsModal} onClose={() => setSettingsModal(false)} title={`Settings — ${settingsStore.name}`}>
+          <form onSubmit={saveStoreSettings}>
+            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                <DollarSign size={14} style={{ color: "#6366f1" }} /> Stripe Payment Integration
+              </div>
+              <div style={{ padding: "10px 14px", background: "var(--bg-elevated)", borderRadius: 8, fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                Add your Stripe keys to enable card payments on your storefront. Get them from <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: "#6366f1" }}>dashboard.stripe.com</a>
+              </div>
+
+              <FormRow label="Stripe Publishable Key">
+                <input className="input" type="text" placeholder="pk_live_..." value={settingsForm.stripePublishableKey} onChange={e => setSettingsForm((p: any) => ({ ...p, stripePublishableKey: e.target.value }))} />
+              </FormRow>
+              <FormRow label="Stripe Secret Key (leave blank to keep existing)">
+                <input className="input" type="password" placeholder="sk_live_... (enter to update)" value={settingsForm.stripeSecretKey} onChange={e => setSettingsForm((p: any) => ({ ...p, stripeSecretKey: e.target.value }))} />
+              </FormRow>
+
+              <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                <Image size={14} style={{ color: "#6366f1" }} /> Store Branding
+              </div>
+              <FormRow label="Logo URL">
+                <input className="input" type="url" placeholder="https://cdn.mystore.com/logo.png" value={settingsForm.logoUrl} onChange={e => setSettingsForm((p: any) => ({ ...p, logoUrl: e.target.value }))} />
+              </FormRow>
+              <FormRow label="Hero Banner URL">
+                <input className="input" type="url" placeholder="https://cdn.mystore.com/banner.jpg" value={settingsForm.bannerUrl} onChange={e => setSettingsForm((p: any) => ({ ...p, bannerUrl: e.target.value }))} />
+              </FormRow>
+              {settingsForm.logoUrl && (
+                <img src={settingsForm.logoUrl} alt="Logo preview" style={{ height: 48, borderRadius: 8, objectFit: "contain", border: "1px solid var(--border)" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              )}
+            </div>
+            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setSettingsModal(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={settingsSaving}>{settingsSaving ? "Saving..." : "Save Settings"}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       <style>{`
         @keyframes bounce {
