@@ -14,6 +14,7 @@ import financeRouter from "./routes/finance.js";
 import operationsRouter from "./routes/operations.js";
 import leadgenRouter from "./routes/leadgen.js";
 import marketplaceRouter from "./routes/marketplace.js";
+import emailTrackingRouter from "./routes/email-tracking.js";
 import aiRouter from "./routes/ai.js";
 import ariaRouter from "./routes/aria.js";
 import publicRouter from "./routes/public.js";
@@ -50,6 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/leadgen", leadgenRouter);
   // ─── Data Marketplace ──────────────────────────────
   app.use("/api/marketplace", marketplaceRouter);
+  app.use("/api/email", emailTrackingRouter);
   // ─── Super Admin ───────────────────────────────────
   app.use("/api/superadmin", adminRouter);
   // ─── ARIA AI Command Agent ──────────────────────────

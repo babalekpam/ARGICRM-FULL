@@ -74,6 +74,8 @@ async function runStartupMigrations() {
       `CREATE TABLE IF NOT EXISTS "ingestion_logs" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"source" text NOT NULL,"market" text,"records_added" integer DEFAULT 0,"records_updated" integer DEFAULT 0,"records_skipped" integer DEFAULT 0,"errors" jsonb DEFAULT '[]'::jsonb,"duration" integer,"status" text DEFAULT 'success',"started_at" timestamp DEFAULT now(),"completed_at" timestamp)`,
       `CREATE TABLE IF NOT EXISTS "marketplace_exports" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"lead_id" uuid REFERENCES marketplace_leads(id),"exported_at" timestamp DEFAULT now())`,
       `CREATE TABLE IF NOT EXISTS "marketplace_usage" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"month" text NOT NULL,"exports_used" integer DEFAULT 0,"updated_at" timestamp DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "email_sends" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" varchar NOT NULL,"contact_id" varchar,"lead_id" varchar,"tracking_id" uuid NOT NULL DEFAULT gen_random_uuid(),"from_email" text,"from_name" text,"to_email" text NOT NULL,"subject" text NOT NULL,"html" text,"first_opener_ip" text,"first_opener_ua" text,"first_opened_at" timestamp,"status" text DEFAULT 'sent',"sent_at" timestamp DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "email_events" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" varchar NOT NULL,"email_send_id" uuid REFERENCES email_sends(id) ON DELETE CASCADE,"contact_id" varchar,"tracking_id" uuid NOT NULL,"event_type" text NOT NULL,"ip" text,"user_agent" text,"url" text,"is_forward" boolean DEFAULT false,"occurred_at" timestamp DEFAULT now())`,
     ];
     let created = 0, skipped = 0;
     for (const stmt of statements) {
@@ -161,6 +163,16 @@ async function runStartupMigrations() {
       await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS agent_type text DEFAULT 'sales'`).catch(() => {});
       await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
       await client.query(`ALTER TABLE agent_tasks ADD COLUMN IF NOT EXISTS assigned_to_user_id uuid`).catch(() => {});
+
+      // ── Email tracking columns on email_sends ──
+      await client.query(`ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS link_map jsonb DEFAULT '{}'::jsonb`).catch(() => {});
+
+      // ── Email tracking columns on contacts ──
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS engagement_score integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email_opens integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email_clicks integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email_forwards integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_engaged_at timestamp`).catch(() => {});
 
       // ── Fix agent_lead_gen_results schema ──
       await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS first_name text`).catch(() => {});
@@ -385,6 +397,10 @@ async function main() {
     }
     next();
   });
+
+  // ─── Public email tracking routes (no auth — hit by email clients) ──
+  const { default: emailTrackingRouter } = await import("./routes/email-tracking.js");
+  app.use("/track", emailTrackingRouter);
 
   // ─── Register all API routes ───────────────────────────
   const server = await registerRoutes(app);
