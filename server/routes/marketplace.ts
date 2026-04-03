@@ -10,6 +10,25 @@ import { triggerIngestion, ingestionRunning } from "../services/marketplace-inge
 
 const router = Router();
 
+const PLATFORM_OWNER_EMAIL = "abel@argilette.com";
+
+function getEffectivePlan(req: AuthRequest): PlanId {
+  if (
+    req.user?.email === PLATFORM_OWNER_EMAIL ||
+    req.user?.role === "platform_owner"
+  ) {
+    return "enterprise";
+  }
+  return ((req.user as any)?.plan || "starter") as PlanId;
+}
+
+function isOwner(req: AuthRequest): boolean {
+  return (
+    req.user?.email === PLATFORM_OWNER_EMAIL ||
+    req.user?.role === "platform_owner"
+  );
+}
+
 function currentMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -51,7 +70,7 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
   const recentLogs = await db.select().from(ingestionLogs).orderBy(desc(ingestionLogs.startedAt)).limit(10);
   const exportsUsed = await getUsage(req.user!.tenantId);
 
-  const plan = (req.user as any)?.plan || "starter";
+  const plan = getEffectivePlan(req);
   const quota = MARKETPLACE_MONTHLY_QUOTA[plan as PlanId] ?? 0;
 
   res.json({
@@ -70,8 +89,8 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
 // ── POST /api/marketplace/search ────────────────────────────────
 // Search & filter leads — returns full preview for first 3, blurred for rest
 router.post("/search", authenticate, async (req: AuthRequest, res) => {
-  const plan = (req.user as any)?.plan || "starter";
-  if (!planAtLeast(plan, "professional")) {
+  const plan = getEffectivePlan(req);
+  if (!isOwner(req) && !planAtLeast(plan, "professional")) {
     return res.status(402).json({ error: "Upgrade to Professional to access the Data Marketplace", upgrade: true });
   }
 
@@ -119,11 +138,12 @@ router.post("/search", authenticate, async (req: AuthRequest, res) => {
 
   const exportsUsed = await getUsage(req.user!.tenantId);
   const quota = MARKETPLACE_MONTHLY_QUOTA[plan as PlanId] ?? 0;
-  const canExport = quota === -1 || exportsUsed < quota;
+  const canExport = isOwner(req) || quota === -1 || exportsUsed < quota;
+  const owner = isOwner(req);
 
-  // Return full data for first 3 — blur rest
+  // Return full data for first 3 — blur rest (platform owner sees everything)
   const results = rows.map((r, i) => {
-    const isVisible = i < 3;
+    const isVisible = owner || i < 3;
     return {
       id: r.id,
       source: r.source,
@@ -187,10 +207,10 @@ function maskPhone(phone: string | null): string {
 // ── POST /api/marketplace/export ────────────────────────────────
 // Export selected leads — deducts from quota, records export
 router.post("/export", authenticate, async (req: AuthRequest, res) => {
-  const plan = (req.user as any)?.plan || "starter";
+  const plan = getEffectivePlan(req);
   const quota = MARKETPLACE_MONTHLY_QUOTA[plan as PlanId] ?? 0;
 
-  if (quota === 0) {
+  if (!isOwner(req) && quota === 0) {
     return res.status(402).json({ error: "Upgrade to Professional or higher to export leads", upgrade: true });
   }
 

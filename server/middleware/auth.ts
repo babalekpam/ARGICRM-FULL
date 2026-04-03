@@ -59,6 +59,11 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 export function requireRole(...roles: string[]) {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+    const OWNER_EMAIL = process.env.PLATFORM_OWNER_EMAIL || "abel@argilette.com";
+    if (
+      req.user.role === "platform_owner" ||
+      req.user.email === OWNER_EMAIL
+    ) return next();
     if (!roles.includes(req.user.role)) return res.status(403).json({ error: "Insufficient permissions" });
     next();
   };
