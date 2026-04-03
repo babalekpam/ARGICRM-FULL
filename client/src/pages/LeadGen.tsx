@@ -81,6 +81,7 @@ export default function LeadGenPage() {
           qc.invalidateQueries({ queryKey: ["/api/leadgen/stats"] });
           qc.invalidateQueries({ queryKey: ["/api/intelligence/prospects"] });
           qc.invalidateQueries({ queryKey: ["/api/intelligence/companies"] });
+          qc.invalidateQueries({ queryKey: ["/api/contacts"] });
         }
       } catch {}
     }, 3000);
@@ -170,6 +171,9 @@ export default function LeadGenPage() {
             <div style={{ fontWeight: 700, fontSize: 15, color: "#10b981" }}>Pipeline completed!</div>
             <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
               Found {jobResult.result?.companies} companies · {jobResult.result?.prospects} prospects · {jobResult.result?.emailsVerified} verified emails · {jobResult.result?.intentSignals} intent signals
+              {jobResult.result?.autoImportedToContacts > 0 && (
+                <span style={{ marginLeft: 6, color: "#6366f1", fontWeight: 600 }}>· {jobResult.result.autoImportedToContacts} contacts auto-saved to CRM</span>
+              )}
             </div>
           </div>
           <button className="btn btn-ghost btn-sm" style={{ marginLeft: "auto" }} onClick={() => setJobResult(null)}>✕</button>

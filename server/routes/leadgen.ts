@@ -3,7 +3,7 @@ import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import { requireFeature } from "../middleware/feature-check.js";
 import { db } from "../db.js";
 import { prospects, companies, intentSignals, technographics } from "@shared/schema-extended";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import {
   runAutonomousLeadGen, discoverCompanies, enrichCompanyFull,
   discoverContacts, detectBuyingIntent, scoreProspect
@@ -47,6 +47,7 @@ router.post("/campaign", authenticate, requireFeature("ai.lead_generation"), asy
 
     // Run in background
     setImmediate(async () => {
+      const jobStartedAt = activeJobs[jobId].startedAt;
       try {
         const result = await runAutonomousLeadGen({
           tenantId: req.user!.tenantId,
@@ -54,9 +55,45 @@ router.post("/campaign", authenticate, requireFeature("ai.lead_generation"), asy
           targetLocation, companySize, keywords, targetCount,
           enrichmentDepth: enrichmentDepth as any,
         });
-        activeJobs[jobId] = { status: "completed", progress: 100, result, startedAt: activeJobs[jobId].startedAt };
+
+        // Auto-import all newly found prospects into CRM contacts
+        const { contacts } = await import("@shared/schema");
+        const newProspects = await db.select().from(prospects)
+          .where(and(
+            eq(prospects.tenantId, req.user!.tenantId),
+            gte(prospects.createdAt, jobStartedAt)
+          ));
+
+        let autoImported = 0;
+        for (const p of newProspects) {
+          try {
+            await db.insert(contacts).values({
+              tenantId: req.user!.tenantId,
+              firstName: p.firstName || "",
+              lastName: p.lastName || "",
+              name: `${p.firstName || ""} ${p.lastName || ""}`.trim() || p.company || "Unknown",
+              email: p.email || null,
+              phone: p.phone || p.directPhone || p.mobilePhone || null,
+              company: p.company || null,
+              jobTitle: p.jobTitle || null,
+              source: "lead_finder",
+              leadSource: "AI Lead Gen Campaign",
+              status: "active",
+              notes: p.score ? `Lead score: ${p.score}/100. Auto-imported from AI Lead Gen campaign (${targetIndustry}).` : `Auto-imported from AI Lead Gen campaign (${targetIndustry}).`,
+            });
+            autoImported++;
+          } catch {
+            // Skip duplicates or constraint errors silently
+          }
+        }
+
+        activeJobs[jobId] = {
+          status: "completed", progress: 100,
+          result: { ...result, autoImportedToContacts: autoImported },
+          startedAt: jobStartedAt,
+        };
       } catch (err: any) {
-        activeJobs[jobId] = { status: "failed", progress: 0, error: err.message, startedAt: activeJobs[jobId].startedAt };
+        activeJobs[jobId] = { status: "failed", progress: 0, error: err.message, startedAt: jobStartedAt };
       }
     });
   } catch (err: any) {
