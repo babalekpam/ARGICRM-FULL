@@ -109,6 +109,39 @@ router.put("/tenants/:id/manage", authenticate, requireOwner, async (req: AuthRe
   res.json(t);
 });
 
+// ── List users for a tenant ─────────────────────────────────────
+router.get("/tenants/:id/users", authenticate, requireOwner, async (req: AuthRequest, res) => {
+  const tenantUsers = await db.select({
+    id: users.id, email: users.email, firstName: users.firstName,
+    lastName: users.lastName, role: users.role,
+    lastLoginAt: users.lastLoginAt, createdAt: users.createdAt,
+    isActive: users.isActive,
+  }).from(users).where(eq(users.tenantId, req.params.id)).orderBy(desc(users.createdAt));
+  res.json(tenantUsers);
+});
+
+// ── Update a user's role ────────────────────────────────────────
+router.put("/users/:userId/role", authenticate, requireOwner, async (req: AuthRequest, res) => {
+  const { role } = req.body;
+  const [u] = await db.update(users).set({ role }).where(eq(users.id, req.params.userId)).returning();
+  if (!u) return res.status(404).json({ error: "User not found" });
+  res.json(u);
+});
+
+// ── Toggle a user's active status ───────────────────────────────
+router.put("/users/:userId/toggle", authenticate, requireOwner, async (req: AuthRequest, res) => {
+  const [existing] = await db.select({ isActive: users.isActive }).from(users).where(eq(users.id, req.params.userId));
+  if (!existing) return res.status(404).json({ error: "User not found" });
+  const [u] = await db.update(users).set({ isActive: !existing.isActive }).where(eq(users.id, req.params.userId)).returning();
+  res.json(u);
+});
+
+// ── Remove a user from a tenant ─────────────────────────────────
+router.delete("/users/:userId", authenticate, requireOwner, async (req: AuthRequest, res) => {
+  await db.delete(users).where(eq(users.id, req.params.userId));
+  res.json({ ok: true });
+});
+
 // ── Platform agent stats ────────────────────────────────────────
 router.get("/agent-stats", authenticate, requireOwner, async (req: AuthRequest, res) => {
   const byAgent = await db.select({ agentType: agentSessions.agentType, sessions: sql<number>`count(*)`, messages: sql<number>`sum(message_count)`, tokens: sql<number>`sum(tokens_used)` })
