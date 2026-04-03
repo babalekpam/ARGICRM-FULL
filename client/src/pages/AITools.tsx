@@ -6,10 +6,12 @@ import { apiRequest } from "../lib/api";
 import { UpgradeBanner } from "../components/UpgradeBanner";
 import {
   Brain, Mail, Mic, Search, Zap, Copy, Check, ChevronDown,
-  BarChart2, AlertCircle, TrendingUp, Lightbulb, RefreshCw
+  BarChart2, AlertCircle, TrendingUp, Lightbulb, RefreshCw,
+  Globe, Users, MapPin, Building2, UserPlus, CheckSquare, Square,
+  Sparkles, Download
 } from "lucide-react";
 
-const TABS = ["Deal Intelligence", "Email Composer", "Meeting Summarizer", "Data Enrichment"] as const;
+const TABS = ["Deal Intelligence", "Email Composer", "Meeting Summarizer", "Data Enrichment", "Lead Finder"] as const;
 type Tab = typeof TABS[number];
 
 const TONES = ["professional", "friendly", "urgent", "consultative", "casual"];
@@ -463,6 +465,233 @@ function EnrichmentTab() {
   );
 }
 
+const INDUSTRIES = ["SaaS / Software", "Marketing Agency", "E-commerce", "Healthcare", "Finance / FinTech", "Real Estate", "Manufacturing", "Consulting", "Logistics", "Education", "Legal", "Hospitality", "Other"];
+const COMPANY_SIZES = ["1-10", "11-50", "51-200", "201-500", "500+", "Any"];
+const TITLE_PRESETS = ["CEO, Founder", "VP Sales, Sales Director", "CMO, Marketing Director", "CTO, VP Engineering", "HR Director, CHRO", "CFO, Finance Director"];
+
+function LeadFinderTab() {
+  const [form, setForm] = useState({
+    industry: "", location: "", titles: "CEO, Founder", companySize: "Any", keywords: "", targetCount: 15,
+  });
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<any>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const prospects: any[] = jobStatus?.result?.prospects || [];
+
+  function startPoll(jid: string) {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await apiRequest("GET", `/api/leadgen/status/${jid}`);
+        setJobStatus(res);
+        if ((res as any).status !== "running") clearInterval(pollRef.current!);
+      } catch {}
+    }, 3000);
+  }
+
+  React.useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
+  async function runSearch() {
+    setError(null); setJobId(null); setJobStatus(null); setSelected(new Set()); setImported(null);
+    const titles = form.titles.split(",").map(t => t.trim()).filter(Boolean);
+    try {
+      const res = await apiRequest("POST", "/api/leadgen/campaign", {
+        targetIndustry: form.industry,
+        targetLocation: form.location || undefined,
+        targetTitles: titles,
+        companySize: form.companySize !== "Any" ? form.companySize : undefined,
+        keywords: form.keywords ? form.keywords.split(",").map(k => k.trim()) : [],
+        targetCount: form.targetCount,
+        enrichmentDepth: "standard",
+      }) as any;
+      if (res.jobId) { setJobId(res.jobId); setJobStatus({ status: "running", progress: 0 }); startPoll(res.jobId); }
+      else setError(res.error || "Failed to start search");
+    } catch (e: any) { setError(e.message || "Failed to start search"); }
+  }
+
+  function toggleSelect(i: number) {
+    setSelected(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; });
+  }
+  function toggleAll() {
+    setSelected(selected.size === prospects.length ? new Set() : new Set(prospects.map((_: any, i: number) => i)));
+  }
+
+  async function importSelected() {
+    const items = [...selected].map(i => prospects[i]);
+    setImporting(true);
+    try {
+      const res = await apiRequest("POST", "/api/leadgen/import-contacts", { prospects: items }) as any;
+      setImported(res.imported || 0);
+    } catch (e: any) { setError(e.message); }
+    finally { setImporting(false); }
+  }
+
+  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
+  const isRunning = jobStatus?.status === "running";
+  const isDone = jobStatus?.status === "completed";
+  const isFailed = jobStatus?.status === "failed";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Search form */}
+      <SectionCard title="Lead Search Criteria" icon={Globe} color="#6366f1">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600 }}>Industry *</div>
+            <select value={form.industry} onChange={e => set("industry", e.target.value)} data-testid="select-lead-industry"
+              style={{ width: "100%", padding: "9px 12px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", fontSize: 13 }}>
+              <option value="">Select industry…</option>
+              {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+            </select>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600 }}>Location <span style={{ fontWeight: 400 }}>(optional)</span></div>
+            <div style={{ position: "relative" }}>
+              <MapPin size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+              <input value={form.location} onChange={e => set("location", e.target.value)} placeholder="e.g. New York, France, Remote…" data-testid="input-lead-location"
+                style={{ width: "100%", padding: "9px 12px 9px 30px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box" }} />
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600 }}>Job Titles to Target</div>
+            <select value={form.titles} onChange={e => set("titles", e.target.value)} data-testid="select-lead-titles"
+              style={{ width: "100%", padding: "9px 12px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", fontSize: 13 }}>
+              {TITLE_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600 }}>Company Size</div>
+            <select value={form.companySize} onChange={e => set("companySize", e.target.value)} data-testid="select-lead-size"
+              style={{ width: "100%", padding: "9px 12px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", fontSize: 13 }}>
+              {COMPANY_SIZES.map(s => <option key={s} value={s}>{s} employees</option>)}
+            </select>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600 }}>Keywords <span style={{ fontWeight: 400 }}>(optional)</span></div>
+            <input value={form.keywords} onChange={e => set("keywords", e.target.value)} placeholder="e.g. Series A, hiring, remote-first" data-testid="input-lead-keywords"
+              style={{ width: "100%", padding: "9px 12px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", fontSize: 13, boxSizing: "border-box" }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600 }}>Number of leads: <strong>{form.targetCount}</strong></div>
+            <input type="range" min={5} max={50} step={5} value={form.targetCount} onChange={e => set("targetCount", Number(e.target.value))} data-testid="range-lead-count"
+              style={{ width: "100%", accentColor: "#6366f1" }} />
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-muted)" }}><span>5</span><span>50</span></div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(99,102,241,0.06)", borderRadius: 8, fontSize: 12, color: "var(--text-muted)" }}>
+          <strong style={{ color: "#818cf8" }}>Sources searched:</strong> DuckDuckGo · Yellow Pages · OpenCorporates · GitHub · Company websites · Job boards — all free public data
+        </div>
+
+        <button onClick={runSearch} disabled={!form.industry || isRunning} data-testid="btn-find-leads"
+          style={{ marginTop: 16, padding: "11px 22px", background: !form.industry || isRunning ? "var(--bg-overlay)" : "linear-gradient(135deg,#6366f1,#8b5cf6)", color: !form.industry || isRunning ? "var(--text-muted)" : "#fff", border: "none", borderRadius: 8, cursor: !form.industry ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+          {isRunning ? <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Searching the web…</> : <><Sparkles size={14} /> Find {form.targetCount} Leads</>}
+        </button>
+
+        {error && <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, fontSize: 13, color: "#f87171" }}>{error}</div>}
+      </SectionCard>
+
+      {/* Progress */}
+      {jobStatus && isRunning && (
+        <SectionCard title="Searching Public Sources…" icon={Globe} color="#6366f1">
+          <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12 }}>
+            Scanning DuckDuckGo, Yellow Pages, OpenCorporates, GitHub and company websites for matching leads. This takes 30–90 seconds.
+          </div>
+          <div style={{ height: 6, background: "var(--bg-overlay)", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ height: "100%", background: "linear-gradient(90deg,#6366f1,#8b5cf6)", borderRadius: 3, width: "100%", animation: "progress 2s ease infinite alternate" }} />
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+            {["DuckDuckGo", "Yellow Pages", "OpenCorporates", "GitHub", "Company sites", "Job boards"].map(s => (
+              <span key={s} style={{ padding: "3px 10px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 20, fontSize: 11, color: "#818cf8" }}>{s}</span>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Error */}
+      {isFailed && (
+        <div style={{ padding: "14px 18px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, fontSize: 13, color: "#f87171" }}>
+          Search failed: {jobStatus?.error || "Unknown error"}. Try again or adjust your search criteria.
+        </div>
+      )}
+
+      {/* Results */}
+      {isDone && prospects.length === 0 && (
+        <div style={{ padding: "24px", textAlign: "center", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 14, color: "var(--text-muted)" }}>
+          No leads found for those criteria. Try a broader industry, different titles, or remove the location filter.
+        </div>
+      )}
+
+      {isDone && prospects.length > 0 && (
+        <SectionCard title={`${prospects.length} Leads Found`} icon={Users} color="#10b981">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button onClick={toggleAll} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                {selected.size === prospects.length ? <CheckSquare size={14} style={{ color: "#6366f1" }} /> : <Square size={14} />}
+                {selected.size === prospects.length ? "Deselect all" : "Select all"}
+              </button>
+              {selected.size > 0 && <span style={{ fontSize: 12, color: "#818cf8" }}>{selected.size} selected</span>}
+            </div>
+            {selected.size > 0 && (
+              <button onClick={importSelected} disabled={importing} data-testid="btn-import-leads"
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                {importing ? <><RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Importing…</> : <><UserPlus size={13} /> Import {selected.size} to Contacts</>}
+              </button>
+            )}
+          </div>
+
+          {imported !== null && (
+            <div style={{ padding: "10px 14px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 8, fontSize: 13, color: "#34d399", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+              <Check size={14} /> {imported} contacts successfully imported to your CRM
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {prospects.map((p: any, i: number) => (
+              <div key={i} data-testid={`card-lead-${i}`}
+                onClick={() => toggleSelect(i)}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: selected.has(i) ? "rgba(99,102,241,0.08)" : "var(--bg-overlay)", border: `1px solid ${selected.has(i) ? "rgba(99,102,241,0.3)" : "var(--border)"}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                <div style={{ flexShrink: 0 }}>
+                  {selected.has(i) ? <CheckSquare size={16} style={{ color: "#6366f1" }} /> : <Square size={16} style={{ color: "var(--text-muted)" }} />}
+                </div>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: `hsl(${(i * 73) % 360},60%,40%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                  {(p.name || p.firstName || "?")[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{p.name || `${p.firstName || ""} ${p.lastName || ""}`.trim() || "Unknown"}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    {p.title && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Users size={11} />{p.title}</span>}
+                    {p.company && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Building2 size={11} />{p.company}</span>}
+                    {p.email && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Globe size={11} />{p.email}</span>}
+                  </div>
+                </div>
+                {p.score !== undefined && (
+                  <div style={{ textAlign: "center", flexShrink: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: p.score >= 70 ? "#10b981" : p.score >= 40 ? "#f59e0b" : "#ef4444" }}>{p.score}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>score</div>
+                  </div>
+                )}
+                {p.emailStatus && (
+                  <span style={{ padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: p.emailStatus === "valid" ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", color: p.emailStatus === "valid" ? "#34d399" : "#fbbf24" }}>
+                    {p.emailStatus}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      <style>{`@keyframes progress { from { opacity:0.6; } to { opacity:1; } } @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
 export default function AIToolsPage() {
   const [tab, setTab] = useState<Tab>("Deal Intelligence");
 
@@ -471,6 +700,7 @@ export default function AIToolsPage() {
     "Email Composer": Mail,
     "Meeting Summarizer": Mic,
     "Data Enrichment": Search,
+    "Lead Finder": Globe,
   };
 
   return (
@@ -501,6 +731,7 @@ export default function AIToolsPage() {
       {tab === "Email Composer" && <EmailComposerTab />}
       {tab === "Meeting Summarizer" && <MeetingSummarizerTab />}
       {tab === "Data Enrichment" && <EnrichmentTab />}
+      {tab === "Lead Finder" && <LeadFinderTab />}
     </Layout>
   );
 }

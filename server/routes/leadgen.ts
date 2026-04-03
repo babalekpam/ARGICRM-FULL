@@ -249,6 +249,44 @@ router.post("/job-postings", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// ── Import prospects to CRM contacts ────────────────────────────
+router.post("/import-contacts", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { prospects: items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "prospects array required" });
+    }
+    const tenantId = req.user!.tenantId;
+    const { contacts } = await import("@shared/schema");
+    const { db: database } = await import("../db.js");
+
+    const inserted = await Promise.all(
+      items.map(async (p: any) => {
+        const nameParts = (p.name || "").trim().split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+        const [row] = await database.insert(contacts).values({
+          tenantId,
+          firstName,
+          lastName,
+          name: p.name || `${firstName} ${lastName}`.trim(),
+          email: p.email || null,
+          company: p.company || null,
+          jobTitle: p.title || p.jobTitle || null,
+          source: "lead_finder",
+          leadSource: "AI Lead Finder",
+          status: "active",
+          notes: p.score ? `Lead score: ${p.score}/100. Found via autonomous web search.` : "Found via autonomous web search.",
+        }).returning();
+        return row;
+      })
+    );
+    res.json({ imported: inserted.length, contacts: inserted });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Dashboard stats ─────────────────────────────────────────────
 router.get("/stats", authenticate, async (req: AuthRequest, res) => {
   const [pc] = await db.select({ total: sql<number>`count(*)`, avgScore: sql<number>`avg(score)`, verified: sql<number>`sum(case when email_status in ('valid','likely') then 1 else 0 end)` })
