@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
+import { requireFeature } from "../middleware/feature-check.js";
 import { db } from "../db.js";
 import { leads } from "@shared/schema";
 import { agentSessions, agentMessages, agentMemories, agentTasks, agentLeadGenResults } from "@shared/schema-extended";
@@ -42,7 +43,7 @@ router.get("/sessions/:sessionId/messages", authenticate, async (req: AuthReques
 });
 
 // ── Chat with agent ─────────────────────────────────────────────
-router.post("/chat", authenticate, async (req: AuthRequest, res) => {
+router.post("/chat", authenticate, requireFeature("ai.agents"), async (req: AuthRequest, res) => {
   try {
     const { agentType, message, sessionId } = req.body;
 
@@ -95,7 +96,7 @@ router.delete("/memories/:memoryId", authenticate, async (req: AuthRequest, res)
 });
 
 // ── Lead generation campaign ────────────────────────────────────
-router.post("/lead-gen", authenticate, async (req: AuthRequest, res) => {
+router.post("/lead-gen", authenticate, requireFeature("ai.lead_generation"), async (req: AuthRequest, res) => {
   try {
     const result = await runLeadGenCampaign({
       tenantId: req.user!.tenantId,

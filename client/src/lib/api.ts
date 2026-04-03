@@ -2,6 +2,24 @@ import { QueryClient } from "@tanstack/react-query";
 
 const API_BASE = "";
 
+// Thrown when the server returns 402 — plan upgrade required
+export class UpgradeRequiredError extends Error {
+  code = "UPGRADE_REQUIRED";
+  currentPlan: string;
+  requiredPlan: string;
+  upgradeTo: string;
+  upgradePrice: string;
+
+  constructor(message: string, data: any = {}) {
+    super(message);
+    this.name = "UpgradeRequiredError";
+    this.currentPlan  = data.currentPlan  || "trial";
+    this.requiredPlan = data.requiredPlan || "professional";
+    this.upgradeTo    = data.upgradeTo    || "Professional";
+    this.upgradePrice = data.upgradePrice || "";
+  }
+}
+
 function getToken(): string | null {
   return localStorage.getItem("token");
 }
@@ -38,6 +56,12 @@ export async function apiRequest<T = any>(
     clearToken();
     window.location.href = "/login";
     throw new Error("Session expired");
+  }
+
+  if (res.status === 402) {
+    const data = await res.json().catch(() => ({}));
+    const err = new UpgradeRequiredError(data.error || "Upgrade required", data);
+    throw err;
   }
 
   if (!res.ok) {

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
+import { requireFeature } from "../middleware/feature-check.js";
 import { db } from "../db.js";
 import { prospects, companies, intentSignals, technographics } from "@shared/schema-extended";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -25,7 +26,7 @@ const activeJobs: Record<string, {
 }> = {};
 
 // ── Full autonomous campaign ────────────────────────────────────
-router.post("/campaign", authenticate, async (req: AuthRequest, res) => {
+router.post("/campaign", authenticate, requireFeature("ai.lead_generation"), async (req: AuthRequest, res) => {
   try {
     const {
       targetIndustry, targetTitles = ["VP Sales", "CEO", "Director"],
@@ -69,7 +70,7 @@ router.get("/status/:jobId", authenticate, (req: AuthRequest, res) => {
 });
 
 // ── Discover companies ──────────────────────────────────────────
-router.post("/discover-companies", authenticate, async (req: AuthRequest, res) => {
+router.post("/discover-companies", authenticate, requireFeature("ai.lead_generation"), async (req: AuthRequest, res) => {
   try {
     const { industry, location, keywords, companySize, limit = 20 } = req.body;
     if (!industry) return res.status(400).json({ error: "industry required" });
@@ -99,7 +100,7 @@ router.post("/enrich/:companyId", authenticate, async (req: AuthRequest, res) =>
 });
 
 // ── Find contacts at company ────────────────────────────────────
-router.post("/find-contacts", authenticate, async (req: AuthRequest, res) => {
+router.post("/find-contacts", authenticate, requireFeature("contacts.advanced"), async (req: AuthRequest, res) => {
   try {
     const { companyId, targetTitles = ["CEO", "VP Sales"], targetSeniorities = ["c-suite", "vp"], count = 3 } = req.body;
     const [company] = await db.select().from(companies)

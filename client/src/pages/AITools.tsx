@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { useLanguage } from "../contexts/LanguageContext";
 import { apiRequest } from "../lib/api";
+import { UpgradeBanner } from "../components/UpgradeBanner";
 import {
   Brain, Mail, Mic, Search, Zap, Copy, Check, ChevronDown,
   BarChart2, AlertCircle, TrendingUp, Lightbulb, RefreshCw
@@ -97,6 +98,7 @@ function DealIntelligenceTab() {
             {mutation.isPending ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Analyzing…</> : <><Zap size={13} /> Analyze</>}
           </button>
         </div>
+        {mutation.error && <UpgradeBanner error={mutation.error} />}
       </SectionCard>
 
       {result && (
@@ -225,6 +227,7 @@ function EmailComposerTab() {
         >
           {mutation.isPending ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Writing…</> : <><Zap size={13} /> Generate Email</>}
         </button>
+        {mutation.error && <UpgradeBanner error={mutation.error} />}
       </SectionCard>
 
       {result && (
@@ -303,6 +306,7 @@ function MeetingSummarizerTab() {
         >
           {mutation.isPending ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Analyzing…</> : <><Brain size={13} /> Analyze Meeting</>}
         </button>
+        {mutation.error && <UpgradeBanner error={mutation.error} />}
       </SectionCard>
 
       {result && (
@@ -424,6 +428,7 @@ function EnrichmentTab() {
         >
           {mutation.isPending ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Enriching…</> : <><Zap size={13} /> Enrich {mode === "company" ? "Company" : "Contact"}</>}
         </button>
+        {mutation.error && <UpgradeBanner error={mutation.error} />}
       </SectionCard>
 
       {result && (

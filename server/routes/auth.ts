@@ -3,6 +3,7 @@ import { z } from "zod";
 import { authenticate, generateToken, hashPassword, verifyPassword, type AuthRequest } from "../middleware/auth.js";
 import * as storage from "../storage.js";
 import { sendWelcomeEmail, sendTeamInviteEmail, sendPasswordChangedEmail } from "../services/email.js";
+import { PLAN_MAP, PLAN_HIERARCHY } from "@shared/plans";
 
 const router = Router();
 
@@ -16,7 +17,7 @@ router.post("/register", async (req, res) => {
       lastName: z.string().min(1).max(50),
       email: z.string().email(),
       password: z.string().min(8),
-      plan: z.enum(["trial", "starter", "pro", "business"]).optional().default("trial"),
+      plan: z.enum(["trial", "starter", "professional", "business", "enterprise"]).optional().default("trial"),
     });
 
     const body = schema.parse(req.body);
@@ -32,14 +33,16 @@ router.post("/register", async (req, res) => {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
 
+    const planDef = PLAN_MAP[body.plan] || PLAN_MAP["trial"];
+
     const tenant = await storage.createTenant({
       name: body.companyName,
       domain: `${body.domain}.argilette.org`,
       subscriptionPlan: body.plan,
-      subscriptionStatus: "trialing",
-      plan: body.plan === "trial" ? "free" : body.plan,
-      trialEndsAt,
-      maxUsers: 3,
+      subscriptionStatus: body.plan === "trial" ? "trialing" : "active",
+      plan: body.plan,
+      trialEndsAt: body.plan === "trial" ? trialEndsAt : null,
+      maxUsers: planDef.maxUsers === -1 ? 999999 : planDef.maxUsers,
       isActive: true,
       settings: { timezone: "UTC", currency: "USD", language: "en" },
     });

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
+import { UpgradeBanner } from "../components/UpgradeBanner";
 import { useLanguage } from "../contexts/LanguageContext";
 import {
   Zap, Search, Globe, Building2, Mail, Phone, CheckCircle,
@@ -43,6 +44,7 @@ export default function LeadGenPage() {
   const [techScanning, setTechScanning] = useState(false);
   const [activeCampaignJob, setActiveCampaignJob] = useState<string | null>(null);
   const [jobResult, setJobResult] = useState<any>(null);
+  const [campaignError, setCampaignError] = useState<unknown>(null);
   const [campaignForm, setCampaignForm] = useState({
     targetIndustry: "SaaS / Software",
     targetTitles: ["CEO", "VP Sales"],
@@ -87,14 +89,19 @@ export default function LeadGenPage() {
 
   const runCampaign = async () => {
     setJobResult(null);
+    setCampaignError(null);
     const payload = {
       ...campaignForm,
       targetCount: Number(campaignForm.targetCount),
       keywords: campaignForm.keywords.split(",").map(k => k.trim()).filter(Boolean),
     };
-    const res = await apiRequest<any>("POST", "/api/leadgen/campaign", payload);
-    setActiveCampaignJob(res.jobId);
-    setCampaignModal(false);
+    try {
+      const res = await apiRequest<any>("POST", "/api/leadgen/campaign", payload);
+      setActiveCampaignJob(res.jobId);
+      setCampaignModal(false);
+    } catch (err) {
+      setCampaignError(err);
+    }
   };
 
   const verifyEmail = async () => {
@@ -484,8 +491,9 @@ export default function LeadGenPage() {
       )}
 
       {/* Campaign Modal */}
-      <Modal open={campaignModal} onClose={() => setCampaignModal(false)} title={t("new_campaign", "New Campaign")} width={560}>
+      <Modal open={campaignModal} onClose={() => { setCampaignModal(false); setCampaignError(null); }} title={t("new_campaign", "New Campaign")} width={560}>
         <div style={{ padding: "20px", display: "grid", gap: 16 }}>
+          {campaignError && <UpgradeBanner error={campaignError} onDismiss={() => setCampaignError(null)} />}
           <div style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "#93c5fd" }}>
             Our engine will crawl DuckDuckGo, Yellow Pages, OpenCorporates, GitHub, LinkedIn (public), Indeed, and live websites — no API costs.
           </div>

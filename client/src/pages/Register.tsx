@@ -3,13 +3,10 @@ import { Link } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import { ArrowRight, ArrowLeft, Check, Building2, User, Lock, Zap } from "lucide-react";
 import { useSeoPage } from "../hooks/useSeoPage";
+import { PLANS as ALL_PLANS } from "@shared/plans";
 
-const PLANS = [
-  { id: "trial", name: "Free Trial", price: "$0", desc: "14 days, no card needed", features: ["3 users", "500 contacts", "Basic CRM"], color: "#64748b" },
-  { id: "starter", name: "Starter", price: "$69/mo", desc: "For small teams", features: ["5 users", "2,000 contacts", "Email campaigns"], color: "#3b82f6", popular: false },
-  { id: "pro", name: "Professional", price: "$179/mo", desc: "Most popular", features: ["25 users", "10,000 contacts", "AI features"], color: "#8b5cf6", popular: true },
-  { id: "business", name: "Business", price: "$349/mo", desc: "For growing teams", features: ["Unlimited users", "50,000 contacts", "Priority support"], color: "#10b981" },
-];
+// Only show the self-serve plans on the register page (not enterprise)
+const PLANS = ALL_PLANS.filter(p => p.id !== "enterprise");
 
 export default function RegisterPage() {
   useSeoPage("Get Started Free — ARGILETTE CRM", "Create your ARGILETTE CRM workspace in 2 minutes. Start a free 14-day trial. No credit card required.");
@@ -90,10 +87,10 @@ export default function RegisterPage() {
                         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{plan.name}</span>
                         {plan.popular && <span className="badge badge-purple" style={{ fontSize: 10 }}>Popular</span>}
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{plan.features.join(" · ")}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{plan.highlights.slice(0, 3).join(" · ")}</div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: plan.color }}>{plan.price}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: plan.color }}>{plan.price}{plan.period}</div>
                       {form.plan === plan.id && <Check size={14} style={{ color: plan.color, marginTop: 2 }} />}
                     </div>
                   </button>

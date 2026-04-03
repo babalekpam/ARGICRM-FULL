@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
+import { requireFeature } from "../middleware/feature-check.js";
 import { db } from "../db.js";
 import { deals, contacts, leads, tasks } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -9,7 +10,7 @@ import { askJSONForTenant } from "../services/tenant-ai.js";
 const router = Router();
 
 // ── Deal Intelligence ────────────────────────────────────────────
-router.post("/deal-intelligence", authenticate, async (req: AuthRequest, res) => {
+router.post("/deal-intelligence", authenticate, requireFeature("ai.tools"), async (req: AuthRequest, res) => {
   try {
     const { dealId } = req.body;
     const tenantId = req.user!.tenantId;
@@ -78,7 +79,7 @@ Respond with JSON: { "summary": "2-sentence deal assessment", "nextActions": ["a
 });
 
 // ── Smart Email Composer ────────────────────────────────────────
-router.post("/compose-email", authenticate, async (req: AuthRequest, res) => {
+router.post("/compose-email", authenticate, requireFeature("ai.tools"), async (req: AuthRequest, res) => {
   try {
     const { contactName, company, dealName, stage, purpose, tone = "professional", additionalContext = "" } = req.body;
 
@@ -119,7 +120,7 @@ Respond with JSON: { "subject": "email subject", "body": "full email body with p
 });
 
 // ── Meeting Summarizer ──────────────────────────────────────────
-router.post("/summarize-meeting", authenticate, async (req: AuthRequest, res) => {
+router.post("/summarize-meeting", authenticate, requireFeature("ai.tools"), async (req: AuthRequest, res) => {
   try {
     const { transcript, contactName, dealName } = req.body;
     if (!transcript?.trim()) return res.status(400).json({ error: "Transcript is required" });
@@ -163,7 +164,7 @@ Respond with JSON:
 });
 
 // ── Company Enrichment ──────────────────────────────────────────
-router.post("/enrich-company", authenticate, async (req: AuthRequest, res) => {
+router.post("/enrich-company", authenticate, requireFeature("contacts.advanced"), async (req: AuthRequest, res) => {
   try {
     const { domain, companyName } = req.body;
     if (!domain && !companyName) return res.status(400).json({ error: "domain or companyName required" });
@@ -208,7 +209,7 @@ Respond with JSON: {
 });
 
 // ── Contact Enrichment ─────────────────────────────────────────
-router.post("/enrich-contact", authenticate, async (req: AuthRequest, res) => {
+router.post("/enrich-contact", authenticate, requireFeature("contacts.advanced"), async (req: AuthRequest, res) => {
   try {
     const { email, firstName, lastName, company } = req.body;
     if (!email && !firstName) return res.status(400).json({ error: "email or firstName required" });

@@ -5,6 +5,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Loader, Modal, FormRow } from "../components/UI";
+import { UpgradeBanner } from "../components/UpgradeBanner";
 import {
   Send, Brain, Zap, Plus, ChevronLeft, Trash2, Sparkles,
   History, Settings, UserPlus, Target, RefreshCw, Download,
@@ -38,6 +39,7 @@ export default function AgentsPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [agentError, setAgentError] = useState<unknown>(null);
   const [activeView, setActiveView] = useState<"chat" | "memories" | "history" | "lead-gen">("chat");
   const [leadGenModal, setLeadGenModal] = useState(false);
   const [leadGenForm, setLeadGenForm] = useState({ targetIndustry: "SaaS", targetTitle: "VP Sales", targetCompanySize: "51-200", value: "$25,000", outreachPurpose: "product demo" });
@@ -79,6 +81,7 @@ export default function AgentsPage() {
 
   const sendMessage = async () => {
     if (!input.trim() || !activeAgent || sending) return;
+    setAgentError(null);
     const userMsg: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
@@ -102,7 +105,7 @@ export default function AgentsPage() {
       qc.invalidateQueries({ queryKey: ["/api/agents/sessions"] });
       qc.invalidateQueries({ queryKey: [`/api/agents/memories/${activeAgent}`] });
     } catch (err: any) {
-      setMessages(prev => [...prev, { role: "assistant", content: `Error: ${err.message}` }]);
+      setAgentError(err);
     } finally {
       setSending(false);
     }
@@ -361,6 +364,7 @@ export default function AgentsPage() {
 
                 {/* Input */}
                 <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
+                  {agentError && <div style={{ marginBottom: 12 }}><UpgradeBanner error={agentError} onDismiss={() => setAgentError(null)} /></div>}
                   <div style={{ display: "flex", gap: 10, background: "var(--bg-overlay)", borderRadius: 12, padding: "8px 12px", border: "1px solid var(--border)" }}>
                     <textarea
                       value={input}
