@@ -43,6 +43,9 @@ export default function LeadGenPage() {
   const [techResult, setTechResult] = useState<any>(null);
   const [techScanning, setTechScanning] = useState(false);
   const [activeCampaignJob, setActiveCampaignJob] = useState<string | null>(null);
+  const [intentHunting, setIntentHunting] = useState(false);
+  const [intentHuntResult, setIntentHuntResult] = useState<{ signalsFound: number; prospectsCreated: number; sources: string[] } | null>(null);
+  const [intentHuntForm, setIntentHuntForm] = useState({ industry: "SaaS / Software", keywords: "" });
   const [jobResult, setJobResult] = useState<any>(null);
   const [campaignError, setCampaignError] = useState<unknown>(null);
   const [campaignForm, setCampaignForm] = useState({
@@ -386,25 +389,201 @@ export default function LeadGenPage() {
       {/* ── INTENT SIGNALS ── */}
       {tab === "Intent Signals" && (
         <div>
-          <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#fbbf24" }}>
-            Intent signals come from real job postings (Indeed), funding news (DuckDuckGo), and technographic analysis of live websites.
-          </div>
-          {!intentData?.length ? (
-            <Empty icon={TrendingUp} title="No intent signals yet" desc="Run a deep campaign to detect real buying signals from job postings, news, and website analysis" />
-          ) : intentData.map((s: any) => (
-            <div key={s.id} className="card" style={{ padding: "14px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 14, borderLeft: `3px solid ${s.strength > 70 ? "#10b981" : s.strength > 50 ? "#f59e0b" : "#64748b"}` }}>
-              <div style={{ textAlign: "center", flexShrink: 0, width: 50 }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: s.strength > 70 ? "#10b981" : "#f59e0b" }}>{s.strength}</div>
-                <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>score</div>
+          {/* Hunt Intent launcher */}
+          <div className="card" style={{ padding: 20, marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(139,92,246,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Search size={18} style={{ color: "#8b5cf6" }} />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{s.companyName || s.companyDomain}</div>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{s.topic}</div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{s.description}</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 3 }}>Public Intent Hunter</div>
+                <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                  Scans Reddit, LinkedIn, Quora, Indie Hackers, and Product Hunt for people actively asking for solutions in your industry — right now. Auto-creates them as prospects.
+                </div>
               </div>
-              <span className="badge badge-gray">{s.signalType?.replace("_", " ")}</span>
             </div>
-          ))}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div style={{ flex: "1 1 200px" }}>
+                <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>INDUSTRY</label>
+                <select
+                  data-testid="select-intent-industry"
+                  className="input"
+                  value={intentHuntForm.industry}
+                  onChange={e => setIntentHuntForm(f => ({ ...f, industry: e.target.value }))}
+                  style={{ width: "100%" }}
+                >
+                  {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: "2 1 280px" }}>
+                <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>KEYWORDS <span style={{ fontWeight: 400 }}>(comma separated, optional)</span></label>
+                <input
+                  data-testid="input-intent-keywords"
+                  className="input"
+                  placeholder="e.g. CRM, agency software, client portal"
+                  value={intentHuntForm.keywords}
+                  onChange={e => setIntentHuntForm(f => ({ ...f, keywords: e.target.value }))}
+                  style={{ width: "100%" }}
+                />
+              </div>
+              <button
+                data-testid="button-start-intent-hunt"
+                className="btn btn-primary"
+                disabled={intentHunting}
+                onClick={async () => {
+                  setIntentHunting(true);
+                  setIntentHuntResult(null);
+                  try {
+                    const kws = intentHuntForm.keywords.split(",").map(k => k.trim()).filter(Boolean);
+                    const res = await apiRequest("POST", "/api/leadgen/intent-hunt", {
+                      industry: intentHuntForm.industry,
+                      keywords: kws,
+                      maxResults: 40,
+                    });
+                    const data = await res.json();
+                    setIntentHuntResult(data);
+                    qc.invalidateQueries({ queryKey: ["/api/intelligence/intent"] });
+                    qc.invalidateQueries({ queryKey: ["/api/intelligence/prospects"] });
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setIntentHunting(false);
+                  }
+                }}
+                style={{ flexShrink: 0, alignSelf: "flex-end" }}
+              >
+                {intentHunting
+                  ? <><span className="spinner" style={{ width: 14, height: 14, marginRight: 6 }} />Hunting...</>
+                  : <><Search size={14} style={{ marginRight: 6 }} />Hunt Intent Now</>
+                }
+              </button>
+            </div>
+
+            {/* Result banner */}
+            {intentHunting && (
+              <div style={{ marginTop: 14, background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#a78bfa", display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="spinner" style={{ width: 13, height: 13 }} />
+                Crawling Reddit, LinkedIn, Quora, Indie Hackers, Product Hunt... this takes 30–60 seconds.
+              </div>
+            )}
+            {intentHuntResult && !intentHunting && (
+              <div style={{ marginTop: 14, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 8, padding: "12px 16px", fontSize: 13 }}>
+                <div style={{ fontWeight: 700, color: "#10b981", marginBottom: 4 }}>
+                  Hunt complete — {intentHuntResult.signalsFound} intent signals found · {intentHuntResult.prospectsCreated} prospects created
+                </div>
+                <div style={{ color: "var(--text-muted)" }}>
+                  Sources crawled: {intentHuntResult.sources.join(", ") || "Reddit, LinkedIn, Quora, Indie Hackers, Product Hunt"}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* How it works */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+            {[
+              { icon: "💬", name: "Reddit", desc: "Threads where people ask for tool recommendations" },
+              { icon: "💼", name: "LinkedIn", desc: "Posts asking peers for product/service advice" },
+              { icon: "❓", name: "Quora", desc: "Questions about industry challenges & solutions" },
+              { icon: "🚀", name: "Indie Hackers", desc: "Founders discussing tools they need" },
+              { icon: "🐱", name: "Product Hunt", desc: "Discussion threads around product categories" },
+            ].map(p => (
+              <div key={p.name} style={{ flex: "1 1 160px", background: "var(--bg-overlay)", borderRadius: 8, padding: "10px 12px" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>{p.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Signals list, split by type */}
+          {(() => {
+            const publicTypes = ["reddit_intent", "linkedin_intent", "quora_intent", "forum_intent"];
+            const publicSignals = intentData?.filter((s: any) => publicTypes.includes(s.signalType)) || [];
+            const companySignals = intentData?.filter((s: any) => !publicTypes.includes(s.signalType)) || [];
+
+            const typeIcon: Record<string, string> = {
+              reddit_intent: "Reddit",
+              linkedin_intent: "LinkedIn",
+              quora_intent: "Quora",
+              forum_intent: "Forum",
+              job_posting: "Hiring",
+              funding: "Funding",
+              tech_stack: "Tech Stack",
+              news: "News",
+            };
+            const typeColor: Record<string, string> = {
+              reddit_intent: "#ff4500",
+              linkedin_intent: "#0077b5",
+              quora_intent: "#b92b27",
+              forum_intent: "#6366f1",
+              job_posting: "#10b981",
+              funding: "#f59e0b",
+              tech_stack: "#3b82f6",
+              news: "#8b5cf6",
+            };
+
+            return (
+              <>
+                {publicSignals.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+                      Public Intent Signals ({publicSignals.length})
+                    </div>
+                    {publicSignals.map((s: any) => (
+                      <div key={s.id} data-testid={`row-intent-signal-${s.id}`} className="card" style={{ padding: "12px 16px", marginBottom: 8, display: "flex", alignItems: "flex-start", gap: 14 }}>
+                        <div style={{ textAlign: "center", flexShrink: 0, width: 46 }}>
+                          <div style={{ fontSize: 19, fontWeight: 800, color: s.strength > 70 ? "#10b981" : "#f59e0b" }}>{s.strength}</div>
+                          <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>score</div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
+                            <span className="badge" style={{ background: `${typeColor[s.signalType] || "#6366f1"}20`, color: typeColor[s.signalType] || "#6366f1", border: `1px solid ${typeColor[s.signalType] || "#6366f1"}40`, fontSize: 11 }}>
+                              {typeIcon[s.signalType] || s.signalType}
+                            </span>
+                            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.topic}</span>
+                          </div>
+                          <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.4 }}>{s.description}</div>
+                        </div>
+                        {s.sourceUrl && (
+                          <a href={s.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-intent-source-${s.id}`}
+                            style={{ flexShrink: 0, color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
+                            <ExternalLink size={14} />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                    <div style={{ marginBottom: 20 }} />
+                  </>
+                )}
+
+                {companySignals.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+                      Company-Level Intent ({companySignals.length})
+                    </div>
+                    {companySignals.map((s: any) => (
+                      <div key={s.id} data-testid={`row-company-signal-${s.id}`} className="card" style={{ padding: "12px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 14 }}>
+                        <div style={{ textAlign: "center", flexShrink: 0, width: 46 }}>
+                          <div style={{ fontSize: 19, fontWeight: 800, color: s.strength > 70 ? "#10b981" : "#f59e0b" }}>{s.strength}</div>
+                          <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>score</div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: 13 }}>{s.companyName || s.companyDomain}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{s.topic}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{s.description}</div>
+                        </div>
+                        <span className="badge badge-gray">{typeIcon[s.signalType] || s.signalType?.replace("_", " ")}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {!intentData?.length && !intentHunting && (
+                  <Empty icon={TrendingUp} title="No intent signals yet"
+                    desc='Click "Hunt Intent Now" to find people publicly asking for solutions in your industry, or run a deep campaign for company-level signals.' />
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 

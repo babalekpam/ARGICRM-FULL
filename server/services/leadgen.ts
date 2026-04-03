@@ -462,6 +462,164 @@ export async function detectBuyingIntent(opts: {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// PUBLIC INTENT HUNTER — Reddit · LinkedIn · Quora · Forums
+// Finds real people actively asking for solutions in your industry
+// ═══════════════════════════════════════════════════════════════
+
+export async function crawlPublicIntent(opts: {
+  tenantId: string;
+  industry: string;
+  keywords: string[];
+  maxResults?: number;
+}): Promise<{ signalsFound: number; prospectsCreated: number; sources: string[] }> {
+  const { tenantId, industry, keywords, maxResults = 40 } = opts;
+  const kw = keywords.length > 0 ? keywords : [industry];
+  const sources: string[] = [];
+  let signalsFound = 0;
+  let prospectsCreated = 0;
+
+  // ── Build intent search queries ───────────────────────────────
+  const intentPhrases = [
+    "looking for", "recommend", "need help with", "anyone use",
+    "best tool for", "alternative to", "switch from", "seeking",
+    "how do you", "what do you use for",
+  ];
+
+  const platforms = [
+    { name: "Reddit",   site: "site:reddit.com",          signalType: "reddit_intent" },
+    { name: "LinkedIn", site: "site:linkedin.com/posts",   signalType: "linkedin_intent" },
+    { name: "Quora",    site: "site:quora.com",            signalType: "quora_intent" },
+    { name: "Indie Hackers", site: "site:indiehackers.com", signalType: "forum_intent" },
+    { name: "Product Hunt", site: "site:producthunt.com/discussions", signalType: "forum_intent" },
+  ];
+
+  for (const kword of kw.slice(0, 3)) {
+    for (const platform of platforms) {
+      const phrase = intentPhrases[Math.floor(Math.random() * intentPhrases.length)];
+      const query = `"${phrase}" "${kword}" OR "${industry}" ${platform.site}`;
+
+      let results: Array<{ title: string; url: string; snippet: string }> = [];
+      try {
+        results = await searchDuckDuckGo(query, Math.ceil(maxResults / (kw.length * platforms.length)));
+      } catch { continue; }
+
+      for (const r of results) {
+        if (!r.url || !r.title) continue;
+
+        // Skip duplicates already in DB
+        const [existing] = await db.select({ id: intentSignals.id })
+          .from(intentSignals)
+          .where(and(eq(intentSignals.tenantId, tenantId as any), eq(intentSignals.sourceUrl, r.url)))
+          .limit(1);
+        if (existing) continue;
+
+        // Determine intent strength based on phrase match
+        let strength = 55;
+        if (/looking for|seeking|need help/i.test(r.title + r.snippet)) strength = 80;
+        else if (/recommend|best tool|alternative/i.test(r.title + r.snippet)) strength = 70;
+        else if (/how do|what do you use/i.test(r.title + r.snippet)) strength = 60;
+
+        // Extract subreddit / community name for description
+        let community = platform.name;
+        const redditMatch = r.url.match(/reddit\.com\/r\/([^/]+)/);
+        if (redditMatch) community = `r/${redditMatch[1]}`;
+
+        // Save intent signal
+        await db.insert(intentSignals).values({
+          tenantId: tenantId as any,
+          topic: kword,
+          signalType: platform.signalType,
+          strength,
+          description: `${community}: "${r.title.slice(0, 120)}" — ${r.snippet?.slice(0, 200) || ""}`,
+          sourceUrl: r.url,
+          companyName: null,
+          companyDomain: null,
+        }).catch(() => {});
+
+        signalsFound++;
+        sources.push(platform.name);
+
+        // ── LinkedIn: try to extract a real person and create prospect ──
+        if (platform.name === "LinkedIn") {
+          // LinkedIn post URLs often contain name slug: /posts/firstname-lastname-...
+          const nameMatch = r.url.match(/\/posts\/([a-z]+-[a-z]+(?:-[a-z]+)?)-/i)
+            || r.title.match(/^([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s/);
+
+          if (nameMatch) {
+            const rawName = nameMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+            const parts = rawName.trim().split(" ");
+            const firstName = parts[0] || "";
+            const lastName = parts.slice(1).join(" ") || "";
+
+            // Extract title/company from snippet (LinkedIn snippets often have "Title at Company")
+            let jobTitle: string | undefined;
+            let company: string | undefined;
+            const atMatch = r.snippet?.match(/([^·•|]+?)\s+at\s+([^·•|]+)/i);
+            if (atMatch) {
+              jobTitle = atMatch[1].trim().slice(0, 100);
+              company = atMatch[2].trim().slice(0, 100);
+            }
+
+            // Avoid duplicates by LinkedIn URL
+            const [existing] = await db.select({ id: prospects.id })
+              .from(prospects)
+              .where(and(eq(prospects.tenantId, tenantId as any), eq(prospects.linkedinUrl, r.url)))
+              .limit(1);
+
+            if (!existing && firstName) {
+              await db.insert(prospects).values({
+                tenantId: tenantId as any,
+                firstName,
+                lastName,
+                jobTitle: jobTitle || null,
+                company: company || null,
+                linkedinUrl: r.url,
+                source: "public_intent_hunt",
+                intentScore: strength,
+                score: Math.round(strength * 0.7),
+                notes: `Public intent detected on LinkedIn. Post: "${r.title?.slice(0, 200)}". Topic: ${kword}`,
+              } as any).catch(() => {});
+              prospectsCreated++;
+            }
+          }
+        }
+
+        // ── Quora: extract question asker if name visible in URL ──
+        if (platform.name === "Quora") {
+          const quoraName = r.url.match(/quora\.com\/profile\/([A-Za-z-]+)/);
+          if (quoraName) {
+            const rawName = quoraName[1].replace(/-/g, " ");
+            const parts = rawName.split(" ");
+            const firstName = parts[0] || "";
+            const lastName = parts.slice(1).join(" ") || "";
+            if (firstName) {
+              await db.insert(prospects).values({
+                tenantId: tenantId as any,
+                firstName,
+                lastName,
+                source: "public_intent_hunt",
+                intentScore: strength,
+                score: Math.round(strength * 0.6),
+                notes: `Public intent detected on Quora. Question: "${r.title?.slice(0, 200)}". Topic: ${kword}`,
+              } as any).catch(() => {});
+              prospectsCreated++;
+            }
+          }
+        }
+      }
+
+      // Polite crawl delay
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
+
+  // Deduplicate sources array
+  const uniqueSources = [...new Set(sources)];
+  console.log(`[IntentHunter] Found ${signalsFound} signals, created ${prospectsCreated} prospects from: ${uniqueSources.join(", ")}`);
+  return { signalsFound, prospectsCreated, sources: uniqueSources };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // STAGE 5: MULTI-FACTOR SCORING
 // ═══════════════════════════════════════════════════════════════
 

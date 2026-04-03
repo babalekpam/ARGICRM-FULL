@@ -6,7 +6,7 @@ import { prospects, companies, intentSignals, technographics } from "@shared/sch
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import {
   runAutonomousLeadGen, discoverCompanies, enrichCompanyFull,
-  discoverContacts, detectBuyingIntent, scoreProspect
+  discoverContacts, detectBuyingIntent, scoreProspect, crawlPublicIntent
 } from "../services/leadgen.js";
 import {
   searchDuckDuckGo, verifyEmailDNS, detectTechStack,
@@ -394,6 +394,25 @@ router.post("/apollo/companies", authenticate, requireFeature("ai.lead_generatio
   });
 
   res.json({ results, total: results.length, source: "apollo" });
+});
+
+// ── Public Intent Hunter — Reddit/LinkedIn/Quora/Forums ──────────
+router.post("/intent-hunt", authenticate, requireFeature("ai.lead_generation"), async (req: AuthRequest, res) => {
+  const { industry, keywords = [], maxResults = 40 } = req.body;
+  if (!industry) return res.status(400).json({ error: "industry is required" });
+
+  try {
+    const result = await crawlPublicIntent({
+      tenantId: req.user!.tenantId,
+      industry,
+      keywords: Array.isArray(keywords) ? keywords : [],
+      maxResults: Math.min(maxResults, 80),
+    });
+    res.json(result);
+  } catch (err: any) {
+    console.error("[IntentHunt] Error:", err?.message);
+    res.status(500).json({ error: err?.message || "Intent hunt failed" });
+  }
 });
 
 export default router;
