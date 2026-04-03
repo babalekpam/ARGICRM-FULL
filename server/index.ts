@@ -167,6 +167,10 @@ async function runStartupMigrations() {
       // ── Fix seo_audits schema (summary column added later) ──
       await client.query(`ALTER TABLE seo_audits ADD COLUMN IF NOT EXISTS summary jsonb DEFAULT '{"critical":0,"warnings":0,"passed":0,"totalPages":0}'::jsonb`).catch(() => {});
 
+      // ── Make keywords.project_id and backlinks.project_id nullable ──
+      await client.query(`ALTER TABLE keywords ALTER COLUMN project_id DROP NOT NULL`).catch(() => {});
+      await client.query(`ALTER TABLE backlinks ALTER COLUMN project_id DROP NOT NULL`).catch(() => {});
+
       // ── Email tracking columns on email_sends ──
       await client.query(`ALTER TABLE email_sends ADD COLUMN IF NOT EXISTS link_map jsonb DEFAULT '{}'::jsonb`).catch(() => {});
 

@@ -206,7 +206,7 @@ export const campaigns = pgTable("campaigns", {
 
 export const keywords = pgTable("keywords", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull(),
+  projectId: varchar("project_id"),
   keyword: text("keyword").notNull(),
   searchVolume: integer("search_volume").notNull().default(0),
   difficulty: integer("difficulty").notNull().default(0),
@@ -218,7 +218,7 @@ export const keywords = pgTable("keywords", {
 
 export const backlinks = pgTable("backlinks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull(),
+  projectId: varchar("project_id"),
   url: text("url").notNull(),
   domainScore: integer("domain_score").notNull().default(0),
   anchorText: text("anchor_text"),
