@@ -28,6 +28,7 @@ import EcommercePage from "./pages/Ecommerce";
 import FinancePage from "./pages/Finance";
 import { ProjectsPage, EmployeesPage, MarketingPage } from "./pages/Operations";
 import LeadGenPage from "./pages/LeadGen";
+import MarketplacePage from "./pages/Marketplace";
 import SuperAdminPage from "./pages/SuperAdmin";
 import AnalyticsPage from "./pages/Analytics";
 import AIToolsPage from "./pages/AITools";
@@ -94,6 +95,7 @@ function AppRoutes() {
       <Route path="/ecommerce">{() => <Guard><EcommercePage /></Guard>}</Route>
       <Route path="/finance">{() => <Guard><FinancePage /></Guard>}</Route>
       <Route path="/leadgen">{() => <Guard><LeadGenPage /></Guard>}</Route>
+      <Route path="/marketplace">{() => <Guard><MarketplacePage /></Guard>}</Route>
       <Route path="/projects">{() => <Guard><ProjectsPage /></Guard>}</Route>
       <Route path="/employees">{() => <Guard><EmployeesPage /></Guard>}</Route>
       <Route path="/marketing">{() => <Guard><MarketingPage /></Guard>}</Route>

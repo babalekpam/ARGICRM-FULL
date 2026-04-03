@@ -70,6 +70,10 @@ async function runStartupMigrations() {
       `CREATE TABLE IF NOT EXISTS "products" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"store_id" uuid NOT NULL,"name" text NOT NULL,"description" text,"sku" text,"price" numeric(15,2) NOT NULL,"compare_at_price" numeric(15,2),"cost" numeric(15,2),"inventory" integer DEFAULT 0,"category" text,"tags" jsonb DEFAULT '[]'::jsonb,"images" jsonb DEFAULT '[]'::jsonb,"status" text DEFAULT 'active',"weight" numeric(8,2),"created_at" timestamp DEFAULT now(),"updated_at" timestamp DEFAULT now())`,
       `CREATE TABLE IF NOT EXISTS "crm_projects" ("id" varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar NOT NULL,"tenant_id" varchar NOT NULL,"owner_id" varchar,"name" text NOT NULL,"description" text,"status" text DEFAULT 'planning',"priority" text DEFAULT 'medium',"color" text DEFAULT '#3b82f6',"budget" numeric(15,2),"progress" integer DEFAULT 0,"due_date" timestamp,"start_date" timestamp,"created_at" timestamp DEFAULT now(),"updated_at" timestamp DEFAULT now())`,
       `CREATE TABLE IF NOT EXISTS "aria_audit_log" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" varchar NOT NULL,"user_id" varchar NOT NULL,"instruction" text NOT NULL,"intent_module" text,"intent_action" text,"result" text,"status" text DEFAULT 'success',"created_at" timestamp DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "marketplace_leads" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"source" text NOT NULL,"market" text NOT NULL DEFAULT 'US',"category" text,"full_name" text,"company_name" text,"title" text,"email" text,"phone" text,"website" text,"address" text,"city" text,"state" text,"country" text DEFAULT 'US',"zip" text,"industry" text,"specialty" text,"employee_size" text,"revenue_range" text,"rating" numeric(3,1),"linkedin_url" text,"language" text DEFAULT 'EN',"verified" boolean DEFAULT false,"quality_score" integer DEFAULT 0,"times_sold" integer DEFAULT 0,"available" boolean DEFAULT true,"external_id" text,"raw_data" jsonb,"last_updated" timestamp DEFAULT now(),"created_at" timestamp DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "ingestion_logs" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"source" text NOT NULL,"market" text,"records_added" integer DEFAULT 0,"records_updated" integer DEFAULT 0,"records_skipped" integer DEFAULT 0,"errors" jsonb DEFAULT '[]'::jsonb,"duration" integer,"status" text DEFAULT 'success',"started_at" timestamp DEFAULT now(),"completed_at" timestamp)`,
+      `CREATE TABLE IF NOT EXISTS "marketplace_exports" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"lead_id" uuid REFERENCES marketplace_leads(id),"exported_at" timestamp DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "marketplace_usage" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"month" text NOT NULL,"exports_used" integer DEFAULT 0,"updated_at" timestamp DEFAULT now())`,
     ];
     let created = 0, skipped = 0;
     for (const stmt of statements) {
@@ -389,6 +393,10 @@ async function main() {
   const { startHealingScheduler, healingMiddleware } = await import("./services/healing.js");
   app.use(healingMiddleware());
   startHealingScheduler();
+
+  // ─── Start Data Marketplace Ingestion ───────────────
+  const { startMarketplaceIngestion } = await import("./services/marketplace-ingestion.js");
+  startMarketplaceIngestion();
 
   // ─── Serve frontend ────────────────────────────────────
   if (isProd) {

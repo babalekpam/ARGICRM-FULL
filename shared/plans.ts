@@ -115,6 +115,15 @@ export const PLANS: PlanDefinition[] = [
 /** Map from plan ID → plan definition */
 export const PLAN_MAP = Object.fromEntries(PLANS.map(p => [p.id, p])) as Record<PlanId, PlanDefinition>;
 
+/** Marketplace lead exports allowed per month by plan. -1 = unlimited, 0 = view/preview only */
+export const MARKETPLACE_MONTHLY_QUOTA: Record<PlanId, number> = {
+  trial:        0,
+  starter:      0,      // preview only — can browse but not export
+  professional: 500,
+  business:     2000,
+  enterprise:   -1,     // unlimited
+};
+
 /**
  * Returns true if `plan` meets or exceeds the `required` tier.
  * enterprise ≥ business ≥ professional ≥ starter ≥ trial
@@ -189,6 +198,10 @@ export const FEATURE_PLAN: Record<string, PlanId> = {
   "integrations.api_access":"business",
   "ai.lead_generation":     "business",         // LeadGen module
   "ai.predictive_scoring":  "business",
+
+  // Marketplace — professional+
+  "marketplace.search":     "professional",      // Browse & search marketplace
+  "marketplace.export":     "professional",      // Export leads to CRM / CSV
 
   // Enterprise tier
   "ai.agents":              "enterprise",        // AI Agents module

@@ -718,6 +718,71 @@ export const whitelabelSettings = pgTable("whitelabel_settings", {
 });
 
 // ═══════════════════════════════════════════════════
+// DATA MARKETPLACE — Unified lead pool (shared across tenants)
+// ═══════════════════════════════════════════════════
+export const marketplaceLeads = pgTable("marketplace_leads", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  source: text("source").notNull(),           // 'npi','overpass','cms','opencorporates','yelp','yellowpages'
+  market: text("market").notNull().default("US"), // 'US','Africa'
+  category: text("category"),                 // Healthcare, Legal, Real Estate…
+  fullName: text("full_name"),
+  companyName: text("company_name"),
+  title: text("title"),
+  email: text("email"),
+  phone: text("phone"),
+  website: text("website"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  country: text("country").default("US"),
+  zip: text("zip"),
+  industry: text("industry"),
+  specialty: text("specialty"),
+  employeeSize: text("employee_size"),
+  revenueRange: text("revenue_range"),
+  rating: decimal("rating", { precision: 3, scale: 1 }),
+  linkedinUrl: text("linkedin_url"),
+  language: text("language").default("EN"),   // EN / FR
+  verified: boolean("verified").default(false),
+  qualityScore: integer("quality_score").default(0), // 1-10
+  timesSold: integer("times_sold").default(0),
+  available: boolean("available").default(true),
+  externalId: text("external_id"),            // original ID from source (unique per source)
+  rawData: jsonb("raw_data"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const ingestionLogs = pgTable("ingestion_logs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  source: text("source").notNull(),
+  market: text("market"),
+  recordsAdded: integer("records_added").default(0),
+  recordsUpdated: integer("records_updated").default(0),
+  recordsSkipped: integer("records_skipped").default(0),
+  errors: jsonb("errors").$type<string[]>().default([]),
+  duration: integer("duration"),              // ms
+  status: text("status").default("success"),  // success | failed | partial
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const marketplaceExports = pgTable("marketplace_exports", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull(),
+  leadId: uuid("lead_id").references(() => marketplaceLeads.id),
+  exportedAt: timestamp("exported_at").defaultNow(),
+});
+
+export const marketplaceUsage = pgTable("marketplace_usage", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull(),
+  month: text("month").notNull(),             // "2026-04"
+  exportsUsed: integer("exports_used").default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ═══════════════════════════════════════════════════
 // ARIA AUDIT LOG
 // ═══════════════════════════════════════════════════
 export const ariaAuditLog = pgTable("aria_audit_log", {

@@ -12,7 +12,7 @@ import {
   Building2, Megaphone, FileText, Settings, LogOut, ChevronLeft,
   Bell, Menu, Shield, Zap, Crown, ChevronRight, UsersRound,
   Bot, Search, Activity, ShoppingCart, DollarSign, Briefcase,
-  Globe, Target, Brain, BarChart2, Workflow, Sparkles, Command, X,
+  Globe, Target, Brain, BarChart2, Workflow, Sparkles, Command, X, Store,
   Sun, Moon, Languages
 } from "lucide-react";
 
@@ -51,6 +51,7 @@ const NAV_SECTIONS_DEF = [
   {
     labelKey: "nav_platform",
     items: [
+      { labelKey: "nav_marketplace", icon: Store, path: "/marketplace" },
       { labelKey: "nav_seo_platform", icon: Globe, path: "/seo" },
       { labelKey: "nav_ecommerce", icon: ShoppingCart, path: "/ecommerce" },
       { labelKey: "nav_finance", icon: DollarSign, path: "/finance" },
