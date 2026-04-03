@@ -337,8 +337,8 @@ async function runAllSources(trigger: "startup" | "scheduled" | "manual" = "sche
     await ingestNPI(100);
     await sleep(3000);
     await ingestCMSMedicare(300);
-    await sleep(3000);
-    await ingestOverpassAfrica(30);
+    // Overpass Africa skipped on auto-run (takes 9+ min and hammers memory)
+    // Triggered manually via Marketplace → Refresh button instead
   } catch (err) {
     console.error("[Marketplace] Ingestion error:", err);
   } finally {

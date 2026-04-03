@@ -9,6 +9,21 @@ import { completeForTenant } from "../services/tenant-ai.js";
 
 const router = Router();
 
+// Safe JSON parse — strips markdown fences the AI sometimes adds
+function safeParseJSON(text: string, fallback: any = null) {
+  try {
+    return JSON.parse(text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim());
+  } catch {
+    // Try finding first [ or { to start of array/object
+    const start = text.search(/[\[{]/);
+    const end = Math.max(text.lastIndexOf("]"), text.lastIndexOf("}"));
+    if (start !== -1 && end > start) {
+      try { return JSON.parse(text.slice(start, end + 1)); } catch { /* fall through */ }
+    }
+    return fallback;
+  }
+}
+
 // ── Projects ───────────────────────────────────────────────────
 router.get("/projects", authenticate, async (req: AuthRequest, res) => {
   const rows = await db.select().from(seoProjects).where(eq(seoProjects.tenantId, req.user!.tenantId)).orderBy(desc(seoProjects.createdAt));
@@ -50,9 +65,11 @@ Return ONLY a JSON array (no markdown):
   "trend": "rising|stable|declining"
 }]` }], maxTokens: 1500 });
       const text = msg;
-      generated = JSON.parse(text.replace(/```json|```/g, "").trim());
+      generated = safeParseJSON(text, []);
+      if (!Array.isArray(generated) || generated.length === 0)
+        return res.status(500).json({ error: "AI returned an unexpected format. Try again." });
     } else {
-      return res.status(503).json({ error: "No AI provider configured for keyword research." });
+      return res.status(503).json({ error: "No AI provider configured. Go to Settings → AI Configuration." });
     }
 
     // Save to DB
@@ -112,9 +129,10 @@ Return ONLY JSON:
   ]
 }` }], maxTokens: 1200 });
       const text = msg;
-      auditResult = JSON.parse(text.replace(/```json|```/g, "").trim());
+      auditResult = safeParseJSON(text, null);
+      if (!auditResult?.score) return res.status(500).json({ error: "AI returned an unexpected format. Try again." });
     } else {
-      return res.status(503).json({ error: "No AI provider configured for site audits." });
+      return res.status(503).json({ error: "No AI provider configured. Go to Settings → AI Configuration." });
     }
 
     const [audit] = await db.insert(seoAudits).values({
@@ -143,9 +161,10 @@ router.post("/backlinks/analyze", authenticate, async (req: AuthRequest, res) =>
     if (isAIAvailable()) {
       const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Generate a realistic backlink profile analysis for domain "${domain}". Return ONLY JSON array of 10 backlinks:
 [{"url":"https://example.com/post","anchorText":"related anchor","domainScore":45,"date":"2024-01-15","source":"organic"}]` }], maxTokens: 800 });
-      generated = JSON.parse(msg.replace(/```json|```/g, "").trim());
+      generated = safeParseJSON(msg, []);
+      if (!Array.isArray(generated)) generated = [];
     } else {
-      return res.status(503).json({ error: "No AI provider configured for backlink analysis." });
+      return res.status(503).json({ error: "No AI provider configured. Go to Settings → AI Configuration." });
     }
 
     const saved = [];
@@ -177,12 +196,13 @@ router.post("/competitor/analyze", authenticate, async (req: AuthRequest, res) =
     const { domain, competitor } = req.body;
 
     if (!isAIAvailable()) {
-      return res.status(503).json({ error: "ANTHROPIC_API_KEY required for competitor analysis." });
+      return res.status(503).json({ error: "No AI provider configured. Go to Settings → AI Configuration." });
     }
 
     const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Analyze competitor domain "${competitor}" vs "${domain}" for SEO. Return ONLY JSON:
 {"competitor":"${competitor}","metrics":{"domainAuthority":50,"backlinks":5000,"organicKeywords":2000,"organicTraffic":30000},"topKeywords":[{"keyword":"example","volume":1000,"rank":5}]}` }], maxTokens: 800 });
-    const result = JSON.parse(msg.replace(/```json|```/g, "").trim());
+    const result = safeParseJSON(msg, null);
+    if (!result) return res.status(500).json({ error: "AI returned an unexpected format. Try again." });
     res.json(result);
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
@@ -193,14 +213,16 @@ router.post("/content/ideas", authenticate, async (req: AuthRequest, res) => {
     const { topic, audience, projectId, count = 10 } = req.body;
 
     if (!isAIAvailable()) {
-      return res.status(503).json({ error: "ANTHROPIC_API_KEY required for content ideas generation." });
+      return res.status(503).json({ error: "No AI provider configured. Go to Settings → AI Configuration." });
     }
 
     const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Generate ${count} SEO content ideas for topic "${topic}" targeting "${audience || "B2B SaaS"}".
 
 Return ONLY JSON array:
 [{"title":"Article Title","keyword":"target keyword","searchVolume":2400,"difficulty":42,"contentType":"blog|guide|video|infographic","outline":["Section 1","Section 2","Section 3"]}]` }], maxTokens: 1200 });
-    const ideas = JSON.parse(msg.replace(/```json|```/g, "").trim());
+    const ideas = safeParseJSON(msg, []);
+    if (!Array.isArray(ideas) || ideas.length === 0)
+      return res.status(500).json({ error: "AI returned an unexpected format. Try again." });
 
     const saved = [];
     for (const idea of ideas) {
@@ -214,7 +236,7 @@ Return ONLY JSON array:
 // ── Stats ──────────────────────────────────────────────────────
 router.get("/stats", authenticate, async (req: AuthRequest, res) => {
   const [kc] = await db.select({ total: sql<number>`count(*)`, avgVol: sql<number>`avg(search_volume)`, avgDiff: sql<number>`avg(difficulty)` }).from(keywords).where(eq(keywords.tenantId, req.user!.tenantId));
-  const [bc] = await db.select({ total: sql<number>`count(*)`, avgDA: sql<number>`avg(domain_authority)` }).from(backlinks).where(eq(backlinks.tenantId, req.user!.tenantId));
+  const [bc] = await db.select({ total: sql<number>`count(*)`, avgDA: sql<number>`avg(domain_score)` }).from(backlinks).where(eq(backlinks.tenantId, req.user!.tenantId));
   const [ac] = await db.select({ total: sql<number>`count(*)` }).from(seoAudits).where(eq(seoAudits.tenantId, req.user!.tenantId));
   const [pc] = await db.select({ total: sql<number>`count(*)` }).from(seoProjects).where(eq(seoProjects.tenantId, req.user!.tenantId));
   const latestAudit = await db.select().from(seoAudits).where(eq(seoAudits.tenantId, req.user!.tenantId)).orderBy(desc(seoAudits.crawledAt)).limit(1);

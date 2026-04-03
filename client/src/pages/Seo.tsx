@@ -23,6 +23,7 @@ export default function SeoPage() {
   const [contentForm, setContentForm] = useState({ topic: "", audience: "", count: 10 });
   const [backlinksForm, setBacklinksForm] = useState({ domain: "" });
   const [running, setRunning] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
   const [auditResult, setAuditResult] = useState<any>(null);
   const [competitorResult, setCompetitorResult] = useState<any>(null);
   const [contentIdeas, setContentIdeas] = useState<any[]>([]);
@@ -40,46 +41,44 @@ export default function SeoPage() {
     setProjectModal(false);
   };
 
-  const runResearch = async () => {
+  const withRun = async (fn: () => Promise<void>) => {
+    setRunning(true);
+    setRunError(null);
+    try { await fn(); }
+    catch (e: any) { setRunError(e?.message || "Something went wrong. Check your AI configuration in Settings."); }
+    finally { setRunning(false); }
+  };
+
+  const runResearch = () => withRun(async () => {
     if (!researchForm.seed) return;
-    setRunning(true);
-    try {
-      await apiRequest("POST", "/api/seo/keywords/research", { ...researchForm, projectId: selectedProject || null });
-      qc.invalidateQueries({ queryKey: ["/api/seo/keywords"] });
-      qc.invalidateQueries({ queryKey: ["/api/seo/stats"] });
-    } finally { setRunning(false); }
-  };
+    await apiRequest("POST", "/api/seo/keywords/research", { ...researchForm, projectId: selectedProject || null });
+    qc.invalidateQueries({ queryKey: ["/api/seo/keywords"] });
+    qc.invalidateQueries({ queryKey: ["/api/seo/stats"] });
+  });
 
-  const runAudit = async () => {
+  const runAudit = () => withRun(async () => {
     if (!auditDomain) return;
-    setRunning(true);
-    try {
-      const result = await apiRequest<any>("POST", "/api/seo/audit", { domain: auditDomain, projectId: selectedProject || null });
-      setAuditResult(result);
-      qc.invalidateQueries({ queryKey: ["/api/seo/audits"] });
-    } finally { setRunning(false); }
-  };
+    const result = await apiRequest<any>("POST", "/api/seo/audit", { domain: auditDomain, projectId: selectedProject || null });
+    setAuditResult(result);
+    qc.invalidateQueries({ queryKey: ["/api/seo/audits"] });
+    qc.invalidateQueries({ queryKey: ["/api/seo/stats"] });
+  });
 
-  const runCompetitor = async () => {
-    setRunning(true);
-    try { setCompetitorResult(await apiRequest<any>("POST", "/api/seo/competitor/analyze", competitorForm)); }
-    finally { setRunning(false); }
-  };
+  const runCompetitor = () => withRun(async () => {
+    if (!competitorForm.domain || !competitorForm.competitor) return;
+    setCompetitorResult(await apiRequest<any>("POST", "/api/seo/competitor/analyze", competitorForm));
+  });
 
-  const runContent = async () => {
-    setRunning(true);
-    try { setContentIdeas(await apiRequest<any[]>("POST", "/api/seo/content/ideas", { ...contentForm, projectId: selectedProject || null })); }
-    finally { setRunning(false); }
-  };
+  const runContent = () => withRun(async () => {
+    if (!contentForm.topic) return;
+    setContentIdeas(await apiRequest<any[]>("POST", "/api/seo/content/ideas", { ...contentForm, projectId: selectedProject || null }));
+  });
 
-  const runBacklinks = async () => {
+  const runBacklinks = () => withRun(async () => {
     if (!backlinksForm.domain) return;
-    setRunning(true);
-    try {
-      await apiRequest("POST", "/api/seo/backlinks/analyze", { domain: backlinksForm.domain, projectId: selectedProject || null });
-      qc.invalidateQueries({ queryKey: ["/api/seo/backlinks"] });
-    } finally { setRunning(false); }
-  };
+    await apiRequest("POST", "/api/seo/backlinks/analyze", { domain: backlinksForm.domain, projectId: selectedProject || null });
+    qc.invalidateQueries({ queryKey: ["/api/seo/backlinks"] });
+  });
 
   const deleteKw = async (id: string) => {
     await apiRequest("DELETE", `/api/seo/keywords/${id}`);
@@ -113,6 +112,20 @@ export default function SeoPage() {
           </div>
         );})}
       </div>
+
+      {/* Error banner */}
+      {runError && (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+          <AlertCircle size={16} style={{ color: "#ef4444", flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "#ef4444" }}>Action failed</div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{runError}</div>
+          </div>
+          <button onClick={() => setRunError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}>
+            <AlertCircle size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Project selector */}
       {(projectsList?.length || 0) > 0 && (
