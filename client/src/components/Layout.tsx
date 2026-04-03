@@ -35,6 +35,7 @@ const NAV_SECTIONS_DEF = [
       { labelKey: "nav_ai_tools", icon: Sparkles, path: "/ai-tools" },
       { labelKey: "nav_automation", icon: Workflow, path: "/workflows" },
       { labelKey: "nav_lead_intelligence", icon: Search, path: "/intelligence" },
+      { labelKey: "nav_lead_gen", icon: Zap, path: "/leadgen" },
       { labelKey: "nav_ai_agents", icon: Bot, path: "/agents" },
       { labelKey: "nav_skills_library", icon: Brain, path: "/skills" },
     ]
@@ -230,17 +231,17 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
               const active = location === item.path;
               const label = t(item.labelKey);
               return (
-                <Link key={item.path + item.labelKey} href={item.path}>
-                  <a
-                    className={`nav-item ${active ? "active" : ""}`}
-                    title={collapsed ? label : undefined}
-                    style={{ marginBottom: 1 }}
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    <Icon size={15} style={{ flexShrink: 0 }} />
-                    {!collapsed && <span style={{ fontSize: 13 }}>{label}</span>}
-                    {active && !collapsed && <ChevronRight size={12} style={{ marginLeft: "auto", opacity: 0.5 }} />}
-                  </a>
+                <Link
+                  key={item.path + item.labelKey}
+                  href={item.path}
+                  className={`nav-item ${active ? "active" : ""}`}
+                  title={collapsed ? label : undefined}
+                  style={{ marginBottom: 1 }}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <Icon size={15} style={{ flexShrink: 0 }} />
+                  {!collapsed && <span style={{ fontSize: 13 }}>{label}</span>}
+                  {active && !collapsed && <ChevronRight size={12} style={{ marginLeft: "auto", opacity: 0.5 }} />}
                 </Link>
               );
             })}
@@ -251,11 +252,14 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
         {isPlatformOwner && (
           <div style={{ marginTop: 8 }}>
             {!collapsed && <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#f59e0b", padding: "0 6px", marginBottom: 2 }}>Platform</div>}
-            <Link href="/superadmin">
-              <a className={`nav-item ${location === "/superadmin" ? "active" : ""}`} style={{ color: "#f59e0b" }} title={collapsed ? "Platform Admin" : undefined}>
-                <Shield size={15} style={{ flexShrink: 0 }} />
-                {!collapsed && <span style={{ fontSize: 13 }}>Platform Admin</span>}
-              </a>
+            <Link
+              href="/superadmin"
+              className={`nav-item ${location === "/superadmin" ? "active" : ""}`}
+              style={{ color: "#f59e0b" }}
+              title={collapsed ? "Platform Admin" : undefined}
+            >
+              <Shield size={15} style={{ flexShrink: 0 }} />
+              {!collapsed && <span style={{ fontSize: 13 }}>Platform Admin</span>}
             </Link>
           </div>
         )}

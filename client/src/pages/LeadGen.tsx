@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
+import { useLanguage } from "../contexts/LanguageContext";
 import {
   Zap, Search, Globe, Building2, Mail, Phone, CheckCircle,
   AlertCircle, Clock, Play, BarChart2, TrendingUp, Target,
@@ -31,6 +32,7 @@ const TABS = ["Dashboard", "Prospects", "Companies", "Intent Signals", "Email Ve
 
 export default function LeadGenPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<typeof TABS[number]>("Dashboard");
   const [campaignModal, setCampaignModal] = useState(false);
   const [emailVerifyInput, setEmailVerifyInput] = useState("");
@@ -137,18 +139,18 @@ export default function LeadGenPage() {
 
   return (
     <Layout
-      title="Autonomous Lead Gen"
-      subtitle="Zero paid APIs — powered by public internet sources"
+      title={t("leadgen_title", "AI Lead Generation")}
+      subtitle={t("leadgen_subtitle", "Autonomous prospecting powered by AI")}
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           {activeCampaignJob && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, fontSize: 12 }}>
               <span className="spinner" style={{ width: 12, height: 12 }} />
-              <span style={{ color: "#60a5fa", fontWeight: 600 }}>Pipeline running...</span>
+              <span style={{ color: "#60a5fa", fontWeight: 600 }}>{t("campaign_running", "Campaign Running")}...</span>
             </div>
           )}
           <button className="btn btn-primary btn-sm" onClick={() => setCampaignModal(true)}>
-            <Zap size={14} /> Run Campaign
+            <Zap size={14} /> {t("new_campaign", "New Campaign")}
           </button>
         </div>
       }
@@ -168,13 +170,25 @@ export default function LeadGenPage() {
       )}
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }} className="no-scrollbar">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`btn btn-sm ${tab === t ? "btn-primary" : "btn-secondary"}`} style={{ flexShrink: 0 }}>
-            {t}
-          </button>
-        ))}
-      </div>
+      {(() => {
+        const TAB_KEYS: Record<string, string> = {
+          "Dashboard": "tab_dashboard",
+          "Prospects": "tab_prospects",
+          "Companies": "tab_companies",
+          "Intent Signals": "tab_intent",
+          "Email Verifier": "tab_email_verifier",
+          "Tech Scanner": "tab_tech_scanner",
+        };
+        return (
+          <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }} className="no-scrollbar">
+            {TABS.map(tabName => (
+              <button key={tabName} onClick={() => setTab(tabName)} className={`btn btn-sm ${tab === tabName ? "btn-primary" : "btn-secondary"}`} style={{ flexShrink: 0 }}>
+                {t(TAB_KEYS[tabName] || tabName, tabName)}
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* ── DASHBOARD ── */}
       {tab === "Dashboard" && (
@@ -302,7 +316,7 @@ export default function LeadGenPage() {
                 <div style={{ display: "flex", gap: 4 }}>
                   <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: "3px 8px" }}
                     disabled={!!p.importedAsLeadId} onClick={() => !p.importedAsLeadId && toLeadMut.mutate(p.id)}>
-                    {p.importedAsLeadId ? "✓" : "→ Lead"}
+                    {p.importedAsLeadId ? "✓" : t("import_as_lead", "→ Lead")}
                   </button>
                 </div>
               </div>
@@ -470,51 +484,51 @@ export default function LeadGenPage() {
       )}
 
       {/* Campaign Modal */}
-      <Modal open={campaignModal} onClose={() => setCampaignModal(false)} title="🚀 Autonomous Lead Gen Campaign" width={560}>
+      <Modal open={campaignModal} onClose={() => setCampaignModal(false)} title={t("new_campaign", "New Campaign")} width={560}>
         <div style={{ padding: "20px", display: "grid", gap: 16 }}>
           <div style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "#93c5fd" }}>
             Our engine will crawl DuckDuckGo, Yellow Pages, OpenCorporates, GitHub, LinkedIn (public), Indeed, and live websites — no API costs.
           </div>
 
-          <FormRow label="Target Industry" required>
+          <FormRow label={t("target_industry", "Target Industry")} required>
             <Select options={INDUSTRIES.map(i => ({ value: i, label: i }))} value={campaignForm.targetIndustry} onChange={e => setCampaignForm(p => ({ ...p, targetIndustry: e.target.value }))} />
           </FormRow>
 
           <FormRow label="Target Job Titles">
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: 8, background: "var(--bg-overlay)", borderRadius: 8 }}>
-              {TITLES.map(t => (
-                <button key={t} type="button" onClick={() => toggleTitle(t)}
+              {TITLES.map(titleOpt => (
+                <button key={titleOpt} type="button" onClick={() => toggleTitle(titleOpt)}
                   style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid",
-                    background: campaignForm.targetTitles.includes(t) ? "rgba(59,130,246,0.2)" : "transparent",
-                    color: campaignForm.targetTitles.includes(t) ? "#60a5fa" : "var(--text-muted)",
-                    borderColor: campaignForm.targetTitles.includes(t) ? "#3b82f6" : "var(--border)"
+                    background: campaignForm.targetTitles.includes(titleOpt) ? "rgba(59,130,246,0.2)" : "transparent",
+                    color: campaignForm.targetTitles.includes(titleOpt) ? "#60a5fa" : "var(--text-muted)",
+                    borderColor: campaignForm.targetTitles.includes(titleOpt) ? "#3b82f6" : "var(--border)"
                   }}
-                >{t}</button>
+                >{titleOpt}</button>
               ))}
             </div>
           </FormRow>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <FormRow label="Location (optional)">
+            <FormRow label={t("target_location", "Location (optional)")}>
               <input className="input" value={campaignForm.targetLocation} onChange={e => setCampaignForm(p => ({ ...p, targetLocation: e.target.value }))} placeholder="New York, US" />
             </FormRow>
-            <FormRow label="Target count">
+            <FormRow label={t("target_count", "Target count")}>
               <input type="number" className="input" value={campaignForm.targetCount} onChange={e => setCampaignForm(p => ({ ...p, targetCount: e.target.value }))} min={5} max={100} />
             </FormRow>
           </div>
 
-          <FormRow label="Keywords (comma-separated)">
+          <FormRow label={t("campaign_keywords", "Keywords (comma-separated)")}>
             <input className="input" value={campaignForm.keywords} onChange={e => setCampaignForm(p => ({ ...p, keywords: e.target.value }))} placeholder="CRM, sales automation, pipeline management" />
           </FormRow>
 
-          <FormRow label="Enrichment depth" hint="Deeper = more data, more time">
+          <FormRow label={t("enrichment_depth", "Enrichment depth")} hint="Deeper = more data, more time">
             <Select options={DEPTHS} value={campaignForm.enrichmentDepth} onChange={e => setCampaignForm(p => ({ ...p, enrichmentDepth: e.target.value }))} />
           </FormRow>
         </div>
         <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn btn-secondary" onClick={() => setCampaignModal(false)}>Cancel</button>
+          <button className="btn btn-secondary" onClick={() => setCampaignModal(false)}>{t("cancel", "Cancel")}</button>
           <button className="btn btn-primary" onClick={runCampaign} style={{ background: "linear-gradient(135deg,#3b82f6,#6366f1)" }}>
-            <Zap size={14} /> Launch Autonomous Pipeline
+            <Zap size={14} /> {t("run_campaign", "Run Campaign")}
           </button>
         </div>
       </Modal>

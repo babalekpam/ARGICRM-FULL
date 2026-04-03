@@ -171,6 +171,56 @@ async function runStartupMigrations() {
       await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT now()`).catch(() => {});
       await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
 
+      // ── Fix prospects schema ──
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS company_id uuid`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS email_status text DEFAULT 'unknown'`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS work_email text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS personal_email text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS direct_phone text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS mobile_phone text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS seniority text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS department text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS company_domain text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS twitter_url text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS timezone text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS bio text`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS intent_score integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS buying_signals jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS tech_stack jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS skills jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS tags jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS outreach_status text DEFAULT 'new'`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS last_contacted_at timestamp`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS sequence_id uuid`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS imported_as_lead_id uuid`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS imported_as_contact_id uuid`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS data_source text DEFAULT 'enriched'`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS last_enriched_at timestamp`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS verified_at timestamp`).catch(() => {});
+      await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
+
+      // ── Fix companies schema ──
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS sub_industry text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS employee_count integer`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS revenue text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS founded integer`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS hq_city text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS hq_state text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS hq_country text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS twitter_url text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS crunchbase_url text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS tech_stack jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS keywords jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS funding_stage text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS total_funding text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS last_funding_date text`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS intent_signals jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS score integer DEFAULT 0`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS tags jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS data_source text DEFAULT 'enriched'`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS last_enriched_at timestamp`).catch(() => {});
+      await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
+
       console.log("[MIGRATE] Agent table schemas synced");
     } catch (e: any) { console.warn("[MIGRATE] Column migration warning:", e.message?.slice(0, 80)); }
 
