@@ -37,6 +37,7 @@ import TermsPage from "./pages/Terms";
 import SecurityPage from "./pages/Security";
 import ContactPage from "./pages/Contact";
 import NotFoundPage from "./pages/NotFound";
+import StorefrontPage from "./pages/Storefront";
 
 function useNoIndex() {
   React.useEffect(() => {
@@ -104,6 +105,7 @@ function AppRoutes() {
       <Route path="/terms">{() => <TermsPage />}</Route>
       <Route path="/security">{() => <SecurityPage />}</Route>
       <Route path="/contact">{() => <ContactPage />}</Route>
+      <Route path="/store/:slug">{() => <StorefrontPage />}</Route>
       <Route>{() => <NotFoundPage />}</Route>
     </Switch>
   );

@@ -232,6 +232,7 @@ export const stores = pgTable("stores", {
   userId: varchar("user_id").notNull(),
   tenantId: varchar("tenant_id").notNull(),
   name: varchar("name").notNull(),
+  slug: varchar("slug"),
   description: text("description"),
   tagline: text("tagline"),
   currency: varchar("currency").notNull(),

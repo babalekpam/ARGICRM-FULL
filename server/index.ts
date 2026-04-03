@@ -78,6 +78,21 @@ async function runStartupMigrations() {
     }
     if (created > 0) console.log(`[MIGRATE] Created ${created} tables, ${skipped} already existed`);
 
+    // ── Add slug column to stores table if missing, backfill existing ──
+    try {
+      await client.query(`ALTER TABLE stores ADD COLUMN IF NOT EXISTS slug varchar`);
+      // Backfill slug from subdomain prefix for stores that have one
+      await client.query(`
+        UPDATE stores SET slug = split_part(subdomain, '.', 1)
+        WHERE slug IS NULL AND subdomain IS NOT NULL AND subdomain != ''
+      `);
+      // Backfill slug from name for stores without subdomain
+      await client.query(`
+        UPDATE stores SET slug = regexp_replace(lower(name), '[^a-z0-9]+', '-', 'g') || '-' || right(id::text, 4)
+        WHERE slug IS NULL OR slug = ''
+      `);
+    } catch (e: any) { /* ignore */ }
+
     // ── Ensure platform owner credentials are correct on every boot ──
     try {
       const bcrypt = await import("bcrypt");

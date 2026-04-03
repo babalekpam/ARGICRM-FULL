@@ -396,29 +396,50 @@ export default function EcommercePage() {
                   <span className="badge badge-gray">{builtStore.currency}</span>
                   {builtStore.aiBuilt && <span className="badge badge-purple">AI Built</span>}
                 </div>
-                {builtStore.subdomain && (
-                  <div style={{ padding: "12px 16px", background: "var(--bg-elevated)", borderRadius: 10, border: "1px solid var(--border)", marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Temporary subdomain</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-                      <Globe size={14} color="#6366f1" />
-                      <code style={{ fontSize: 13, color: "#6366f1", fontWeight: 600 }}>{builtStore.subdomain}</code>
-                      <button
-                        onClick={() => navigator.clipboard?.writeText(builtStore.subdomain)}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2, display: "flex" }}
-                        title="Copy"
-                      >
-                        <Copy size={12} />
-                      </button>
+                {/* Live storefront link */}
+                {builtStore.slug && (() => {
+                  const storeUrl = `${window.location.origin}/store/${builtStore.slug}`;
+                  return (
+                    <div style={{ padding: "14px 18px", background: "var(--bg-elevated)", borderRadius: 12, border: "1.5px solid rgba(99,102,241,0.25)", marginBottom: 16 }}>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Your Live Store URL</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                        <Globe size={14} color="#6366f1" />
+                        <a
+                          href={storeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: 13, color: "#6366f1", fontWeight: 600, wordBreak: "break-all", textDecoration: "none" }}
+                        >
+                          {storeUrl}
+                        </a>
+                        <button
+                          onClick={() => navigator.clipboard?.writeText(storeUrl)}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2, display: "flex" }}
+                          title="Copy link"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                      <div style={{ marginTop: 10, display: "flex", gap: 8, justifyContent: "center" }}>
+                        <a
+                          href={storeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ padding: "8px 18px", background: "#10b981", borderRadius: 8, color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}
+                        >
+                          <CheckCircle2 size={13} /> Open Store
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
                 <button
                   data-testid="button-connect-domain"
-                  className="btn btn-primary"
+                  className="btn btn-secondary"
                   onClick={() => setStoreMode("domain")}
                   style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 auto" }}
                 >
-                  <Globe size={15} /> Connect Your Domain
+                  <Globe size={15} /> Connect Custom Domain
                 </button>
               </div>
 
@@ -721,18 +742,32 @@ export default function EcommercePage() {
                     </div>
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>{s.currency} · {s.theme}</div>
-                  {s.subdomain && (
-                    <div style={{ fontSize: 11, color: "#6366f1", marginBottom: 10 }}>
-                      <Globe size={10} style={{ display: "inline", marginRight: 4 }} />{s.customDomain || s.subdomain}
-                    </div>
+                  {s.slug && (
+                    <a
+                      href={`/store/${s.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 11, color: "#6366f1", marginBottom: 10, display: "flex", alignItems: "center", gap: 4, textDecoration: "none", fontWeight: 600 }}
+                    >
+                      <Globe size={10} /> {s.customDomain || `${window.location.origin}/store/${s.slug}`}
+                    </a>
                   )}
                   <div style={{ display: "flex", gap: 8 }}>
+                    <a
+                      href={s.slug ? `/store/${s.slug}` : "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary btn-sm"
+                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}
+                    >
+                      <Globe size={12} /> Visit Store
+                    </a>
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => openDomainPanel(s)}
-                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+                      style={{ display: "flex", alignItems: "center", gap: 5 }}
                     >
-                      <Globe size={12} /> Domain
+                      Domain
                     </button>
                   </div>
                 </div>

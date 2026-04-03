@@ -15,6 +15,7 @@ import operationsRouter from "./routes/operations.js";
 import leadgenRouter from "./routes/leadgen.js";
 import aiRouter from "./routes/ai.js";
 import ariaRouter from "./routes/aria.js";
+import publicRouter from "./routes/public.js";
 import analyticsRouter from "./routes/analytics.js";
 import workflowsRouter from "./routes/workflows.js";
 import skillsRouter from "./routes/skills.js";
@@ -50,6 +51,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/superadmin", adminRouter);
   // ─── ARIA AI Command Agent ──────────────────────────
   app.use("/api/aria", ariaRouter);
+  // ─── Public Storefront API (no auth) ───────────────
+  app.use("/api/public", publicRouter);
 
   // ─── Contacts ─────────────────────────────────────────
   app.get("/api/contacts", authenticate, async (req: AuthRequest, res) => {
