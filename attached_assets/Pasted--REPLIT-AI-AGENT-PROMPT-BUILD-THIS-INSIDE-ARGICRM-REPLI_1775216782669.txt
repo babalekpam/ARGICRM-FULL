@@ -1,0 +1,189 @@
+📋 REPLIT AI AGENT PROMPT — BUILD THIS INSIDE ARGICRM
+REPLIT AI AGENT — ArgiCRM Data Marketplace Module
+Project: ArgiCRM by ARGILETTE LLC
+Stack: Node.js / Express (backend) · React (frontend) · PostgreSQL
+
+🎯 MISSION
+Build a complete Data Marketplace module inside ArgiCRM that:
+
+Automatically aggregates leads from free public APIs
+Cleans, deduplicates, and stores them in ArgiCRM's database
+Lets ArgiCRM clients search, filter, preview, and purchase lead lists
+Charges clients per lead or via subscription tiers
+Costs ARGILETTE LLC $0 in data acquisition
+
+
+STEP 1 — BUILD THE DATA INGESTION ENGINE
+Build a backend service that pulls data from these sources automatically on a scheduled cron job (daily refresh):
+Source 1 — NPI Registry (US Healthcare)
+Endpoint: https://npiregistry.cms.hhs.gov/api/?version=2.1
+No API key required
+Pull: provider name, practice address, phone, specialty, NPI number, entity type
+Target volume: 500,000+ records
+Schedule: weekly refresh
+Source 2 — Google Places API (US & Africa Businesses)
+Requires: Google Cloud account (free $200 credit/month)
+Pull: business name, address, phone, website, category, rating, hours
+Target: search by category + city across US and African cities
+Schedule: daily for new businesses
+Source 3 — Yelp Fusion API (US Businesses)
+Requires: free Yelp developer account
+Pull: business name, address, phone, category, rating, review count
+Schedule: weekly refresh
+Source 4 — OpenCorporates (Company Data)
+Endpoint: https://api.opencorporates.com
+No key required for basic queries
+Pull: company name, jurisdiction, registered address, status, officers
+Schedule: weekly refresh
+Source 5 — OpenStreetMap / Overpass API (Africa)
+Endpoint: https://overpass-api.de/api/interpreter
+No account required
+Pull: business name, address, category, coordinates across Togo, Ghana, Nigeria, Senegal, Côte d'Ivoire
+Schedule: weekly refresh
+Source 6 — CMS Medicare Data (US Healthcare)
+Endpoint: https://data.cms.gov/provider-data
+No key required
+Pull: provider name, specialty, location, Medicare participation status
+Schedule: monthly refresh
+For each source build:
+
+A dedicated fetcher service file
+Error handling and retry logic
+Rate limit management to stay within free tiers
+A normalization function that maps each source's fields to a unified schema
+
+
+STEP 2 — UNIFIED DATABASE SCHEMA
+Create a single leads table in PostgreSQL with this unified schema:
+id, source, market (US/Africa), category, full_name, 
+company_name, title, email, phone, website, address, 
+city, state, country, zip, industry, specialty, 
+employee_size, revenue_range, rating, linkedin_url, 
+language (EN/FR), verified (boolean), last_updated, 
+times_sold, available (boolean)
+Also create:
+
+data_packages table — predefined lead list bundles clients can buy
+client_purchases table — tracks which client bought which leads
+lead_credits table — tracks each client's remaining lead credits
+ingestion_logs table — logs every data pull (source, count, timestamp, errors)
+
+Rules:
+
+Deduplicate on phone + company name combination
+Mark a lead available: false once sold to 3 different clients maximum
+Never sell the same lead to the same client twice
+
+
+STEP 3 — BUILD THE DATA MARKETPLACE UI
+Build a "Data Marketplace" page inside ArgiCRM accessible from the main navigation.
+Search & Filter Panel:
+
+Market toggle: United States / Africa / Both
+Industry dropdown: Healthcare · Legal · Real Estate · Retail · Restaurant · Finance · Technology · Education
+Specialty filter (for healthcare: Dentist, Cardiologist, Urgent Care, etc.)
+Location: Country → State/Region → City
+Company size: Solo · 2–10 · 11–50 · 51–200 · 200+
+Language: English / French
+Data freshness: Last 30 days / Last 90 days / All
+
+Results Display:
+
+Show total matching records count
+Preview first 3 leads fully visible (name, company, city, industry)
+Remaining leads blurred with lock icon — unlock requires credits
+Each lead card shows: name, company, city, industry, phone preview (last 4 digits hidden), email preview (domain visible only)
+"Export Selected" and "Export All Results" buttons
+
+Credit & Purchase System:
+
+Show client's remaining credits in top right of the page
+Each lead export costs 1 credit
+"Buy More Credits" button opens subscription upgrade modal
+Subscription tiers:
+
+Starter: 100 credits/mo — $49
+Growth: 500 credits/mo — $149
+Pro: 2,000 credits/mo — $349
+Agency: Unlimited — $699
+
+
+Payment via Stripe (US clients) or Flutterwave (Africa clients)
+
+Export Options:
+
+CSV download
+Direct push to ArgiCRM CRM module (one click adds leads to their pipeline)
+Copy to clipboard
+
+
+STEP 4 — ADMIN DATA DASHBOARD
+Build a protected admin panel at /admin/data-marketplace with:
+
+Total leads in database by source and market
+Ingestion logs (last run, records added, errors)
+Revenue from data sales (total, by month, by client)
+Top purchased categories
+Manual trigger button to run any ingestion source on demand
+Lead quality monitor — flag leads with missing phone or email
+"Mark leads as stale" bulk action for records older than 90 days
+Enrichment queue — list of leads flagged for manual enrichment
+
+
+STEP 5 — AUTOMATED ENRICHMENT (ZERO COST)
+After ingestion, run an enrichment pass using:
+Email Finder:
+
+Use Hunter.io free tier (25/month) for high-value leads only
+Pattern-match common email formats (firstname.lastname@domain.com) for the rest
+Validate email format before storing
+
+LinkedIn URL:
+
+Construct LinkedIn search URL from name + company
+Store as suggested LinkedIn URL (not verified — flag as unverified)
+
+AI Cleaning (Claude API):
+
+Pass raw scraped records through Claude to:
+
+Normalize inconsistent formatting
+Fill in missing fields where inferable
+Translate French records to English and vice versa
+Score lead quality 1–10 based on data completeness
+
+
+
+Use this Claude prompt for cleaning:
+You are a data quality agent. Given this raw business record, 
+normalize all fields, fix formatting inconsistencies, infer 
+any missing fields where possible, translate if needed 
+(preserve both EN and FR versions), and return a clean JSON 
+object matching the unified lead schema. Score data completeness 
+from 1-10. Flag any suspicious or invalid records.
+
+STEP 6 — CLIENT-FACING LEAD ALERTS
+Build an "Alert Me" feature where clients set search criteria and get notified when new matching leads are added:
+
+Client saves a filter (e.g. "Urgent Care clinics in Texas")
+When ingestion adds new matching records → send email notification via Amazon SES
+Email shows: "15 new leads matching your saved search are available — click to view"
+One-click from email opens ArgiCRM directly on filtered results
+
+
+✅ COMPLETION CHECKLIST
+
+ All 6 data source fetchers built and running
+ Unified leads table created with full schema
+ Deduplication logic working
+ Daily/weekly cron jobs scheduled
+ Data Marketplace UI built with search and filters
+ Lead preview with blur/lock on unpurchased records
+ Credit system working (buy, spend, track)
+ Stripe payment for US clients
+ Flutterwave payment for Africa clients
+ CSV export and direct CRM push working
+ Admin dashboard showing ingestion logs and revenue
+ Claude enrichment pass running post-ingestion
+ Email alerts for saved searches via SES
+ Zero paid data sources — all free APIs only
