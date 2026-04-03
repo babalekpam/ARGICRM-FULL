@@ -1,39 +1,21 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
-import { Modal, FormRow, Empty, Loader } from "../components/UI";
+import { Modal, FormRow, Empty } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import {
   ShoppingCart, Package, Plus, Store, Zap, AlertTriangle, Edit,
-  Trash2, Bot, Send, CheckCircle2, Globe, Copy, ExternalLink,
-  Sparkles, ArrowLeft, RefreshCw, BarChart2, DollarSign,
+  Trash2, CheckCircle2, Globe, Copy,
+  Sparkles, ArrowLeft, RefreshCw, DollarSign,
 } from "lucide-react";
 
 const TABS = ["Products", "Orders", "Stores", "Inventory"] as const;
-const ORDER_STATUS = [
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
-];
 const BLANK_PRODUCT = {
   name: "", description: "", sku: "", price: "", currency: "USD",
   category: "", inventory: "100", trackInventory: true, isAvailable: true,
 };
 
 type StoreBuilderMode = "list" | "interview" | "building" | "complete" | "domain";
-type ChatMessage = { role: "user" | "assistant"; content: string; pending?: boolean };
-
-const ARIA_AVATAR = (
-  <div style={{
-    width: 28, height: 28, borderRadius: "50%",
-    background: "linear-gradient(135deg,#6366f1,#3b82f6)",
-    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-  }}>
-    <Bot size={13} color="#fff" />
-  </div>
-);
 
 export default function EcommercePage() {
   const qc = useQueryClient();
@@ -49,12 +31,6 @@ export default function EcommercePage() {
 
   // AI Store Builder state
   const [storeMode, setStoreMode] = useState<StoreBuilderMode>("list");
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "Hi! I'm your AI store builder. Tell me about your store idea — what do you sell, who are your customers, and what's your brand like? Just describe it naturally!",
-    },
-  ]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [extractedData, setExtractedData] = useState<any>({});
@@ -65,17 +41,6 @@ export default function EcommercePage() {
   const [domainInput, setDomainInput] = useState("");
   const [domainSaving, setDomainSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [selectedStore, setSelectedStore] = useState<any>(null);
-
-  const chatScrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollChat = useCallback(() => {
-    setTimeout(() => {
-      if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }, 50);
-  }, []);
-
-  useEffect(() => { scrollChat(); }, [chatMessages, scrollChat]);
 
   const { data: stats } = useQuery<any>({ queryKey: ["/api/ecommerce/stats"] });
   const { data: productsData } = useQuery<{ data: any[]; total: number }>({
@@ -132,10 +97,6 @@ export default function EcommercePage() {
 
   // ── AI Store Builder ──────────────────────────────────────────
   const openStoreBuilder = () => {
-    setChatMessages([{
-      role: "assistant",
-      content: "Hi! I'm your AI store builder. Tell me about your store idea — what do you sell, who are your customers, and what's your brand vibe? Just describe it in plain language!",
-    }]);
     setChatInput("");
     setExtractedData({});
     setIsReady(false);
@@ -149,45 +110,13 @@ export default function EcommercePage() {
   const sendInterviewMessage = async () => {
     const text = chatInput.trim();
     if (!text || chatLoading) return;
-    setChatInput("");
-
-    const userMsg: ChatMessage = { role: "user", content: text };
-    const pendingMsg: ChatMessage = { role: "assistant", content: "", pending: true };
-    setChatMessages(prev => [...prev, userMsg, pendingMsg]);
     setChatLoading(true);
-
-    const history = chatMessages
-      .filter(m => !m.pending)
-      .map(m => ({ role: m.role, content: m.content }));
-
     try {
-      const result: any = await apiRequest("POST", "/api/ecommerce/stores/ai-interview", {
-        message: text,
-        history,
-        extracted: extractedData,
-      });
-
-      setChatMessages(prev => {
-        const filtered = prev.filter(m => !m.pending);
-        return [...filtered, { role: "assistant", content: result.message }];
-      });
-
-      if (result.extracted) {
-        setExtractedData((prev: any) => {
-          const merged = { ...prev };
-          Object.entries(result.extracted || {}).forEach(([k, v]) => {
-            if (v && v !== "null" && v !== null) merged[k] = v;
-          });
-          return merged;
-        });
-      }
-
-      if (result.ready) setIsReady(true);
+      const result: any = await apiRequest("POST", "/api/ecommerce/stores/ai-interview", { message: text });
+      if (result.extracted) setExtractedData(result.extracted);
+      setIsReady(true);
     } catch {
-      setChatMessages(prev => {
-        const filtered = prev.filter(m => !m.pending);
-        return [...filtered, { role: "assistant", content: "Sorry, I ran into an issue. Please try again." }];
-      });
+      alert("Something went wrong analysing your description. Please try again.");
     } finally {
       setChatLoading(false);
     }
@@ -255,9 +184,6 @@ export default function EcommercePage() {
     delivered: "badge-green", cancelled: "badge-red",
   };
 
-  const handleChatKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendInterviewMessage(); }
-  };
 
   // ── Store Builder Full-Screen Overlay ────────────────────────
   if (storeMode !== "list" && tab === "Stores") {
@@ -273,133 +199,122 @@ export default function EcommercePage() {
             <ArrowLeft size={14} /> Back to Stores
           </button>
 
-          {/* ── INTERVIEW MODE ── */}
+          {/* ── INTERVIEW MODE (single-step form) ── */}
           {storeMode === "interview" && (
             <div className="card" style={{ overflow: "hidden" }}>
+              {/* Header */}
               <div style={{
-                padding: "16px 20px",
+                padding: "20px 24px",
                 borderBottom: "1px solid var(--border)",
                 background: "linear-gradient(135deg,rgba(99,102,241,0.1),rgba(59,130,246,0.06))",
-                display: "flex", alignItems: "center", gap: 12,
+                display: "flex", alignItems: "center", gap: 14,
               }}>
                 <div style={{
-                  width: 40, height: 40, borderRadius: "50%",
+                  width: 48, height: 48, borderRadius: "50%",
                   background: "linear-gradient(135deg,#6366f1,#3b82f6)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
-                  <Sparkles size={18} color="#fff" />
+                  <Sparkles size={22} color="#fff" />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 16 }}>AI Store Builder</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Describe your store in plain language — ARIA will build it for you</div>
+                  <div style={{ fontWeight: 800, fontSize: 17 }}>AI Store Builder</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
+                    Describe your store in one sentence — ARIA handles the rest
+                  </div>
                 </div>
               </div>
 
-              {/* Chat messages */}
-              <div
-                ref={chatScrollRef}
-                style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12, minHeight: 320, maxHeight: 400, overflowY: "auto", scrollbarWidth: "none" }}
-              >
-                {chatMessages.map((msg, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", gap: 8, alignItems: "flex-end" }}>
-                    {msg.role === "assistant" && ARIA_AVATAR}
-                    <div style={{
-                      maxWidth: "80%",
-                      padding: "10px 14px",
-                      borderRadius: msg.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
-                      background: msg.role === "user"
-                        ? "linear-gradient(135deg,#6366f1,#3b82f6)"
-                        : "var(--bg-elevated)",
-                      color: msg.role === "user" ? "#fff" : "var(--text-primary)",
-                      fontSize: 13,
-                      lineHeight: 1.6,
-                      border: msg.role === "assistant" ? "1px solid var(--border)" : "none",
-                    }}>
-                      {msg.pending ? (
-                        <div style={{ display: "flex", gap: 4, padding: "2px 0" }}>
-                          {[0, 1, 2].map(d => (
-                            <div key={d} style={{
-                              width: 6, height: 6, borderRadius: "50%", background: "var(--text-muted)",
-                              animation: `bounce 1.2s ${d * 0.2}s ease-in-out infinite`,
-                            }} />
-                          ))}
-                        </div>
-                      ) : msg.content}
+              <div style={{ padding: "24px" }}>
+                {/* If not yet analysed — show input form */}
+                {!isReady && (
+                  <>
+                    <label style={{ display: "block", fontWeight: 700, marginBottom: 10, fontSize: 14 }}>
+                      What does your store sell?
+                    </label>
+                    <textarea
+                      data-testid="input-store-interview"
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      placeholder={`Examples:\n• "Handmade candles for eco-conscious women"\n• "Affordable African fashion for young adults"\n• "Phone accessories and gadgets"`}
+                      rows={4}
+                      disabled={chatLoading}
+                      style={{
+                        width: "100%", boxSizing: "border-box",
+                        background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                        borderRadius: 10, padding: "12px 14px", fontSize: 14,
+                        color: "var(--text-primary)", outline: "none", resize: "none",
+                        lineHeight: 1.6,
+                      }}
+                      autoFocus
+                    />
+                    <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+                      <button
+                        data-testid="button-interview-send"
+                        className="btn btn-primary"
+                        onClick={sendInterviewMessage}
+                        disabled={!chatInput.trim() || chatLoading}
+                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px" }}
+                      >
+                        {chatLoading
+                          ? <><RefreshCw size={15} style={{ animation: "spin 0.8s linear infinite" }} /> Analysing…</>
+                          : <><Sparkles size={15} /> Analyse &amp; Preview Store</>
+                        }
+                      </button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                    <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
+                      One sentence is enough — ARIA fills in everything else automatically
+                    </div>
+                  </>
+                )}
 
-              {/* Extracted preview */}
-              {Object.keys(extractedData).some(k => extractedData[k]) && (
-                <div style={{ margin: "0 20px 12px", padding: "12px 14px", background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Collected so far</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {extractedData.name && <span className="badge badge-blue">{extractedData.name}</span>}
-                    {extractedData.category && <span className="badge badge-purple">{extractedData.category}</span>}
-                    {extractedData.targetAudience && <span className="badge badge-gray">Audience: {extractedData.targetAudience}</span>}
-                    {extractedData.priceRange && <span className="badge badge-green">{extractedData.priceRange}</span>}
-                    {extractedData.currency && <span className="badge badge-amber">{extractedData.currency}</span>}
-                    {extractedData.aesthetic && <span className="badge badge-gray">{extractedData.aesthetic}</span>}
-                  </div>
-                </div>
-              )}
+                {/* After analysis — show extracted preview + build button */}
+                {isReady && Object.keys(extractedData).length > 0 && (
+                  <>
+                    <div style={{ marginBottom: 18, padding: "16px", background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        Store Preview
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        {[
+                          { label: "Store Name", value: extractedData.name },
+                          { label: "Category", value: extractedData.category },
+                          { label: "Target Audience", value: extractedData.targetAudience },
+                          { label: "Price Range", value: extractedData.priceRange },
+                          { label: "Currency", value: extractedData.currency },
+                          { label: "Style", value: extractedData.aesthetic },
+                        ].map(f => f.value && (
+                          <div key={f.label}>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>{f.label}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600 }}>{f.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {extractedData.tagline && (
+                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", fontSize: 13, color: "var(--text-secondary)", fontStyle: "italic" }}>
+                          "{extractedData.tagline}"
+                        </div>
+                      )}
+                    </div>
 
-              {/* Ready to build — shown as soon as AI sets ready OR user has had 1+ exchange */}
-              {(isReady || chatMessages.filter(m => m.role === "user").length >= 1) && !chatLoading && (
-                <div style={{ margin: "0 20px 12px", padding: "14px 16px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 10 }}>
-                  <div style={{ fontWeight: 700, color: "#10b981", marginBottom: 4 }}>Ready to build your store!</div>
-                  <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>
-                    {extractedData.name
-                      ? <>ARIA has everything needed to build <strong>{extractedData.name}</strong>.</>
-                      : "ARIA has enough to get started — you can refine details after."}{" "}
-                    Click below to launch the automated build.
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button
-                      data-testid="button-build-store"
-                      className="btn btn-primary"
-                      onClick={buildStore}
-                      style={{ background: "linear-gradient(135deg,#6366f1,#3b82f6)", border: "none", display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <Sparkles size={15} /> Build My Store
-                    </button>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setChatInput("")}
-                      style={{ fontSize: 12 }}
-                    >
-                      Keep chatting first
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Input */}
-              <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: 8, alignItems: "center" }}>
-                <input
-                  data-testid="input-store-interview"
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  onKeyDown={handleChatKey}
-                  placeholder={isReady ? "Any changes before building?" : "Describe your store..."}
-                  disabled={chatLoading}
-                  style={{
-                    flex: 1, background: "var(--bg-elevated)", border: "1px solid var(--border)",
-                    borderRadius: 10, padding: "10px 14px", fontSize: 13,
-                    color: "var(--text-primary)", outline: "none",
-                  }}
-                  autoFocus
-                />
-                <button
-                  data-testid="button-interview-send"
-                  onClick={sendInterviewMessage}
-                  disabled={!chatInput.trim() || chatLoading}
-                  className="btn btn-primary"
-                  style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 6 }}
-                >
-                  {chatLoading ? <RefreshCw size={14} style={{ animation: "spin 0.8s linear infinite" }} /> : <Send size={14} />}
-                </button>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button
+                        data-testid="button-build-store"
+                        className="btn btn-primary"
+                        onClick={buildStore}
+                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", background: "linear-gradient(135deg,#6366f1,#3b82f6)", border: "none" }}
+                      >
+                        <Sparkles size={16} /> Build My Store
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => { setIsReady(false); setExtractedData({}); setChatInput(""); }}
+                        style={{ padding: "12px 16px" }}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
