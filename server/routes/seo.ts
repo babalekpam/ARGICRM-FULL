@@ -6,6 +6,7 @@ import { seoProjects, seoAudits, contentIdeas } from "@shared/schema-extended";
 import { eq, and, desc, sql, like, gte } from "drizzle-orm";
 import { isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
 import { completeForTenant } from "../services/tenant-ai.js";
+import { crawlDomain } from "../services/seo-crawler.js";
 
 const router = Router();
 
@@ -134,41 +135,57 @@ router.delete("/keywords/:id", authenticate, async (req: AuthRequest, res) => {
   res.json({ success: true });
 });
 
-// ── Site Audit ─────────────────────────────────────────────────
+// ── Site Audit (real crawler) ───────────────────────────────────
 router.post("/audit", authenticate, async (req: AuthRequest, res) => {
   try {
     const { domain, projectId } = req.body;
     if (!domain) return res.status(400).json({ error: "domain required" });
 
-    let auditResult: any;
+    // 1. Real crawl — fetches live pages, parses HTML
+    const crawl = await crawlDomain(domain);
 
-    if (isAIAvailable()) {
-      const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `You are a professional SEO audit tool. Generate a comprehensive SEO audit report for the domain: "${domain}"
+    // 2. Optionally enrich with AI recommendations for any issues that lack one
+    if (isAIAvailable() && crawl.issues.length > 0) {
+      const issuesSummary = crawl.issues
+        .map(i => `${i.severity.toUpperCase()}: ${i.type} — ${i.description}`)
+        .join("\n");
 
-Return ONLY JSON:
-{
-  "score": 72,
-  "summary": { "critical": 3, "warnings": 8, "passed": 24, "totalPages": 45 },
-  "issues": [
-    { "type": "missing_meta_description", "severity": "critical", "description": "23 pages missing meta descriptions", "count": 23, "urls": ["/blog/post-1", "/about"] }
-  ]
-}` }], maxTokens: 3000 });
-      const text = msg;
-      auditResult = safeParseJSON(text, null);
-      if (!auditResult?.score) return res.status(500).json({ error: "AI returned an unexpected format. Try again." });
-    } else {
-      return res.status(503).json({ error: "No AI provider configured. Go to Settings → AI Configuration." });
+      const aiMsg = await completeForTenant(req.user!.tenantId, {
+        messages: [{
+          role: "user",
+          content: `You are an expert SEO consultant. Below are real SEO issues found by crawling "${domain}".
+For each issue that lacks a recommendation, add one actionable fix (1–2 sentences max).
+Return ONLY a JSON array matching the same order — each object must have: type, recommendation.
+
+Issues found:
+${issuesSummary}`,
+        }],
+        maxTokens: 2000,
+      }).catch(() => null);
+
+      if (aiMsg) {
+        const recs = safeParseJSON(aiMsg, []);
+        if (Array.isArray(recs)) {
+          for (const rec of recs) {
+            const match = crawl.issues.find(i => i.type === rec.type);
+            if (match && !match.recommendation && rec.recommendation) {
+              match.recommendation = rec.recommendation;
+            }
+          }
+        }
+      }
     }
 
+    // 3. Save to DB
     const [audit] = await db.insert(seoAudits).values({
       tenantId: req.user!.tenantId,
       projectId: projectId || null,
-      score: auditResult.score,
-      issues: auditResult.issues,
-      summary: auditResult.summary,
+      score: crawl.score,
+      issues: crawl.issues as any,
+      summary: crawl.summary as any,
     }).returning();
 
-    res.json(audit);
+    res.json({ ...audit, pagesChecked: crawl.pagesChecked, domain: crawl.domain });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 

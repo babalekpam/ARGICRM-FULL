@@ -189,33 +189,50 @@ export default function SeoPage() {
 
           {auditResult && (
             <div>
-              <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+              {/* Score + summary row */}
+              <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
                 <div className="card" style={{ padding: 20, textAlign: "center", minWidth: 120 }}>
                   <div style={{ fontSize: 48, fontWeight: 800, color: auditResult.score >= 70 ? "#10b981" : auditResult.score >= 40 ? "#f59e0b" : "#ef4444" }}>{auditResult.score}</div>
                   <div style={{ fontSize: 13, color: "var(--text-muted)" }}>SEO Score</div>
+                  {auditResult.pagesChecked > 0 && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{auditResult.pagesChecked} pages crawled</div>}
                 </div>
-                <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, minWidth: 260 }}>
                   {[
                     { label: "Critical Issues", value: auditResult.summary?.critical || 0, color: "#ef4444" },
-                    { label: "Warnings", value: auditResult.summary?.warnings || 0, color: "#f59e0b" },
-                    { label: "Passed", value: auditResult.summary?.passed || 0, color: "#10b981" },
+                    { label: "Warnings",         value: auditResult.summary?.warnings || 0, color: "#f59e0b" },
+                    { label: "Passed Checks",    value: auditResult.summary?.passed   || 0, color: "#10b981" },
                   ].map(s => (
-                    <div key={s.label} className="card" style={{ padding: 16, borderLeft: `3px solid ${s.color}` }}>
+                    <div key={s.label} className="card" style={{ padding: 16 }}>
                       <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
                       <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.label}</div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Issues list */}
               <div style={{ display: "grid", gap: 10 }}>
                 {(auditResult.issues || []).map((issue: any, i: number) => (
                   <div key={i} className="card" style={{ padding: "14px 16px", borderLeft: `3px solid ${SEVERITY_COLORS[issue.severity] || "#64748b"}` }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{issue.type.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>
+                        {issue.type.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                      </div>
                       <span className={`badge ${issue.severity === "critical" ? "badge-red" : "badge-amber"}`}>{issue.severity}</span>
                     </div>
                     <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{issue.description}</div>
-                    {issue.urls?.length > 0 && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Affected: {issue.urls.slice(0, 3).join(", ")}</div>}
+                    {issue.urls?.length > 0 && (
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 5, lineHeight: 1.6 }}>
+                        <strong>Affected:</strong> {issue.urls.slice(0, 5).join("  ·  ")}
+                        {issue.urls.length > 5 && <span> + {issue.urls.length - 5} more</span>}
+                      </div>
+                    )}
+                    {issue.recommendation && (
+                      <div style={{ fontSize: 12, color: "#06b6d4", marginTop: 6, display: "flex", alignItems: "flex-start", gap: 5 }}>
+                        <span style={{ flexShrink: 0, marginTop: 1 }}>→</span>
+                        <span>{issue.recommendation}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
