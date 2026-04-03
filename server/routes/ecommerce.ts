@@ -164,15 +164,50 @@ Rules: Fill in ALL fields. Never return null. Infer or invent anything missing.`
 router.post("/stores/ai-interview", authenticate, async (req: AuthRequest, res) => {
   try {
     const { message } = req.body;
-    const raw = await completeForTenant(req.user!.tenantId, {
-      messages: [{ role: "user" as const, content: `Store description: ${message}` }],
-      system: STORE_EXTRACT_SYSTEM,
-      maxTokens: 400,
-    });
-    const extracted = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    if (!message?.trim()) return res.status(400).json({ error: "Please describe your store." });
+
+    let extracted: any = null;
+
+    try {
+      const raw = await completeForTenant(req.user!.tenantId, {
+        messages: [{ role: "user" as const, content: `Store description: ${message}` }],
+        system: STORE_EXTRACT_SYSTEM,
+        maxTokens: 500,
+      });
+      // Strip markdown fences and parse
+      const clean = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+      // Find the first { ... } block
+      const match = clean.match(/\{[\s\S]*\}/);
+      extracted = match ? JSON.parse(match[0]) : JSON.parse(clean);
+    } catch {
+      // AI failed or returned non-JSON — generate a smart fallback from the description
+      const words = message.split(/\s+/);
+      const nameParts = words.slice(0, 3).join(" ");
+      extracted = {
+        name: nameParts.charAt(0).toUpperCase() + nameParts.slice(1) + " Store",
+        category: words.length > 2 ? words[words.length - 1] : "General",
+        targetAudience: "Everyone",
+        aesthetic: "modern",
+        priceRange: "$10–$200",
+        currency: "USD",
+        tagline: `Quality ${words.slice(-2).join(" ")} you can trust`,
+        description: message.length > 60 ? message : `${message}. Discover our full collection today.`,
+      };
+    }
+
+    // Guarantee all required fields exist
+    extracted.name        = extracted.name        || "My Store";
+    extracted.category    = extracted.category    || "General";
+    extracted.aesthetic   = extracted.aesthetic   || "modern";
+    extracted.currency    = extracted.currency    || "USD";
+    extracted.priceRange  = extracted.priceRange  || "$10–$200";
+    extracted.tagline     = extracted.tagline     || `Your destination for quality products`;
+    extracted.description = extracted.description || message;
+
     res.json({ extracted, ready: true });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message });
   }
 });
 

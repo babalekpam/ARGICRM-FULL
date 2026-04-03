@@ -113,10 +113,18 @@ export default function EcommercePage() {
     setChatLoading(true);
     try {
       const result: any = await apiRequest("POST", "/api/ecommerce/stores/ai-interview", { message: text });
-      if (result.extracted) setExtractedData(result.extracted);
-      setIsReady(true);
-    } catch {
-      alert("Something went wrong analysing your description. Please try again.");
+      if (result.extracted && Object.keys(result.extracted).length > 0) {
+        setExtractedData(result.extracted);
+        setIsReady(true);
+      } else {
+        // No usable data returned — stay on input form with error
+        alert("Could not extract store details. Try describing your store in a bit more detail (e.g. what you sell, who your customers are).");
+        setIsReady(false);
+      }
+    } catch (err: any) {
+      const msg = err?.message || "Something went wrong. Please try again.";
+      alert(msg.includes("quota") ? msg : "Could not analyse your description — please try again.");
+      setIsReady(false);
     } finally {
       setChatLoading(false);
     }
@@ -140,12 +148,19 @@ export default function EcommercePage() {
       }
 
       await new Promise(r => setTimeout(r, 400));
+      if (!result.store) throw new Error("Store was not created — please try again.");
       setBuiltStore(result.store);
       qc.invalidateQueries({ queryKey: ["/api/ecommerce/stores"] });
       qc.invalidateQueries({ queryKey: ["/api/ecommerce/stats"] });
       setStoreMode("complete");
     } catch (err: any) {
-      setBuildProgress(prev => [...prev, `Error: ${err.message}`]);
+      const errMsg = err?.message || "Build failed — please try again.";
+      setBuildProgress(prev => [...prev, `❌ ${errMsg}`]);
+      // After a short delay, drop back to the interview form so they can retry
+      setTimeout(() => {
+        setIsReady(true);          // keep the extracted data
+        setStoreMode("interview"); // show preview + build button again
+      }, 2500);
     }
   };
 
@@ -235,6 +250,7 @@ export default function EcommercePage() {
                       data-testid="input-store-interview"
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendInterviewMessage(); } }}
                       placeholder={`Examples:\n• "Handmade candles for eco-conscious women"\n• "Affordable African fashion for young adults"\n• "Phone accessories and gadgets"`}
                       rows={4}
                       disabled={chatLoading}
