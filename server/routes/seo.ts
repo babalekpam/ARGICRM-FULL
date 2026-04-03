@@ -9,19 +9,43 @@ import { completeForTenant } from "../services/tenant-ai.js";
 
 const router = Router();
 
-// Safe JSON parse — strips markdown fences the AI sometimes adds
+// Safe JSON parse — strips markdown fences and recovers truncated arrays
 function safeParseJSON(text: string, fallback: any = null) {
-  try {
-    return JSON.parse(text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim());
-  } catch {
-    // Try finding first [ or { to start of array/object
-    const start = text.search(/[\[{]/);
-    const end = Math.max(text.lastIndexOf("]"), text.lastIndexOf("}"));
-    if (start !== -1 && end > start) {
-      try { return JSON.parse(text.slice(start, end + 1)); } catch { /* fall through */ }
-    }
-    return fallback;
+  const clean = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+  // 1. Try as-is
+  try { return JSON.parse(clean); } catch { /* fall through */ }
+
+  // 2. Find the outermost array/object bounds
+  const start = clean.search(/[\[{]/);
+  if (start === -1) return fallback;
+
+  // 3. Try full substring from [ or { to last ] or }
+  const end = Math.max(clean.lastIndexOf("]"), clean.lastIndexOf("}"));
+  if (end > start) {
+    try { return JSON.parse(clean.slice(start, end + 1)); } catch { /* fall through */ }
   }
+
+  // 4. Response was truncated mid-array — collect all complete objects in the array
+  if (clean[start] === "[") {
+    const items: any[] = [];
+    const depth = { brace: 0 };
+    let objStart = -1;
+    for (let i = start + 1; i < clean.length; i++) {
+      const c = clean[i];
+      if (c === "{") { if (depth.brace === 0) objStart = i; depth.brace++; }
+      else if (c === "}") {
+        depth.brace--;
+        if (depth.brace === 0 && objStart !== -1) {
+          try { items.push(JSON.parse(clean.slice(objStart, i + 1))); } catch { /* skip malformed */ }
+          objStart = -1;
+        }
+      }
+    }
+    if (items.length > 0) return items;
+  }
+
+  return fallback;
 }
 
 // ── Projects ───────────────────────────────────────────────────
@@ -63,11 +87,12 @@ Return ONLY a JSON array (no markdown):
   "cpc": 1.25,
   "intent": "informational|navigational|transactional|commercial",
   "trend": "rising|stable|declining"
-}]` }], maxTokens: 1500 });
+}]` }], maxTokens: 4000 });
       const text = msg;
+      console.log("[SEO/keywords] raw AI response (first 300):", text?.slice(0, 300));
       generated = safeParseJSON(text, []);
       if (!Array.isArray(generated) || generated.length === 0)
-        return res.status(500).json({ error: "AI returned an unexpected format. Try again." });
+        return res.status(500).json({ error: `AI returned an unexpected format: ${text?.slice(0, 200)}` });
     } else {
       return res.status(503).json({ error: "No AI provider configured. Go to Settings → AI Configuration." });
     }
@@ -127,7 +152,7 @@ Return ONLY JSON:
   "issues": [
     { "type": "missing_meta_description", "severity": "critical", "description": "23 pages missing meta descriptions", "count": 23, "urls": ["/blog/post-1", "/about"] }
   ]
-}` }], maxTokens: 1200 });
+}` }], maxTokens: 3000 });
       const text = msg;
       auditResult = safeParseJSON(text, null);
       if (!auditResult?.score) return res.status(500).json({ error: "AI returned an unexpected format. Try again." });
@@ -219,7 +244,7 @@ router.post("/content/ideas", authenticate, async (req: AuthRequest, res) => {
     const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: `Generate ${count} SEO content ideas for topic "${topic}" targeting "${audience || "B2B SaaS"}".
 
 Return ONLY JSON array:
-[{"title":"Article Title","keyword":"target keyword","searchVolume":2400,"difficulty":42,"contentType":"blog|guide|video|infographic","outline":["Section 1","Section 2","Section 3"]}]` }], maxTokens: 1200 });
+[{"title":"Article Title","keyword":"target keyword","searchVolume":2400,"difficulty":42,"contentType":"blog|guide|video|infographic","outline":["Section 1","Section 2","Section 3"]}]` }], maxTokens: 3000 });
     const ideas = safeParseJSON(msg, []);
     if (!Array.isArray(ideas) || ideas.length === 0)
       return res.status(500).json({ error: "AI returned an unexpected format. Try again." });
