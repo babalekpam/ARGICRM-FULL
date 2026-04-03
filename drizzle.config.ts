@@ -21,6 +21,7 @@ export default defineConfig({
     "backlinks",
     "stores",
     "projects",
+    "crm_projects",
     "landing_pages",
     "ab_tests",
   ],

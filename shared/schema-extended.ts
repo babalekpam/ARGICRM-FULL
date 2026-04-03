@@ -554,13 +554,12 @@ export const bankAccounts = pgTable("bank_accounts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
-  type: text("type").default("checking"),
+  accountType: text("account_type").default("checking"),
   currency: text("currency").default("USD"),
   balance: decimal("balance", { precision: 15, scale: 2 }).default("0"),
   institution: text("institution"),
-  accountNumber: text("account_number"),
-  isActive: boolean("is_active").default(true),
-  lastSyncAt: timestamp("last_sync_at"),
+  accountNumberLast4: text("account_number_last4"),
+  isDefault: boolean("is_default").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

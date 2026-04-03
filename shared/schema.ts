@@ -253,6 +253,25 @@ export const projects = pgTable("projects", {
   tenantId: varchar("tenant_id").notNull(),
 });
 
+export const crmProjects = pgTable("crm_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull(),
+  ownerId: varchar("owner_id"),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").default("planning"),
+  priority: text("priority").default("medium"),
+  color: text("color").default("#3b82f6"),
+  budget: numeric("budget", { precision: 15, scale: 2 }),
+  progress: integer("progress").default(0),
+  dueDate: timestamp("due_date"),
+  startDate: timestamp("start_date"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+export type CrmProject = typeof crmProjects.$inferSelect;
+export type InsertCrmProject = typeof crmProjects.$inferInsert;
+
 export const landingPages = pgTable("landing_pages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   stepId: varchar("step_id").notNull(),

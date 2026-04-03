@@ -8,13 +8,20 @@ import { ShoppingCart, Package, Plus, Store, Zap, TrendingUp, AlertTriangle, Edi
 const TABS = ["Products", "Orders", "Stores", "Inventory"] as const;
 const ORDER_STATUS = [{ value: "pending", label: "Pending" }, { value: "processing", label: "Processing" }, { value: "shipped", label: "Shipped" }, { value: "delivered", label: "Delivered" }, { value: "cancelled", label: "Cancelled" }];
 const BLANK_PRODUCT = { name: "", description: "", sku: "", price: "", currency: "USD", category: "", inventory: "100", trackInventory: true, isAvailable: true };
-const BLANK_STORE = { name: "", description: "", currency: "USD", primaryColor: "#3b82f6" };
+const BLANK_STORE = { name: "", description: "", currency: "USD", theme: "modern" };
+const STORE_THEMES = [
+  { value: "modern", label: "Modern", color: "#3b82f6", desc: "Clean, contemporary look" },
+  { value: "minimal", label: "Minimal", color: "#64748b", desc: "Simple, distraction-free" },
+  { value: "vibrant", label: "Vibrant", color: "#f59e0b", desc: "Bold, eye-catching design" },
+  { value: "elegant", label: "Elegant", color: "#8b5cf6", desc: "Sophisticated & premium" },
+];
 
 export default function EcommercePage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<typeof TABS[number]>("Products");
   const [productModal, setProductModal] = useState(false);
   const [storeModal, setStoreModal] = useState(false);
+  const [storeStep, setStoreStep] = useState(1);
   const [orderModal, setOrderModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState<any>(BLANK_PRODUCT);
@@ -45,10 +52,15 @@ export default function EcommercePage() {
     } finally { setSaving(false); }
   };
 
-  const saveStore = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true);
-    try { await apiRequest("POST", "/api/ecommerce/stores", storeForm); qc.invalidateQueries({ queryKey: ["/api/ecommerce/stores"] }); setStoreModal(false); }
-    finally { setSaving(false); }
+  const closeStoreModal = () => { setStoreModal(false); setStoreForm(BLANK_STORE); setStoreStep(1); };
+
+  const saveStore = async () => {
+    setSaving(true);
+    try {
+      await apiRequest("POST", "/api/ecommerce/stores", storeForm);
+      qc.invalidateQueries({ queryKey: ["/api/ecommerce/stores"] });
+      closeStoreModal();
+    } finally { setSaving(false); }
   };
 
   const optimizeProduct = async (id: string) => {
@@ -163,21 +175,25 @@ export default function EcommercePage() {
       {tab === "Stores" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 16 }}>
           {!storesData?.length ? <div style={{ gridColumn: "1/-1" }}><Empty icon={Store} title="No stores yet" action={<button className="btn btn-primary" onClick={() => setStoreModal(true)}><Plus size={15} /> Create Store</button>} /></div> :
-            storesData.map((s: any) => (
-              <div key={s.id} className="card" style={{ padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: s.primaryColor + "22", border: `2px solid ${s.primaryColor}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏪</div>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: 15 }}>{s.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.currency} · {s.isPublished ? "Published" : "Draft"}</div>
+            storesData.map((s: any) => {
+              const themeColor = STORE_THEMES.find(t => t.value === s.theme)?.color ?? "#3b82f6";
+              return (
+                <div key={s.id} data-testid={`card-store-${s.id}`} className="card" style={{ padding: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: themeColor + "22", border: `2px solid ${themeColor}44`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Store size={20} style={{ color: themeColor }} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 15 }}>{s.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.currency} · {s.theme}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <span className={`badge ${s.isPublished ? "badge-green" : "badge-gray"}`}>{s.isPublished ? "Live" : "Draft"}</span>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <span className={`badge ${s.isPublished ? "badge-green" : "badge-gray"}`}>{s.isPublished ? "Live" : "Draft"}</span>
-                  {s.domain && <span className="badge badge-blue">{s.domain}</span>}
-                </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       )}
 
@@ -254,22 +270,88 @@ export default function EcommercePage() {
         </form>
       </Modal>
 
-      {/* Store Modal */}
-      <Modal open={storeModal} onClose={() => setStoreModal(false)} title="Create Store">
-        <form onSubmit={saveStore}>
-          <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-            <FormRow label="Store name" required><input className="input" value={storeForm.name} onChange={e => setStoreForm(p => ({ ...p, name: e.target.value }))} required /></FormRow>
-            <FormRow label="Description"><textarea className="input" value={storeForm.description} onChange={e => setStoreForm(p => ({ ...p, description: e.target.value }))} rows={2} /></FormRow>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <FormRow label="Currency"><input className="input" value={storeForm.currency} onChange={e => setStoreForm(p => ({ ...p, currency: e.target.value }))} placeholder="USD, XOF, NGN..." /></FormRow>
-              <FormRow label="Brand Color"><div style={{ display: "flex", gap: 8 }}><input type="color" value={storeForm.primaryColor} onChange={e => setStoreForm(p => ({ ...p, primaryColor: e.target.value }))} style={{ width: 44, height: 36, borderRadius: 8, border: "1px solid var(--border)", background: "none" }} /><input className="input" value={storeForm.primaryColor} onChange={e => setStoreForm(p => ({ ...p, primaryColor: e.target.value }))} /></div></FormRow>
+      {/* Store Creation Wizard */}
+      <Modal open={storeModal} onClose={closeStoreModal} title={`Create Store — Step ${storeStep} of 3`}>
+        <div>
+          {/* Progress dots */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 20px 0" }}>
+            {[1, 2, 3].map(s => (
+              <div key={s} style={{ width: s === storeStep ? 28 : 10, height: 10, borderRadius: 5, background: s <= storeStep ? "var(--accent)" : "var(--border)", transition: "all 0.2s" }} />
+            ))}
+          </div>
+
+          {/* Step 1: Store Details */}
+          {storeStep === 1 && (
+            <div style={{ padding: "20px", display: "grid", gap: 14 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>Store Details</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>Give your store a name that customers will recognise.</div>
+              <FormRow label="Store Name" required>
+                <input data-testid="input-store-name" className="input" value={storeForm.name} onChange={e => setStoreForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. My Boutique" autoFocus />
+              </FormRow>
+              <FormRow label="Description">
+                <textarea className="input" value={storeForm.description} onChange={e => setStoreForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="Briefly describe what you sell…" />
+              </FormRow>
             </div>
+          )}
+
+          {/* Step 2: Currency & Theme */}
+          {storeStep === 2 && (
+            <div style={{ padding: "20px", display: "grid", gap: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>Currency & Appearance</div>
+              <FormRow label="Store Currency">
+                <input data-testid="input-store-currency" className="input" value={storeForm.currency} onChange={e => setStoreForm(p => ({ ...p, currency: e.target.value.toUpperCase() }))} placeholder="USD, EUR, NGN, XOF…" maxLength={5} />
+              </FormRow>
+              <div>
+                <div className="label" style={{ marginBottom: 10 }}>Theme</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {STORE_THEMES.map(t => (
+                    <button key={t.value} type="button" data-testid={`button-theme-${t.value}`} onClick={() => setStoreForm(p => ({ ...p, theme: t.value }))}
+                      style={{ padding: "12px 14px", borderRadius: 10, border: `2px solid ${storeForm.theme === t.value ? t.color : "var(--border)"}`, background: storeForm.theme === t.value ? t.color + "18" : "var(--bg-card)", textAlign: "left", cursor: "pointer" }}>
+                      <div style={{ width: 18, height: 18, borderRadius: "50%", background: t.color, marginBottom: 6 }} />
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{t.label}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review */}
+          {storeStep === 3 && (
+            <div style={{ padding: "20px", display: "grid", gap: 12 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>Review & Launch</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>Confirm your store details before launching.</div>
+              {[
+                ["Store Name", storeForm.name],
+                ["Description", storeForm.description || "—"],
+                ["Currency", storeForm.currency],
+                ["Theme", STORE_THEMES.find(t => t.value === storeForm.theme)?.label ?? storeForm.theme],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg-elevated)", borderRadius: 8, fontSize: 13 }}>
+                  <span style={{ color: "var(--text-muted)" }}>{label}</span>
+                  <span style={{ fontWeight: 600 }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "space-between" }}>
+            <button type="button" className="btn btn-secondary" onClick={storeStep === 1 ? closeStoreModal : () => setStoreStep(s => s - 1)}>
+              {storeStep === 1 ? "Cancel" : "Back"}
+            </button>
+            {storeStep < 3 ? (
+              <button data-testid="button-store-next" type="button" className="btn btn-primary" disabled={storeStep === 1 && !storeForm.name.trim()} onClick={() => setStoreStep(s => s + 1)}>
+                Next
+              </button>
+            ) : (
+              <button data-testid="button-launch-store" type="button" className="btn btn-primary" disabled={saving} onClick={saveStore}>
+                {saving ? "Launching…" : "Launch Store"}
+              </button>
+            )}
           </div>
-          <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setStoreModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Creating..." : "Create Store"}</button>
-          </div>
-        </form>
+        </div>
       </Modal>
     </Layout>
   );

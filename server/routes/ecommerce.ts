@@ -17,7 +17,7 @@ router.get("/stores", authenticate, async (req: AuthRequest, res) => {
 
 router.post("/stores", authenticate, async (req: AuthRequest, res) => {
   const slug = req.body.name?.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-") + "-" + Date.now().toString().slice(-4);
-  const [store] = await db.insert(stores).values({ tenantId: req.user!.tenantId, slug, ...req.body }).returning();
+  const [store] = await db.insert(stores).values({ tenantId: req.user!.tenantId, userId: req.user!.id, slug, ...req.body }).returning();
   res.status(201).json(store);
 });
 

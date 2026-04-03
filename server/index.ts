@@ -23,7 +23,6 @@ const PORT = Number(process.env.PORT) || 5000;
 
 async function runStartupMigrations() {
   if (!process.env.DATABASE_URL) return;
-  if (process.env.NODE_ENV !== "production") return;
   try {
     const { Pool } = await import("pg");
     const pool = new Pool({
@@ -69,6 +68,7 @@ async function runStartupMigrations() {
       `CREATE TABLE IF NOT EXISTS "pipelines" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"name" text NOT NULL,"stages" jsonb DEFAULT '[]'::jsonb,"is_default" boolean DEFAULT false,"created_at" timestamp DEFAULT now(),"updated_at" timestamp DEFAULT now())`,
       `CREATE TABLE IF NOT EXISTS "orders" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"store_id" uuid NOT NULL,"order_number" text NOT NULL,"status" text DEFAULT 'pending',"customer_name" text,"customer_email" text,"items" jsonb DEFAULT '[]'::jsonb,"subtotal" numeric(15,2) DEFAULT '0',"tax" numeric(15,2) DEFAULT '0',"shipping" numeric(15,2) DEFAULT '0',"total" numeric(15,2) DEFAULT '0',"shipping_address" jsonb DEFAULT '{}'::jsonb,"payment_method" text,"payment_status" text DEFAULT 'pending',"notes" text,"created_at" timestamp DEFAULT now(),"updated_at" timestamp DEFAULT now())`,
       `CREATE TABLE IF NOT EXISTS "products" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,"tenant_id" uuid NOT NULL,"store_id" uuid NOT NULL,"name" text NOT NULL,"description" text,"sku" text,"price" numeric(15,2) NOT NULL,"compare_at_price" numeric(15,2),"cost" numeric(15,2),"inventory" integer DEFAULT 0,"category" text,"tags" jsonb DEFAULT '[]'::jsonb,"images" jsonb DEFAULT '[]'::jsonb,"status" text DEFAULT 'active',"weight" numeric(8,2),"created_at" timestamp DEFAULT now(),"updated_at" timestamp DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "crm_projects" ("id" varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar NOT NULL,"tenant_id" varchar NOT NULL,"owner_id" varchar,"name" text NOT NULL,"description" text,"status" text DEFAULT 'planning',"priority" text DEFAULT 'medium',"color" text DEFAULT '#3b82f6',"budget" numeric(15,2),"progress" integer DEFAULT 0,"due_date" timestamp,"start_date" timestamp,"created_at" timestamp DEFAULT now(),"updated_at" timestamp DEFAULT now())`,
     ];
     let created = 0, skipped = 0;
     for (const stmt of statements) {

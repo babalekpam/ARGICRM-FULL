@@ -24,7 +24,8 @@ export default function AccountsPage() {
   const [del,setDel]=useState<string|null>(null);
   const [sel,setSel]=useState<any>(null);
 
-  const { data:accounts=[], isLoading } = useQuery<any[]>({ queryKey:["/api/accounts"] });
+  const { data:accountsResp, isLoading } = useQuery<{ data: any[]; total: number }>({ queryKey:["/api/accounts"] });
+  const accounts = accountsResp?.data ?? [];
 
   const create = useMutation({ mutationFn:(d:any)=>apiRequest("POST","/api/accounts",d), onSuccess:()=>{ queryClient.invalidateQueries({queryKey:["/api/accounts"]}); close(); }});
   const upd = useMutation({ mutationFn:({id,d}:any)=>apiRequest("PUT",`/api/accounts/${id}`,d), onSuccess:()=>{ queryClient.invalidateQueries({queryKey:["/api/accounts"]}); close(); }});

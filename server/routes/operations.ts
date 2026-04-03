@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate, requireRole, type AuthRequest } from "../middleware/auth.js";
 import { db } from "../db.js";
-import { projects, landingPages, abTests } from "@shared/schema";
+import { crmProjects, landingPages, abTests } from "@shared/schema";
 import { employees, projectTasks, documents, funnels, reputationReviews, whitelabelSettings, clientPortalAccess } from "@shared/schema-extended";
 import { eq, and, desc, sql, asc } from "drizzle-orm";
 import { isAIAvailable, getActiveProvider } from "../services/ai-adapter.js";
@@ -33,20 +33,23 @@ router.delete("/employees/:id", authenticate, async (req: AuthRequest, res) => {
 // PROJECTS + GANTT
 // ══════════════════════════════════
 router.get("/projects", authenticate, async (req: AuthRequest, res) => {
-  const rows = await db.select().from(projects).where(eq(projects.tenantId, req.user!.tenantId)).orderBy(desc(projects.createdAt));
+  const rows = await db.select().from(crmProjects).where(eq(crmProjects.tenantId, req.user!.tenantId)).orderBy(desc(crmProjects.createdAt));
   res.json(rows);
 });
 router.post("/projects", authenticate, async (req: AuthRequest, res) => {
-  const [p] = await db.insert(projects).values({ tenantId: req.user!.tenantId, ownerId: req.user!.id, ...req.body }).returning();
+  const body = { ...req.body };
+  if (body.budget === "" || body.budget === null) delete body.budget;
+  if (body.progress !== undefined) body.progress = Number(body.progress) || 0;
+  const [p] = await db.insert(crmProjects).values({ tenantId: req.user!.tenantId, ownerId: req.user!.id, ...body }).returning();
   res.status(201).json(p);
 });
 router.put("/projects/:id", authenticate, async (req: AuthRequest, res) => {
-  const [p] = await db.update(projects).set({ ...req.body, updatedAt: new Date() }).where(and(eq(projects.id, req.params.id), eq(projects.tenantId, req.user!.tenantId))).returning();
+  const [p] = await db.update(crmProjects).set({ ...req.body, updatedAt: new Date() }).where(and(eq(crmProjects.id, req.params.id), eq(crmProjects.tenantId, req.user!.tenantId))).returning();
   res.json(p);
 });
 router.delete("/projects/:id", authenticate, async (req: AuthRequest, res) => {
   await db.delete(projectTasks).where(eq(projectTasks.projectId, req.params.id));
-  await db.delete(projects).where(and(eq(projects.id, req.params.id), eq(projects.tenantId, req.user!.tenantId)));
+  await db.delete(crmProjects).where(and(eq(crmProjects.id, req.params.id), eq(crmProjects.tenantId, req.user!.tenantId)));
   res.json({ success: true });
 });
 

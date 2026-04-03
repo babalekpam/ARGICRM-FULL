@@ -17,12 +17,16 @@ import { Link } from "wouter";
 const TABS_F = ["Transactions", "Reports", "Bank Accounts", "Tax", "Currencies"] as const;
 const TX_TYPES = [{ value: "income", label: "Income" }, { value: "expense", label: "Expense" }, { value: "transfer", label: "Transfer" }];
 const BLANK_TX = { type: "income", description: "", amount: "", currency: "USD", category: "", date: new Date().toISOString().slice(0, 10) };
+const BLANK_BANK = { name: "", institution: "", accountType: "checking", currency: "USD" };
+const BANK_TYPES = [{ value: "checking", label: "Checking" }, { value: "savings", label: "Savings" }, { value: "credit", label: "Credit Card" }, { value: "investment", label: "Investment" }, { value: "other", label: "Other" }];
 
 export function FinancePage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<typeof TABS_F[number]>("Transactions");
   const [txModal, setTxModal] = useState(false);
+  const [bankModal, setBankModal] = useState(false);
   const [form, setForm] = useState<any>(BLANK_TX);
+  const [bankForm, setBankForm] = useState(BLANK_BANK);
   const [saving, setSaving] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
@@ -37,6 +41,16 @@ export function FinancePage() {
     e.preventDefault(); setSaving(true);
     try { await apiRequest("POST", "/api/finance/transactions", form); qc.invalidateQueries({ queryKey: ["/api/finance/transactions"] }); setTxModal(false); }
     finally { setSaving(false); }
+  };
+
+  const saveBankAcct = async (e: React.FormEvent) => {
+    e.preventDefault(); setSaving(true);
+    try {
+      await apiRequest("POST", "/api/finance/accounts", bankForm);
+      qc.invalidateQueries({ queryKey: ["/api/finance/accounts"] });
+      setBankModal(false);
+      setBankForm(BLANK_BANK);
+    } finally { setSaving(false); }
   };
 
   const syncAccount = async (id: string) => {
@@ -142,10 +156,7 @@ export function FinancePage() {
       {tab === "Bank Accounts" && (
         <div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-            <button className="btn btn-primary btn-sm" onClick={async () => {
-              await apiRequest("POST", "/api/finance/accounts", { name: "Main Account", type: "checking", currency: "USD", institution: "Bank of America" });
-              qc.invalidateQueries({ queryKey: ["/api/finance/accounts"] });
-            }}><Plus size={14} /> Add Account</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setBankModal(true)}><Plus size={14} /> Add Account</button>
           </div>
           {!bankAccts?.length ? <Empty icon={Landmark} title="No bank accounts" desc="Connect your bank accounts to sync transactions automatically" /> : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
@@ -158,9 +169,8 @@ export function FinancePage() {
                     </button>
                   </div>
                   <div style={{ fontWeight: 800, fontSize: 16 }}>{a.name}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{a.institution} · {a.type}</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{a.institution} · {a.accountType || a.account_type}</div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981", marginTop: 10 }}>{a.currency} {Number(a.balance || 0).toLocaleString()}</div>
-                  {a.lastSyncAt && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Last sync: {new Date(a.lastSyncAt).toLocaleString()}</div>}
                 </div>
               ))}
             </div>
@@ -234,6 +244,32 @@ export function FinancePage() {
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button type="button" className="btn btn-secondary" onClick={() => setTxModal(false)}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : "Add Transaction"}</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Bank Account Modal */}
+      <Modal open={bankModal} onClose={() => { setBankModal(false); setBankForm(BLANK_BANK); }} title="Add Bank Account">
+        <form onSubmit={saveBankAcct}>
+          <div style={{ padding: "20px", display: "grid", gap: 14 }}>
+            <FormRow label="Account Name" required>
+              <input data-testid="input-bank-name" className="input" value={bankForm.name} onChange={e => setBankForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Business Checking" required />
+            </FormRow>
+            <FormRow label="Institution">
+              <input data-testid="input-bank-institution" className="input" value={bankForm.institution} onChange={e => setBankForm(p => ({ ...p, institution: e.target.value }))} placeholder="e.g. Chase, GTBank, Ecobank" />
+            </FormRow>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <FormRow label="Account Type">
+                <Select options={BANK_TYPES} value={bankForm.accountType} onChange={e => setBankForm(p => ({ ...p, accountType: e.target.value }))} />
+              </FormRow>
+              <FormRow label="Currency">
+                <input data-testid="input-bank-currency" className="input" value={bankForm.currency} onChange={e => setBankForm(p => ({ ...p, currency: e.target.value.toUpperCase() }))} placeholder="USD, EUR, NGN…" maxLength={5} />
+              </FormRow>
+            </div>
+          </div>
+          <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <button type="button" className="btn btn-secondary" onClick={() => { setBankModal(false); setBankForm(BLANK_BANK); }}>Cancel</button>
+            <button data-testid="button-save-bank" type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Adding..." : "Add Account"}</button>
           </div>
         </form>
       </Modal>

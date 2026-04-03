@@ -97,7 +97,6 @@ router.post("/accounts/:id/sync", authenticate, async (req: AuthRequest, res) =>
   // Connect to Plaid, Open Banking, or upload CSV transactions
   // To import transactions, POST to /api/finance/transactions individually
   // or use /api/finance/import-csv with a CSV payload
-  await db.update(bankAccounts).set({ lastSyncAt: new Date() }).where(eq(bankAccounts.id, req.params.id));
   res.json({ synced: 0, message: "Connect a bank feed via Plaid or import a CSV to sync transactions.", transactions: [] });
 });
 
