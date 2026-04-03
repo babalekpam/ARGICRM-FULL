@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Users, Plus, Edit2, Trash2, X, AlertCircle, CheckCircle, Shield, Mail, Clock, UserCheck, UserX, Copy, Crown } from "lucide-react";
 
 const ROLES = ["user","admin","super_admin"];
@@ -17,6 +18,7 @@ function RoleBadge({ role }: { role: string }) {
 
 export default function TeamPage() {
   const { user: me } = useAuth();
+  const { t } = useLanguage();
   const [showInvite, setShowInvite] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
   const [del, setDel] = useState<string|null>(null);
@@ -64,7 +66,7 @@ export default function TeamPage() {
   const th={padding:"10px 14px",textAlign:"left" as const,fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.05em",color:"var(--text-muted)"};
 
   return (
-    <Layout title="Team" subtitle={`${users.length} team members`} actions={
+    <Layout title={t("team_title")} subtitle={`${users.length} ${t("team_members")}`} actions={
       isAdmin&&<button data-testid="button-invite-member" onClick={()=>{ setShowInvite(true); setInviteResult(null); setInvite({email:"",firstName:"",lastName:"",role:"user"}); }} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}><Plus size={14}/>Invite Member</button>
     }>
 

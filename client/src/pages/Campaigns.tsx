@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "../lib/api";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Megaphone, Plus, Search, Edit2, Trash2, X, ChevronDown, AlertCircle, Target, DollarSign, Calendar, TrendingUp, Mail, Globe, MousePointer, BarChart2 } from "lucide-react";
 
 const TYPES = ["email","social","ppc","content","event","webinar","referral","direct_mail","other"];
@@ -28,6 +29,7 @@ function StatusBadge({ status }: { status: string }) {
 const EMPTY={name:"",type:"email",status:"draft",startDate:"",endDate:"",budget:"",actualCost:"",targetAudience:"",goals:""};
 
 export default function CampaignsPage() {
+  const { t } = useLanguage();
   const [search,setSearch]=useState("");
   const [tf,setTf]=useState("all");
   const [sf,setSf]=useState("all");
@@ -74,7 +76,7 @@ export default function CampaignsPage() {
   );
 
   return (
-    <Layout title="Campaigns" subtitle={`${filtered.length} campaigns`} actions={
+    <Layout title={t("campaigns_title")} subtitle={`${filtered.length} ${t("nav_campaigns").toLowerCase()}`} actions={
       <button data-testid="button-add-campaign" onClick={()=>open()} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}><Plus size={14}/>New Campaign</button>
     }>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>

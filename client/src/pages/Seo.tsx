@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Empty, Loader, Badge } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import { Search, Plus, TrendingUp, Link, AlertCircle, Zap, BarChart2, BookOpen, Globe, Target, RefreshCw, Trash2, ChevronUp, ChevronDown, Minus } from "lucide-react";
@@ -11,6 +12,7 @@ const DIFF_COLOR = (d: number) => d >= 70 ? "#ef4444" : d >= 40 ? "#f59e0b" : "#
 
 export default function SeoPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<typeof TABS[number]>("Keywords");
   const [projectModal, setProjectModal] = useState(false);
   const [projectForm, setProjectForm] = useState({ name: "", domain: "", country: "US" });
@@ -87,7 +89,7 @@ export default function SeoPage() {
   const SEVERITY_COLORS: Record<string, string> = { critical: "#ef4444", warning: "#f59e0b", passed: "#10b981" };
 
   return (
-    <Layout title="SEO Platform" subtitle="Keyword research, audits, backlinks & competitor analysis"
+    <Layout title={t("seo_title")} subtitle={t("seo_subtitle")}
       actions={<button className="btn btn-primary btn-sm" onClick={() => setProjectModal(true)}><Plus size={14} /> New Project</button>}
     >
       {/* Stats */}

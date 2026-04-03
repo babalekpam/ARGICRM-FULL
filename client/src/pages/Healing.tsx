@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import {
@@ -27,6 +28,7 @@ const CHECK_ICONS: Record<string, any> = {
 };
 
 export default function HealingPage() {
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [runningCheck, setRunningCheck] = useState(false);
   const [activeTab, setActiveTab] = useState<"dashboard" | "errors" | "performance" | "circuits">("dashboard");
@@ -72,8 +74,8 @@ export default function HealingPage() {
 
   return (
     <Layout
-      title="Code Healing System"
-      subtitle="Autonomous error detection, diagnosis, and self-healing"
+      title={t("healing_title")}
+      subtitle={t("healing_subtitle")}
       actions={
         <button className="btn btn-primary btn-sm" onClick={runChecks} disabled={runningCheck}>
           {runningCheck ? <><span className="spinner" style={{ width: 14, height: 14 }} />Running...</> : <><RefreshCw size={14} /> Run Health Checks</>}

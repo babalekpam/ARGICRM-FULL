@@ -5,6 +5,7 @@ import { queryClient } from "./lib/api";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { WhiteLabelProvider } from "./contexts/WhiteLabelContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
@@ -115,11 +116,13 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AuthProvider>
-          <WhiteLabelProvider>
-            <AppRoutes />
-          </WhiteLabelProvider>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <WhiteLabelProvider>
+              <AppRoutes />
+            </WhiteLabelProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

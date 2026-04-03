@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
+import { useLanguage } from "../contexts/LanguageContext";
 import { UserPlus, Trash2, Edit, TrendingUp } from "lucide-react";
 
 const LEAD_STATUS = [
@@ -20,6 +21,7 @@ const BLANK_LEAD = { firstName: "", lastName: "", email: "", phone: "", company:
 
 export function LeadsPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(BLANK_LEAD);
@@ -46,13 +48,13 @@ export function LeadsPage() {
   };
 
   return (
-    <Layout title="Leads" subtitle={data ? `${data.total} leads` : undefined} actions={<button className="btn btn-primary btn-sm" onClick={openAdd}><UserPlus size={15} /> Add Lead</button>}>
+    <Layout title={t("leads_title")} subtitle={data ? `${data.total} ${t("nav_leads").toLowerCase()}` : undefined} actions={<button className="btn btn-primary btn-sm" onClick={openAdd}><UserPlus size={15} /> {t("add_lead_btn")}</button>}>
       <div className="card" style={{ overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 180px 120px 90px 90px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-          {["Lead", "Company / Source", "Status", "Score", "Actions"].map(h => <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>)}
+          {[t("name"), t("company"), t("status"), t("lead_score"), t("actions")].map(h => <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>)}
         </div>
         {isLoading ? <Loader /> : !data?.data?.length ? (
-          <Empty icon={UserPlus} title="No leads yet" desc="Add your first lead to start filling your pipeline" action={<button className="btn btn-primary" onClick={openAdd}><UserPlus size={15} /> Add Lead</button>} />
+          <Empty icon={UserPlus} title={t("no_leads")} desc={t("no_leads_desc")} action={<button className="btn btn-primary" onClick={openAdd}><UserPlus size={15} /> {t("add_lead_btn")}</button>} />
         ) : data.data.map((l: any) => (
           <div key={l.id} className="table-row" style={{ gridTemplateColumns: "1fr 180px 120px 90px 90px", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -83,30 +85,30 @@ export function LeadsPage() {
         ))}
       </div>
 
-      <Modal open={modal} onClose={() => setModal(false)} title={editing ? "Edit Lead" : "Add Lead"}>
+      <Modal open={modal} onClose={() => setModal(false)} title={editing ? t("edit_lead") : t("add_lead_btn")}>
         <form onSubmit={save}>
           <div style={{ padding: "20px", display: "grid", gap: 12 }}>
             {error && <div style={{ background: "rgba(239,68,68,0.1)", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "#f87171" }}>{error}</div>}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <FormRow label="First name" required><input className="input" value={form.firstName} onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))} required /></FormRow>
-              <FormRow label="Last name"><input className="input" value={form.lastName} onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))} /></FormRow>
+              <FormRow label={t("first_name")} required><input className="input" value={form.firstName} onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))} required /></FormRow>
+              <FormRow label={t("last_name")}><input className="input" value={form.lastName} onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))} /></FormRow>
             </div>
-            <FormRow label="Email"><input type="email" className="input" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></FormRow>
+            <FormRow label={t("email")}><input type="email" className="input" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></FormRow>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <FormRow label="Company"><input className="input" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} /></FormRow>
-              <FormRow label="Job title"><input className="input" value={form.jobTitle} onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))} /></FormRow>
+              <FormRow label={t("company")}><input className="input" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} /></FormRow>
+              <FormRow label={t("contact_position")}><input className="input" value={form.jobTitle} onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))} /></FormRow>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <FormRow label="Status"><Select options={LEAD_STATUS} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} /></FormRow>
-              <FormRow label="Source"><Select options={LEAD_SOURCE} placeholder="Select" value={form.source} onChange={e => setForm(p => ({ ...p, source: e.target.value }))} /></FormRow>
-              <FormRow label="Score (0-100)"><input type="number" className="input" min={0} max={100} value={form.score} onChange={e => setForm(p => ({ ...p, score: e.target.value }))} /></FormRow>
+              <FormRow label={t("status")}><Select options={LEAD_STATUS} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} /></FormRow>
+              <FormRow label={t("contact_source")}><Select options={LEAD_SOURCE} placeholder={t("filter")} value={form.source} onChange={e => setForm(p => ({ ...p, source: e.target.value }))} /></FormRow>
+              <FormRow label={t("lead_score")}><input type="number" className="input" min={0} max={100} value={form.score} onChange={e => setForm(p => ({ ...p, score: e.target.value }))} /></FormRow>
             </div>
-            <FormRow label="Est. Value ($)"><input type="number" className="input" value={form.estimatedValue} onChange={e => setForm(p => ({ ...p, estimatedValue: e.target.value }))} /></FormRow>
-            <FormRow label="Notes"><textarea className="input" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></FormRow>
+            <FormRow label={t("lead_value")}><input type="number" className="input" value={form.estimatedValue} onChange={e => setForm(p => ({ ...p, estimatedValue: e.target.value }))} /></FormRow>
+            <FormRow label={t("notes")}><textarea className="input" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></FormRow>
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save" : "Add Lead"}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>{t("cancel")}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t("loading") : editing ? t("save") : t("add_lead_btn")}</button>
           </div>
         </form>
       </Modal>

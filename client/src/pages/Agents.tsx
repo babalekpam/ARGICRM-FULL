@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Loader, Modal, FormRow } from "../components/UI";
@@ -30,6 +31,7 @@ interface Message { role: "user" | "assistant"; content: string; toolsUsed?: str
 
 export default function AgentsPage() {
   const { user, tenant } = useAuth();
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [activeAgent, setActiveAgent] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -152,7 +154,7 @@ export default function AgentsPage() {
   const prompts = activeAgent ? (QUICK_PROMPTS[activeAgent] || []) : [];
 
   return (
-    <Layout title="AI Business Center" subtitle="12 specialized AI agents for every function">
+    <Layout title={t("agents_title")} subtitle={t("agents_subtitle")}>
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16, height: "calc(100vh - 140px)" }}>
 
         {/* ── Sidebar: Agent List ── */}

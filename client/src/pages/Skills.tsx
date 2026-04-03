@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Select, Empty, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import { Zap, Search, Copy, Download, ChevronRight, ArrowLeft, Play, Sparkles, Globe, BarChart2, Users, DollarSign, Settings, Shield, Code, Brain, Target, RefreshCw } from "lucide-react";
@@ -19,6 +20,7 @@ const DOMAIN_COLORS: Record<string, string> = {
 };
 
 export default function SkillsPage() {
+  const { t } = useLanguage();
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<any>(null);
   const [search, setSearch] = useState("");
@@ -66,7 +68,7 @@ export default function SkillsPage() {
 
   return (
     <Layout
-      title="AI Skills Hub"
+      title={t("skills_title")}
       subtitle={`${skillsData?.total || 0} production-grade skills for every business function`}
       actions={
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

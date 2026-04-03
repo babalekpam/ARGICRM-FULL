@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
+import { useLanguage } from "../contexts/LanguageContext";
 import { TrendingUp, Plus, Trash2, Edit, DollarSign } from "lucide-react";
 
 const STAGES = [
@@ -18,6 +19,7 @@ const BLANK = { title: "", stage: "prospecting", value: "", probability: "25", n
 
 export default function DealsPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -46,18 +48,18 @@ export default function DealsPage() {
 
   return (
     <Layout
-      title="Deals"
-      subtitle={`${deals.length} deals · $${totalValue.toLocaleString()} pipeline`}
+      title={t("deals_title")}
+      subtitle={`${deals.length} ${t("nav_deals").toLowerCase()} · $${totalValue.toLocaleString()} ${t("pipeline").toLowerCase()}`}
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ display: "flex", background: "var(--bg-overlay)", borderRadius: 8, padding: 3, gap: 2 }}>
             {(["kanban", "list"] as const).map(v => (
               <button key={v} className={`btn btn-sm ${view === v ? "btn-primary" : "btn-ghost"}`} style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => setView(v)}>
-                {v.charAt(0).toUpperCase() + v.slice(1)}
+                {v === "kanban" ? t("kanban") : t("view")}
               </button>
             ))}
           </div>
-          <button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={15} /> Add Deal</button>
+          <button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={15} /> {t("add_deal_btn")}</button>
         </div>
       }
     >
@@ -132,20 +134,20 @@ export default function DealsPage() {
         </div>
       )}
 
-      <Modal open={modal} onClose={() => setModal(false)} title={editing ? "Edit Deal" : "New Deal"}>
+      <Modal open={modal} onClose={() => setModal(false)} title={editing ? t("edit") + " Deal" : t("add_deal_btn")}>
         <form onSubmit={save}>
           <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-            <FormRow label="Deal title" required><input className="input" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required placeholder="e.g. Enterprise License - Acme Corp" /></FormRow>
+            <FormRow label={t("deal_name")} required><input className="input" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required placeholder="e.g. Enterprise License - Acme Corp" /></FormRow>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <FormRow label="Stage"><Select options={STAGES.map(s => ({ value: s.id, label: s.name }))} value={form.stage} onChange={e => setForm(p => ({ ...p, stage: e.target.value }))} /></FormRow>
-              <FormRow label="Value ($)"><input type="number" className="input" value={form.value} onChange={e => setForm(p => ({ ...p, value: e.target.value }))} min={0} /></FormRow>
+              <FormRow label={t("deal_stage")}><Select options={STAGES.map(s => ({ value: s.id, label: s.name }))} value={form.stage} onChange={e => setForm(p => ({ ...p, stage: e.target.value }))} /></FormRow>
+              <FormRow label={t("deal_value")}><input type="number" className="input" value={form.value} onChange={e => setForm(p => ({ ...p, value: e.target.value }))} min={0} /></FormRow>
             </div>
-            <FormRow label="Win probability (%)" hint="0–100"><input type="number" className="input" value={form.probability} onChange={e => setForm(p => ({ ...p, probability: e.target.value }))} min={0} max={100} /></FormRow>
-            <FormRow label="Notes"><textarea className="input" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></FormRow>
+            <FormRow label={t("deal_probability")}><input type="number" className="input" value={form.probability} onChange={e => setForm(p => ({ ...p, probability: e.target.value }))} min={0} max={100} /></FormRow>
+            <FormRow label={t("notes")}><textarea className="input" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></FormRow>
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save" : "Add Deal"}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>{t("cancel")}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t("loading") : editing ? t("save") : t("add_deal_btn")}</button>
           </div>
         </form>
       </Modal>

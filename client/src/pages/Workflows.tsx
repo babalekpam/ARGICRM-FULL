@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { apiRequest } from "../lib/api";
 import {
   Zap, Plus, Play, Pause, Trash2, Clock, Target,
@@ -410,6 +411,7 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
 // ── Main page ───────────────────────────────────────────────────
 export default function WorkflowsPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [showBuilder, setShowBuilder]     = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [runResult, setRunResult]         = useState<any>(null);
@@ -482,8 +484,8 @@ export default function WorkflowsPage() {
 
   return (
     <Layout
-      title="Workflow Automation"
-      subtitle="Build automations that run fully autonomously or with your approval on each step"
+      title={t("workflows_title")}
+      subtitle={t("workflows_subtitle")}
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowTemplates(true)}

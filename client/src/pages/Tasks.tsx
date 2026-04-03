@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
+import { useLanguage } from "../contexts/LanguageContext";
 import { CheckSquare, Plus, Trash2, Edit, Building2, Megaphone, FileText, Settings as SettingsIcon, Users, Home, Check, AlertCircle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Link } from "wouter";
@@ -16,6 +17,7 @@ const BLANK_TASK = { title: "", description: "", status: "todo", priority: "medi
 
 export function TasksPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(BLANK_TASK);
@@ -75,7 +77,7 @@ export function TasksPage() {
   };
 
   return (
-    <Layout title="Tasks" subtitle={`${tasks?.length ?? 0} tasks`} actions={<button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={15} /> Add Task</button>}>
+    <Layout title={t("tasks_title")} subtitle={`${tasks?.length ?? 0} ${t("nav_tasks").toLowerCase()}`} actions={<button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={15} /> {t("add_task_btn")}</button>}>
       {isLoading ? <Loader /> : (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
           {[{ key: "todo", label: "To Do", color: "#64748b" }, { key: "in_progress", label: "In Progress", color: "#3b82f6" }, { key: "done", label: "Done", color: "#10b981" }].map(col => (
@@ -90,20 +92,20 @@ export function TasksPage() {
           ))}
         </div>
       )}
-      <Modal open={modal} onClose={() => setModal(false)} title={editing ? "Edit Task" : "New Task"}>
+      <Modal open={modal} onClose={() => setModal(false)} title={editing ? t("edit") + " " + t("nav_tasks").slice(0,-1) : t("add_task_btn")}>
         <form onSubmit={save}>
           <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-            <FormRow label="Title" required><input className="input" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required /></FormRow>
-            <FormRow label="Description"><textarea className="input" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} /></FormRow>
+            <FormRow label={t("task_title")} required><input className="input" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required /></FormRow>
+            <FormRow label={t("description")}><textarea className="input" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} /></FormRow>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <FormRow label="Status"><Select options={TASK_STATUS} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} /></FormRow>
-              <FormRow label="Priority"><Select options={TASK_PRIORITY} value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))} /></FormRow>
-              <FormRow label="Due date"><input type="date" className="input" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} /></FormRow>
+              <FormRow label={t("status")}><Select options={TASK_STATUS} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} /></FormRow>
+              <FormRow label={t("task_priority")}><Select options={TASK_PRIORITY} value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))} /></FormRow>
+              <FormRow label={t("task_due_date")}><input type="date" className="input" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} /></FormRow>
             </div>
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save" : "Add Task"}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>{t("cancel")}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t("loading") : editing ? t("save") : t("add_task_btn")}</button>
           </div>
         </form>
       </Modal>

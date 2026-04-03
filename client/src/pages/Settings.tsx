@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { User, Building2, Lock, Bell, Shield, CheckCircle, AlertCircle, Eye, EyeOff, Globe, Mail, Phone, Paintbrush, ExternalLink, Wifi, WifiOff, Loader2, Brain, Key, Trash2 } from "lucide-react";
 
 const TABS = [
@@ -25,6 +26,7 @@ function SaveButton({ loading, saved }: { loading: boolean; saved: boolean }) {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { t, lang, setLang } = useLanguage();
   const [tab, setTab] = useState("profile");
 
   const [profile, setProfile] = useState({ firstName:"", lastName:"", email:"", preferredLanguage:"en" });
@@ -134,7 +136,7 @@ export default function SettingsPage() {
   const pb=planBadge[plan]||planBadge.free;
 
   return (
-    <Layout title="Settings" subtitle="Manage your account and workspace">
+    <Layout title={t("settings_title")} subtitle={t("settings_subtitle")}>
       <div style={{display:"flex",gap:20,maxWidth:900}}>
         {/* Sidebar nav */}
         <div style={{width:200,flexShrink:0}}>

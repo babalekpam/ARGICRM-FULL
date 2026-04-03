@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { apiRequest } from "../lib/api";
 import {
   Brain, Mail, Mic, Search, Zap, Copy, Check, ChevronDown,

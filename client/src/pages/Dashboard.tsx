@@ -2,6 +2,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Users, UserPlus, TrendingUp, CheckSquare, DollarSign, Activity, ArrowUpRight, Clock, Phone, Mail, MessageSquare } from "lucide-react";
 import { Link } from "wouter";
 
@@ -29,13 +30,22 @@ const ACTIVITY_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
   const { user, tenant } = useAuth();
+  const { t, lang } = useLanguage();
   const { data: stats, isLoading } = useQuery<any>({ queryKey: ["/api/dashboard"] });
 
+  const greetings: Record<string, [string, string, string]> = {
+    fr: ["Bonjour", "Bon après-midi", "Bonsoir"],
+    es: ["Buenos días", "Buenas tardes", "Buenas noches"],
+    de: ["Guten Morgen", "Guten Tag", "Guten Abend"],
+    ar: ["صباح الخير", "مساء الخير", "مساء النور"],
+    en: ["Good morning", "Good afternoon", "Good evening"],
+  };
   const greeting = (() => {
     const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 17) return "Good afternoon";
-    return "Good evening";
+    const [m, a, e] = greetings[lang] || greetings["en"];
+    if (h < 12) return m;
+    if (h < 17) return a;
+    return e;
   })();
 
   const name = user?.firstName || user?.email?.split("@")[0] || "there";
@@ -62,34 +72,34 @@ export default function DashboardPage() {
           <div className="stagger" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
             <StatCard
               icon={Users}
-              label="Total Contacts"
+              label={t("total_contacts")}
               value={stats?.contacts?.total ?? 0}
-              sub={`+${stats?.contacts?.new30d ?? 0} this month`}
+              sub={`+${stats?.contacts?.new30d ?? 0} ${t("this_month").toLowerCase()}`}
               color="#3b82f6"
               href="/contacts"
             />
             <StatCard
               icon={UserPlus}
-              label="Active Leads"
+              label={t("total_leads")}
               value={stats?.leads?.total ?? 0}
-              sub="In pipeline"
+              sub={t("pipeline")}
               color="#8b5cf6"
               href="/leads"
             />
             <StatCard
               icon={TrendingUp}
-              label="Open Deals"
+              label={t("active_deals")}
               value={stats?.deals?.active ?? 0}
-              sub={`${fmt(stats?.deals?.activeValue ?? 0)} pipeline value`}
+              sub={`${fmt(stats?.deals?.activeValue ?? 0)} pipeline`}
               color="#f59e0b"
               href="/deals"
             />
             <StatCard
               icon={DollarSign}
-              label="Won Revenue"
+              label={t("total_revenue")}
               value={fmt(stats?.deals?.wonValue ?? 0).replace("$", "")}
               prefix="$"
-              sub={`${stats?.deals?.won ?? 0} deals closed`}
+              sub={`${stats?.deals?.won ?? 0} ${t("nav_deals").toLowerCase()}`}
               color="#10b981"
               href="/deals"
             />
@@ -101,8 +111,8 @@ export default function DashboardPage() {
             <div className="card" style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Recent Activity</h3>
-                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>Latest updates across your CRM</p>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{t("recent_activity")}</h3>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>{t("dashboard_subtitle")}</p>
                 </div>
                 <Link href="/contacts"><a className="btn btn-ghost btn-sm" style={{ fontSize: 12 }}>View all <ArrowUpRight size={13} /></a></Link>
               </div>
@@ -139,8 +149,8 @@ export default function DashboardPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div className="card" style={{ padding: 0, overflow: "hidden" }}>
                 <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Tasks</h3>
-                  <Link href="/tasks"><a className="btn btn-ghost btn-sm" style={{ fontSize: 12 }}>View all <ArrowUpRight size={13} /></a></Link>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{t("nav_tasks")}</h3>
+                  <Link href="/tasks"><a className="btn btn-ghost btn-sm" style={{ fontSize: 12 }}>{t("view")} <ArrowUpRight size={13} /></a></Link>
                 </div>
                 <div style={{ padding: "12px 20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
@@ -160,13 +170,13 @@ export default function DashboardPage() {
 
               {/* Quick actions */}
               <div className="card" style={{ padding: "16px 20px" }}>
-                <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700 }}>Quick actions</h3>
+                <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700 }}>{t("quick_actions")}</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {[
-                    { label: "New Contact", href: "/contacts", color: "#3b82f6" },
-                    { label: "Add Lead", href: "/leads", color: "#8b5cf6" },
-                    { label: "Create Deal", href: "/deals", color: "#f59e0b" },
-                    { label: "New Campaign", href: "/campaigns", color: "#10b981" },
+                    { label: t("add_contact"), href: "/contacts", color: "#3b82f6" },
+                    { label: t("add_lead"), href: "/leads", color: "#8b5cf6" },
+                    { label: t("add_deal"), href: "/deals", color: "#f59e0b" },
+                    { label: t("create_campaign"), href: "/campaigns", color: "#10b981" },
                   ].map(a => (
                     <Link key={a.label} href={a.href}>
                       <a className="btn btn-secondary btn-sm" style={{ width: "100%", justifyContent: "flex-start" }}>

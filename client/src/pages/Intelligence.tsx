@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import {
@@ -23,6 +24,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 export default function IntelligencePage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<typeof TABS[number]>("Prospects");
   const [searchModal, setSearchModal] = useState(false);
   const [sequenceModal, setSequenceModal] = useState(false);
@@ -93,8 +95,8 @@ export default function IntelligencePage() {
 
   return (
     <Layout
-      title="Lead Intelligence"
-      subtitle="ZoomInfo-grade B2B prospecting, enrichment & outreach"
+      title={t("intelligence_title")}
+      subtitle={t("intelligence_subtitle")}
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={() => setEmailFinderModal(true)}><Mail size={14} /> Email Finder</button>

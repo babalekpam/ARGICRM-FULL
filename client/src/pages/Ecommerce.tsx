@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Empty } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import {
@@ -21,6 +22,7 @@ type StoreBuilderMode = "list" | "interview" | "building" | "complete" | "domain
 
 export default function EcommercePage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<typeof TABS[number]>("Products");
 
   // Product/Order state
@@ -646,8 +648,8 @@ export default function EcommercePage() {
   // ── Main layout ───────────────────────────────────────────────
   return (
     <Layout
-      title="E-commerce"
-      subtitle="Stores, products, orders & inventory management"
+      title={t("ecommerce_title")}
+      subtitle={t("ecommerce_subtitle")}
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           {tab === "Stores" && (

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Avatar, Badge, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
+import { useLanguage } from "../contexts/LanguageContext";
 import { UserPlus, Search, Filter, Trash2, Edit, Phone, Mail, Building2, ExternalLink } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -29,6 +30,7 @@ const BLANK = { firstName: "", lastName: "", email: "", phone: "", company: "", 
 export default function ContactsPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -70,9 +72,9 @@ export default function ContactsPage() {
 
   return (
     <Layout
-      title="Contacts"
-      subtitle={data ? `${data.total} total contacts` : undefined}
-      actions={<button className="btn btn-primary btn-sm" onClick={openAdd}><UserPlus size={15} /> Add Contact</button>}
+      title={t("contacts_title")}
+      subtitle={data ? `${data.total} ${t("total_contacts").toLowerCase()}` : undefined}
+      actions={<button className="btn btn-primary btn-sm" onClick={openAdd}><UserPlus size={15} /> {t("add_contact_btn")}</button>}
     >
       {/* Filters */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
@@ -80,14 +82,14 @@ export default function ContactsPage() {
           <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
           <input
             className="input"
-            placeholder="Search contacts..."
+            placeholder={t("search_contacts")}
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ paddingLeft: 36 }}
           />
         </div>
         <select className="input" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ width: "auto", minWidth: 140 }}>
-          <option value="">All statuses</option>
+          <option value="">{t("all")}</option>
           {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
@@ -95,7 +97,7 @@ export default function ContactsPage() {
       {/* Table */}
       <div className="card" style={{ overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 200px 180px 120px 100px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-          {["Contact", "Company", "Contact Info", "Status", "Actions"].map(h => (
+          {[t("name"), t("company"), t("contact_email"), t("status"), t("actions")].map(h => (
             <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
           ))}
         </div>
@@ -103,7 +105,7 @@ export default function ContactsPage() {
         {isLoading ? (
           <Loader />
         ) : !data?.data?.length ? (
-          <Empty icon={UserPlus} title="No contacts yet" desc="Add your first contact to get started" action={<button className="btn btn-primary" onClick={openAdd}><UserPlus size={15} /> Add Contact</button>} />
+          <Empty icon={UserPlus} title={t("no_contacts")} desc={t("no_contacts_desc")} action={<button className="btn btn-primary" onClick={openAdd}><UserPlus size={15} /> {t("add_contact_btn")}</button>} />
         ) : (
           data.data.map((c: any) => (
             <div key={c.id} className="table-row" style={{ gridTemplateColumns: "1fr 200px 180px 120px 100px", gap: 12 }}>
@@ -130,30 +132,30 @@ export default function ContactsPage() {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Edit Contact" : "Add Contact"}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t("edit_contact") : t("add_contact_btn")}>
         <form onSubmit={save}>
           <div style={{ padding: "20px", display: "grid", gap: 14 }}>
             {error && <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "#f87171" }}>{error}</div>}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <FormRow label="First name" required><input className="input" value={form.firstName} onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))} required /></FormRow>
-              <FormRow label="Last name"><input className="input" value={form.lastName} onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))} /></FormRow>
+              <FormRow label={t("first_name")} required><input className="input" value={form.firstName} onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))} required /></FormRow>
+              <FormRow label={t("last_name")}><input className="input" value={form.lastName} onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))} /></FormRow>
             </div>
-            <FormRow label="Email"><input type="email" className="input" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></FormRow>
-            <FormRow label="Phone"><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></FormRow>
+            <FormRow label={t("email")}><input type="email" className="input" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></FormRow>
+            <FormRow label={t("phone")}><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></FormRow>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <FormRow label="Company"><input className="input" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} /></FormRow>
-              <FormRow label="Job title"><input className="input" value={form.jobTitle} onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))} /></FormRow>
+              <FormRow label={t("company")}><input className="input" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} /></FormRow>
+              <FormRow label={t("contact_position")}><input className="input" value={form.jobTitle} onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))} /></FormRow>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <FormRow label="Status"><Select options={STATUS_OPTIONS} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} /></FormRow>
-              <FormRow label="Source"><Select options={SOURCE_OPTIONS} placeholder="Select source" value={form.source} onChange={e => setForm(p => ({ ...p, source: e.target.value }))} /></FormRow>
+              <FormRow label={t("status")}><Select options={STATUS_OPTIONS} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} /></FormRow>
+              <FormRow label={t("contact_source")}><Select options={SOURCE_OPTIONS} placeholder={t("filter")} value={form.source} onChange={e => setForm(p => ({ ...p, source: e.target.value }))} /></FormRow>
             </div>
-            <FormRow label="Notes"><textarea className="input" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} style={{ resize: "vertical" }} /></FormRow>
+            <FormRow label={t("notes")}><textarea className="input" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} style={{ resize: "vertical" }} /></FormRow>
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>{t("cancel")}</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} />Saving...</> : editing ? "Save changes" : "Add Contact"}
+              {saving ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t("loading")}</> : editing ? t("save_changes") : t("add_contact_btn")}
             </button>
           </div>
         </form>

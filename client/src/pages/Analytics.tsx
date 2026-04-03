@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -324,10 +325,11 @@ function RepPerformanceTab() {
 }
 
 export default function AnalyticsPage() {
+  const { t } = useLanguage();
   const [tab, setTab] = useState<Tab>("Revenue Forecast");
 
   return (
-    <Layout title="Analytics" subtitle="Revenue intelligence and team performance">
+    <Layout title={t("analytics_title")} subtitle={t("analytics_subtitle")}>
       <div style={{ display: "flex", gap: 6, marginBottom: 20, background: "var(--bg-overlay)", borderRadius: 10, padding: 4, width: "fit-content" }}>
         {TABS.map(t => (
           <button

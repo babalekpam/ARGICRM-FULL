@@ -3,6 +3,8 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import { useWhiteLabel } from "../contexts/WhiteLabelContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useLanguage } from "../contexts/LanguageContext";
+import { SUPPORTED_LANGUAGES } from "@shared/languages";
 import { useQuery } from "@tanstack/react-query";
 import ARIADialog from "./ARIADialog";
 import {
@@ -11,61 +13,61 @@ import {
   Bell, Menu, Shield, Zap, Crown, ChevronRight, UsersRound,
   Bot, Search, Activity, ShoppingCart, DollarSign, Briefcase,
   Globe, Target, Brain, BarChart2, Workflow, Sparkles, Command, X,
-  Sun, Moon
+  Sun, Moon, Languages
 } from "lucide-react";
 
-const NAV_SECTIONS = [
+const NAV_SECTIONS_DEF = [
   {
-    label: "CRM",
+    labelKey: "nav_crm",
     items: [
-      { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-      { label: "Contacts", icon: Users, path: "/contacts" },
-      { label: "Leads", icon: UserPlus, path: "/leads" },
-      { label: "Deals", icon: TrendingUp, path: "/deals" },
-      { label: "Tasks", icon: CheckSquare, path: "/tasks" },
-      { label: "Accounts", icon: Building2, path: "/accounts" },
+      { labelKey: "nav_dashboard", icon: LayoutDashboard, path: "/dashboard" },
+      { labelKey: "nav_contacts", icon: Users, path: "/contacts" },
+      { labelKey: "nav_leads", icon: UserPlus, path: "/leads" },
+      { labelKey: "nav_deals", icon: TrendingUp, path: "/deals" },
+      { labelKey: "nav_tasks", icon: CheckSquare, path: "/tasks" },
+      { labelKey: "nav_accounts", icon: Building2, path: "/accounts" },
     ]
   },
   {
-    label: "Intelligence",
+    labelKey: "nav_intelligence",
     items: [
-      { label: "Analytics", icon: BarChart2, path: "/analytics" },
-      { label: "AI Tools", icon: Sparkles, path: "/ai-tools" },
-      { label: "Automation", icon: Workflow, path: "/workflows" },
-      { label: "Lead Intelligence", icon: Search, path: "/intelligence" },
-      { label: "AI Agents", icon: Bot, path: "/agents" },
-      { label: "Skills Library", icon: Brain, path: "/skills" },
+      { labelKey: "nav_analytics", icon: BarChart2, path: "/analytics" },
+      { labelKey: "nav_ai_tools", icon: Sparkles, path: "/ai-tools" },
+      { labelKey: "nav_automation", icon: Workflow, path: "/workflows" },
+      { labelKey: "nav_lead_intelligence", icon: Search, path: "/intelligence" },
+      { labelKey: "nav_ai_agents", icon: Bot, path: "/agents" },
+      { labelKey: "nav_skills_library", icon: Brain, path: "/skills" },
     ]
   },
   {
-    label: "Sales & Marketing",
+    labelKey: "nav_sales_marketing",
     items: [
-      { label: "Marketing Hub", icon: Megaphone, path: "/marketing" },
-      { label: "Campaigns", icon: Target, path: "/campaigns" },
-      { label: "Invoices", icon: FileText, path: "/invoices" },
+      { labelKey: "nav_marketing_hub", icon: Megaphone, path: "/marketing" },
+      { labelKey: "nav_campaigns", icon: Target, path: "/campaigns" },
+      { labelKey: "nav_invoices", icon: FileText, path: "/invoices" },
     ]
   },
   {
-    label: "Platform",
+    labelKey: "nav_platform",
     items: [
-      { label: "SEO Platform", icon: Globe, path: "/seo" },
-      { label: "E-commerce", icon: ShoppingCart, path: "/ecommerce" },
-      { label: "Finance", icon: DollarSign, path: "/finance" },
+      { labelKey: "nav_seo_platform", icon: Globe, path: "/seo" },
+      { labelKey: "nav_ecommerce", icon: ShoppingCart, path: "/ecommerce" },
+      { labelKey: "nav_finance", icon: DollarSign, path: "/finance" },
     ]
   },
   {
-    label: "Operations",
+    labelKey: "nav_operations",
     items: [
-      { label: "Projects", icon: Briefcase, path: "/projects" },
-      { label: "Employees", icon: UsersRound, path: "/employees" },
+      { labelKey: "nav_projects", icon: Briefcase, path: "/projects" },
+      { labelKey: "nav_employees", icon: UsersRound, path: "/employees" },
     ]
   },
   {
-    label: "Admin",
+    labelKey: "nav_admin",
     items: [
-      { label: "Team", icon: UsersRound, path: "/team" },
-      { label: "Settings", icon: Settings, path: "/settings" },
-      { label: "Code Healing", icon: Activity, path: "/healing" },
+      { labelKey: "nav_team", icon: UsersRound, path: "/team" },
+      { labelKey: "nav_settings", icon: Settings, path: "/settings" },
+      { labelKey: "nav_code_healing", icon: Activity, path: "/healing" },
     ]
   },
 ];
@@ -153,7 +155,10 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
   const { user, tenant, logout } = useAuth();
   const { logoUrl, brandName } = useWhiteLabel();
   const { theme, toggleTheme } = useTheme();
+  const { t, lang, setLang } = useLanguage();
   const [location] = useLocation();
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -175,6 +180,16 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
     return () => document.removeEventListener("keydown", handleKey);
   }, []);
   const isTrial = tenant?.plan === "trial" || tenant?.plan === "trialing";
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false);
+      }
+    }
+    if (langOpen) document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [langOpen]);
 
   const initials = [user?.firstName, user?.lastName].filter(Boolean).map(n => n![0]).join("") || user?.email?.[0]?.toUpperCase() || "?";
 
@@ -205,24 +220,25 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
 
       {/* Navigation */}
       <div style={{ flex: 1, overflowY: "auto", padding: "6px 8px", scrollbarWidth: "none" }}>
-        {NAV_SECTIONS.map(section => (
-          <div key={section.label} style={{ marginTop: 8 }}>
+        {NAV_SECTIONS_DEF.map(section => (
+          <div key={section.labelKey} style={{ marginTop: 8 }}>
             {!collapsed && (
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", padding: "0 6px", marginBottom: 2 }}>{section.label}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", padding: "0 6px", marginBottom: 2 }}>{t(section.labelKey)}</div>
             )}
             {section.items.map(item => {
               const Icon = item.icon;
               const active = location === item.path;
+              const label = t(item.labelKey);
               return (
-                <Link key={item.path + item.label} href={item.path}>
+                <Link key={item.path + item.labelKey} href={item.path}>
                   <a
                     className={`nav-item ${active ? "active" : ""}`}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? label : undefined}
                     style={{ marginBottom: 1 }}
                     onClick={() => setMobileOpen(false)}
                   >
                     <Icon size={15} style={{ flexShrink: 0 }} />
-                    {!collapsed && <span style={{ fontSize: 13 }}>{item.label}</span>}
+                    {!collapsed && <span style={{ fontSize: 13 }}>{label}</span>}
                     {active && !collapsed && <ChevronRight size={12} style={{ marginLeft: "auto", opacity: 0.5 }} />}
                   </a>
                 </Link>
@@ -326,7 +342,7 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
             {/* Global search trigger */}
             <button data-testid="button-global-search" onClick={() => setSearchOpen(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, padding: isMobile ? "6px 8px" : "5px 10px", cursor: "pointer", color: "var(--text-muted)", fontSize: 12 }}>
               <Search size={13} />
-              {!isMobile && <span style={{ fontSize: 12 }}>Search…</span>}
+              {!isMobile && <span style={{ fontSize: 12 }}>{t("search")}…</span>}
               {!isMobile && (
                 <span style={{ display: "flex", alignItems: "center", gap: 2, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 4px", fontSize: 10, fontFamily: "monospace" }}>
                   <Command size={9} />K
@@ -334,6 +350,35 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
               )}
             </button>
             {actions}
+            {/* Language switcher */}
+            <div ref={langRef} style={{ position: "relative" }}>
+              <button
+                data-testid="button-language-switcher"
+                onClick={() => setLangOpen(!langOpen)}
+                title={t("language")}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 8, display: "flex", alignItems: "center", gap: 4, borderRadius: 8, fontSize: 12 }}
+              >
+                <Languages size={16} />
+                {!isMobile && <span style={{ fontSize: 11, fontWeight: 600 }}>{lang.toUpperCase()}</span>}
+              </button>
+              {langOpen && (
+                <div style={{ position: "absolute", right: 0, top: "100%", marginTop: 4, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", minWidth: 180, zIndex: 200, overflow: "hidden" }}>
+                  <div style={{ padding: "8px 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>{t("language")}</div>
+                  {SUPPORTED_LANGUAGES.map(l => (
+                    <button
+                      key={l.code}
+                      data-testid={`button-lang-${l.code}`}
+                      onClick={() => { setLang(l.code); setLangOpen(false); }}
+                      style={{ width: "100%", background: lang === l.code ? "var(--bg-overlay)" : "none", border: "none", cursor: "pointer", padding: "8px 12px", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-primary)", textAlign: "left" }}
+                    >
+                      <span style={{ fontSize: 16 }}>{l.flag}</span>
+                      <span style={{ flex: 1 }}>{l.nativeName}</span>
+                      {lang === l.code && <span style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700 }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               data-testid="button-theme-toggle"
               onClick={toggleTheme}

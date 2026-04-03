@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "../lib/api";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { FileText, Plus, Search, Edit2, Trash2, X, ChevronDown, AlertCircle, DollarSign, Clock, CheckCircle, AlertTriangle, Send, Download } from "lucide-react";
 
 const STATUSES = ["draft","sent","paid","overdue","cancelled"];
@@ -25,6 +26,7 @@ const EMPTY_ITEM:LineItem={description:"",quantity:1,unitPrice:0,total:0};
 const EMPTY={number:"",status:"draft",notes:"",dueDate:"",currency:"USD",items:[] as LineItem[]};
 
 export default function InvoicesPage() {
+  const { t } = useLanguage();
   const [search,setSearch]=useState("");
   const [sf,setSf]=useState("all");
   const [modal,setModal]=useState(false);
@@ -84,7 +86,7 @@ export default function InvoicesPage() {
   const th={padding:"10px 14px",textAlign:"left" as const,fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.05em",color:"var(--text-muted)",whiteSpace:"nowrap" as const};
 
   return (
-    <Layout title="Invoices" subtitle={`${filtered.length} invoices`} actions={
+    <Layout title={t("invoices_title")} subtitle={`${filtered.length} ${t("nav_invoices").toLowerCase()}`} actions={
       <button data-testid="button-add-invoice" onClick={()=>open()} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}><Plus size={14}/>New Invoice</button>
     }>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>

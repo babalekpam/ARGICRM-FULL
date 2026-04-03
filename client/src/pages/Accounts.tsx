@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "../lib/api";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Building2, Plus, Search, Edit2, Trash2, Globe, Phone, Mail, MapPin, Users, DollarSign, X, ChevronDown, Filter, TrendingUp, AlertCircle } from "lucide-react";
 
 const INDUSTRIES = ["Technology","Healthcare","Finance","Retail","Manufacturing","Education","Real Estate","Media","Legal","Consulting","Other"];
@@ -16,6 +17,7 @@ function StatusBadge({ status }: { status: string }) {
 const EMPTY = { name:"",industry:"",website:"",phone:"",email:"",city:"",state:"",country:"",annualRevenue:"",employeeCount:"",status:"active",notes:"" };
 
 export default function AccountsPage() {
+  const { t } = useLanguage();
   const [search,setSearch]=useState("");
   const [sf,setSf]=useState("all");
   const [modal,setModal]=useState(false);
@@ -49,7 +51,7 @@ export default function AccountsPage() {
   const th={padding:"10px 14px",textAlign:"left" as const,fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.05em",color:"var(--text-muted)",whiteSpace:"nowrap" as const};
 
   return (
-    <Layout title="Accounts" subtitle={`${filtered.length} company accounts`} actions={
+    <Layout title={t("accounts_title")} subtitle={`${filtered.length} ${t("accounts_subtitle")}`} actions={
       <button data-testid="button-add-account" onClick={()=>open()} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}><Plus size={14}/>New Account</button>
     }>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>

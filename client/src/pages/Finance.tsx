@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Select, Empty, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import {
@@ -22,6 +23,7 @@ const BANK_TYPES = [{ value: "checking", label: "Checking" }, { value: "savings"
 
 export function FinancePage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<typeof TABS_F[number]>("Transactions");
   const [txModal, setTxModal] = useState(false);
   const [bankModal, setBankModal] = useState(false);
@@ -86,7 +88,7 @@ export function FinancePage() {
   const REGION_COLORS: Record<string, string> = { "Global": "#3b82f6", "West Africa": "#10b981", "East Africa": "#f59e0b", "North Africa": "#8b5cf6", "Central Africa": "#06b6d4", "Southern Africa": "#f97316", "Island Nations": "#ec4899", "Asia": "#14b8a6", "Americas": "#6366f1" };
 
   return (
-    <Layout title="Financial Management" subtitle="Multi-currency bookkeeping, invoicing, bank feeds & tax"
+    <Layout title={t("finance_title")} subtitle={t("finance_subtitle")}
       actions={<button className="btn btn-primary btn-sm" onClick={() => { setForm(BLANK_TX); setTxModal(true); }}><Plus size={14} /> Add Transaction</button>}
     >
       {/* KPI bar */}

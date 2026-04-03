@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Select, Empty, Badge, Loader, Avatar } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import { Briefcase, Plus, Edit, Trash2, CheckSquare, Users, BarChart2, Calendar, Target, Zap, Megaphone, Globe, Star, Check, FileText, Link, Image, Type, Play } from "lucide-react";
@@ -14,6 +15,7 @@ const BLANK_P = { name: "", description: "", status: "planning", priority: "medi
 
 export function ProjectsPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(BLANK_P);
@@ -48,7 +50,7 @@ export function ProjectsPage() {
   };
 
   return (
-    <Layout title="Projects" subtitle="Project management with Gantt charts & task tracking"
+    <Layout title={t("projects_title")} subtitle={t("projects_subtitle")}
       actions={<button className="btn btn-primary btn-sm" onClick={() => { setEditing(null); setForm(BLANK_P); setModal(true); }}><Plus size={14} /> New Project</button>}
     >
       <div style={{ display: "grid", gridTemplateColumns: selectedProject ? "280px 1fr" : "1fr", gap: 20 }}>
@@ -179,6 +181,7 @@ const EMP_TYPE = [{ value: "full_time", label: "Full Time" }, { value: "part_tim
 
 export function EmployeesPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState<any>(BLANK_E);
@@ -200,7 +203,7 @@ export function EmployeesPage() {
   const active = (empList || []).filter(e => e.status === "active").length;
 
   return (
-    <Layout title="Employees" subtitle={`${empList?.length || 0} team members · ${active} active`}
+    <Layout title={t("employees_title")} subtitle={`${empList?.length || 0} ${t("team_members")} · ${active} ${t("active").toLowerCase()}`}
       actions={<button className="btn btn-primary btn-sm" onClick={() => { setEditing(null); setForm(BLANK_E); setModal(true); }}><Plus size={14} /> Add Employee</button>}
     >
       {/* Dept breakdown */}
@@ -273,6 +276,7 @@ export function EmployeesPage() {
 // ═══ MARKETING HUB ══════════════════════════════════════════════
 export function MarketingPage() {
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [tab, setTab] = useState("Funnels");
   const [funnelModal, setFunnelModal] = useState(false);
   const [lpModal, setLpModal] = useState(false);
@@ -302,7 +306,7 @@ export function MarketingPage() {
   const MTABS = ["Funnels", "Landing Pages", "A/B Tests", "Reputation"];
 
   return (
-    <Layout title="Marketing Hub" subtitle="AI Funnels, landing pages, A/B testing & reputation management"
+    <Layout title={t("marketing_title")} subtitle={t("marketing_subtitle")}
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={() => setLpModal(true)}><Globe size={14} /> New Landing Page</button>
