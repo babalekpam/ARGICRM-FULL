@@ -145,31 +145,31 @@ router.put("/orders/:id", authenticate, async (req: AuthRequest, res) => {
 });
 
 // ── AI Store Builder ───────────────────────────────────────────
-const STORE_INTERVIEW_SYSTEM = `You are an AI store builder for ArgiCRM. Help the user create an online store through natural conversation.
+const STORE_INTERVIEW_SYSTEM = `You are an AI store builder for ArgiCRM. Your job is to extract store information from the user's message and confirm you're ready to build AS FAST AS POSSIBLE.
 
-You need to collect: store name, product category/niche, target audience, brand aesthetic, price range, currency.
+CRITICAL RULES:
+- You ONLY need a store name and a product category/niche. That's it. Everything else is optional.
+- If the user gives you ANY description of what they sell, set "ready": true immediately.
+- NEVER ask more than ONE follow-up question total. If you already asked one question and got any response, set "ready": true regardless.
+- Infer missing fields yourself (suggest a name if not given, set currency to USD by default, set aesthetic to "modern" by default).
+- If the user says ANYTHING about a product type (candles, clothes, food, phones, etc.), that is enough — set "ready": true.
+- Be brief and warm. One short sentence max.
 
-Rules:
-- Ask ONE follow-up question at a time if critical info is missing
-- Be warm and encouraging
-- Suggest a store name if none given
-- Set "ready": true only when you have name + category + at least 2 other fields
-
-ALWAYS respond with ONLY valid JSON (no markdown):
+ALWAYS respond with ONLY valid JSON (no markdown, no text outside JSON):
 {
-  "message": "Your conversational response",
+  "message": "Short warm confirmation (1 sentence max)",
   "extracted": {
-    "name": "Store name or null",
-    "category": "Product category or null",
-    "targetAudience": "Target audience or null",
-    "aesthetic": "minimalist|bold|luxury|marketplace or null",
-    "priceRange": "e.g. $20-$200 or null",
-    "currency": "USD|XOF|EUR|NGN or null",
+    "name": "Inferred or given store name — NEVER null, always guess one",
+    "category": "Product category — NEVER null, infer from context",
+    "targetAudience": "Inferred target audience or 'general audience'",
+    "aesthetic": "minimalist|bold|luxury|marketplace|modern",
+    "priceRange": "Inferred price range or '$10-$200'",
+    "currency": "USD|XOF|EUR|NGN — default USD",
     "language": "en|fr",
-    "tagline": "A catchy tagline or null",
-    "description": "Store description or null"
+    "tagline": "A catchy one-line tagline you generate",
+    "description": "2-sentence store description you write"
   },
-  "ready": false
+  "ready": true
 }`;
 
 router.post("/stores/ai-interview", authenticate, async (req: AuthRequest, res) => {

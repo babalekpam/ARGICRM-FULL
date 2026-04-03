@@ -345,21 +345,33 @@ export default function EcommercePage() {
                 </div>
               )}
 
-              {/* Ready to build */}
-              {isReady && (
+              {/* Ready to build — shown as soon as AI sets ready OR user has had 1+ exchange */}
+              {(isReady || chatMessages.filter(m => m.role === "user").length >= 1) && !chatLoading && (
                 <div style={{ margin: "0 20px 12px", padding: "14px 16px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 10 }}>
                   <div style={{ fontWeight: 700, color: "#10b981", marginBottom: 4 }}>Ready to build your store!</div>
                   <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>
-                    ARIA has everything needed to build <strong>{extractedData.name || "your store"}</strong>. Click below to start the automated build process.
+                    {extractedData.name
+                      ? <>ARIA has everything needed to build <strong>{extractedData.name}</strong>.</>
+                      : "ARIA has enough to get started — you can refine details after."}{" "}
+                    Click below to launch the automated build.
                   </div>
-                  <button
-                    data-testid="button-build-store"
-                    className="btn btn-primary"
-                    onClick={buildStore}
-                    style={{ background: "linear-gradient(135deg,#6366f1,#3b82f6)", border: "none", display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <Sparkles size={15} /> Build My Store Automatically
-                  </button>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      data-testid="button-build-store"
+                      className="btn btn-primary"
+                      onClick={buildStore}
+                      style={{ background: "linear-gradient(135deg,#6366f1,#3b82f6)", border: "none", display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <Sparkles size={15} /> Build My Store
+                    </button>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setChatInput("")}
+                      style={{ fontSize: 12 }}
+                    >
+                      Keep chatting first
+                    </button>
+                  </div>
                 </div>
               )}
 
