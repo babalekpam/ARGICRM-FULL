@@ -308,7 +308,8 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
     intentSignals: Number(ic.total),
     techFindings: Number(tc.total),
     activeJobs: activeJobCount,
-    dataSources: ["DuckDuckGo Search", "SerpAPI (Google)", "Yellow Pages", "OpenCorporates", "GitHub API", "Company Websites", "Indeed Jobs", "DNS/MX Verification"],
+    dataSources: ["DuckDuckGo Search", "Tavily AI Search", "SerpAPI (Google)", "Yellow Pages", "OpenCorporates", "GitHub API", "Company Websites", "Indeed Jobs", "DNS/MX Verification"],
+    tavilyConfigured: !!process.env.TAVILY_API_KEY,
     serpApi: {
       keyCount: serpStatus.length,
       healthyKeys: serpStatus.filter(k => k.status === "healthy").length,

@@ -253,21 +253,73 @@ async function searchDuckDuckGoRaw(query: string, maxResults = 10): Promise<Arra
   }
 }
 
-export async function searchDuckDuckGo(query: string, maxResults = 10): Promise<Array<{ title: string; url: string; snippet: string }>> {
-  // Try DuckDuckGo first
-  const ddgResults = await searchDuckDuckGoRaw(query, maxResults);
+// ── Tavily search (AI-optimized, clean structured results) ──────
+async function searchWithTavily(
+  query: string,
+  maxResults = 10,
+): Promise<Array<{ title: string; url: string; snippet: string }>> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return [];
 
-  // Fall back to SerpAPI if DDG returned nothing (rate-limited / blocked) or fewer than half requested
-  const FALLBACK_THRESHOLD = Math.max(1, Math.floor(maxResults / 2));
-  if (ddgResults.length < FALLBACK_THRESHOLD && serpKeyStates.length > 0) {
+  try {
+    const res = await axios.post(
+      "https://api.tavily.com/search",
+      {
+        api_key: apiKey,
+        query,
+        search_depth: "basic",
+        max_results: Math.min(maxResults, 10),
+        include_answer: false,
+        include_raw_content: false,
+      },
+      { timeout: 15000, headers: { "Content-Type": "application/json" } },
+    );
+
+    const results = res.data?.results || [];
+    if (results.length > 0) {
+      console.log(`[Tavily] Returned ${results.length} results for: "${query.slice(0, 60)}"`);
+    }
+    return results.map((r: any) => ({
+      title: r.title || "",
+      url: r.url || "",
+      snippet: r.content || r.description || "",
+    }));
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const msg = err?.response?.data?.message || err.message;
+    if (status === 401) console.warn("[Tavily] Invalid API key");
+    else if (status === 429) console.warn("[Tavily] Rate limit hit");
+    else console.warn(`[Tavily] Error ${status}: ${msg}`);
+    return [];
+  }
+}
+
+// ── Unified search: DDG → Tavily → SerpAPI ──────────────────────
+export async function searchDuckDuckGo(query: string, maxResults = 10): Promise<Array<{ title: string; url: string; snippet: string }>> {
+  const THRESHOLD = Math.max(1, Math.floor(maxResults / 2));
+
+  // 1. DuckDuckGo — always free, no key needed
+  const ddgResults = await searchDuckDuckGoRaw(query, maxResults);
+  if (ddgResults.length >= THRESHOLD) return ddgResults;
+
+  // 2. Tavily — AI-optimized, cleaner results
+  const tavilyResults = await searchWithTavily(query, maxResults);
+  if (tavilyResults.length >= THRESHOLD) {
+    console.log(`[Search] DDG(${ddgResults.length}) thin → Tavily returned ${tavilyResults.length} for: "${query.slice(0, 60)}"`);
+    return tavilyResults;
+  }
+
+  // 3. SerpAPI — Google results, key rotation fallback
+  if (serpKeyStates.length > 0) {
     const serpResults = await searchWithSerpAPI(query, maxResults);
     if (serpResults.length > 0) {
-      console.log(`[Search] DDG returned ${ddgResults.length} results — SerpAPI fallback returned ${serpResults.length} for: "${query.slice(0, 60)}"`);
+      console.log(`[Search] Tavily(${tavilyResults.length}) thin → SerpAPI returned ${serpResults.length} for: "${query.slice(0, 60)}"`);
       return serpResults;
     }
   }
 
-  return ddgResults;
+  // Return best we have
+  return ddgResults.length >= tavilyResults.length ? ddgResults : tavilyResults;
 }
 
 // ═══════════════════════════════════════════════════════════════
