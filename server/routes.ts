@@ -26,6 +26,7 @@ import publicRouter from "./routes/public.js";
 import analyticsRouter from "./routes/analytics.js";
 import workflowsRouter from "./routes/workflows.js";
 import skillsRouter from "./routes/skills.js";
+import contractsRouter from "./routes/contracts.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Core Auth ──────────────────────────────────────
@@ -63,6 +64,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/aria", ariaRouter);
   // ─── Public Storefront API (no auth) ───────────────
   app.use("/api/public", publicRouter);
+  // ─── Contracts & e-Signing ─────────────────────────
+  app.use("/api/contracts", contractsRouter);
+  // Public signing endpoints (no auth prefix so they share the router)
+  app.get("/api/sign/:token", (req, res, next) => {
+    req.url = `/sign/${req.params.token}`;
+    (contractsRouter as any)(req, res, next);
+  });
+  app.post("/api/sign/:token", (req, res, next) => {
+    req.url = `/sign/${req.params.token}`;
+    (contractsRouter as any)(req, res, next);
+  });
 
   // ─── Contacts ─────────────────────────────────────────
   app.get("/api/contacts", authenticate, async (req: AuthRequest, res) => {

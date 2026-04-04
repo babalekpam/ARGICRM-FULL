@@ -35,6 +35,8 @@ import AnalyticsPage from "./pages/Analytics";
 import AIToolsPage from "./pages/AITools";
 import WorkflowsPage from "./pages/Workflows";
 import SkillsPage from "./pages/Skills";
+import ContractsPage from "./pages/Contracts";
+import SignPage from "./pages/Sign";
 import PrivacyPage from "./pages/Privacy";
 import TermsPage from "./pages/Terms";
 import SecurityPage from "./pages/Security";
@@ -110,6 +112,8 @@ function AppRoutes() {
       <Route path="/terms">{() => <TermsPage />}</Route>
       <Route path="/security">{() => <SecurityPage />}</Route>
       <Route path="/contact">{() => <ContactPage />}</Route>
+      <Route path="/contracts">{() => <Guard><ContractsPage /></Guard>}</Route>
+      <Route path="/sign/:token">{() => <SignPage />}</Route>
       <Route path="/store/:slug">{() => <StorefrontPage />}</Route>
       <Route>{() => <NotFoundPage />}</Route>
     </Switch>

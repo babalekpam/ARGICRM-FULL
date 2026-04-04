@@ -13,7 +13,7 @@ import {
   Bell, Menu, Shield, Zap, Crown, ChevronRight, UsersRound,
   Bot, Search, Activity, ShoppingCart, DollarSign, Briefcase,
   Globe, Target, Brain, BarChart2, Workflow, Sparkles, Command, X, Store, MailOpen,
-  Sun, Moon, Languages
+  Sun, Moon, Languages, PenLine
 } from "lucide-react";
 
 const NAV_SECTIONS_DEF = [
@@ -48,6 +48,7 @@ const NAV_SECTIONS_DEF = [
       { labelKey: "nav_marketing_hub", icon: Megaphone, path: "/marketing" },
       { labelKey: "nav_campaigns", icon: Target, path: "/campaigns" },
       { labelKey: "nav_invoices", icon: FileText, path: "/invoices" },
+      { labelKey: "nav_contracts", icon: PenLine, path: "/contracts" },
     ]
   },
   {

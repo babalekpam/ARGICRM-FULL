@@ -263,3 +263,33 @@ export async function sendPasswordResetEmail(opts: {
 
   await send(to, "Reset your Argilette password", html);
 }
+
+// ─── Contract Signing Request ─────────────────────────────────────────────────
+export async function sendContractEmail(opts: {
+  to: string;
+  recipientName: string;
+  contractTitle: string;
+  signLink: string;
+  senderName: string;
+  expiresAt: Date;
+}) {
+  const { to, recipientName, contractTitle, signLink, senderName, expiresAt } = opts;
+  const expiry = expiresAt.toLocaleDateString("en-US", { dateStyle: "long" });
+
+  const html = base(`
+    <h2>You have a contract to review</h2>
+    <p>Hi ${recipientName},</p>
+    <p><strong>${senderName}</strong> has sent you a contract for your review and signature.</p>
+    <div style="margin:20px 0">
+      <div class="info-row"><span class="info-label">Contract</span><span class="info-value">${contractTitle}</span></div>
+      <div class="info-row"><span class="info-label">Sent by</span><span class="info-value">${senderName}</span></div>
+      <div class="info-row" style="border:none"><span class="info-label">Expires</span><span class="info-value">${expiry}</span></div>
+    </div>
+    <p>Click the button below to read and sign the contract. No account or login is needed.</p>
+    <a href="${signLink}" class="btn">Review &amp; Sign Contract</a>
+    <p style="margin-top:20px;font-size:12px;color:#64748b">Or copy this link into your browser:<br/><a href="${signLink}" style="color:#6366f1;word-break:break-all">${signLink}</a></p>
+    <div class="warning">This link expires on ${expiry}. Your electronic signature is legally binding under the ESIGN Act (US) and eIDAS (EU).</div>
+  `);
+
+  await send(to, `Contract ready for your signature: ${contractTitle}`, html);
+}

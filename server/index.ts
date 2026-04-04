@@ -204,6 +204,10 @@ async function runStartupMigrations() {
       await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT now()`).catch(() => {});
       await client.query(`ALTER TABLE agent_lead_gen_results ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
 
+      // ── Contracts & Contract Templates ──
+      await client.query(`CREATE TABLE IF NOT EXISTS "contract_templates" ("id" varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar NOT NULL,"tenant_id" varchar NOT NULL,"name" text NOT NULL,"description" text,"body" text NOT NULL,"variables" jsonb DEFAULT '[]'::jsonb,"is_active" boolean DEFAULT true,"created_by" varchar,"created_at" timestamp DEFAULT now(),"updated_at" timestamp DEFAULT now())`).catch(() => {});
+      await client.query(`CREATE TABLE IF NOT EXISTS "contracts" ("id" varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar NOT NULL,"tenant_id" varchar NOT NULL,"template_id" varchar,"title" text NOT NULL,"body" text NOT NULL,"status" text DEFAULT 'draft',"contact_id" varchar,"contact_name" text,"contact_email" text NOT NULL,"signer_name" text,"signer_ip" text,"signer_user_agent" text,"signature_data" text,"sign_token" varchar UNIQUE,"token_expires_at" timestamp,"sent_at" timestamp,"viewed_at" timestamp,"signed_at" timestamp,"declined_at" timestamp,"variables" jsonb DEFAULT '{}'::jsonb,"notes" text,"created_by" varchar,"created_at" timestamp DEFAULT now(),"updated_at" timestamp DEFAULT now())`).catch(() => {});
+
       // ── Fix prospects schema ──
       await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS company_id uuid`).catch(() => {});
       await client.query(`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS email_status text DEFAULT 'unknown'`).catch(() => {});
