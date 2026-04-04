@@ -2,7 +2,71 @@ import React, { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { apiRequest } from "../lib/api";
-import { FileText, Plus, Send, Eye, CheckCircle, XCircle, Clock, Trash2, Copy, Check, Edit2, ChevronDown, ChevronRight, AlertCircle } from "lucide-react";
+import { FileText, Plus, Send, Eye, CheckCircle, XCircle, Clock, Trash2, Copy, Check, Edit2, ChevronDown, ChevronRight, AlertCircle, BookOpen } from "lucide-react";
+
+// ── Variable label helpers ────────────────────────────────────────────────────
+const VAR_LABELS: Record<string, string> = {
+  date: "Effective Date",
+  start_date: "Start Date",
+  end_date: "End Date",
+  proposal_date: "Proposal Date",
+  party_a: "Party A — Company / Entity",
+  party_b: "Party B — Company / Entity",
+  party_a_name: "Party A — Authorized Signatory",
+  party_b_name: "Party B — Authorized Signatory",
+  company_name: "Client Company Name",
+  client_name: "Client Full Name",
+  client_title: "Client Title / Role",
+  provider_name: "Provider / Agency Name",
+  provider_contact: "Provider Contact Name",
+  services_description: "Scope of Services",
+  scope_summary: "Scope Summary",
+  purpose: "Business Purpose",
+  amount: "Contract Value",
+  payment_terms: "Payment Terms",
+  notice_days: "Notice Period (days)",
+  term_years: "Term Duration (years)",
+  jurisdiction: "Governing Jurisdiction",
+  proposal_title: "Proposal Title",
+};
+
+const VAR_PLACEHOLDERS: Record<string, string> = {
+  date: "e.g. April 4, 2026",
+  start_date: "e.g. May 1, 2026",
+  end_date: "e.g. April 30, 2027",
+  proposal_date: "e.g. March 15, 2026",
+  party_a: "e.g. Acme Corporation",
+  party_b: "e.g. Your Agency Name",
+  party_a_name: "e.g. John Smith, CEO",
+  party_b_name: "e.g. Jane Doe, Director",
+  company_name: "e.g. Acme Corporation",
+  client_name: "e.g. John Smith",
+  client_title: "e.g. Chief Executive Officer",
+  provider_name: "e.g. Your Agency Name",
+  provider_contact: "e.g. Jane Doe",
+  services_description: "e.g. web design, development, and SEO consulting",
+  scope_summary: "e.g. 5-page website redesign with content management system",
+  purpose: "e.g. evaluating a potential business partnership",
+  amount: "e.g. $5,000 USD",
+  payment_terms: "e.g. net 30 days after invoice",
+  notice_days: "e.g. 30",
+  term_years: "e.g. 2",
+  jurisdiction: "e.g. State of New York, United States",
+  proposal_title: "e.g. E-Commerce Website Redesign",
+};
+
+function formatVarLabel(key: string): string {
+  if (VAR_LABELS[key]) return VAR_LABELS[key];
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/\bA\b/g, "A")
+    .replace(/\bB\b/g, "B");
+}
+
+function getVarPlaceholder(key: string): string {
+  return VAR_PLACEHOLDERS[key] || "";
+}
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   draft:    { label: "Draft",    color: "#64748b", bg: "rgba(100,116,139,0.12)", icon: <Edit2 size={12} /> },
@@ -390,7 +454,9 @@ export default function ContractsPage() {
                   {(tpl.variables || []).length > 0 && (
                     <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                       {(tpl.variables || []).map((v: string) => (
-                        <span key={v} style={{ fontSize: 11, padding: "2px 7px", background: "var(--bg-overlay)", borderRadius: 4, color: "var(--text-muted)", fontFamily: "monospace" }}>{`{{${v}}}`}</span>
+                        <span key={v} style={{ fontSize: 11, padding: "3px 8px", background: "var(--bg-overlay)", borderRadius: 4, color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+                          {formatVarLabel(v)}
+                        </span>
                       ))}
                     </div>
                   )}
@@ -460,34 +526,82 @@ export default function ContractsPage() {
 
                 {/* Variable fields */}
                 {selectedTemplate && Object.keys(varValues).length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>Fill in variables</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {Object.keys(varValues).map(key => (
-                        <div key={key}>
-                          <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 3, fontFamily: "monospace" }}>{`{{${key}}}`}</label>
-                          <input className="input" value={varValues[key] || ""} onChange={e => setVarValues(v => ({ ...v, [key]: e.target.value }))} />
-                        </div>
-                      ))}
+                  <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
+                      <BookOpen size={13} style={{ color: "var(--brand)" }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        Contract Details — Fill in all fields
+                      </span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)" }}>
+                        {Object.values(varValues).filter(Boolean).length} / {Object.keys(varValues).length} completed
+                      </span>
+                    </div>
+                    <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px" }}>
+                      {Object.keys(varValues).map(key => {
+                        const filled = Boolean(varValues[key]);
+                        return (
+                          <div key={key}>
+                            <label style={{ fontSize: 12, fontWeight: 600, color: filled ? "var(--text-secondary)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                              {filled && <CheckCircle size={11} style={{ color: "#10b981", flexShrink: 0 }} />}
+                              {formatVarLabel(key)}
+                            </label>
+                            <input
+                              className="input"
+                              value={varValues[key] || ""}
+                              onChange={e => setVarValues(v => ({ ...v, [key]: e.target.value }))}
+                              placeholder={getVarPlaceholder(key)}
+                              style={{ fontSize: 13 }}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {/* Body editor */}
+                {/* Body editor / Live preview */}
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Contract Body *</label>
-                  <textarea className="input" rows={12} required style={{ resize: "vertical", fontFamily: "monospace", fontSize: 12, lineHeight: 1.7 }}
-                    value={selectedTemplate ? buildBody() : form.body}
-                    onChange={e => { if (!selectedTemplate) setForm(f => ({ ...f, body: e.target.value })); }}
-                    readOnly={!!selectedTemplate}
-                    placeholder="Write or paste the contract text here. Use {{variable_name}} for dynamic values."
-                  />
-                  {selectedTemplate && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Fill in variables above to update the contract text</div>}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
+                      Contract Body {!selectedTemplate && "*"}
+                    </label>
+                    {selectedTemplate && (
+                      <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                        <Eye size={11} /> Live preview — updates as you fill in fields above
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedTemplate ? (
+                    <div style={{
+                      border: "1px solid var(--border)", borderRadius: 8, overflow: "auto",
+                      maxHeight: 320, background: "var(--bg-elevated)", padding: "18px 20px",
+                      fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, color: "var(--text-primary)",
+                      lineHeight: 1.85, whiteSpace: "pre-wrap", wordBreak: "break-word",
+                    }}>
+                      {buildBody().split(/({{[^}]+}})/).map((part, i) => {
+                        const isUnfilled = /^\{\{[^}]+\}\}$/.test(part);
+                        return isUnfilled ? (
+                          <mark key={i} style={{ background: "rgba(245,158,11,0.25)", color: "#d97706", borderRadius: 3, padding: "0 2px" }}>{part}</mark>
+                        ) : (
+                          <span key={i}>{part}</span>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <textarea
+                      className="input" rows={12} required
+                      style={{ resize: "vertical", fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, lineHeight: 1.8 }}
+                      value={form.body}
+                      onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+                      placeholder={"Write or paste the contract text here.\nUse {{variable_name}} syntax for fields you want to fill in per contract."}
+                    />
+                  )}
                 </div>
 
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Internal Notes</label>
-                  <input className="input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Private notes (not shown to recipient)" />
+                  <input className="input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Private notes for your team — not visible to the recipient" />
                 </div>
 
               </div>
