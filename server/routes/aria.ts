@@ -58,11 +58,12 @@ For unclear instructions, ask exactly ONE clarifying question.
 - CONVERT (lead → contact): type=CONVERT, entity=lead, data.email or data.leadId
 
 == DEALS ==
-- CREATE: extract title, value (number), currency (USD default), stage (prospect|qualified|proposal|negotiation|won|lost), contactEmail (to link), notes, expectedCloseDate
-- READ/SUMMARIZE: data.filter = "recent"|"all"|"open"|"won"|"lost"|"prospect"|"proposal"|"negotiation"
-- UPDATE: data.dealId or data.title (fuzzy match); fields: stage, value, status (open|won|lost), notes, expectedCloseDate
+- CREATE: extract title, value (number), currency (USD default), stage (prospecting|qualification|proposal|negotiation|closed_won|closed_lost), contactEmail (to link), notes, expectedCloseDate
+- READ/SUMMARIZE: data.filter = "recent"|"all"|"open"|"closed_won"|"closed_lost"|"prospecting"|"qualification"|"proposal"|"negotiation"
+- UPDATE: data.dealId or data.title (fuzzy match); fields: stage, value, status (open|closed_won|closed_lost), notes, expectedCloseDate
 - DELETE: data.dealId — needsConfirmation: true
-- Stages in order: prospect → qualified → proposal → negotiation → won|lost
+- Stages in order: prospecting → qualification → proposal → negotiation → closed_won|closed_lost
+- When user says "won" map to stage=closed_won; when "lost" map to stage=closed_lost
 
 == TASKS ==
 - CREATE: extract title, description, dueDate (ISO string or relative like "tomorrow"), priority (low|medium|high|urgent), type (call|email|meeting|follow_up|other)
@@ -101,18 +102,48 @@ For unclear instructions, ask exactly ONE clarifying question.
 - DELETE: data.contractId — needsConfirmation: true
 
 == NAVIGATION ==
-- NAVIGATE: data.path = "/dashboard"|"/contacts"|"/leads"|"/deals"|"/tasks"|"/accounts"|"/invoices"|"/campaigns"|"/contracts"|"/projects"|"/analytics"|"/settings"|"/ai-tools"|"/lead-gen"|"/marketplace"|"/email-tracking"|"/seo-platform"|"/ecommerce"|"/finance"|"/automations"
-- For workflows/automations, entity = "workflow"; types: CREATE (name, triggerType, executionMode, actions[]), READ/SUMMARIZE (list with stats), UPDATE (workflowId|name + action=enable|disable OR executionMode=auto|supervised), RUN (workflowId|name — manually trigger), DELETE (workflowId|name)`;
+- NAVIGATE: data.path = "/dashboard"|"/contacts"|"/leads"|"/deals"|"/tasks"|"/accounts"|"/invoices"|"/campaigns"|"/contracts"|"/projects"|"/analytics"|"/settings"|"/ai-tools"|"/leadgen"|"/marketplace"|"/email-tracking"|"/seo"|"/ecommerce"|"/finance"|"/workflows"
+- For workflows/automations, entity = "workflow"; types: CREATE (name, triggerType, executionMode, actions[]), READ/SUMMARIZE (list with stats), UPDATE (workflowId|name + action=enable|disable OR executionMode=auto|supervised), RUN (workflowId|name — manually trigger), DELETE (workflowId|name)
+
+== ENGAGEMENT / OUTREACH REQUESTS ==
+When a user says "engage leads", "reach out to contacts", "start a campaign for", "propose our product to", "pitch to leads/contacts", or any sales outreach request:
+- Do NOT just READ/LIST records. This is a campaign or outreach task.
+- First check if relevant leads/contacts exist. If yes → suggest creating a targeted CAMPAIGN (entity=campaign) with a personalized email sequence. Offer to create the campaign.
+- If no leads exist → navigate to /leadgen and explain how to generate leads first. OR create a campaign targeting the contacts who match the criteria.
+- Provide actionable next steps (create campaign, use lead gen, set up workflow).
+- Example: "engage our African leads proposing NaviMED" → create campaign named "NaviMED African Outreach", type=email, summarize what was done.`;
 
 // ── Helper: fuzzy date parsing ─────────────────────────────────────────────
 function parseDueDate(raw: string | undefined): Date | null {
   if (!raw) return null;
-  const lower = raw.toLowerCase();
+  const lower = raw.toLowerCase().trim();
   const now = new Date();
   if (lower === "today") return now;
   if (lower === "tomorrow") { now.setDate(now.getDate() + 1); return now; }
   if (lower === "next week") { now.setDate(now.getDate() + 7); return now; }
   if (lower === "next month") { now.setMonth(now.getMonth() + 1); return now; }
+  if (lower === "end of month") { return new Date(now.getFullYear(), now.getMonth() + 1, 0); }
+  // "next [weekday]" e.g. "next friday"
+  const DAYS = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+  const nextDay = lower.match(/^(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/);
+  if (nextDay) {
+    const target = DAYS.indexOf(nextDay[1]);
+    const cur = now.getDay();
+    let diff = target - cur;
+    if (diff <= 0) diff += 7;
+    now.setDate(now.getDate() + diff);
+    return now;
+  }
+  // "in X days/weeks/months"
+  const inX = lower.match(/^in (\d+) (day|days|week|weeks|month|months)$/);
+  if (inX) {
+    const n = parseInt(inX[1]);
+    const unit = inX[2];
+    if (unit.startsWith("day")) now.setDate(now.getDate() + n);
+    else if (unit.startsWith("week")) now.setDate(now.getDate() + n * 7);
+    else now.setMonth(now.getMonth() + n);
+    return now;
+  }
   const d = new Date(raw);
   return isNaN(d.getTime()) ? null : d;
 }
@@ -227,7 +258,7 @@ async function executeAriaAction(
     }
     const counts = await db.execute(sql`SELECT status, COUNT(*)::int as n FROM leads WHERE tenant_id = ${tenantId} GROUP BY status`);
     const summary = (counts.rows as any[]).map((r: any) => `${r.n} ${r.status}`).join(", ");
-    if (!rows.length) return `No ${filter === "recent" ? "" : filter + " "}leads found.`;
+    if (!rows.length) return `No leads found${filter !== "recent" && filter !== "all" ? ` with status "${filter}"` : ""}. Use the Leads page to add leads or Lead Gen to discover new prospects.`;
     const list = rows.map((l: any) => `• ${[l.firstName, l.lastName].filter(Boolean).join(" ") || l.email || "(no name)"} — ${l.status} ${l.company ? `· ${l.company}` : ""}`).join("\n");
     return `Pipeline: ${summary || "empty"}.\n\n${filter === "recent" ? "Recent" : filter} leads:\n${list}`;
   }
@@ -297,7 +328,7 @@ async function executeAriaAction(
       value:    data.value ? String(data.value) : null,
       amount:   data.value ? String(data.value) : null,
       currency: data.currency || "USD",
-      stage:    data.stage || "prospect",
+      stage:    data.stage || "prospecting",
       status:   "open",
       notes:    data.notes || null,
       ownerId:  user.id,
@@ -315,19 +346,21 @@ async function executeAriaAction(
     const base = eq(deals.tenantId, tenantId);
     if (filter === "open") {
       rows = await db.select().from(deals).where(and(base, eq(deals.status, "open"))).orderBy(desc(deals.createdAt)).limit(8);
-    } else if (filter === "won") {
-      rows = await db.select().from(deals).where(and(base, eq(deals.status, "won"))).orderBy(desc(deals.createdAt)).limit(8);
-    } else if (filter === "lost") {
-      rows = await db.select().from(deals).where(and(base, eq(deals.status, "lost"))).orderBy(desc(deals.createdAt)).limit(8);
-    } else if (["prospect","qualified","proposal","negotiation"].includes(filter)) {
-      rows = await db.select().from(deals).where(and(base, eq(deals.stage, filter))).orderBy(desc(deals.createdAt)).limit(8);
+    } else if (filter === "closed_won" || filter === "won") {
+      rows = await db.select().from(deals).where(and(base, eq(deals.stage, "closed_won"))).orderBy(desc(deals.createdAt)).limit(8);
+    } else if (filter === "closed_lost" || filter === "lost") {
+      rows = await db.select().from(deals).where(and(base, eq(deals.stage, "closed_lost"))).orderBy(desc(deals.createdAt)).limit(8);
+    } else if (["prospecting","qualification","proposal","negotiation","prospect","qualified"].includes(filter)) {
+      const stageMap: Record<string,string> = { prospect: "prospecting", qualified: "qualification" };
+      const actualStage = stageMap[filter] || filter;
+      rows = await db.select().from(deals).where(and(base, eq(deals.stage, actualStage))).orderBy(desc(deals.createdAt)).limit(8);
     } else {
       rows = await db.select().from(deals).where(base).orderBy(desc(deals.createdAt)).limit(8);
     }
     const counts = await db.execute(sql`SELECT stage, status, COUNT(*)::int as n, SUM(COALESCE(value,0))::numeric as total FROM deals WHERE tenant_id = ${tenantId} GROUP BY stage, status`);
-    const wonTotal = (counts.rows as any[]).filter((r:any) => r.status === "won").reduce((a:number,r:any)=>a+parseFloat(r.total||0),0);
+    const wonTotal = (counts.rows as any[]).filter((r:any) => r.stage === "closed_won").reduce((a:number,r:any)=>a+parseFloat(r.total||0),0);
     const openCount = (counts.rows as any[]).filter((r:any) => r.status === "open").reduce((a:number,r:any)=>a+r.n,0);
-    if (!rows.length) return `No ${filter} deals found.`;
+    if (!rows.length) return `No ${["recent","all"].includes(filter) ? "" : `"${filter}" `}deals found in your pipeline yet.`;
     const list = rows.map((d: any) => `• "${d.title}" — ${d.stage} / ${d.status}${d.value ? ` · ${d.currency} ${parseFloat(d.value).toLocaleString()}` : ""}`).join("\n");
     return `Pipeline: ${openCount} open deals, ${wonTotal.toLocaleString()} total won.\n\n${filter} deals:\n${list}`;
   }

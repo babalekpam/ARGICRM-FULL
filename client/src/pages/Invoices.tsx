@@ -23,7 +23,7 @@ function StatusBadge({ status }: { status: string }) {
 interface LineItem { description:string; quantity:number; unitPrice:number; total:number; }
 const EMPTY_ITEM:LineItem={description:"",quantity:1,unitPrice:0,total:0};
 
-const EMPTY={number:"",status:"draft",notes:"",dueDate:"",currency:"USD",items:[] as LineItem[]};
+const EMPTY={number:"",status:"draft",notes:"",dueDate:"",currency:"USD",taxRate:"0",items:[] as LineItem[]};
 
 export default function InvoicesPage() {
   const { t } = useLanguage();
@@ -43,7 +43,8 @@ export default function InvoicesPage() {
   function open(inv?:any){
     setEditing(inv||null);
     if(inv){
-      setForm({number:inv.number||"",status:inv.status||"draft",notes:inv.notes||"",dueDate:inv.dueDate?inv.dueDate.split("T")[0]:"",currency:inv.currency||"USD",items:inv.items||[]});
+      const dd = inv.dueDate ? (typeof inv.dueDate === "string" ? inv.dueDate.split("T")[0] : new Date(inv.dueDate).toISOString().split("T")[0]) : "";
+      setForm({number:inv.number||"",status:inv.status||"draft",notes:inv.notes||"",dueDate:dd,currency:inv.currency||"USD",taxRate:inv.taxRate!=null?String(inv.taxRate):"0",items:inv.items||[]});
     } else {
       const n=`INV-${String(Date.now()).slice(-4)}`;
       setForm({...EMPTY,number:n,items:[]});
@@ -64,7 +65,8 @@ export default function InvoicesPage() {
   function removeItem(i:number){ setForm(p=>({...p,items:p.items.filter((_:any,j:number)=>j!==i)})); }
 
   const subtotal=form.items.reduce((s:number,it:LineItem)=>s+(Number(it.total)||0),0);
-  const tax=subtotal*0.1;
+  const taxRatePct=Math.max(0,Math.min(100,parseFloat((form as any).taxRate)||0));
+  const tax=subtotal*(taxRatePct/100);
   const total=subtotal+tax;
 
   function submit(e:React.FormEvent){
@@ -196,10 +198,15 @@ export default function InvoicesPage() {
               </div>
 
               <div style={{display:"flex",justifyContent:"flex-end",marginBottom:20}}>
-                <div style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:10,padding:"16px 20px",minWidth:240}}>
-                  {[["Subtotal",`$${subtotal.toFixed(2)}`],["Tax (10%)",`$${tax.toFixed(2)}`]].map(([k,v])=>(
-                    <div key={k} style={{display:"flex",justifyContent:"space-between",marginBottom:8,fontSize:13,color:"var(--text-secondary)"}}><span>{k}</span><span>{v}</span></div>
-                  ))}
+                <div style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:10,padding:"16px 20px",minWidth:280}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,fontSize:13,color:"var(--text-secondary)"}}><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,fontSize:13,color:"var(--text-secondary)",gap:8}}>
+                    <span style={{whiteSpace:"nowrap"}}>Tax Rate (%)</span>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <input type="number" min="0" max="100" step="0.1" value={(form as any).taxRate} onChange={e=>setForm(p=>({...p,taxRate:e.target.value}))} style={{width:64,padding:"4px 8px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:6,color:"var(--text-primary)",fontSize:12,outline:"none",textAlign:"right"}}/>
+                      <span style={{fontSize:12,color:"var(--text-muted)"}}>{taxRatePct>0?`$${tax.toFixed(2)}`:"No tax"}</span>
+                    </div>
+                  </div>
                   <div style={{borderTop:"1px solid var(--border)",paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:16}}><span>Total</span><span>${total.toFixed(2)}</span></div>
                 </div>
               </div>
