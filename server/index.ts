@@ -170,6 +170,13 @@ async function runStartupMigrations() {
       // url was NOT NULL in original CREATE TABLE but Drizzle schema omits it — make it nullable
       await client.query(`ALTER TABLE seo_audits ALTER COLUMN url DROP NOT NULL`).catch(() => {});
 
+      // ── Add missing columns to contacts table ──
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS industry varchar`).catch(() => {});
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS website varchar`).catch(() => {});
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS city varchar`).catch(() => {});
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS country varchar`).catch(() => {});
+      await client.query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS state varchar`).catch(() => {});
+
       // ── Make keywords.project_id and backlinks.project_id nullable ──
       await client.query(`ALTER TABLE keywords ALTER COLUMN project_id DROP NOT NULL`).catch(() => {});
       await client.query(`ALTER TABLE backlinks ALTER COLUMN project_id DROP NOT NULL`).catch(() => {});

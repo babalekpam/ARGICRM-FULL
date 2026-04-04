@@ -283,7 +283,7 @@ export default function MarketplacePage() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [pushingCRM, setPushingCRM] = useState(false);
-  const [exportResult, setExportResult] = useState<{ count: number; type: "csv" | "crm" } | null>(null);
+  const [exportResult, setExportResult] = useState<{ count: number; skipped?: number; type: "csv" | "crm" } | null>(null);
 
   const { data: statsData } = useQuery<any>({ queryKey: ["/api/marketplace/stats"] });
 
@@ -363,8 +363,12 @@ export default function MarketplacePage() {
     setExportResult(null);
     try {
       const res: any = await apiRequest("POST", "/api/marketplace/push-to-crm", { leadIds: [...selected] });
-      setExportResult({ count: res.pushed || 0, type: "crm" });
+      if (res.error) { alert(res.error); return; }
+      setExportResult({ count: res.pushed || 0, skipped: res.skipped || 0, type: "crm" });
       qc.invalidateQueries({ queryKey: ["/api/marketplace/stats"] });
+      setSelected(new Set());
+    } catch (e: any) {
+      alert(`Import failed: ${e.message || "Unknown error"}`);
     } finally { setPushingCRM(false); }
   }
 
@@ -527,7 +531,7 @@ export default function MarketplacePage() {
                 <Check size={14} />
                 {exportResult.type === "csv"
                   ? `${exportResult.count} leads exported to CSV — check your downloads`
-                  : `${exportResult.count} leads pushed to your CRM contacts`}
+                  : `${exportResult.count} lead${exportResult.count !== 1 ? "s" : ""} added to your CRM contacts${exportResult.skipped ? ` (${exportResult.skipped} skipped)` : ""}`}
               </div>
             )}
 

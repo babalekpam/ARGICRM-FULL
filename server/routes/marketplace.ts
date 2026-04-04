@@ -297,43 +297,65 @@ router.post("/export", authenticate, async (req: AuthRequest, res) => {
 });
 
 // ── POST /api/marketplace/push-to-crm ───────────────────────────
-// Export + immediately push to CRM contacts
 router.post("/push-to-crm", authenticate, async (req: AuthRequest, res) => {
   const { leadIds } = req.body;
   if (!Array.isArray(leadIds) || leadIds.length === 0) {
     return res.status(400).json({ error: "No leads selected" });
   }
 
-  // Reuse export endpoint logic by calling it internally
-  const exportRes = await db.select().from(marketplaceLeads)
+  const leads = await db.select().from(marketplaceLeads)
     .where(sql`id = ANY(${leadIds}::uuid[])`);
 
-  // Insert as CRM contacts
-  const { contacts } = await import("@shared/schema.js");
-  let added = 0;
-  for (const lead of exportRes) {
-    try {
-      await db.insert(contacts).values({
-        tenantId: req.user!.tenantId,
-        firstName: lead.fullName?.split(" ")[0] || lead.companyName || "Unknown",
-        lastName: lead.fullName?.split(" ").slice(1).join(" ") || "",
-        email: lead.email,
-        phone: lead.phone,
-        company: lead.companyName,
-        jobTitle: lead.title,
-        industry: lead.industry,
-        city: lead.city,
-        country: lead.country,
-        website: lead.website,
-        leadSource: `marketplace_${lead.source}`,
-        status: "new",
-        tags: [lead.category, lead.market, lead.source].filter(Boolean) as string[],
-      } as any).onConflictDoNothing();
-      added++;
-    } catch { continue; }
+  if (leads.length === 0) {
+    return res.status(404).json({ error: "None of the selected leads were found in the marketplace." });
   }
 
-  res.json({ pushed: added });
+  const { contacts } = await import("@shared/schema.js");
+  let added = 0;
+  const errors: string[] = [];
+
+  for (const lead of leads) {
+    try {
+      const nameParts = (lead.fullName || lead.companyName || "Unknown").trim().split(/\s+/);
+      const firstName = nameParts[0] || "Unknown";
+      const lastName  = nameParts.slice(1).join(" ") || "";
+
+      // Build notes with all extra fields
+      const noteLines: string[] = [];
+      if (lead.address) noteLines.push(`Address: ${lead.address}${lead.zip ? " " + lead.zip : ""}`);
+      if (lead.specialty) noteLines.push(`Specialty: ${lead.specialty}`);
+      if (lead.linkedinUrl) noteLines.push(`LinkedIn: ${lead.linkedinUrl}`);
+      if (lead.externalId) noteLines.push(`Source ID: ${lead.externalId}`);
+
+      await db.insert(contacts).values({
+        tenantId:   req.user!.tenantId,
+        firstName,
+        lastName,
+        email:      lead.email      || null,
+        phone:      lead.phone      || null,
+        company:    lead.companyName || null,
+        jobTitle:   lead.title      || null,
+        industry:   lead.industry   || null,
+        city:       lead.city       || null,
+        state:      lead.state      || null,
+        country:    lead.country    || null,
+        website:    lead.website    || null,
+        leadSource: `marketplace_${lead.source || "data"}`,
+        status:     "new",
+        tags:       [lead.category, lead.market, lead.source, lead.specialty].filter(Boolean) as string[],
+        notes:      noteLines.length > 0 ? noteLines.join("\n") : null,
+      } as any);
+      added++;
+    } catch (e: any) {
+      errors.push(e.message);
+    }
+  }
+
+  if (added === 0 && errors.length > 0) {
+    return res.status(500).json({ error: `Failed to import leads: ${errors[0]}` });
+  }
+
+  res.json({ pushed: added, skipped: leads.length - added });
 });
 
 // ── GET /api/marketplace/my-exports ─────────────────────────────
