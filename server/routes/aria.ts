@@ -30,8 +30,8 @@ Action response:
   "message": "What you did or are about to do",
   "module": "crm|contracts|projects|billing|marketing|operations",
   "action": {
-    "type": "CREATE|READ|UPDATE|DELETE|NAVIGATE|SUMMARIZE|CONVERT",
-    "entity": "contact|lead|deal|task|account|invoice|campaign|project|contract",
+    "type": "CREATE|READ|UPDATE|DELETE|NAVIGATE|SUMMARIZE|CONVERT|RUN",
+    "entity": "contact|lead|deal|task|account|invoice|campaign|project|contract|workflow",
     "data": {}
   },
   "needsConfirmation": false
@@ -101,7 +101,8 @@ For unclear instructions, ask exactly ONE clarifying question.
 - DELETE: data.contractId — needsConfirmation: true
 
 == NAVIGATION ==
-- NAVIGATE: data.path = "/dashboard"|"/contacts"|"/leads"|"/deals"|"/tasks"|"/accounts"|"/invoices"|"/campaigns"|"/contracts"|"/projects"|"/analytics"|"/settings"|"/ai-tools"|"/lead-gen"|"/marketplace"|"/email-tracking"|"/seo-platform"|"/ecommerce"|"/finance"`;
+- NAVIGATE: data.path = "/dashboard"|"/contacts"|"/leads"|"/deals"|"/tasks"|"/accounts"|"/invoices"|"/campaigns"|"/contracts"|"/projects"|"/analytics"|"/settings"|"/ai-tools"|"/lead-gen"|"/marketplace"|"/email-tracking"|"/seo-platform"|"/ecommerce"|"/finance"|"/automations"
+- For workflows/automations, entity = "workflow"; types: CREATE (name, triggerType, executionMode, actions[]), READ/SUMMARIZE (list with stats), UPDATE (workflowId|name + action=enable|disable OR executionMode=auto|supervised), RUN (workflowId|name — manually trigger), DELETE (workflowId|name)`;
 
 // ── Helper: fuzzy date parsing ─────────────────────────────────────────────
 function parseDueDate(raw: string | undefined): Date | null {
@@ -719,6 +720,91 @@ async function executeAriaAction(
     if (!data.contractId) return "Please provide the contract ID to delete.";
     await db.execute(sql`DELETE FROM contracts WHERE id = ${data.contractId} AND tenant_id = ${tenantId}`);
     return `Contract has been permanently deleted.`;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // WORKFLOWS / AUTOMATIONS
+  // ──────────────────────────────────────────────────────────────────────────
+  if (type === "CREATE" && entity === "workflow") {
+    const wfName       = data.name         || "New Workflow";
+    const triggerType  = data.triggerType  || "manual";
+    const execMode     = data.executionMode || "auto";
+    const wfActions    = Array.isArray(data.actions) ? data.actions : [];
+    await db.execute(sql`
+      INSERT INTO crm_workflows
+        (tenant_id, name, description, trigger_type, execution_mode, actions, conditions, is_active, created_by)
+      VALUES
+        (${tenantId}, ${wfName}, ${data.description || null}, ${triggerType},
+         ${execMode}, ${JSON.stringify(wfActions)}::jsonb, '[]'::jsonb, true, ${user.id})
+    `);
+    return `Workflow "${wfName}" created in ${execMode} mode with trigger "${triggerType}". Open Automations to add actions and activate it.`;
+  }
+
+  if ((type === "READ" || type === "SUMMARIZE") && entity === "workflow") {
+    const wfFilter = data?.filter || "all";
+    const wfRows = await db.execute(sql`
+      SELECT id, name, trigger_type, execution_mode, is_active, run_count, last_run_at
+      FROM crm_workflows WHERE tenant_id = ${tenantId}
+      ORDER BY created_at DESC LIMIT 10
+    `);
+    if (!wfRows.rows.length) return "No workflows yet. Open Automations to create one.";
+    const activeWf = (wfRows.rows as any[]).filter((r:any) => r.is_active).length;
+    const pendingQ = await db.execute(sql`SELECT COUNT(*) FROM crm_workflow_approvals WHERE tenant_id = ${tenantId} AND status = 'pending'`);
+    const pending = parseInt((pendingQ.rows[0] as any).count || "0");
+    const list = (wfRows.rows as any[]).map((w:any) =>
+      `• "${w.name}" — ${w.is_active ? "active" : "inactive"} / ${w.execution_mode} / trigger: ${w.trigger_type} (${w.run_count||0} runs)`
+    ).join("\n");
+    return `${(wfRows.rows as any[]).length} workflows (${activeWf} active, ${pending} pending approvals).\n\n${list}`;
+  }
+
+  if (type === "UPDATE" && entity === "workflow") {
+    let wfId = data.workflowId;
+    if (!wfId && data.name) {
+      const r = await db.execute(sql`SELECT id FROM crm_workflows WHERE tenant_id = ${tenantId} AND LOWER(name) ILIKE ${"%" + data.name.toLowerCase() + "%"} LIMIT 1`);
+      if (r.rows.length) wfId = (r.rows[0] as any).id;
+    }
+    if (!wfId) return "I couldn't find that workflow. Please provide the name or ID.";
+    if (data.action === "enable") {
+      await db.execute(sql`UPDATE crm_workflows SET is_active = true, updated_at = now() WHERE id = ${wfId} AND tenant_id = ${tenantId}`);
+      return "Workflow enabled and now listening for triggers.";
+    }
+    if (data.action === "disable") {
+      await db.execute(sql`UPDATE crm_workflows SET is_active = false, updated_at = now() WHERE id = ${wfId} AND tenant_id = ${tenantId}`);
+      return "Workflow disabled.";
+    }
+    if (data.executionMode) {
+      await db.execute(sql`UPDATE crm_workflows SET execution_mode = ${data.executionMode}, updated_at = now() WHERE id = ${wfId} AND tenant_id = ${tenantId}`);
+      return `Workflow switched to ${data.executionMode} mode.`;
+    }
+    return "Workflow updated. Open Automations for detailed editing.";
+  }
+
+  if (type === "RUN" && entity === "workflow") {
+    let wfId = data.workflowId;
+    if (!wfId && data.name) {
+      const r = await db.execute(sql`SELECT id FROM crm_workflows WHERE tenant_id = ${tenantId} AND LOWER(name) ILIKE ${"%" + data.name.toLowerCase() + "%"} LIMIT 1`);
+      if (r.rows.length) wfId = (r.rows[0] as any).id;
+    }
+    if (!wfId) return "I couldn't find that workflow. Please provide the name or ID.";
+    const wfR = await db.execute(sql`SELECT name, execution_mode, actions FROM crm_workflows WHERE id = ${wfId} AND tenant_id = ${tenantId} LIMIT 1`);
+    if (!wfR.rows.length) return "Workflow not found.";
+    const wfData = wfR.rows[0] as any;
+    const wfActs = typeof wfData.actions === "string" ? JSON.parse(wfData.actions) : (wfData.actions || []);
+    await db.execute(sql`UPDATE crm_workflows SET run_count = run_count + 1, last_run_at = now() WHERE id = ${wfId}`);
+    return wfData.execution_mode === "supervised"
+      ? `Workflow "${wfData.name}" triggered. ${wfActs.length} action(s) are waiting for your approval in Automations → Pending Approvals.`
+      : `Workflow "${wfData.name}" triggered. ${wfActs.length} action(s) are executing. Open Automations to monitor.`;
+  }
+
+  if (type === "DELETE" && entity === "workflow") {
+    let wfId = data.workflowId;
+    if (!wfId && data.name) {
+      const r = await db.execute(sql`SELECT id FROM crm_workflows WHERE tenant_id = ${tenantId} AND LOWER(name) ILIKE ${"%" + data.name.toLowerCase() + "%"} LIMIT 1`);
+      if (r.rows.length) wfId = (r.rows[0] as any).id;
+    }
+    if (!wfId) return "Workflow not found. Please provide the name or ID.";
+    await db.execute(sql`DELETE FROM crm_workflows WHERE id = ${wfId} AND tenant_id = ${tenantId}`);
+    return "Workflow has been permanently deleted.";
   }
 
   // ──────────────────────────────────────────────────────────────────────────

@@ -435,6 +435,10 @@ async function main() {
   const { startMarketplaceIngestion } = await import("./services/marketplace-ingestion.js");
   startMarketplaceIngestion();
 
+  // ─── Start Workflow Automation Scheduler ─────────────
+  const { startWorkflowScheduler } = await import("./routes/workflows.js");
+  startWorkflowScheduler();
+
   // ─── Serve frontend ────────────────────────────────────
   if (isProd) {
     const distPath = path.resolve(__dirname, "public");

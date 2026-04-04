@@ -293,3 +293,16 @@ export async function sendContractEmail(opts: {
 
   await send(to, `Contract ready for your signature: ${contractTitle}`, html);
 }
+
+// ── Generic workflow / automation email ────────────────────────────────────
+export async function sendGenericEmail(opts: {
+  to: string;
+  subject: string;
+  body: string;
+}): Promise<void> {
+  const { to, subject, body } = opts;
+  const html = base(`
+    <div style="font-size:15px;line-height:1.7;color:#1e293b">${body.replace(/\n/g, "<br/>")}</div>
+  `);
+  await send(to, subject, html);
+}
