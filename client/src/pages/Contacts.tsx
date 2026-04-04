@@ -75,6 +75,7 @@ function StatusPill({ status }: { status: string }) {
 type ImportResult = { imported: number; duplicates: number; errors: number; total: number; errorDetails?: string[] };
 
 function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+  const { t } = useLanguage();
   const [dragging, setDragging]   = useState(false);
   const [file, setFile]           = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -131,7 +132,7 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
   if (!open) return null;
 
   return (
-    <Modal open={open} onClose={handleClose} title="Import Contacts from File">
+    <Modal open={open} onClose={handleClose} title={t("import_modal_title")}>
       <div style={{ padding: "24px 24px 0" }}>
 
         {/* Sample file banner */}
@@ -148,10 +149,10 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
           <FileSpreadsheet size={28} style={{ color: "#6366f1", flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)", marginBottom: 3 }}>
-              Not sure about the format?
+              {t("import_sample_heading")}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
-              Download our sample file — it contains 20 real-world contacts from Africa, Americas, Europe &amp; Asia showing every supported column.
+              {t("import_sample_desc")}
             </div>
           </div>
           <a
@@ -173,17 +174,13 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
               flexShrink: 0,
             }}
           >
-            <Download size={13} /> Download Sample
+            <Download size={13} /> {t("import_download_sample")}
           </a>
         </div>
 
         {/* Supported columns hint */}
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16, lineHeight: 1.7 }}>
-          Accepts <strong style={{ color: "var(--text-secondary)" }}>.csv</strong>,{" "}
-          <strong style={{ color: "var(--text-secondary)" }}>.xlsx</strong>,{" "}
-          <strong style={{ color: "var(--text-secondary)" }}>.xls</strong> · Max 50 MB · First row must be headers.{" "}
-          Columns: First Name, Last Name, Full Name, Email, Phone, Company, Job Title, Industry, City, State,{" "}
-          <strong style={{ color: "var(--text-secondary)" }}>Country</strong> (routes to the correct region tab), Website, Notes, Status, Source, LinkedIn, Tags.
+          {t("import_hint")}
         </div>
 
         {/* Drop zone */}
@@ -217,15 +214,15 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
               <>
                 <FileSpreadsheet size={32} style={{ color: "#10b981", marginBottom: 10 }} />
                 <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)", marginBottom: 4 }}>{file.name}</div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{(file.size / 1024).toFixed(1)} KB · Click to change file</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{(file.size / 1024).toFixed(1)} KB · {t("import_drop_idle")}</div>
               </>
             ) : (
               <>
                 <Upload size={32} style={{ color: "var(--text-muted)", marginBottom: 10 }} />
                 <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)", marginBottom: 4 }}>
-                  {dragging ? "Drop your file here" : "Drag & drop or click to upload"}
+                  {dragging ? t("import_drop_active") : t("import_drop_idle")}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>CSV, Excel (.xlsx, .xls) · Max 50 MB</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("import_drop_hint")}</div>
               </>
             )}
           </div>
@@ -244,27 +241,27 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
               <CheckCircle2 size={22} style={{ color: "#10b981" }} />
-              <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>Import complete</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>{t("import_complete")}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
               {[
-                { label: "Imported",   value: result.imported,   color: "#10b981", icon: CheckCircle2 },
-                { label: "Duplicates skipped", value: result.duplicates, color: "#f59e0b", icon: AlertCircle },
-                { label: "Errors",     value: result.errors,     color: "#ef4444", icon: XCircle },
-              ].map(({ label, value, color, icon: Icon }) => (
-                <div key={label} style={{ padding: "14px 16px", background: "var(--bg-elevated)", borderRadius: 8, textAlign: "center" }}>
+                { labelKey: "import_imported",   value: result.imported,   color: "#10b981", icon: CheckCircle2 },
+                { labelKey: "import_duplicates", value: result.duplicates, color: "#f59e0b", icon: AlertCircle },
+                { labelKey: "import_errors",     value: result.errors,     color: "#ef4444", icon: XCircle },
+              ].map(({ labelKey, value, color, icon: Icon }) => (
+                <div key={labelKey} style={{ padding: "14px 16px", background: "var(--bg-elevated)", borderRadius: 8, textAlign: "center" }}>
                   <Icon size={18} style={{ color, marginBottom: 6 }} />
                   <div style={{ fontSize: 22, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{label}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{t(labelKey)}</div>
                 </div>
               ))}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
-              {result.total} rows processed in total
+              {result.total} {t("import_rows_processed")}
             </div>
             {result.errorDetails && result.errorDetails.length > 0 && (
               <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(239,68,68,0.05)", borderRadius: 6, fontSize: 12, color: "#f87171" }}>
-                <strong>First errors:</strong>
+                <strong>{t("import_first_errors")}</strong>
                 {result.errorDetails.map((e, i) => <div key={i} style={{ marginTop: 3 }}>{e}</div>)}
               </div>
             )}
@@ -277,12 +274,12 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
         {result ? (
           <>
-            <button className="btn btn-secondary" onClick={() => { reset(); }}>Import Another</button>
-            <button className="btn btn-primary" onClick={handleClose}>Done</button>
+            <button className="btn btn-secondary" onClick={() => { reset(); }}>{t("import_another")}</button>
+            <button className="btn btn-primary" onClick={handleClose}>{t("import_done")}</button>
           </>
         ) : (
           <>
-            <button className="btn btn-secondary" onClick={handleClose}>Cancel</button>
+            <button className="btn btn-secondary" onClick={handleClose}>{t("cancel")}</button>
             <button
               className="btn btn-primary"
               onClick={doImport}
@@ -290,8 +287,8 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
               data-testid="btn-do-import"
             >
               {uploading
-                ? <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Importing…</>
-                : <><Upload size={14} /> Import Contacts</>
+                ? <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> {t("importing")}</>
+                : <><Upload size={14} /> {t("import_btn")}</>
               }
             </button>
           </>
@@ -320,11 +317,11 @@ export default function ContactsPage() {
   const PAGE_SIZE = 50;
 
   const REGION_TABS = [
-    { key: "",       label: "All",    flag: "🌍" },
-    { key: "africa", label: "Africa", flag: "🌍" },
-    { key: "usa",    label: "Americas", flag: "🌎" },
-    { key: "europe", label: "Europe", flag: "🌍" },
-    { key: "asia",   label: "Asia",   flag: "🌏" },
+    { key: "",       labelKey: "region_all" },
+    { key: "africa", labelKey: "region_africa" },
+    { key: "usa",    labelKey: "region_americas" },
+    { key: "europe", labelKey: "region_europe" },
+    { key: "asia",   labelKey: "region_asia" },
   ];
 
   // Reset to page 1 whenever search, filter, or region changes
@@ -422,7 +419,7 @@ export default function ContactsPage() {
               whiteSpace: "nowrap",
             }}
           >
-            {tab.label}
+            {t(tab.labelKey)}
             {data && region === tab.key && (
               <span style={{
                 background: "var(--primary)",
@@ -631,8 +628,8 @@ export default function ContactsPage() {
         return (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, padding: "14px 16px", marginTop: 8 }}>
             <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-              Showing <strong style={{ color: "var(--text-secondary)" }}>{from}–{to}</strong> of{" "}
-              <strong style={{ color: "var(--text-secondary)" }}>{data.total}</strong> contacts
+              {t("showing")} <strong style={{ color: "var(--text-secondary)" }}>{from}–{to}</strong> {t("of")}{" "}
+              <strong style={{ color: "var(--text-secondary)" }}>{data.total}</strong> {t("contacts_lc")}
             </span>
             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
               <button
@@ -649,7 +646,7 @@ export default function ContactsPage() {
                 onClick={() => setPage(p => p - 1)}
                 data-testid="btn-page-prev"
                 style={{ padding: "5px 10px", fontSize: 13 }}
-              >‹ Prev</button>
+              >‹ {t("previous")}</button>
 
               {start > 1 && <span style={{ padding: "0 4px", color: "var(--text-muted)", fontSize: 13 }}>…</span>}
 
@@ -671,7 +668,7 @@ export default function ContactsPage() {
                 onClick={() => setPage(p => p + 1)}
                 data-testid="btn-page-next"
                 style={{ padding: "5px 10px", fontSize: 13 }}
-              >Next ›</button>
+              >{t("next")} ›</button>
               <button
                 className="btn btn-ghost btn-sm"
                 disabled={page === totalPages}
