@@ -4,7 +4,7 @@ import { db } from "../db.js";
 import {
   marketplaceLeads, ingestionLogs, marketplaceExports, marketplaceUsage,
 } from "@shared/schema-extended";
-import { eq, and, ilike, or, sql, desc, gte, lte, ne } from "drizzle-orm";
+import { eq, and, ilike, or, sql, desc, gte, lte, ne, inArray } from "drizzle-orm";
 import { MARKETPLACE_MONTHLY_QUOTA, planAtLeast, type PlanId } from "@shared/plans.js";
 import { triggerIngestion, ingestionRunning } from "../services/marketplace-ingestion.js";
 
@@ -232,7 +232,7 @@ router.post("/export", authenticate, async (req: AuthRequest, res) => {
 
   // Fetch full records
   const leads = await db.select().from(marketplaceLeads)
-    .where(sql`id = ANY(${leadIds}::uuid[])`);
+    .where(inArray(marketplaceLeads.id, leadIds));
 
   if (leads.length === 0) return res.status(404).json({ error: "No leads found" });
 
@@ -304,7 +304,7 @@ router.post("/push-to-crm", authenticate, async (req: AuthRequest, res) => {
   }
 
   const leads = await db.select().from(marketplaceLeads)
-    .where(sql`id = ANY(${leadIds}::uuid[])`);
+    .where(inArray(marketplaceLeads.id, leadIds));
 
   if (leads.length === 0) {
     return res.status(404).json({ error: "None of the selected leads were found in the marketplace." });
@@ -347,9 +347,12 @@ router.post("/push-to-crm", authenticate, async (req: AuthRequest, res) => {
       } as any);
       added++;
     } catch (e: any) {
+      console.error("[push-to-crm] Insert failed for lead", lead.id, ":", e.message);
       errors.push(e.message);
     }
   }
+
+  console.log(`[push-to-crm] added=${added}, errors=${errors.length}`, errors.slice(0, 3));
 
   if (added === 0 && errors.length > 0) {
     return res.status(500).json({ error: `Failed to import leads: ${errors[0]}` });

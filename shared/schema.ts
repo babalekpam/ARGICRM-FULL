@@ -79,6 +79,16 @@ export const contacts = pgTable("contacts", {
   lastChannel: text("last_channel"),
   optIn: boolean("opt_in").default(false),
   locale: text("locale").default("en"),
+  engagementScore: integer("engagement_score").default(0),
+  emailOpens: integer("email_opens").default(0),
+  emailClicks: integer("email_clicks").default(0),
+  emailForwards: integer("email_forwards").default(0),
+  lastEngagedAt: timestamp("last_engaged_at"),
+  industry: varchar("industry"),
+  website: varchar("website"),
+  city: varchar("city"),
+  country: varchar("country"),
+  state: varchar("state"),
 });
 
 export const leads = pgTable("leads", {
