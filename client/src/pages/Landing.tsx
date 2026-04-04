@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useSeoPage } from "../hooks/useSeoPage";
 import {
   Users, TrendingUp, Zap, Shield, Globe, BarChart2,
   CheckCircle, ArrowRight, Star, Megaphone,
@@ -75,6 +76,10 @@ function LangSwitcher({ lang, setLang }: { lang: string; setLang: (c: string) =>
 }
 
 export default function LandingPage() {
+  useSeoPage(
+    "ARGILETTE CRM | AI-Powered CRM for Sales Teams & Agencies",
+    "AI-powered CRM for sales teams and agencies. White-label ready, 6 AI employees, email campaigns, visual pipeline and analytics. 90% cheaper than alternatives."
+  );
   const { t, lang, setLang } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

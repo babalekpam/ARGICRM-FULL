@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
+import { isPageSpecificTitleActive } from "../hooks/useSeoPage";
 
 interface WhiteLabelSettings {
   logoUrl?: string;
@@ -60,10 +61,13 @@ export function WhiteLabelProvider({ children }: { children: React.ReactNode }) 
       root.style.removeProperty("--wl-secondary");
     }
 
-    if (settings.companyName) {
-      document.title = `${settings.companyName} CRM`;
-    } else {
-      document.title = "ARGILETTE CRM — by ARGILETTE LLC";
+    // Only set generic title if no page-specific title is currently mounted
+    if (!isPageSpecificTitleActive()) {
+      if (settings.companyName) {
+        document.title = `${settings.companyName} CRM`;
+      } else {
+        document.title = "ARGILETTE CRM — by ARGILETTE LLC";
+      }
     }
 
     if (settings.faviconUrl) {

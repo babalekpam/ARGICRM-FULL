@@ -46,6 +46,11 @@ export default function RegisterPage() {
           <img src="/assets/logo.png" alt="ARGI CRM" style={{ height: 48, width: "auto", objectFit: "contain" }} />
         </div>
 
+        {/* Accessible page H1 — visually hidden but present for SEO and screen readers */}
+        <h1 style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+          Create Your ARGILETTE CRM Account — Free 14-Day Trial
+        </h1>
+
         {/* Progress */}
         <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
           {[1, 2, 3].map(s => (
