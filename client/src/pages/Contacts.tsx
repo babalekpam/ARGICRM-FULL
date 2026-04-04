@@ -280,13 +280,23 @@ export default function ContactsPage() {
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState("");
   const [importOpen, setImportOpen]   = useState(false);
+  const [page, setPage]               = useState(1);
 
-  const queryKey = `/api/contacts${search || statusFilter ? `?search=${search}&status=${statusFilter}` : ""}`;
+  const PAGE_SIZE = 50;
+
+  // Reset to page 1 whenever search or filter changes
+  React.useEffect(() => { setPage(1); }, [search, statusFilter]);
+
+  const offset = (page - 1) * PAGE_SIZE;
+  const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
+  if (search) params.set("search", search);
+  if (statusFilter) params.set("status", statusFilter);
+  const queryKey = `/api/contacts?${params.toString()}`;
   const { data, isLoading } = useQuery<{ data: any[]; total: number }>({ queryKey: [queryKey] });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/contacts/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/contacts"] }),
+    onSuccess: () => qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/contacts") }),
   });
 
   const openAdd = () => { setEditing(null); setForm(BLANK); setError(""); setModalOpen(true); };
@@ -312,7 +322,7 @@ export default function ContactsPage() {
       } else {
         await apiRequest("POST", "/api/contacts", form);
       }
-      qc.invalidateQueries({ queryKey: ["/api/contacts"] });
+      qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/contacts") });
       qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
       setModalOpen(false);
     } catch (err: any) {
@@ -342,7 +352,7 @@ export default function ContactsPage() {
       <ImportModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        onDone={() => { qc.invalidateQueries({ queryKey: ["/api/contacts"] }); }}
+        onDone={() => { qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/contacts") }); }}
       />
       {/* Search + Filter Bar */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
@@ -520,6 +530,76 @@ export default function ContactsPage() {
           </>
         )}
       </div>
+
+      {/* Pagination */}
+      {data && data.total > PAGE_SIZE && (() => {
+        const totalPages = Math.ceil(data.total / PAGE_SIZE);
+        const from = offset + 1;
+        const to   = Math.min(offset + PAGE_SIZE, data.total);
+
+        // Build page window (always show up to 5 pages centred on current)
+        const delta = 2;
+        const start = Math.max(1, page - delta);
+        const end   = Math.min(totalPages, page + delta);
+        const pageNums: number[] = [];
+        for (let p = start; p <= end; p++) pageNums.push(p);
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, padding: "14px 16px", marginTop: 8 }}>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+              Showing <strong style={{ color: "var(--text-secondary)" }}>{from}–{to}</strong> of{" "}
+              <strong style={{ color: "var(--text-secondary)" }}>{data.total}</strong> contacts
+            </span>
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={page === 1}
+                onClick={() => setPage(1)}
+                data-testid="btn-page-first"
+                title="First page"
+                style={{ padding: "5px 9px", fontSize: 13 }}
+              >«</button>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+                data-testid="btn-page-prev"
+                style={{ padding: "5px 10px", fontSize: 13 }}
+              >‹ Prev</button>
+
+              {start > 1 && <span style={{ padding: "0 4px", color: "var(--text-muted)", fontSize: 13 }}>…</span>}
+
+              {pageNums.map(p => (
+                <button
+                  key={p}
+                  className={`btn btn-sm ${p === page ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => setPage(p)}
+                  data-testid={`btn-page-${p}`}
+                  style={{ padding: "5px 10px", minWidth: 34, fontSize: 13 }}
+                >{p}</button>
+              ))}
+
+              {end < totalPages && <span style={{ padding: "0 4px", color: "var(--text-muted)", fontSize: 13 }}>…</span>}
+
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={page === totalPages}
+                onClick={() => setPage(p => p + 1)}
+                data-testid="btn-page-next"
+                style={{ padding: "5px 10px", fontSize: 13 }}
+              >Next ›</button>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={page === totalPages}
+                onClick={() => setPage(totalPages)}
+                data-testid="btn-page-last"
+                title="Last page"
+                style={{ padding: "5px 9px", fontSize: 13 }}
+              >»</button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Add/Edit Modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t("edit_contact") : t("add_contact_btn")}>
