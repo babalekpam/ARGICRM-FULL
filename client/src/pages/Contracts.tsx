@@ -3,32 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { apiRequest } from "../lib/api";
 import { FileText, Plus, Send, Eye, CheckCircle, XCircle, Clock, Trash2, Copy, Check, Edit2, ChevronDown, ChevronRight, AlertCircle, BookOpen } from "lucide-react";
-
-// ── Variable label helpers ────────────────────────────────────────────────────
-const VAR_LABELS: Record<string, string> = {
-  date: "Effective Date",
-  start_date: "Start Date",
-  end_date: "End Date",
-  proposal_date: "Proposal Date",
-  party_a: "Party A — Company / Entity",
-  party_b: "Party B — Company / Entity",
-  party_a_name: "Party A — Authorized Signatory",
-  party_b_name: "Party B — Authorized Signatory",
-  company_name: "Client Company Name",
-  client_name: "Client Full Name",
-  client_title: "Client Title / Role",
-  provider_name: "Provider / Agency Name",
-  provider_contact: "Provider Contact Name",
-  services_description: "Scope of Services",
-  scope_summary: "Scope Summary",
-  purpose: "Business Purpose",
-  amount: "Contract Value",
-  payment_terms: "Payment Terms",
-  notice_days: "Notice Period (days)",
-  term_years: "Term Duration (years)",
-  jurisdiction: "Governing Jurisdiction",
-  proposal_title: "Proposal Title",
-};
+import { useLanguage } from "../contexts/LanguageContext";
 
 const VAR_PLACEHOLDERS: Record<string, string> = {
   date: "e.g. April 4, 2026",
@@ -55,26 +30,17 @@ const VAR_PLACEHOLDERS: Record<string, string> = {
   proposal_title: "e.g. E-Commerce Website Redesign",
 };
 
-function formatVarLabel(key: string): string {
-  if (VAR_LABELS[key]) return VAR_LABELS[key];
-  return key
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, c => c.toUpperCase())
-    .replace(/\bA\b/g, "A")
-    .replace(/\bB\b/g, "B");
-}
-
 function getVarPlaceholder(key: string): string {
   return VAR_PLACEHOLDERS[key] || "";
 }
 
-const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  draft:    { label: "Draft",    color: "#64748b", bg: "rgba(100,116,139,0.12)", icon: <Edit2 size={12} /> },
-  sent:     { label: "Sent",     color: "#3b82f6", bg: "rgba(59,130,246,0.12)",  icon: <Send size={12} /> },
-  viewed:   { label: "Viewed",   color: "#f59e0b", bg: "rgba(245,158,11,0.12)",  icon: <Eye size={12} /> },
-  signed:   { label: "Signed",   color: "#10b981", bg: "rgba(16,185,129,0.12)", icon: <CheckCircle size={12} /> },
-  declined: { label: "Declined", color: "#ef4444", bg: "rgba(239,68,68,0.12)",  icon: <XCircle size={12} /> },
-  expired:  { label: "Expired",  color: "#64748b", bg: "rgba(100,116,139,0.12)", icon: <Clock size={12} /> },
+const STATUS_STYLE: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
+  draft:    { color: "#64748b", bg: "rgba(100,116,139,0.12)", icon: <Edit2 size={12} /> },
+  sent:     { color: "#3b82f6", bg: "rgba(59,130,246,0.12)",  icon: <Send size={12} /> },
+  viewed:   { color: "#f59e0b", bg: "rgba(245,158,11,0.12)",  icon: <Eye size={12} /> },
+  signed:   { color: "#10b981", bg: "rgba(16,185,129,0.12)", icon: <CheckCircle size={12} /> },
+  declined: { color: "#ef4444", bg: "rgba(239,68,68,0.12)",  icon: <XCircle size={12} /> },
+  expired:  { color: "#64748b", bg: "rgba(100,116,139,0.12)", icon: <Clock size={12} /> },
 };
 
 const STARTER_TEMPLATES = [
@@ -180,25 +146,29 @@ Date: {{date}}`,
 ];
 
 function StatusBadge({ status }: { status: string }) {
-  const m = STATUS_META[status] || STATUS_META.draft;
+  const { t } = useLanguage();
+  const s = STATUS_STYLE[status] || STATUS_STYLE.draft;
+  const label = t(`contracts_status_${status}`) || status;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: m.bg, color: m.color }}>
-      {m.icon} {m.label}
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: s.bg, color: s.color }}>
+      {s.icon} {label}
     </span>
   );
 }
 
 function CopyLink({ url }: { url: string }) {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const copy = () => { navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   return (
     <button onClick={copy} className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }} title="Copy signing link">
-      {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? "Copied" : "Copy link"}
+      {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? t("contracts_copied") : t("contracts_copy_link")}
     </button>
   );
 }
 
 export default function ContractsPage() {
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [tab, setTab] = useState<"contracts" | "templates">("contracts");
   const [showNew, setShowNew] = useState(false);
@@ -220,7 +190,13 @@ export default function ContractsPage() {
   const { data: contracts = [] } = useQuery<any[]>({ queryKey: ["/api/contracts"] });
   const { data: templates = [] } = useQuery<any[]>({ queryKey: ["/api/contracts/templates"] });
 
-  const allTemplates = [...STARTER_TEMPLATES.map((t, i) => ({ ...t, id: `starter-${i}`, isStarter: true })), ...(templates as any[])];
+  const allTemplates = [...STARTER_TEMPLATES.map((tpl, i) => ({ ...tpl, id: `starter-${i}`, isStarter: true })), ...(templates as any[])];
+
+  const formatVarLabel = (key: string): string => {
+    const translated = t(`var_${key}`);
+    if (translated && translated !== `var_${key}`) return translated;
+    return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  };
 
   const selectTemplate = (tpl: any) => {
     setSelectedTemplate(tpl);
@@ -272,7 +248,7 @@ export default function ContractsPage() {
   };
 
   const deleteContract = async (id: string) => {
-    if (!confirm("Delete this contract?")) return;
+    if (!confirm(t("contracts_delete_confirm"))) return;
     await apiRequest("DELETE", `/api/contracts/${id}`);
     qc.invalidateQueries({ queryKey: ["/api/contracts"] });
   };
@@ -297,24 +273,24 @@ export default function ContractsPage() {
   };
 
   const deleteTemplate = async (id: string) => {
-    if (!confirm("Delete this template?")) return;
+    if (!confirm(t("contracts_delete_tpl_confirm"))) return;
     await apiRequest("DELETE", `/api/contracts/templates/${id}`);
     qc.invalidateQueries({ queryKey: ["/api/contracts/templates"] });
   };
 
   return (
     <Layout
-      title="Contracts"
-      subtitle="Prepare, send, and collect e-signatures from prospects"
+      title={t("contracts_title")}
+      subtitle={t("contracts_subtitle")}
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           {tab === "templates" && (
             <button className="btn btn-secondary btn-sm" onClick={() => { setEditingTemplate(null); setTplForm({ name: "", description: "", body: "", variables: "" }); setShowTemplateEditor(true); }}>
-              <Plus size={14} /> New Template
+              <Plus size={14} /> {t("contracts_new_template")}
             </button>
           )}
           <button className="btn btn-primary btn-sm" onClick={() => setShowNew(true)}>
-            <Plus size={14} /> New Contract
+            <Plus size={14} /> {t("contracts_new")}
           </button>
         </div>
       }
@@ -329,9 +305,9 @@ export default function ContractsPage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
-        {(["contracts", "templates"] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`btn btn-sm ${tab === t ? "btn-primary" : "btn-secondary"}`} style={{ textTransform: "capitalize" }}>
-            {t === "contracts" ? <><FileText size={13} /> Contracts</> : <><Edit2 size={13} /> Templates</>}
+        {(["contracts", "templates"] as const).map(tabKey => (
+          <button key={tabKey} onClick={() => setTab(tabKey)} className={`btn btn-sm ${tab === tabKey ? "btn-primary" : "btn-secondary"}`}>
+            {tabKey === "contracts" ? <><FileText size={13} /> {t("contracts_tab_contracts")}</> : <><Edit2 size={13} /> {t("contracts_tab_templates")}</>}
           </button>
         ))}
       </div>
@@ -343,11 +319,11 @@ export default function ContractsPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 20 }}>
             {(["draft", "sent", "viewed", "signed", "declined"] as const).map(s => {
               const count = (contracts as any[]).filter(c => c.status === s).length;
-              const m = STATUS_META[s];
+              const st = STATUS_STYLE[s];
               return (
                 <div key={s} className="card" style={{ padding: "12px 14px", textAlign: "center" }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: m.color }}>{count}</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 2 }}>{m.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: st.color }}>{count}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 2 }}>{t(`contracts_status_${s}`)}</div>
                 </div>
               );
             })}
@@ -356,9 +332,9 @@ export default function ContractsPage() {
           {(contracts as any[]).length === 0 ? (
             <div className="card" style={{ padding: 60, textAlign: "center" }}>
               <FileText size={40} style={{ color: "var(--text-muted)", marginBottom: 16 }} />
-              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>No contracts yet</div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Create your first contract and send it to a prospect for e-signature</div>
-              <button className="btn btn-primary" onClick={() => setShowNew(true)}><Plus size={14} /> New Contract</button>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{t("contracts_empty_title")}</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>{t("contracts_empty_sub")}</div>
+              <button className="btn btn-primary" onClick={() => setShowNew(true)}><Plus size={14} /> {t("contracts_new")}</button>
             </div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
@@ -383,7 +359,7 @@ export default function ContractsPage() {
                         <button className="btn btn-primary btn-sm" disabled={sending === c.id} onClick={ev => { ev.stopPropagation(); sendContract(c.id); }}
                           style={{ display: "flex", alignItems: "center", gap: 5 }}>
                           {sending === c.id ? <span className="spinner" style={{ width: 12, height: 12 }} /> : <Send size={12} />}
-                          {c.status === "draft" ? "Send" : "Resend"}
+                          {c.status === "draft" ? t("contracts_send") : t("contracts_resend")}
                         </button>
                       )}
                       {sendResult[c.id] && <CopyLink url={sendResult[c.id]} />}
@@ -401,15 +377,15 @@ export default function ContractsPage() {
                     <div style={{ borderTop: "1px solid var(--border)", padding: "16px 18px", background: "var(--bg-elevated)" }}>
                       {c.signerName && (
                         <div style={{ marginBottom: 12, padding: "10px 14px", background: "rgba(16,185,129,0.08)", borderRadius: 6, fontSize: 13 }}>
-                          <strong style={{ color: "#10b981" }}>Signed by:</strong> {c.signerName}
+                          <strong style={{ color: "#10b981" }}>{t("contracts_signed_by")}:</strong> {c.signerName}
                           {c.signerIp && <span style={{ color: "var(--text-muted)" }}> · IP: {c.signerIp}</span>}
                           {c.signedAt && <span style={{ color: "var(--text-muted)" }}> · {new Date(c.signedAt).toLocaleString()}</span>}
                         </div>
                       )}
                       {c.signatureData && c.signatureData.startsWith("data:image") && (
                         <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Signature</div>
-                          <img src={c.signatureData} alt="Signature" style={{ maxWidth: 240, background: "#fff", borderRadius: 4, border: "1px solid var(--border)", padding: 8 }} />
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>{t("contracts_signature_label")}</div>
+                          <img src={c.signatureData} alt={t("contracts_signature_label")} style={{ maxWidth: 240, background: "#fff", borderRadius: 4, border: "1px solid var(--border)", padding: 8 }} />
                         </div>
                       )}
                       {c.signatureData && !c.signatureData.startsWith("data:image") && (
@@ -422,7 +398,7 @@ export default function ContractsPage() {
                       </pre>
                       {c.notes && (
                         <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-muted)", borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                          <strong>Notes:</strong> {c.notes}
+                          <strong>{t("contracts_notes_label")}:</strong> {c.notes}
                         </div>
                       )}
                     </div>
@@ -438,7 +414,7 @@ export default function ContractsPage() {
       {tab === "templates" && (
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-            3 starter templates are included. Create your own custom templates below.
+            {t("contracts_starter_note")}
           </div>
           {allTemplates.map((tpl: any) => (
             <div key={tpl.id} className="card" style={{ padding: "16px 18px" }}>
@@ -447,7 +423,7 @@ export default function ContractsPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{tpl.name}</span>
                     {tpl.isStarter && (
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 10, background: "rgba(99,102,241,0.12)", color: "#818cf8" }}>STARTER</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 10, background: "rgba(99,102,241,0.12)", color: "#818cf8" }}>{t("contracts_starter_badge")}</span>
                     )}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>{tpl.description}</div>
@@ -463,7 +439,7 @@ export default function ContractsPage() {
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                   <button className="btn btn-primary btn-sm" onClick={() => { setShowNew(true); selectTemplate(tpl); }}>
-                    Use template
+                    {t("contracts_use_template")}
                   </button>
                   {!tpl.isStarter && (
                     <>
@@ -471,7 +447,7 @@ export default function ContractsPage() {
                         setEditingTemplate(tpl);
                         setTplForm({ name: tpl.name, description: tpl.description || "", body: tpl.body, variables: (tpl.variables || []).join(", ") });
                         setShowTemplateEditor(true);
-                      }}>Edit</button>
+                      }}>{t("edit")}</button>
                       <button className="btn btn-ghost btn-sm" style={{ color: "#ef4444", padding: "4px 6px" }} onClick={() => deleteTemplate(tpl.id)}><Trash2 size={13} /></button>
                     </>
                   )}
@@ -487,7 +463,7 @@ export default function ContractsPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, padding: "40px 16px", overflowY: "auto" }}>
           <div className="card" style={{ width: "100%", maxWidth: 720, padding: 0 }}>
             <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>New Contract</div>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>{t("contracts_modal_new_title")}</div>
               <button onClick={() => { setShowNew(false); setSelectedTemplate(null); setVarValues({}); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--text-muted)", lineHeight: 1 }}>×</button>
             </div>
             <form onSubmit={submitContract}>
@@ -495,10 +471,10 @@ export default function ContractsPage() {
 
                 {/* Pick template */}
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>Start from template (optional)</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>{t("contracts_from_template")}</label>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <button type="button" onClick={() => { setSelectedTemplate(null); setVarValues({}); setForm(f => ({ ...f, body: "" })); }}
-                      className={`btn btn-sm ${!selectedTemplate ? "btn-primary" : "btn-secondary"}`}>Blank</button>
+                      className={`btn btn-sm ${!selectedTemplate ? "btn-primary" : "btn-secondary"}`}>{t("contracts_blank")}</button>
                     {allTemplates.map((tpl: any) => (
                       <button key={tpl.id} type="button" onClick={() => selectTemplate(tpl)}
                         className={`btn btn-sm ${selectedTemplate?.id === tpl.id ? "btn-primary" : "btn-secondary"}`}>
@@ -510,17 +486,17 @@ export default function ContractsPage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Contract Title *</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("contracts_field_title")} *</label>
                     <input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Service Agreement — Acme Corp" />
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Recipient Name</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("contracts_field_recipient_name")}</label>
                     <input className="input" value={form.contactName} onChange={e => setForm(f => ({ ...f, contactName: e.target.value }))} placeholder="John Smith" />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Recipient Email *</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("contracts_field_recipient_email")} *</label>
                   <input className="input" type="email" required value={form.contactEmail} onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))} placeholder="prospect@company.com" />
                 </div>
 
@@ -530,10 +506,10 @@ export default function ContractsPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
                       <BookOpen size={13} style={{ color: "var(--brand)" }} />
                       <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                        Contract Details — Fill in all fields
+                        {t("contracts_details_header")}
                       </span>
                       <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)" }}>
-                        {Object.values(varValues).filter(Boolean).length} / {Object.keys(varValues).length} completed
+                        {Object.values(varValues).filter(Boolean).length} / {Object.keys(varValues).length} {t("contracts_details_count")}
                       </span>
                     </div>
                     <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px" }}>
@@ -563,11 +539,11 @@ export default function ContractsPage() {
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                     <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
-                      Contract Body {!selectedTemplate && "*"}
+                      {t("contracts_field_body")} {!selectedTemplate && "*"}
                     </label>
                     {selectedTemplate && (
                       <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                        <Eye size={11} /> Live preview — updates as you fill in fields above
+                        <Eye size={11} /> {t("contracts_preview_hint")}
                       </span>
                     )}
                   </div>
@@ -594,20 +570,20 @@ export default function ContractsPage() {
                       style={{ resize: "vertical", fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, lineHeight: 1.8 }}
                       value={form.body}
                       onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-                      placeholder={"Write or paste the contract text here.\nUse {{variable_name}} syntax for fields you want to fill in per contract."}
+                      placeholder={t("contracts_field_body_ph")}
                     />
                   )}
                 </div>
 
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Internal Notes</label>
-                  <input className="input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Private notes for your team — not visible to the recipient" />
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("contracts_field_notes")}</label>
+                  <input className="input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={t("contracts_field_notes_ph")} />
                 </div>
 
               </div>
               <div style={{ padding: "14px 22px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => { setShowNew(false); setSelectedTemplate(null); setVarValues({}); }}>Cancel</button>
-                <button type="submit" className="btn btn-primary"><FileText size={14} /> Save as Draft</button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setShowNew(false); setSelectedTemplate(null); setVarValues({}); }}>{t("cancel")}</button>
+                <button type="submit" className="btn btn-primary"><FileText size={14} /> {t("contracts_save_draft")}</button>
               </div>
             </form>
           </div>
@@ -619,36 +595,36 @@ export default function ContractsPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, padding: "40px 16px", overflowY: "auto" }}>
           <div className="card" style={{ width: "100%", maxWidth: 680, padding: 0 }}>
             <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>{editingTemplate ? "Edit Template" : "New Template"}</div>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>{editingTemplate ? t("contracts_modal_edit_template") : t("contracts_modal_new_template")}</div>
               <button onClick={() => setShowTemplateEditor(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--text-muted)", lineHeight: 1 }}>×</button>
             </div>
             <form onSubmit={saveTemplate}>
               <div style={{ padding: "20px 22px", display: "grid", gap: 14 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Template Name *</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("contracts_field_tpl_name")} *</label>
                     <input className="input" required value={tplForm.name} onChange={e => setTplForm(f => ({ ...f, name: e.target.value }))} />
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Description</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("contracts_field_tpl_desc")}</label>
                     <input className="input" value={tplForm.description} onChange={e => setTplForm(f => ({ ...f, description: e.target.value }))} />
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Variables (comma-separated)</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("contracts_field_tpl_vars")}</label>
                   <input className="input" value={tplForm.variables} onChange={e => setTplForm(f => ({ ...f, variables: e.target.value }))} placeholder="client_name, date, amount, start_date" />
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>Use {"{{variable_name}}"} syntax in the body below</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>{t("contracts_field_tpl_vars_hint")}</div>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Template Body *</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("contracts_field_tpl_body")} *</label>
                   <textarea className="input" rows={14} required style={{ resize: "vertical", fontFamily: "monospace", fontSize: 12, lineHeight: 1.7 }}
                     value={tplForm.body} onChange={e => setTplForm(f => ({ ...f, body: e.target.value }))}
-                    placeholder="Write your contract template here. Use {{variable_name}} for fields that change per contract." />
+                    placeholder={t("contracts_field_body_ph")} />
                 </div>
               </div>
               <div style={{ padding: "14px 22px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowTemplateEditor(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Template</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowTemplateEditor(false)}>{t("cancel")}</button>
+                <button type="submit" className="btn btn-primary">{t("contracts_save_template")}</button>
               </div>
             </form>
           </div>

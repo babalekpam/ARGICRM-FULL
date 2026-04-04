@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "wouter";
 import { CheckCircle, XCircle, FileText, PenLine, Type, AlertCircle } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export default function SignPage() {
+  const { t } = useLanguage();
   const { token } = useParams<{ token: string }>();
   const [contract, setContract] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,6 @@ export default function SignPage() {
       .catch(() => { setError("Failed to load contract. Please try again."); setLoading(false); });
   }, [token]);
 
-  // Canvas drawing
   const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
     if ("touches" in e) {
@@ -102,7 +103,7 @@ export default function SignPage() {
       if (data.error) { alert(data.error); return; }
       setDone("signed");
     } else {
-      if (!confirm("Are you sure you want to decline this contract?")) return;
+      if (!confirm(t("sign_decline_confirm"))) return;
       setSubmitting(true);
       await fetch(`/api/sign/${token}`, {
         method: "POST",
@@ -118,7 +119,7 @@ export default function SignPage() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
       <div style={{ textAlign: "center" }}>
         <div style={{ width: 40, height: 40, border: "3px solid #e2e8f0", borderTopColor: "#6366f1", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-        <p style={{ color: "#64748b", fontSize: 14 }}>Loading contract…</p>
+        <p style={{ color: "#64748b", fontSize: 14 }}>{t("sign_loading")}</p>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
@@ -128,7 +129,7 @@ export default function SignPage() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", padding: 24 }}>
       <div style={{ maxWidth: 480, textAlign: "center" }}>
         <AlertCircle size={48} style={{ color: "#ef4444", marginBottom: 16 }} />
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Link Unavailable</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{t("sign_unavailable_title")}</h2>
         <p style={{ color: "#64748b", fontSize: 14 }}>{error}</p>
       </div>
     </div>
@@ -138,11 +139,9 @@ export default function SignPage() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", padding: 24 }}>
       <div style={{ maxWidth: 480, textAlign: "center" }}>
         <CheckCircle size={56} style={{ color: "#10b981", marginBottom: 20 }} />
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", marginBottom: 10 }}>Contract Signed</h2>
-        <p style={{ color: "#475569", fontSize: 15, lineHeight: 1.6 }}>
-          Thank you. Your signature has been recorded and the contract is now complete. A confirmation has been logged with the date, time, and IP address for legal records.
-        </p>
-        <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 20 }}>You may close this window.</p>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", marginBottom: 10 }}>{t("sign_signed_title")}</h2>
+        <p style={{ color: "#475569", fontSize: 15, lineHeight: 1.6 }}>{t("sign_signed_body")}</p>
+        <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 20 }}>{t("sign_close")}</p>
       </div>
     </div>
   );
@@ -151,9 +150,9 @@ export default function SignPage() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", padding: 24 }}>
       <div style={{ maxWidth: 480, textAlign: "center" }}>
         <XCircle size={56} style={{ color: "#ef4444", marginBottom: 20 }} />
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", marginBottom: 10 }}>Contract Declined</h2>
-        <p style={{ color: "#475569", fontSize: 15 }}>You have declined to sign this contract. The sender has been notified.</p>
-        <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 20 }}>You may close this window.</p>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", marginBottom: 10 }}>{t("sign_declined_title")}</h2>
+        <p style={{ color: "#475569", fontSize: 15 }}>{t("sign_declined_body")}</p>
+        <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 20 }}>{t("sign_close")}</p>
       </div>
     </div>
   );
@@ -165,16 +164,16 @@ export default function SignPage() {
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: "#6366f1", marginBottom: 8 }}>ARGILETTE · E-SIGN</div>
+          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: "#6366f1", marginBottom: 8 }}>{t("sign_brand")}</div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", margin: "0 0 6px" }}>{contract.title}</h1>
-          {contract.contactName && <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>Prepared for <strong>{contract.contactName}</strong> · {contract.contactEmail}</p>}
+          {contract.contactName && <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>{t("sign_prepared_for")} <strong>{contract.contactName}</strong> · {contract.contactEmail}</p>}
         </div>
 
         {/* Contract body */}
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "32px 36px", marginBottom: 28, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }} className="sign-layout">
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
             <FileText size={18} style={{ color: "#6366f1" }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em" }}>Contract Document</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("sign_doc_label")}</span>
           </div>
           <pre style={{ fontSize: 13, color: "#374151", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.8, fontFamily: "Georgia, 'Times New Roman', serif", margin: 0 }}>
             {contract.body}
@@ -185,40 +184,40 @@ export default function SignPage() {
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "28px 32px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }} className="sign-layout">
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
             <PenLine size={18} style={{ color: "#6366f1" }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em" }}>Your Signature</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("sign_sig_label")}</span>
           </div>
 
           {/* Mode toggle */}
           <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
             <button onClick={() => setMode("draw")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: `2px solid ${mode === "draw" ? "#6366f1" : "#e2e8f0"}`, background: mode === "draw" ? "#eef2ff" : "#fff", color: mode === "draw" ? "#4338ca" : "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-              <PenLine size={14} /> Draw
+              <PenLine size={14} /> {t("sign_mode_draw")}
             </button>
             <button onClick={() => setMode("type")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: `2px solid ${mode === "type" ? "#6366f1" : "#e2e8f0"}`, background: mode === "type" ? "#eef2ff" : "#fff", color: mode === "type" ? "#4338ca" : "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-              <Type size={14} /> Type
+              <Type size={14} /> {t("sign_mode_type")}
             </button>
           </div>
 
           {mode === "draw" && (
             <div>
-              <div style={{ marginBottom: 6, fontSize: 12, color: "#64748b" }}>Sign below using your mouse or finger:</div>
+              <div style={{ marginBottom: 6, fontSize: 12, color: "#64748b" }}>{t("sign_draw_hint")}</div>
               <canvas ref={canvasRef} width={680} height={140}
                 style={{ border: "2px dashed #cbd5e1", borderRadius: 8, background: "#fafafa", cursor: "crosshair", width: "100%", maxWidth: 680, display: "block", touchAction: "none" }}
                 onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
                 onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw}
               />
               <button onClick={clearCanvas} style={{ marginTop: 8, fontSize: 12, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}>
-                Clear signature
+                {t("sign_clear")}
               </button>
             </div>
           )}
 
           {mode === "type" && (
             <div>
-              <div style={{ marginBottom: 6, fontSize: 12, color: "#64748b" }}>Type your full legal name:</div>
+              <div style={{ marginBottom: 6, fontSize: 12, color: "#64748b" }}>{t("sign_type_hint")}</div>
               <input
                 value={typedName}
                 onChange={e => setTypedName(e.target.value)}
-                placeholder="Your full name"
+                placeholder={t("sign_type_ph")}
                 style={{ width: "100%", padding: "12px 16px", fontSize: 22, fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", color: "#1e293b", border: "2px solid #e2e8f0", borderRadius: 8, outline: "none", boxSizing: "border-box" }}
               />
             </div>
@@ -229,7 +228,7 @@ export default function SignPage() {
             <input type="checkbox" id="agree" checked={agreed} onChange={e => setAgreed(e.target.checked)}
               style={{ width: 16, height: 16, marginTop: 2, accentColor: "#6366f1", flexShrink: 0, cursor: "pointer" }} />
             <label htmlFor="agree" style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, cursor: "pointer" }}>
-              I agree that my electronic signature is the legally binding equivalent of my handwritten signature. I have read and understood all terms in this contract.
+              {t("sign_consent")}
             </label>
           </div>
         </div>
@@ -238,19 +237,18 @@ export default function SignPage() {
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <button onClick={() => submit("decline")} disabled={submitting}
             style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 24px", borderRadius: 8, border: "2px solid #fca5a5", background: "#fff", color: "#ef4444", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
-            <XCircle size={16} /> Decline
+            <XCircle size={16} /> {t("sign_decline_btn")}
           </button>
           <button onClick={() => submit("sign")} disabled={submitting || !agreed}
             style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 28px", borderRadius: 8, border: "none", background: agreed ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "#e2e8f0", color: agreed ? "#fff" : "#94a3b8", fontWeight: 700, fontSize: 14, cursor: agreed ? "pointer" : "not-allowed" }}>
             {submitting ? <span style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block" }} /> : <CheckCircle size={16} />}
-            Sign Contract
+            {t("sign_sign_btn")}
           </button>
         </div>
 
         {/* Legal footer */}
         <div style={{ textAlign: "center", marginTop: 32, fontSize: 11, color: "#94a3b8", lineHeight: 1.6 }}>
-          This document is powered by ARGILETTE e-Sign. Electronic signatures are legally binding under the US ESIGN Act and EU eIDAS Regulation.
-          Your IP address, browser fingerprint, and timestamp are recorded for audit purposes.
+          {t("sign_footer")}
         </div>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
