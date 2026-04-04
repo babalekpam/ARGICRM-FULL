@@ -134,22 +134,56 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
     <Modal open={open} onClose={handleClose} title="Import Contacts from File">
       <div style={{ padding: "24px 24px 0" }}>
 
-        {/* Format hint + template download */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
-            Upload a <strong style={{ color: "var(--text-secondary)" }}>.csv</strong>,{" "}
-            <strong style={{ color: "var(--text-secondary)" }}>.xlsx</strong> or{" "}
-            <strong style={{ color: "var(--text-secondary)" }}>.xls</strong> file.
-            The first row must be column headers. Supported columns: First Name, Last Name, Full Name, Email, Phone, Company, Job Title, Industry, City, State, Country, Website, Notes, Tags, Status.
-          </p>
+        {/* Sample file banner */}
+        <div style={{
+          background: "linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.06) 100%)",
+          border: "1px solid rgba(99,102,241,0.2)",
+          borderRadius: 10,
+          padding: "14px 16px",
+          marginBottom: 18,
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+        }}>
+          <FileSpreadsheet size={28} style={{ color: "#6366f1", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)", marginBottom: 3 }}>
+              Not sure about the format?
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
+              Download our sample file — it contains 20 real-world contacts from Africa, Americas, Europe &amp; Asia showing every supported column.
+            </div>
+          </div>
           <a
-            href="data:text/csv;charset=utf-8,First%20Name%2CLast%20Name%2CEmail%2CPhone%2CCompany%2CJob%20Title%2CIndustry%2CCity%2CCountry%2CWebsite%2CNotes%0AJohn%2CDoe%2Cjohn%40example.com%2C%2BAcme%20Corp%2CManager%2CTechnology%2CParis%2CFrance%2Chttps%3A%2F%2Facme.com%2C"
-            download="contacts_template.csv"
-            title="Download template"
-            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#6366f1", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
+            href="/sample_leads.csv"
+            download="sample_leads.csv"
+            data-testid="link-download-sample"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              background: "#6366f1",
+              color: "#fff",
+              borderRadius: 7,
+              fontSize: 12,
+              fontWeight: 700,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
           >
-            <Download size={13} /> Template
+            <Download size={13} /> Download Sample
           </a>
+        </div>
+
+        {/* Supported columns hint */}
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16, lineHeight: 1.7 }}>
+          Accepts <strong style={{ color: "var(--text-secondary)" }}>.csv</strong>,{" "}
+          <strong style={{ color: "var(--text-secondary)" }}>.xlsx</strong>,{" "}
+          <strong style={{ color: "var(--text-secondary)" }}>.xls</strong> · Max 50 MB · First row must be headers.{" "}
+          Columns: First Name, Last Name, Full Name, Email, Phone, Company, Job Title, Industry, City, State,{" "}
+          <strong style={{ color: "var(--text-secondary)" }}>Country</strong> (routes to the correct region tab), Website, Notes, Status, Source, LinkedIn, Tags.
         </div>
 
         {/* Drop zone */}

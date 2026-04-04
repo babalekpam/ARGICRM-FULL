@@ -29,3 +29,9 @@ id = "5Rpy2XsHRlExKC06BkLn9"
 uri = "file://argilette-part3-config.zip"
 type = "unspecified"
 title = "Part 3 - Config + Public files"
+
+[[outputs]]
+id = "pNMjmX1x0puhZjOFA2mA9"
+uri = "file://client/public/sample_leads.csv"
+type = "table"
+title = "sample_leads.csv — 20 contacts, all regions"
