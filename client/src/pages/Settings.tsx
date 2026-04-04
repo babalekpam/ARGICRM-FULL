@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -27,7 +28,14 @@ function SaveButton({ loading, saved }: { loading: boolean; saved: boolean }) {
 export default function SettingsPage() {
   const { user } = useAuth();
   const { t, lang, setLang } = useLanguage();
-  const [tab, setTab] = useState("profile");
+  const search = useSearch();
+  const VALID_TABS = ["profile","organization","security","notifications","branding","email","ai"];
+  const tabFromUrl = new URLSearchParams(search).get("tab") || "";
+  const [tab, setTab] = useState(() => VALID_TABS.includes(tabFromUrl) ? tabFromUrl : "profile");
+
+  useEffect(() => {
+    if (VALID_TABS.includes(tabFromUrl)) setTab(tabFromUrl);
+  }, [tabFromUrl]);
 
   const [profile, setProfile] = useState({ firstName:"", lastName:"", email:"", preferredLanguage:"en" });
   const [org, setOrg] = useState({ name:"", domain:"" });

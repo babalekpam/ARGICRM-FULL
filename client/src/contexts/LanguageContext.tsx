@@ -40,6 +40,7 @@ const translations: Record<string, Record<string, string>> = {
     nav_projects: "Projects",
     nav_employees: "Employees",
     nav_team: "Team",
+    nav_white_label: "White Label",
     nav_settings: "Settings",
     nav_code_healing: "Code Healing",
 
@@ -1093,6 +1094,7 @@ Date: {{date}}`,
     nav_projects: "Projets",
     nav_employees: "Employés",
     nav_team: "Équipe",
+    nav_white_label: "Marque blanche",
     nav_settings: "Paramètres",
     nav_code_healing: "Autoréparation",
 
