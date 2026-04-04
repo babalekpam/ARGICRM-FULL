@@ -43,107 +43,30 @@ const STATUS_STYLE: Record<string, { color: string; bg: string; icon: React.Reac
   expired:  { color: "#64748b", bg: "rgba(100,116,139,0.12)", icon: <Clock size={12} /> },
 };
 
-const STARTER_TEMPLATES = [
-  {
-    name: "Service Agreement",
-    description: "Standard services contract for client engagements",
-    body: `SERVICE AGREEMENT
-
-This Service Agreement ("Agreement") is entered into as of {{date}} between {{company_name}} ("Client") and {{provider_name}} ("Provider").
-
-1. SERVICES
-Provider agrees to perform the following services: {{services_description}}
-
-2. COMPENSATION
-Client agrees to pay Provider {{amount}} {{payment_terms}}.
-
-3. TERM
-This Agreement begins on {{start_date}} and continues until {{end_date}}, unless earlier terminated.
-
-4. CONFIDENTIALITY
-Each party agrees to keep the other party's Confidential Information strictly confidential.
-
-5. INTELLECTUAL PROPERTY
-All work product created under this Agreement shall be the property of the Client upon full payment.
-
-6. TERMINATION
-Either party may terminate this Agreement with {{notice_days}} days written notice.
-
-7. GOVERNING LAW
-This Agreement shall be governed by the laws of {{jurisdiction}}.
-
-IN WITNESS WHEREOF, the parties have executed this Agreement.
-
-Client: {{client_name}}
-Date: {{date}}
-
-Provider: {{provider_name}}
-Date: {{date}}`,
-    variables: ["date", "company_name", "provider_name", "services_description", "amount", "payment_terms", "start_date", "end_date", "notice_days", "jurisdiction", "client_name"],
-  },
-  {
-    name: "NDA — Non-Disclosure Agreement",
-    description: "Mutual confidentiality agreement for business discussions",
-    body: `NON-DISCLOSURE AGREEMENT
-
-This Non-Disclosure Agreement ("Agreement") is made on {{date}} between {{party_a}} and {{party_b}} (collectively, the "Parties").
-
-1. PURPOSE
-The Parties wish to explore a potential business relationship concerning {{purpose}}.
-
-2. CONFIDENTIAL INFORMATION
-"Confidential Information" means any non-public information disclosed by either Party.
-
-3. OBLIGATIONS
-Each Party agrees to: (a) hold all Confidential Information in strict confidence; (b) not disclose it to third parties without prior written consent; (c) use it solely for the Purpose stated above.
-
-4. EXCLUSIONS
-These obligations do not apply to information that: (a) is or becomes publicly known through no breach; (b) was independently developed; (c) is required by law to be disclosed.
-
-5. TERM
-This Agreement remains in effect for {{term_years}} years from the date signed.
-
-6. GOVERNING LAW
-This Agreement is governed by the laws of {{jurisdiction}}.
-
-Agreed and accepted:
-
-{{party_a_name}} ({{party_a}})
-Signature: ___________________________   Date: {{date}}
-
-{{party_b_name}} ({{party_b}})
-Signature: ___________________________   Date: {{date}}`,
-    variables: ["date", "party_a", "party_b", "purpose", "term_years", "jurisdiction", "party_a_name", "party_b_name"],
-  },
-  {
-    name: "Proposal Acceptance",
-    description: "Simple letter of acceptance for a proposal or quote",
-    body: `PROPOSAL ACCEPTANCE
-
-Date: {{date}}
-
-To: {{provider_name}}
-From: {{client_name}} ({{company_name}})
-
-Re: Acceptance of Proposal — {{proposal_title}}
-
-Dear {{provider_contact}},
-
-We are pleased to accept your proposal dated {{proposal_date}} for {{proposal_title}}.
-
-Project scope: {{scope_summary}}
-Total value: {{amount}}
-Start date: {{start_date}}
-
-By signing below, {{client_name}} confirms acceptance of all terms and conditions outlined in the proposal.
-
-Authorized Signature: ___________________________
-Name: {{client_name}}
-Title: {{client_title}}
-Date: {{date}}`,
-    variables: ["date", "provider_name", "client_name", "company_name", "proposal_title", "proposal_date", "provider_contact", "scope_summary", "amount", "start_date", "client_title"],
-  },
-];
+// Starter templates are generated dynamically using translation keys so they
+// switch language instantly when the user changes their language preference.
+function getStarterTemplates(t: (k: string) => string) {
+  return [
+    {
+      name: t("tpl_service_name"),
+      description: t("tpl_service_desc"),
+      body: t("tpl_service_body"),
+      variables: ["date", "company_name", "provider_name", "services_description", "amount", "payment_terms", "start_date", "end_date", "notice_days", "jurisdiction", "client_name"],
+    },
+    {
+      name: t("tpl_nda_name"),
+      description: t("tpl_nda_desc"),
+      body: t("tpl_nda_body"),
+      variables: ["date", "party_a", "party_b", "purpose", "term_years", "jurisdiction", "party_a_name", "party_b_name"],
+    },
+    {
+      name: t("tpl_proposal_name"),
+      description: t("tpl_proposal_desc"),
+      body: t("tpl_proposal_body"),
+      variables: ["date", "provider_name", "client_name", "company_name", "proposal_title", "proposal_date", "provider_contact", "scope_summary", "amount", "start_date", "client_title"],
+    },
+  ];
+}
 
 function StatusBadge({ status }: { status: string }) {
   const { t } = useLanguage();
@@ -190,7 +113,7 @@ export default function ContractsPage() {
   const { data: contracts = [] } = useQuery<any[]>({ queryKey: ["/api/contracts"] });
   const { data: templates = [] } = useQuery<any[]>({ queryKey: ["/api/contracts/templates"] });
 
-  const allTemplates = [...STARTER_TEMPLATES.map((tpl, i) => ({ ...tpl, id: `starter-${i}`, isStarter: true })), ...(templates as any[])];
+  const allTemplates = [...getStarterTemplates(t).map((tpl, i) => ({ ...tpl, id: `starter-${i}`, isStarter: true })), ...(templates as any[])];
 
   const formatVarLabel = (key: string): string => {
     const translated = t(`var_${key}`);
@@ -349,9 +272,9 @@ export default function ContractsPage() {
                       <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
                         {c.contactName && <span>{c.contactName} · </span>}
                         <span>{c.contactEmail}</span>
-                        {c.signedAt && <span style={{ color: "#10b981" }}> · Signed {new Date(c.signedAt).toLocaleDateString()}</span>}
-                        {c.sentAt && !c.signedAt && <span> · Sent {new Date(c.sentAt).toLocaleDateString()}</span>}
-                        {!c.sentAt && <span> · Created {new Date(c.createdAt).toLocaleDateString()}</span>}
+                        {c.signedAt && <span style={{ color: "#10b981" }}> · {t("contracts_dated_signed")} {new Date(c.signedAt).toLocaleDateString()}</span>}
+                        {c.sentAt && !c.signedAt && <span> · {t("contracts_dated_sent")} {new Date(c.sentAt).toLocaleDateString()}</span>}
+                        {!c.sentAt && <span> · {t("contracts_dated_created")} {new Date(c.createdAt).toLocaleDateString()}</span>}
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>

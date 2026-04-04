@@ -559,6 +559,102 @@ const translations: Record<string, Record<string, string>> = {
     contracts_field_tpl_body: "Template Body",
     contracts_save_template: "Save Template",
     contracts_delete_tpl_confirm: "Delete this template?",
+    // Contract list date labels
+    contracts_dated_signed: "Signed",
+    contracts_dated_sent: "Sent",
+    contracts_dated_created: "Created",
+    // Starter template names & descriptions
+    tpl_service_name: "Service Agreement",
+    tpl_service_desc: "Standard services contract for client engagements",
+    tpl_nda_name: "NDA — Non-Disclosure Agreement",
+    tpl_nda_desc: "Mutual confidentiality agreement for business discussions",
+    tpl_proposal_name: "Proposal Acceptance",
+    tpl_proposal_desc: "Simple letter of acceptance for a proposal or quote",
+    // Starter template bodies
+    tpl_service_body: `SERVICE AGREEMENT
+
+This Service Agreement ("Agreement") is entered into as of {{date}} between {{company_name}} ("Client") and {{provider_name}} ("Provider").
+
+1. SERVICES
+Provider agrees to perform the following services: {{services_description}}
+
+2. COMPENSATION
+Client agrees to pay Provider {{amount}} {{payment_terms}}.
+
+3. TERM
+This Agreement begins on {{start_date}} and continues until {{end_date}}, unless earlier terminated.
+
+4. CONFIDENTIALITY
+Each party agrees to keep the other party's Confidential Information strictly confidential.
+
+5. INTELLECTUAL PROPERTY
+All work product created under this Agreement shall be the property of the Client upon full payment.
+
+6. TERMINATION
+Either party may terminate this Agreement with {{notice_days}} days written notice.
+
+7. GOVERNING LAW
+This Agreement shall be governed by the laws of {{jurisdiction}}.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement.
+
+Client: {{client_name}}
+Date: {{date}}
+
+Provider: {{provider_name}}
+Date: {{date}}`,
+    tpl_nda_body: `NON-DISCLOSURE AGREEMENT
+
+This Non-Disclosure Agreement ("Agreement") is made on {{date}} between {{party_a}} and {{party_b}} (collectively, the "Parties").
+
+1. PURPOSE
+The Parties wish to explore a potential business relationship concerning {{purpose}}.
+
+2. CONFIDENTIAL INFORMATION
+"Confidential Information" means any non-public information disclosed by either Party.
+
+3. OBLIGATIONS
+Each Party agrees to: (a) hold all Confidential Information in strict confidence; (b) not disclose it to third parties without prior written consent; (c) use it solely for the Purpose stated above.
+
+4. EXCLUSIONS
+These obligations do not apply to information that: (a) is or becomes publicly known through no breach; (b) was independently developed; (c) is required by law to be disclosed.
+
+5. TERM
+This Agreement remains in effect for {{term_years}} years from the date signed.
+
+6. GOVERNING LAW
+This Agreement is governed by the laws of {{jurisdiction}}.
+
+Agreed and accepted:
+
+{{party_a_name}} ({{party_a}})
+Signature: ___________________________   Date: {{date}}
+
+{{party_b_name}} ({{party_b}})
+Signature: ___________________________   Date: {{date}}`,
+    tpl_proposal_body: `PROPOSAL ACCEPTANCE
+
+Date: {{date}}
+
+To: {{provider_name}}
+From: {{client_name}} ({{company_name}})
+
+Re: Acceptance of Proposal — {{proposal_title}}
+
+Dear {{provider_contact}},
+
+We are pleased to accept your proposal dated {{proposal_date}} for {{proposal_title}}.
+
+Project scope: {{scope_summary}}
+Total value: {{amount}}
+Start date: {{start_date}}
+
+By signing below, {{client_name}} confirms acceptance of all terms and conditions outlined in the proposal.
+
+Authorized Signature: ___________________________
+Name: {{client_name}}
+Title: {{client_title}}
+Date: {{date}}`,
     // Contract variable field labels
     var_date: "Effective Date",
     var_start_date: "Start Date",
@@ -1516,6 +1612,102 @@ const translations: Record<string, Record<string, string>> = {
     contracts_field_tpl_body: "Corps du modèle",
     contracts_save_template: "Enregistrer le modèle",
     contracts_delete_tpl_confirm: "Supprimer ce modèle ?",
+    // Étiquettes de date dans la liste des contrats
+    contracts_dated_signed: "Signé le",
+    contracts_dated_sent: "Envoyé le",
+    contracts_dated_created: "Créé le",
+    // Noms et descriptions des modèles de démarrage
+    tpl_service_name: "Contrat de prestation de services",
+    tpl_service_desc: "Contrat de services standard pour les engagements clients",
+    tpl_nda_name: "ANS — Accord de non-divulgation",
+    tpl_nda_desc: "Accord de confidentialité mutuelle pour les discussions commerciales",
+    tpl_proposal_name: "Acceptation de proposition",
+    tpl_proposal_desc: "Lettre simple d'acceptation d'une proposition ou d'un devis",
+    // Corps des modèles de démarrage
+    tpl_service_body: `CONTRAT DE PRESTATION DE SERVICES
+
+Le présent contrat de prestation de services (ci-après le « Contrat ») est conclu le {{date}} entre {{company_name}} (ci-après le « Client ») et {{provider_name}} (ci-après le « Prestataire »).
+
+1. SERVICES
+Le Prestataire s'engage à exécuter les services suivants : {{services_description}}
+
+2. RÉMUNÉRATION
+Le Client s'engage à verser au Prestataire {{amount}} {{payment_terms}}.
+
+3. DURÉE
+Le présent Contrat prend effet le {{start_date}} et se poursuit jusqu'au {{end_date}}, sauf résiliation anticipée.
+
+4. CONFIDENTIALITÉ
+Chaque partie s'engage à garder strictement confidentielles les Informations confidentielles de l'autre partie.
+
+5. PROPRIÉTÉ INTELLECTUELLE
+Toute création réalisée dans le cadre du présent Contrat sera la propriété du Client après paiement intégral.
+
+6. RÉSILIATION
+Chaque partie peut résilier le présent Contrat avec un préavis écrit de {{notice_days}} jours.
+
+7. LOI APPLICABLE
+Le présent Contrat est régi par le droit en vigueur dans {{jurisdiction}}.
+
+EN FOI DE QUOI, les parties ont signé le présent Contrat.
+
+Client : {{client_name}}
+Date : {{date}}
+
+Prestataire : {{provider_name}}
+Date : {{date}}`,
+    tpl_nda_body: `ACCORD DE NON-DIVULGATION
+
+Le présent accord de non-divulgation (ci-après l'« Accord ») est conclu le {{date}} entre {{party_a}} et {{party_b}} (ci-après collectivement les « Parties »).
+
+1. OBJET
+Les Parties souhaitent explorer une relation commerciale potentielle concernant {{purpose}}.
+
+2. INFORMATIONS CONFIDENTIELLES
+Les « Informations confidentielles » désignent toute information non publique divulguée par l'une ou l'autre des Parties.
+
+3. OBLIGATIONS
+Chaque Partie s'engage à : (a) conserver toutes les Informations confidentielles strictement confidentielles ; (b) ne pas les divulguer à des tiers sans consentement écrit préalable ; (c) les utiliser uniquement aux fins de l'Objet ci-dessus.
+
+4. EXCLUSIONS
+Ces obligations ne s'appliquent pas aux informations : (a) devenues publiques sans manquement de la partie ; (b) développées de manière indépendante ; (c) dont la divulgation est requise par la loi.
+
+5. DURÉE
+Le présent Accord reste en vigueur pendant {{term_years}} an(s) à compter de la date de signature.
+
+6. LOI APPLICABLE
+Le présent Accord est régi par le droit en vigueur dans {{jurisdiction}}.
+
+Lu et approuvé :
+
+{{party_a_name}} ({{party_a}})
+Signature : ___________________________   Date : {{date}}
+
+{{party_b_name}} ({{party_b}})
+Signature : ___________________________   Date : {{date}}`,
+    tpl_proposal_body: `ACCEPTATION DE PROPOSITION
+
+Date : {{date}}
+
+À : {{provider_name}}
+De : {{client_name}} ({{company_name}})
+
+Objet : Acceptation de la proposition — {{proposal_title}}
+
+Madame, Monsieur,
+
+Nous avons le plaisir d'accepter votre proposition datée du {{proposal_date}} concernant {{proposal_title}}.
+
+Périmètre du projet : {{scope_summary}}
+Valeur totale : {{amount}}
+Date de début : {{start_date}}
+
+En signant ci-dessous, {{client_name}} confirme l'acceptation de l'ensemble des termes et conditions énoncés dans la proposition.
+
+Signature autorisée : ___________________________
+Nom : {{client_name}}
+Titre : {{client_title}}
+Date : {{date}}`,
     // Étiquettes des variables de contrat
     var_date: "Date d'effet",
     var_start_date: "Date de début",
