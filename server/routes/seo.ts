@@ -275,6 +275,103 @@ Return ONLY JSON array:
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
+// ── Meta Tags Generator ────────────────────────────────────────
+router.post("/meta-tags/generate", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { pageTitle, pageDescription, url, keywords: kws, pageType = "website", brand } = req.body;
+    if (!pageTitle) return res.status(400).json({ error: "pageTitle is required" });
+
+    if (isAIAvailable()) {
+      const prompt = `You are an SEO expert. Generate optimized meta tags for the following page.
+
+Page Title: ${pageTitle}
+Description: ${pageDescription || "(not provided)"}
+URL: ${url || "(not provided)"}
+Keywords: ${kws || "(not provided)"}
+Page Type: ${pageType}
+Brand: ${brand || "(not provided)"}
+
+Return ONLY JSON (no markdown, no explanation):
+{
+  "title": "optimized <title> tag content (50-60 chars)",
+  "metaDescription": "optimized meta description (140-160 chars)",
+  "ogTitle": "Open Graph title",
+  "ogDescription": "Open Graph description (2-3 sentences)",
+  "twitterTitle": "Twitter Card title",
+  "twitterDescription": "Twitter Card description",
+  "keywords": ["keyword1","keyword2","keyword3","keyword4","keyword5"],
+  "canonical": "${url || ""}",
+  "robots": "index, follow"
+}`;
+
+      const msg = await completeForTenant(req.user!.tenantId, { messages: [{ role: "user", content: prompt }], maxTokens: 800 });
+      const result = safeParseJSON(msg, null);
+      if (!result) return res.status(500).json({ error: "AI returned unexpected format. Try again." });
+      return res.json(result);
+    }
+
+    // Fallback without AI — rule-based generation
+    const title = pageTitle.length > 60 ? pageTitle.slice(0, 57) + "..." : pageTitle;
+    const desc = pageDescription
+      ? (pageDescription.length > 160 ? pageDescription.slice(0, 157) + "..." : pageDescription)
+      : `Learn more about ${pageTitle}. ${brand ? `Brought to you by ${brand}.` : ""}`.trim();
+
+    res.json({
+      title: brand ? `${title} | ${brand}` : title,
+      metaDescription: desc,
+      ogTitle: title,
+      ogDescription: desc,
+      twitterTitle: title,
+      twitterDescription: desc,
+      keywords: kws ? kws.split(",").map((k: string) => k.trim()).filter(Boolean) : [],
+      canonical: url || "",
+      robots: "index, follow",
+    });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Schema / Structured Data Builder ──────────────────────────
+router.post("/schema/generate", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { schemaType, data } = req.body;
+    if (!schemaType || !data) return res.status(400).json({ error: "schemaType and data are required" });
+
+    let schema: any = { "@context": "https://schema.org" };
+
+    switch (schemaType) {
+      case "Organization":
+        schema = { ...schema, "@type": "Organization", name: data.name, url: data.url, logo: data.logo ? { "@type": "ImageObject", url: data.logo } : undefined, email: data.email, telephone: data.telephone, sameAs: data.sameAs ? data.sameAs.split("\n").map((s: string) => s.trim()).filter(Boolean) : [] };
+        break;
+      case "LocalBusiness":
+        schema = { ...schema, "@type": "LocalBusiness", name: data.name, url: data.url, telephone: data.telephone, email: data.email, address: { "@type": "PostalAddress", streetAddress: data.street, addressLocality: data.city, addressRegion: data.region, postalCode: data.postalCode, addressCountry: data.country }, openingHours: data.openingHours || undefined, priceRange: data.priceRange || undefined };
+        break;
+      case "Article":
+        schema = { ...schema, "@type": "Article", headline: data.headline, description: data.description, author: { "@type": "Person", name: data.authorName }, publisher: { "@type": "Organization", name: data.publisherName, logo: data.publisherLogo ? { "@type": "ImageObject", url: data.publisherLogo } : undefined }, datePublished: data.datePublished, dateModified: data.dateModified || data.datePublished, url: data.url, image: data.image || undefined };
+        break;
+      case "Product":
+        schema = { ...schema, "@type": "Product", name: data.name, description: data.description, image: data.image || undefined, brand: data.brand ? { "@type": "Brand", name: data.brand } : undefined, offers: { "@type": "Offer", price: data.price, priceCurrency: data.currency || "USD", availability: data.availability || "https://schema.org/InStock", url: data.url } };
+        if (data.ratingValue) schema.aggregateRating = { "@type": "AggregateRating", ratingValue: data.ratingValue, reviewCount: data.reviewCount || 1, bestRating: 5 };
+        break;
+      case "FAQ":
+        schema = { ...schema, "@type": "FAQPage", mainEntity: (data.faqs || []).map((faq: any) => ({ "@type": "Question", name: faq.question, acceptedAnswer: { "@type": "Answer", text: faq.answer } })) };
+        break;
+      case "BreadcrumbList":
+        schema = { ...schema, "@type": "BreadcrumbList", itemListElement: (data.items || []).map((item: any, i: number) => ({ "@type": "ListItem", position: i + 1, name: item.name, item: item.url })) };
+        break;
+      case "SoftwareApplication":
+        schema = { ...schema, "@type": "SoftwareApplication", name: data.name, applicationCategory: data.category || "BusinessApplication", operatingSystem: data.os || "Web", description: data.description, url: data.url, offers: { "@type": "Offer", price: data.price || "0", priceCurrency: data.currency || "USD" } };
+        if (data.ratingValue) schema.aggregateRating = { "@type": "AggregateRating", ratingValue: data.ratingValue, reviewCount: data.reviewCount || 1, bestRating: 5 };
+        break;
+      default:
+        return res.status(400).json({ error: `Unknown schema type: ${schemaType}` });
+    }
+
+    // Remove undefined values
+    const clean = JSON.parse(JSON.stringify(schema));
+    res.json({ schema: clean, html: `<script type="application/ld+json">\n${JSON.stringify(clean, null, 2)}\n</script>` });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Stats ──────────────────────────────────────────────────────
 router.get("/stats", authenticate, async (req: AuthRequest, res) => {
   const [kc] = await db.select({ total: sql<number>`count(*)`, avgVol: sql<number>`avg(search_volume)`, avgDiff: sql<number>`avg(difficulty)` }).from(keywords).where(eq(keywords.tenantId, req.user!.tenantId));

@@ -4,11 +4,22 @@ import Layout from "../components/Layout";
 import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Empty, Loader, Badge } from "../components/UI";
 import { apiRequest } from "../lib/api";
-import { Search, Plus, TrendingUp, Link, AlertCircle, Zap, BarChart2, BookOpen, Globe, Target, RefreshCw, Trash2, ChevronUp, ChevronDown, Minus } from "lucide-react";
+import { Search, Plus, TrendingUp, Link, AlertCircle, Zap, BarChart2, BookOpen, Globe, Target, RefreshCw, Trash2, Tag, Code2, Copy, Check } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from "recharts";
 
-const TABS = ["Keywords", "Site Audit", "Backlinks", "Competitor", "Content Ideas"] as const;
+const TABS = ["Keywords", "Site Audit", "Backlinks", "Competitor", "Content Ideas", "Meta Tags", "Schema"] as const;
 const DIFF_COLOR = (d: number) => d >= 70 ? "#ef4444" : d >= 40 ? "#f59e0b" : "#10b981";
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+  return (
+    <button className="btn btn-secondary btn-sm" onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
 
 export default function SeoPage() {
   const qc = useQueryClient();
@@ -27,6 +38,18 @@ export default function SeoPage() {
   const [auditResult, setAuditResult] = useState<any>(null);
   const [competitorResult, setCompetitorResult] = useState<any>(null);
   const [contentIdeas, setContentIdeas] = useState<any[]>([]);
+
+  // Meta Tags state
+  const [metaForm, setMetaForm] = useState({ pageTitle: "", pageDescription: "", url: "", keywords: "", pageType: "website", brand: "" });
+  const [metaResult, setMetaResult] = useState<any>(null);
+
+  // Schema Builder state
+  const SCHEMA_TYPES = ["Organization", "LocalBusiness", "Article", "Product", "FAQ", "BreadcrumbList", "SoftwareApplication"] as const;
+  const [schemaType, setSchemaType] = useState<string>("Organization");
+  const [schemaData, setSchemaData] = useState<Record<string, any>>({});
+  const [schemaResult, setSchemaResult] = useState<any>(null);
+  const [faqItems, setFaqItems] = useState([{ question: "", answer: "" }]);
+  const [breadcrumbs, setBreadcrumbs] = useState([{ name: "", url: "" }]);
 
   const { data: stats } = useQuery<any>({ queryKey: ["/api/seo/stats"] });
   const { data: projectsList } = useQuery<any[]>({ queryKey: ["/api/seo/projects"] });
@@ -84,6 +107,24 @@ export default function SeoPage() {
     await apiRequest("DELETE", `/api/seo/keywords/${id}`);
     qc.invalidateQueries({ queryKey: ["/api/seo/keywords"] });
   };
+
+  const runMetaTags = () => withRun(async () => {
+    if (!metaForm.pageTitle) return;
+    const result = await apiRequest<any>("POST", "/api/seo/meta-tags/generate", metaForm);
+    setMetaResult(result);
+  });
+
+  const runSchema = () => withRun(async () => {
+    const payload = schemaType === "FAQ"
+      ? { ...schemaData, faqs: faqItems }
+      : schemaType === "BreadcrumbList"
+      ? { ...schemaData, items: breadcrumbs }
+      : schemaData;
+    const result = await apiRequest<any>("POST", "/api/seo/schema/generate", { schemaType, data: payload });
+    setSchemaResult(result);
+  });
+
+  const sd = (field: string, value: any) => setSchemaData(p => ({ ...p, [field]: value }));
 
   const SEVERITY_COLORS: Record<string, string> = { critical: "#ef4444", warning: "#f59e0b", passed: "#10b981" };
 
@@ -461,6 +502,301 @@ export default function SeoPage() {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── META TAGS ── */}
+      {tab === "Meta Tags" && (
+        <div style={{ display: "grid", gridTemplateColumns: metaResult ? "1fr 1fr" : "1fr", gap: 20 }}>
+          {/* Input form */}
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+              <Tag size={16} style={{ color: "var(--brand-light)" }} /> Meta Tag Generator
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Page Title *</label>
+                <input className="input" placeholder="e.g. Best CRM Software for Agencies" value={metaForm.pageTitle} onChange={e => setMetaForm(p => ({ ...p, pageTitle: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Page Description</label>
+                <textarea className="input" rows={3} placeholder="Short description of the page content..." value={metaForm.pageDescription} onChange={e => setMetaForm(p => ({ ...p, pageDescription: e.target.value }))} style={{ resize: "vertical" }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Page URL</label>
+                  <input className="input" placeholder="https://yoursite.com/page" value={metaForm.url} onChange={e => setMetaForm(p => ({ ...p, url: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Brand Name</label>
+                  <input className="input" placeholder="e.g. ARGILETTE" value={metaForm.brand} onChange={e => setMetaForm(p => ({ ...p, brand: e.target.value }))} />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Page Type</label>
+                  <select className="input" value={metaForm.pageType} onChange={e => setMetaForm(p => ({ ...p, pageType: e.target.value }))}>
+                    {["website", "article", "product", "profile", "video.other"].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Focus Keywords</label>
+                  <input className="input" placeholder="CRM, agency software, AI" value={metaForm.keywords} onChange={e => setMetaForm(p => ({ ...p, keywords: e.target.value }))} />
+                </div>
+              </div>
+              <button className="btn btn-primary" disabled={running || !metaForm.pageTitle} onClick={runMetaTags} style={{ marginTop: 4 }}>
+                {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Tag size={14} />} Generate Meta Tags
+              </button>
+            </div>
+          </div>
+
+          {/* Results */}
+          {metaResult && (
+            <div style={{ display: "grid", gap: 12 }}>
+              {/* Preview card */}
+              <div className="card" style={{ padding: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Google Preview</div>
+                <div style={{ fontSize: 13, color: "#3b82f6", fontWeight: 600, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{metaResult.title}</div>
+                {metaResult.canonical && <div style={{ fontSize: 11, color: "#10b981", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{metaResult.canonical}</div>}
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{metaResult.metaDescription}</div>
+              </div>
+
+              {/* All tags with copy */}
+              {[
+                { label: "Title Tag", value: metaResult.title, tag: `<title>${metaResult.title}</title>` },
+                { label: "Meta Description", value: metaResult.metaDescription, tag: `<meta name="description" content="${metaResult.metaDescription}">` },
+                { label: "Canonical URL", value: metaResult.canonical, tag: `<link rel="canonical" href="${metaResult.canonical}">` },
+                { label: "Robots", value: metaResult.robots, tag: `<meta name="robots" content="${metaResult.robots}">` },
+                { label: "OG Title", value: metaResult.ogTitle, tag: `<meta property="og:title" content="${metaResult.ogTitle}">` },
+                { label: "OG Description", value: metaResult.ogDescription, tag: `<meta property="og:description" content="${metaResult.ogDescription}">` },
+                { label: "Twitter Title", value: metaResult.twitterTitle, tag: `<meta name="twitter:title" content="${metaResult.twitterTitle}">` },
+                { label: "Twitter Description", value: metaResult.twitterDescription, tag: `<meta name="twitter:description" content="${metaResult.twitterDescription}">` },
+              ].filter(row => row.value).map(row => (
+                <div key={row.label} className="card" style={{ padding: "10px 14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{row.label}</span>
+                    <CopyButton text={row.tag} />
+                  </div>
+                  <code style={{ fontSize: 12, color: "var(--text-secondary)", wordBreak: "break-all", fontFamily: "JetBrains Mono, monospace" }}>{row.tag}</code>
+                </div>
+              ))}
+
+              {/* Keywords */}
+              {metaResult.keywords?.length > 0 && (
+                <div className="card" style={{ padding: "10px 14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Keywords Tag</span>
+                    <CopyButton text={`<meta name="keywords" content="${metaResult.keywords.join(", ")}">`} />
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {metaResult.keywords.map((kw: string) => (
+                      <span key={kw} style={{ padding: "2px 8px", background: "rgba(99,102,241,0.12)", color: "#818cf8", borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{kw}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Full HTML block */}
+              <div className="card" style={{ padding: "10px 14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Full HTML Block</span>
+                  <CopyButton text={[
+                    `<title>${metaResult.title}</title>`,
+                    `<meta name="description" content="${metaResult.metaDescription}">`,
+                    metaResult.canonical ? `<link rel="canonical" href="${metaResult.canonical}">` : "",
+                    `<meta name="robots" content="${metaResult.robots}">`,
+                    metaResult.keywords?.length ? `<meta name="keywords" content="${metaResult.keywords.join(", ")}">` : "",
+                    `<meta property="og:title" content="${metaResult.ogTitle}">`,
+                    `<meta property="og:description" content="${metaResult.ogDescription}">`,
+                    `<meta name="twitter:title" content="${metaResult.twitterTitle}">`,
+                    `<meta name="twitter:description" content="${metaResult.twitterDescription}">`,
+                  ].filter(Boolean).join("\n")} />
+                </div>
+                <pre style={{ fontSize: 11, color: "var(--text-secondary)", overflowX: "auto", margin: 0, fontFamily: "JetBrains Mono, monospace", lineHeight: 1.6 }}>{[
+                  `<title>${metaResult.title}</title>`,
+                  `<meta name="description" content="${metaResult.metaDescription}">`,
+                  metaResult.canonical ? `<link rel="canonical" href="${metaResult.canonical}">` : null,
+                  `<meta name="robots" content="${metaResult.robots}">`,
+                  metaResult.keywords?.length ? `<meta name="keywords" content="${metaResult.keywords.join(", ")}">` : null,
+                  `<meta property="og:title" content="${metaResult.ogTitle}">`,
+                  `<meta property="og:description" content="${metaResult.ogDescription}">`,
+                  `<meta name="twitter:title" content="${metaResult.twitterTitle}">`,
+                  `<meta name="twitter:description" content="${metaResult.twitterDescription}">`,
+                ].filter(Boolean).join("\n")}</pre>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SCHEMA BUILDER ── */}
+      {tab === "Schema" && (
+        <div style={{ display: "grid", gridTemplateColumns: schemaResult ? "1fr 1fr" : "1fr", gap: 20 }}>
+          {/* Input form */}
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+              <Code2 size={16} style={{ color: "var(--brand-light)" }} /> Structured Data Builder
+            </div>
+
+            {/* Schema type selector */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>Schema Type</label>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {SCHEMA_TYPES.map(t => (
+                  <button key={t} onClick={() => { setSchemaType(t); setSchemaData({}); setSchemaResult(null); }}
+                    className={`btn btn-sm ${schemaType === t ? "btn-primary" : "btn-secondary"}`}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              {/* Organization fields */}
+              {schemaType === "Organization" && (<>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Organization Name *</label><input className="input" value={schemaData.name || ""} onChange={e => sd("name", e.target.value)} placeholder="ARGILETTE LLC" /></div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Website URL</label><input className="input" value={schemaData.url || ""} onChange={e => sd("url", e.target.value)} placeholder="https://argilette.org" /></div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Logo URL</label><input className="input" value={schemaData.logo || ""} onChange={e => sd("logo", e.target.value)} placeholder="https://argilette.org/logo.png" /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Email</label><input className="input" value={schemaData.email || ""} onChange={e => sd("email", e.target.value)} placeholder="info@company.com" /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Phone</label><input className="input" value={schemaData.telephone || ""} onChange={e => sd("telephone", e.target.value)} placeholder="+1-800-000-0000" /></div>
+                </div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Social Media URLs (one per line)</label><textarea className="input" rows={3} value={schemaData.sameAs || ""} onChange={e => sd("sameAs", e.target.value)} placeholder={"https://twitter.com/company\nhttps://linkedin.com/company/name"} style={{ resize: "vertical" }} /></div>
+              </>)}
+
+              {/* LocalBusiness fields */}
+              {schemaType === "LocalBusiness" && (<>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Business Name *</label><input className="input" value={schemaData.name || ""} onChange={e => sd("name", e.target.value)} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Phone</label><input className="input" value={schemaData.telephone || ""} onChange={e => sd("telephone", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Email</label><input className="input" value={schemaData.email || ""} onChange={e => sd("email", e.target.value)} /></div>
+                </div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Street Address</label><input className="input" value={schemaData.street || ""} onChange={e => sd("street", e.target.value)} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>City</label><input className="input" value={schemaData.city || ""} onChange={e => sd("city", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>State/Region</label><input className="input" value={schemaData.region || ""} onChange={e => sd("region", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Country</label><input className="input" value={schemaData.country || ""} onChange={e => sd("country", e.target.value)} placeholder="US" /></div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Opening Hours</label><input className="input" value={schemaData.openingHours || ""} onChange={e => sd("openingHours", e.target.value)} placeholder="Mo-Fr 09:00-17:00" /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Price Range</label><input className="input" value={schemaData.priceRange || ""} onChange={e => sd("priceRange", e.target.value)} placeholder="$$" /></div>
+                </div>
+              </>)}
+
+              {/* Article fields */}
+              {schemaType === "Article" && (<>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Headline *</label><input className="input" value={schemaData.headline || ""} onChange={e => sd("headline", e.target.value)} /></div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Description</label><textarea className="input" rows={2} value={schemaData.description || ""} onChange={e => sd("description", e.target.value)} style={{ resize: "vertical" }} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Author Name</label><input className="input" value={schemaData.authorName || ""} onChange={e => sd("authorName", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Publisher Name</label><input className="input" value={schemaData.publisherName || ""} onChange={e => sd("publisherName", e.target.value)} /></div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Published Date</label><input className="input" type="date" value={schemaData.datePublished || ""} onChange={e => sd("datePublished", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Modified Date</label><input className="input" type="date" value={schemaData.dateModified || ""} onChange={e => sd("dateModified", e.target.value)} /></div>
+                </div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Article URL</label><input className="input" value={schemaData.url || ""} onChange={e => sd("url", e.target.value)} /></div>
+              </>)}
+
+              {/* Product fields */}
+              {schemaType === "Product" && (<>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Product Name *</label><input className="input" value={schemaData.name || ""} onChange={e => sd("name", e.target.value)} /></div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Description</label><textarea className="input" rows={2} value={schemaData.description || ""} onChange={e => sd("description", e.target.value)} style={{ resize: "vertical" }} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Brand</label><input className="input" value={schemaData.brand || ""} onChange={e => sd("brand", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Price</label><input className="input" type="number" value={schemaData.price || ""} onChange={e => sd("price", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Currency</label><input className="input" value={schemaData.currency || "USD"} onChange={e => sd("currency", e.target.value)} /></div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Rating (1-5)</label><input className="input" type="number" min={1} max={5} step={0.1} value={schemaData.ratingValue || ""} onChange={e => sd("ratingValue", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Review Count</label><input className="input" type="number" value={schemaData.reviewCount || ""} onChange={e => sd("reviewCount", e.target.value)} /></div>
+                </div>
+              </>)}
+
+              {/* FAQ fields */}
+              {schemaType === "FAQ" && (<>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>Add your frequently asked questions below:</div>
+                {faqItems.map((faq, i) => (
+                  <div key={i} className="card" style={{ padding: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>Question {i + 1}</span>
+                      {faqItems.length > 1 && <button className="btn btn-ghost btn-sm" style={{ color: "#ef4444", padding: "2px 6px" }} onClick={() => setFaqItems(p => p.filter((_, j) => j !== i))}><Trash2 size={12} /></button>}
+                    </div>
+                    <input className="input" placeholder="Question" value={faq.question} onChange={e => setFaqItems(p => p.map((f, j) => j === i ? { ...f, question: e.target.value } : f))} style={{ marginBottom: 6 }} />
+                    <textarea className="input" rows={2} placeholder="Answer" value={faq.answer} onChange={e => setFaqItems(p => p.map((f, j) => j === i ? { ...f, answer: e.target.value } : f))} style={{ resize: "vertical" }} />
+                  </div>
+                ))}
+                <button className="btn btn-secondary btn-sm" onClick={() => setFaqItems(p => [...p, { question: "", answer: "" }])}><Plus size={12} /> Add Question</button>
+              </>)}
+
+              {/* BreadcrumbList fields */}
+              {schemaType === "BreadcrumbList" && (<>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>Add your breadcrumb items in order:</div>
+                {breadcrumbs.map((crumb, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)", minWidth: 16 }}>{i + 1}.</span>
+                    <input className="input" placeholder="Label (e.g. Home)" value={crumb.name} onChange={e => setBreadcrumbs(p => p.map((c, j) => j === i ? { ...c, name: e.target.value } : c))} style={{ flex: 1 }} />
+                    <input className="input" placeholder="URL" value={crumb.url} onChange={e => setBreadcrumbs(p => p.map((c, j) => j === i ? { ...c, url: e.target.value } : c))} style={{ flex: 1 }} />
+                    {breadcrumbs.length > 1 && <button className="btn btn-ghost btn-sm" style={{ color: "#ef4444", padding: "2px 6px", flexShrink: 0 }} onClick={() => setBreadcrumbs(p => p.filter((_, j) => j !== i))}><Trash2 size={12} /></button>}
+                  </div>
+                ))}
+                <button className="btn btn-secondary btn-sm" onClick={() => setBreadcrumbs(p => [...p, { name: "", url: "" }])}><Plus size={12} /> Add Breadcrumb</button>
+              </>)}
+
+              {/* SoftwareApplication fields */}
+              {schemaType === "SoftwareApplication" && (<>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>App Name *</label><input className="input" value={schemaData.name || ""} onChange={e => sd("name", e.target.value)} /></div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Description</label><textarea className="input" rows={2} value={schemaData.description || ""} onChange={e => sd("description", e.target.value)} style={{ resize: "vertical" }} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Category</label><input className="input" value={schemaData.category || "BusinessApplication"} onChange={e => sd("category", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Operating System</label><input className="input" value={schemaData.os || "Web"} onChange={e => sd("os", e.target.value)} /></div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Price</label><input className="input" value={schemaData.price || "0"} onChange={e => sd("price", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Rating (1-5)</label><input className="input" type="number" min={1} max={5} step={0.1} value={schemaData.ratingValue || ""} onChange={e => sd("ratingValue", e.target.value)} /></div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Review Count</label><input className="input" type="number" value={schemaData.reviewCount || ""} onChange={e => sd("reviewCount", e.target.value)} /></div>
+                </div>
+                <div><label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>App URL</label><input className="input" value={schemaData.url || ""} onChange={e => sd("url", e.target.value)} /></div>
+              </>)}
+
+              <button className="btn btn-primary" disabled={running} onClick={runSchema} style={{ marginTop: 4 }}>
+                {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Code2 size={14} />} Generate JSON-LD
+              </button>
+            </div>
+          </div>
+
+          {/* Schema output */}
+          {schemaResult && (
+            <div style={{ display: "grid", gap: 12, alignContent: "start" }}>
+              <div className="card" style={{ padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>JSON-LD Output</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Paste this inside your {"<head>"} tag</div>
+                  </div>
+                  <CopyButton text={schemaResult.html} />
+                </div>
+                <pre style={{ fontSize: 11, color: "#10b981", overflowX: "auto", margin: 0, fontFamily: "JetBrains Mono, monospace", lineHeight: 1.7, background: "rgba(16,185,129,0.05)", padding: 12, borderRadius: 6 }}>
+                  {schemaResult.html}
+                </pre>
+              </div>
+
+              <div className="card" style={{ padding: 14 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Validation Tips</div>
+                {[
+                  { icon: "✓", text: "Test with Google's Rich Results Test tool", color: "#10b981" },
+                  { icon: "✓", text: "Validate JSON syntax at jsonlint.com", color: "#10b981" },
+                  { icon: "✓", text: `Schema type: ${schemaType} — supported by Google`, color: "#3b82f6" },
+                  { icon: "→", text: "Place in <head> before </head> closing tag", color: "var(--text-muted)" },
+                ].map((tip, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+                    <span style={{ color: tip.color, fontSize: 13, flexShrink: 0 }}>{tip.icon}</span>
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{tip.text}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
