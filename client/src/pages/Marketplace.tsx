@@ -274,21 +274,24 @@ export default function MarketplacePage() {
   const { t } = useLanguage();
   const qc = useQueryClient();
 
+  const PAGE_SIZE = 50;
+
   const [filters, setFilters] = useState({
     market: "Both", industry: "", specialty: "", country: "", state: "",
     city: "", language: "Any", freshDays: 0, search: "",
   });
   const [searchSubmitted, setSearchSubmitted] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [pushingCRM, setPushingCRM] = useState(false);
-  const [exportResult, setExportResult] = useState<{ count: number; skipped?: number; type: "csv" | "crm" } | null>(null);
+  const [page, setPage]                       = useState(1);
+  const [selected, setSelected]               = useState<Set<string>>(new Set());
+  const [showAdmin, setShowAdmin]             = useState(false);
+  const [exporting, setExporting]             = useState(false);
+  const [pushingCRM, setPushingCRM]           = useState(false);
+  const [exportResult, setExportResult]       = useState<{ count: number; skipped?: number; duplicates?: number; type: "csv" | "crm" } | null>(null);
 
   const { data: statsData } = useQuery<any>({ queryKey: ["/api/marketplace/stats"] });
 
-  const { data: searchData, isLoading: searching, refetch } = useQuery<any>({
-    queryKey: ["/api/marketplace/search", filters],
+  const { data: searchData, isLoading: searching } = useQuery<any>({
+    queryKey: ["/api/marketplace/search", filters, page],
     queryFn: async () => {
       if (!searchSubmitted) return null;
       return apiRequest("POST", "/api/marketplace/search", {
@@ -296,17 +299,19 @@ export default function MarketplacePage() {
         language: filters.language === "Any" ? undefined : filters.language,
         industry: filters.industry === "All Industries" ? undefined : filters.industry,
         freshDays: filters.freshDays || undefined,
-        limit: 50,
+        limit: PAGE_SIZE,
+        page,
       });
     },
     enabled: searchSubmitted,
   });
 
   const results: any[] = searchData?.results || [];
-  const total: number = searchData?.total || 0;
-  const quota: number = statsData?.quota ?? 0;
-  const exportsUsed: number = searchData?.exportsUsed ?? statsData?.exportsUsed ?? 0;
-  const canExport: boolean = quota === -1 || (exportsUsed < quota);
+  const total: number  = searchData?.total || 0;
+  const totalPages     = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const quota: number          = statsData?.quota ?? 0;
+  const exportsUsed: number    = searchData?.exportsUsed ?? statsData?.exportsUsed ?? 0;
+  const canExport: boolean     = quota === -1 || (exportsUsed < quota);
 
   function setFilter(k: string, v: any) {
     setFilters(f => ({ ...f, [k]: v }));
@@ -315,8 +320,18 @@ export default function MarketplacePage() {
   function runSearch() {
     setSelected(new Set());
     setExportResult(null);
+    setPage(1);
     setSearchSubmitted(true);
     qc.invalidateQueries({ queryKey: ["/api/marketplace/search"] });
+  }
+
+  function goToPage(p: number) {
+    const clamped = Math.max(1, Math.min(p, totalPages));
+    if (clamped === page) return;
+    setPage(clamped);
+    setSelected(new Set());
+    setExportResult(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function toggleSelect(id: string) {
@@ -364,7 +379,7 @@ export default function MarketplacePage() {
     try {
       const res: any = await apiRequest("POST", "/api/marketplace/push-to-crm", { leadIds: [...selected] });
       if (res.error) { alert(res.error); return; }
-      setExportResult({ count: res.pushed || 0, skipped: res.skipped || 0, type: "crm" });
+      setExportResult({ count: res.pushed || 0, duplicates: res.duplicates || 0, skipped: res.skipped || 0, type: "crm" });
       qc.invalidateQueries({ queryKey: ["/api/marketplace/stats"] });
       setSelected(new Set());
     } catch (e: any) {
@@ -531,7 +546,13 @@ export default function MarketplacePage() {
                 <Check size={14} />
                 {exportResult.type === "csv"
                   ? `${exportResult.count} leads exported to CSV — check your downloads`
-                  : `${exportResult.count} lead${exportResult.count !== 1 ? "s" : ""} added to your CRM contacts${exportResult.skipped ? ` (${exportResult.skipped} skipped)` : ""}`}
+                  : (() => {
+                    const parts = [`${exportResult.count} lead${exportResult.count !== 1 ? "s" : ""} added to CRM`];
+                    if (exportResult.duplicates) parts.push(`${exportResult.duplicates} duplicate${exportResult.duplicates !== 1 ? "s" : ""} skipped`);
+                    if (exportResult.skipped)    parts.push(`${exportResult.skipped} error${exportResult.skipped !== 1 ? "s" : ""}`);
+                    return parts.join(" · ");
+                  })()
+                }
               </div>
             )}
 
@@ -563,6 +584,103 @@ export default function MarketplacePage() {
                     canExport={canExport && !lead.blurred}
                   />
                 ))}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {!searching && totalPages > 1 && (
+              <div style={{
+                padding: "14px 20px",
+                borderTop: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+              }}>
+                <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                  Page <strong style={{ color: "var(--text-primary)" }}>{page}</strong> of <strong style={{ color: "var(--text-primary)" }}>{totalPages.toLocaleString()}</strong>
+                  {" "}·{" "}
+                  <span style={{ color: "var(--text-secondary)" }}>{total.toLocaleString()} total leads</span>
+                </span>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {/* First */}
+                  <button
+                    onClick={() => goToPage(1)}
+                    disabled={page === 1}
+                    data-testid="btn-page-first"
+                    style={{
+                      padding: "5px 10px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid var(--border)",
+                      background: page === 1 ? "var(--bg-elevated)" : "var(--bg-card)",
+                      color: page === 1 ? "var(--text-muted)" : "var(--text-primary)",
+                      cursor: page === 1 ? "not-allowed" : "pointer",
+                    }}
+                  >«</button>
+
+                  {/* Prev */}
+                  <button
+                    onClick={() => goToPage(page - 1)}
+                    disabled={page === 1}
+                    data-testid="btn-page-prev"
+                    style={{
+                      padding: "5px 10px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid var(--border)",
+                      background: page === 1 ? "var(--bg-elevated)" : "var(--bg-card)",
+                      color: page === 1 ? "var(--text-muted)" : "var(--text-primary)",
+                      cursor: page === 1 ? "not-allowed" : "pointer",
+                    }}
+                  >‹ Prev</button>
+
+                  {/* Page number buttons — show window of 5 */}
+                  {(() => {
+                    const half = 2;
+                    let start = Math.max(1, page - half);
+                    let end   = Math.min(totalPages, start + 4);
+                    if (end - start < 4) start = Math.max(1, end - 4);
+                    const pages: number[] = [];
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    return pages.map(p => (
+                      <button
+                        key={p}
+                        onClick={() => goToPage(p)}
+                        data-testid={`btn-page-${p}`}
+                        style={{
+                          padding: "5px 10px", fontSize: 12, fontWeight: 600, borderRadius: 6,
+                          border: p === page ? "1px solid #6366f1" : "1px solid var(--border)",
+                          background: p === page ? "#6366f1" : "var(--bg-card)",
+                          color: p === page ? "#fff" : "var(--text-primary)",
+                          cursor: "pointer", minWidth: 34,
+                        }}
+                      >{p}</button>
+                    ));
+                  })()}
+
+                  {/* Next */}
+                  <button
+                    onClick={() => goToPage(page + 1)}
+                    disabled={page === totalPages}
+                    data-testid="btn-page-next"
+                    style={{
+                      padding: "5px 10px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid var(--border)",
+                      background: page === totalPages ? "var(--bg-elevated)" : "var(--bg-card)",
+                      color: page === totalPages ? "var(--text-muted)" : "var(--text-primary)",
+                      cursor: page === totalPages ? "not-allowed" : "pointer",
+                    }}
+                  >Next ›</button>
+
+                  {/* Last */}
+                  <button
+                    onClick={() => goToPage(totalPages)}
+                    disabled={page === totalPages}
+                    data-testid="btn-page-last"
+                    style={{
+                      padding: "5px 10px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid var(--border)",
+                      background: page === totalPages ? "var(--bg-elevated)" : "var(--bg-card)",
+                      color: page === totalPages ? "var(--text-muted)" : "var(--text-primary)",
+                      cursor: page === totalPages ? "not-allowed" : "pointer",
+                    }}
+                  >»</button>
+                </div>
               </div>
             )}
           </div>

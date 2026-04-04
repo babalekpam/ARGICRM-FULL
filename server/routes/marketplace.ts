@@ -311,24 +311,49 @@ router.post("/push-to-crm", authenticate, async (req: AuthRequest, res) => {
   }
 
   const { contacts } = await import("@shared/schema.js");
-  let added = 0;
+  const tenantId = req.user!.tenantId;
+
+  // Load all existing contacts for this tenant (email + phone) for fast dedup
+  const existing = await db
+    .select({ email: contacts.email, phone: contacts.phone })
+    .from(contacts)
+    .where(eq(contacts.tenantId, tenantId));
+
+  const existingEmails = new Set(
+    existing.map(c => c.email?.trim().toLowerCase()).filter(Boolean)
+  );
+  const existingPhones = new Set(
+    existing.map(c => c.phone?.replace(/\D/g, "")).filter(Boolean)
+  );
+
+  let added   = 0;
+  let dupes   = 0;
   const errors: string[] = [];
 
   for (const lead of leads) {
     try {
+      // ── Deduplication check ──────────────────────────────────────
+      const emailKey = lead.email?.trim().toLowerCase();
+      const phoneKey = lead.phone?.replace(/\D/g, "");
+
+      const isDupe =
+        (emailKey && existingEmails.has(emailKey)) ||
+        (phoneKey && existingPhones.has(phoneKey));
+
+      if (isDupe) { dupes++; continue; }
+
       const nameParts = (lead.fullName || lead.companyName || "Unknown").trim().split(/\s+/);
       const firstName = nameParts[0] || "Unknown";
       const lastName  = nameParts.slice(1).join(" ") || "";
 
-      // Build notes with all extra fields
       const noteLines: string[] = [];
-      if (lead.address) noteLines.push(`Address: ${lead.address}${lead.zip ? " " + lead.zip : ""}`);
-      if (lead.specialty) noteLines.push(`Specialty: ${lead.specialty}`);
+      if (lead.address)    noteLines.push(`Address: ${lead.address}${lead.zip ? " " + lead.zip : ""}`);
+      if (lead.specialty)  noteLines.push(`Specialty: ${lead.specialty}`);
       if (lead.linkedinUrl) noteLines.push(`LinkedIn: ${lead.linkedinUrl}`);
       if (lead.externalId) noteLines.push(`Source ID: ${lead.externalId}`);
 
       await db.insert(contacts).values({
-        tenantId:   req.user!.tenantId,
+        tenantId,
         firstName,
         lastName,
         email:      lead.email      || null,
@@ -345,6 +370,10 @@ router.post("/push-to-crm", authenticate, async (req: AuthRequest, res) => {
         tags:       [lead.category, lead.market, lead.source, lead.specialty].filter(Boolean) as string[],
         notes:      noteLines.length > 0 ? noteLines.join("\n") : null,
       } as any);
+
+      // Track for in-batch dedup (handles multiple leads with same email/phone)
+      if (emailKey) existingEmails.add(emailKey);
+      if (phoneKey) existingPhones.add(phoneKey);
       added++;
     } catch (e: any) {
       console.error("[push-to-crm] Insert failed for lead", lead.id, ":", e.message);
@@ -352,13 +381,11 @@ router.post("/push-to-crm", authenticate, async (req: AuthRequest, res) => {
     }
   }
 
-  console.log(`[push-to-crm] added=${added}, errors=${errors.length}`, errors.slice(0, 3));
-
   if (added === 0 && errors.length > 0) {
     return res.status(500).json({ error: `Failed to import leads: ${errors[0]}` });
   }
 
-  res.json({ pushed: added, skipped: leads.length - added });
+  res.json({ pushed: added, duplicates: dupes, skipped: errors.length });
 });
 
 // ── GET /api/marketplace/my-exports ─────────────────────────────
