@@ -108,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── CSV / Excel Import ───────────────────────────────
-  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
   // Column aliases: maps common spreadsheet headers → our field names
   const FIELD_ALIASES: Record<string, string> = {

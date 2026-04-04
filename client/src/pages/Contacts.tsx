@@ -191,7 +191,7 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
                 <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)", marginBottom: 4 }}>
                   {dragging ? "Drop your file here" : "Drag & drop or click to upload"}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>CSV, Excel (.xlsx, .xls) · Max 10 MB</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>CSV, Excel (.xlsx, .xls) · Max 50 MB</div>
               </>
             )}
           </div>
