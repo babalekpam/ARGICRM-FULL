@@ -38,6 +38,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.10",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.1.0",
     "@types/nodemailer": "^6.4.23",
     "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
@@ -58,6 +59,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.453.0",
+    "multer": "^2.1.1",
     "nanoid": "^5.1.7",
     "node-html-parser": "^6.1.13",
     "nodemailer": "^8.0.4",
@@ -77,6 +79,7 @@
     "user-agents": "^1.1.675",
     "wouter": "^3.3.5",
     "ws": "^8.20.0",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.67"
   },
   "devDependencies": {

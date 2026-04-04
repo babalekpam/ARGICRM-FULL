@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Loader } from "../components/UI";
@@ -6,7 +6,8 @@ import { apiRequest } from "../lib/api";
 import { useLanguage } from "../contexts/LanguageContext";
 import {
   UserPlus, Search, Mail, Phone, Building2, Trash2, Edit,
-  MapPin, Globe,
+  MapPin, Globe, Upload, FileSpreadsheet, CheckCircle2,
+  AlertCircle, XCircle, RefreshCw, Download,
 } from "lucide-react";
 
 const STATUS_OPTIONS = [
@@ -70,6 +71,204 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
+// ── Import Modal ─────────────────────────────────────────────────────
+type ImportResult = { imported: number; duplicates: number; errors: number; total: number; errorDetails?: string[] };
+
+function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+  const [dragging, setDragging]   = useState(false);
+  const [file, setFile]           = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult]       = useState<ImportResult | null>(null);
+  const [importError, setImportError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => { setFile(null); setResult(null); setImportError(""); setDragging(false); };
+
+  const handleClose = () => { reset(); onClose(); };
+
+  const handleFile = (f: File) => {
+    const ext = f.name.split(".").pop()?.toLowerCase();
+    if (!["csv", "xlsx", "xls"].includes(ext || "")) {
+      setImportError("Please upload a .csv, .xlsx or .xls file.");
+      return;
+    }
+    setFile(f);
+    setResult(null);
+    setImportError("");
+  };
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  }, []);
+
+  const doImport = async () => {
+    if (!file) return;
+    setUploading(true);
+    setImportError("");
+    try {
+      const token = localStorage.getItem("token");
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/contacts/import", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      setResult(data);
+      onDone();
+    } catch (e: any) {
+      setImportError(e.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Import Contacts from File">
+      <div style={{ padding: "24px 24px 0" }}>
+
+        {/* Format hint + template download */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+            Upload a <strong style={{ color: "var(--text-secondary)" }}>.csv</strong>,{" "}
+            <strong style={{ color: "var(--text-secondary)" }}>.xlsx</strong> or{" "}
+            <strong style={{ color: "var(--text-secondary)" }}>.xls</strong> file.
+            The first row must be column headers. Supported columns: First Name, Last Name, Full Name, Email, Phone, Company, Job Title, Industry, City, State, Country, Website, Notes, Tags, Status.
+          </p>
+          <a
+            href="data:text/csv;charset=utf-8,First%20Name%2CLast%20Name%2CEmail%2CPhone%2CCompany%2CJob%20Title%2CIndustry%2CCity%2CCountry%2CWebsite%2CNotes%0AJohn%2CDoe%2Cjohn%40example.com%2C%2BAcme%20Corp%2CManager%2CTechnology%2CParis%2CFrance%2Chttps%3A%2F%2Facme.com%2C"
+            download="contacts_template.csv"
+            title="Download template"
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#6366f1", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
+          >
+            <Download size={13} /> Template
+          </a>
+        </div>
+
+        {/* Drop zone */}
+        {!result && (
+          <div
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            onClick={() => inputRef.current?.click()}
+            data-testid="dropzone-import"
+            style={{
+              border: `2px dashed ${dragging ? "#6366f1" : file ? "#10b981" : "var(--border-strong)"}`,
+              borderRadius: 10,
+              padding: "32px 20px",
+              textAlign: "center",
+              cursor: "pointer",
+              background: dragging ? "rgba(99,102,241,0.06)" : file ? "rgba(16,185,129,0.05)" : "var(--bg-elevated)",
+              transition: "all 0.15s",
+              marginBottom: 16,
+            }}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              style={{ display: "none" }}
+              onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
+              data-testid="input-import-file"
+            />
+            {file ? (
+              <>
+                <FileSpreadsheet size={32} style={{ color: "#10b981", marginBottom: 10 }} />
+                <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)", marginBottom: 4 }}>{file.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{(file.size / 1024).toFixed(1)} KB · Click to change file</div>
+              </>
+            ) : (
+              <>
+                <Upload size={32} style={{ color: "var(--text-muted)", marginBottom: 10 }} />
+                <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)", marginBottom: 4 }}>
+                  {dragging ? "Drop your file here" : "Drag & drop or click to upload"}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>CSV, Excel (.xlsx, .xls) · Max 10 MB</div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Error */}
+        {importError && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "12px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#f87171" }}>
+            <XCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>{importError}</span>
+          </div>
+        )}
+
+        {/* Result */}
+        {result && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <CheckCircle2 size={22} style={{ color: "#10b981" }} />
+              <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>Import complete</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+              {[
+                { label: "Imported",   value: result.imported,   color: "#10b981", icon: CheckCircle2 },
+                { label: "Duplicates skipped", value: result.duplicates, color: "#f59e0b", icon: AlertCircle },
+                { label: "Errors",     value: result.errors,     color: "#ef4444", icon: XCircle },
+              ].map(({ label, value, color, icon: Icon }) => (
+                <div key={label} style={{ padding: "14px 16px", background: "var(--bg-elevated)", borderRadius: 8, textAlign: "center" }}>
+                  <Icon size={18} style={{ color, marginBottom: 6 }} />
+                  <div style={{ fontSize: 22, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
+              {result.total} rows processed in total
+            </div>
+            {result.errorDetails && result.errorDetails.length > 0 && (
+              <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(239,68,68,0.05)", borderRadius: 6, fontSize: 12, color: "#f87171" }}>
+                <strong>First errors:</strong>
+                {result.errorDetails.map((e, i) => <div key={i} style={{ marginTop: 3 }}>{e}</div>)}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        {result ? (
+          <>
+            <button className="btn btn-secondary" onClick={() => { reset(); }}>Import Another</button>
+            <button className="btn btn-primary" onClick={handleClose}>Done</button>
+          </>
+        ) : (
+          <>
+            <button className="btn btn-secondary" onClick={handleClose}>Cancel</button>
+            <button
+              className="btn btn-primary"
+              onClick={doImport}
+              disabled={!file || uploading}
+              data-testid="btn-do-import"
+            >
+              {uploading
+                ? <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Importing…</>
+                : <><Upload size={14} /> Import Contacts</>
+              }
+            </button>
+          </>
+        )}
+      </div>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    </Modal>
+  );
+}
+
+// ── Main Contacts Page ────────────────────────────────────────────────
 export default function ContactsPage() {
   const qc = useQueryClient();
   const { t } = useLanguage();
@@ -80,6 +279,7 @@ export default function ContactsPage() {
   const [form, setForm]               = useState(BLANK);
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState("");
+  const [importOpen, setImportOpen]   = useState(false);
 
   const queryKey = `/api/contacts${search || statusFilter ? `?search=${search}&status=${statusFilter}` : ""}`;
   const { data, isLoading } = useQuery<{ data: any[]; total: number }>({ queryKey: [queryKey] });
@@ -129,11 +329,21 @@ export default function ContactsPage() {
       title={t("contacts_title")}
       subtitle={data ? `${data.total} ${t("total_contacts").toLowerCase()}` : undefined}
       actions={
-        <button className="btn btn-primary btn-sm" onClick={openAdd} data-testid="btn-add-contact">
-          <UserPlus size={15} /> {t("add_contact_btn")}
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => setImportOpen(true)} data-testid="btn-open-import">
+            <Upload size={14} /> Import
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={openAdd} data-testid="btn-add-contact">
+            <UserPlus size={15} /> {t("add_contact_btn")}
+          </button>
+        </div>
       }
     >
+      <ImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onDone={() => { qc.invalidateQueries({ queryKey: ["/api/contacts"] }); }}
+      />
       {/* Search + Filter Bar */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 200 }}>

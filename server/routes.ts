@@ -1,8 +1,13 @@
 import { Express, Router } from "express";
 import { createServer, Server } from "http";
 import { z } from "zod";
+import multer from "multer";
+import * as XLSX from "xlsx";
 import { authenticate, requireRole, type AuthRequest } from "./middleware/auth.js";
 import * as storage from "./storage.js";
+import { db } from "./db.js";
+import { contacts } from "@shared/schema.js";
+import { eq } from "drizzle-orm";
 import authRouter from "./routes/auth.js";
 import agentRouter from "./routes/agents.js";
 import adminRouter from "./routes/admin.js";
@@ -100,6 +105,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteContact(req.params.id, req.user!.tenantId);
       res.json({ success: true });
     } catch (err) { res.status(500).json({ error: "Failed to delete contact" }); }
+  });
+
+  // ─── CSV / Excel Import ───────────────────────────────
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+  // Column aliases: maps common spreadsheet headers → our field names
+  const FIELD_ALIASES: Record<string, string> = {
+    "first name": "firstName", "firstname": "firstName", "first": "firstName", "prénom": "firstName",
+    "last name": "lastName", "lastname": "lastName", "last": "lastName", "nom": "lastName", "surname": "lastName",
+    "full name": "fullName", "fullname": "fullName", "name": "fullName", "nom complet": "fullName",
+    "email": "email", "e-mail": "email", "email address": "email", "courriel": "email",
+    "phone": "phone", "phone number": "phone", "mobile": "phone", "tel": "phone", "téléphone": "phone",
+    "company": "company", "company name": "company", "organisation": "company", "organization": "company", "entreprise": "company",
+    "job title": "jobTitle", "title": "jobTitle", "position": "jobTitle", "role": "jobTitle", "poste": "jobTitle",
+    "industry": "industry", "secteur": "industry",
+    "city": "city", "ville": "city",
+    "state": "state", "province": "state",
+    "country": "country", "pays": "country",
+    "website": "website", "url": "website", "site": "website",
+    "notes": "notes", "note": "notes", "comments": "notes",
+    "status": "status", "statut": "status",
+    "source": "source",
+    "linkedin": "linkedin", "linkedin url": "linkedin",
+    "tags": "tags",
+  };
+
+  function detectField(header: string): string {
+    return FIELD_ALIASES[header.toLowerCase().trim()] || header;
+  }
+
+  app.post("/api/contacts/import", authenticate, upload.single("file"), async (req: AuthRequest, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+      const ext = (req.file.originalname || "").split(".").pop()?.toLowerCase();
+      if (!["csv", "xlsx", "xls"].includes(ext || "")) {
+        return res.status(400).json({ error: "Only CSV and Excel files (.csv, .xlsx, .xls) are supported" });
+      }
+
+      // Parse file into rows
+      const wb = XLSX.read(req.file.buffer, { type: "buffer", raw: false });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+
+      if (raw.length < 2) return res.status(400).json({ error: "File is empty or has no data rows" });
+
+      const headerRow: string[] = (raw[0] as any[]).map(h => String(h || "").trim());
+      const fieldMap = headerRow.map(detectField);
+      const dataRows = raw.slice(1).filter(row => row.some((c: any) => String(c).trim()));
+
+      if (dataRows.length === 0) return res.status(400).json({ error: "No data rows found in file" });
+
+      const tenantId = req.user!.tenantId;
+
+      // Load existing emails + phones for dedup
+      const existing = await db.select({ email: contacts.email, phone: contacts.phone }).from(contacts).where(eq(contacts.tenantId, tenantId));
+      const existingEmails = new Set(existing.map(c => c.email?.trim().toLowerCase()).filter(Boolean));
+      const existingPhones = new Set(existing.map(c => c.phone?.replace(/\D/g, "")).filter(Boolean));
+
+      let imported = 0, duplicates = 0, errors = 0;
+      const errorDetails: string[] = [];
+
+      for (let i = 0; i < dataRows.length; i++) {
+        const row = dataRows[i];
+        const rec: Record<string, string> = {};
+        fieldMap.forEach((field, idx) => { rec[field] = String(row[idx] ?? "").trim(); });
+
+        // Handle "Full Name" → split into first/last
+        if (rec.fullName && !rec.firstName) {
+          const parts = rec.fullName.trim().split(/\s+/);
+          rec.firstName = parts[0] || "";
+          rec.lastName  = parts.slice(1).join(" ") || "";
+        }
+
+        const emailKey = rec.email?.toLowerCase();
+        const phoneKey = rec.phone?.replace(/\D/g, "");
+
+        // Dedup check
+        if ((emailKey && existingEmails.has(emailKey)) || (phoneKey && existingPhones.has(phoneKey))) {
+          duplicates++;
+          continue;
+        }
+
+        if (!rec.firstName && !rec.fullName && !rec.company && !rec.email && !rec.phone) {
+          continue; // Skip truly blank rows silently
+        }
+
+        try {
+          await db.insert(contacts).values({
+            tenantId,
+            firstName:  rec.firstName  || rec.fullName?.split(" ")[0] || "Unknown",
+            lastName:   rec.lastName   || rec.fullName?.split(" ").slice(1).join(" ") || "",
+            email:      rec.email      || null,
+            phone:      rec.phone      || null,
+            company:    rec.company    || null,
+            jobTitle:   rec.jobTitle   || null,
+            industry:   rec.industry   || null,
+            city:       rec.city       || null,
+            state:      rec.state      || null,
+            country:    rec.country    || null,
+            website:    rec.website    || null,
+            notes:      rec.notes      || null,
+            status:     rec.status     || "new",
+            source:     rec.source     || null,
+            linkedin:   rec.linkedin   || null,
+            tags:       rec.tags ? [rec.tags] : [],
+            leadSource: "import_file",
+          } as any);
+
+          if (emailKey) existingEmails.add(emailKey);
+          if (phoneKey) existingPhones.add(phoneKey);
+          imported++;
+        } catch (e: any) {
+          errors++;
+          if (errorDetails.length < 5) errorDetails.push(`Row ${i + 2}: ${e.message}`);
+        }
+      }
+
+      res.json({ imported, duplicates, errors, total: dataRows.length, errorDetails });
+    } catch (err: any) {
+      console.error("[contacts/import]", err.message);
+      res.status(500).json({ error: `Import failed: ${err.message}` });
+    }
   });
 
   // ─── Leads ────────────────────────────────────────────
