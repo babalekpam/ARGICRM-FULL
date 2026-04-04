@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, like, or, count, sum, gte, lte, sql } from "drizzle-orm";
+import { eq, and, desc, asc, like, or, count, sum, gte, lte, sql, inArray } from "drizzle-orm";
 import { db } from "./db.js";
 import {
   tenants, users, contacts, leads, deals, tasks, accounts, activities, campaigns,
@@ -88,35 +88,70 @@ export async function deleteUser(id: string) {
 // ═══════════════════════════════════════════════════
 // CONTACTS
 // ═══════════════════════════════════════════════════
-export async function getContacts(tenantId: string, opts: { search?: string; status?: string; limit?: number; offset?: number } = {}) {
-  const { search, status, limit = 50, offset = 0 } = opts;
-  let query = db.select().from(contacts).where(eq(contacts.tenantId, tenantId));
+// ── Regional country lists ──────────────────────────────────────────
+const REGION_COUNTRIES: Record<string, string[]> = {
+  africa: [
+    "Algeria","Angola","Benin","Botswana","Burkina Faso","Burundi","Cabo Verde","Cameroon",
+    "Central African Republic","Chad","Comoros","Congo","Côte d'Ivoire","Ivory Coast",
+    "DR Congo","Democratic Republic of Congo","Republic of Congo","Djibouti","Egypt",
+    "Equatorial Guinea","Eritrea","Eswatini","Ethiopia","Gabon","Gambia","Ghana","Guinea",
+    "Guinea-Bissau","Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali",
+    "Mauritania","Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
+    "São Tomé and Príncipe","Senegal","Seychelles","Sierra Leone","Somalia","South Africa",
+    "South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda","Zambia","Zimbabwe",
+  ],
+  usa: [
+    "United States","USA","US","Canada","Mexico","Brazil","Argentina","Colombia","Chile",
+    "Peru","Venezuela","Ecuador","Bolivia","Paraguay","Uruguay","Guyana","Suriname",
+    "Cuba","Jamaica","Haiti","Dominican Republic","Puerto Rico","Guatemala","Honduras",
+    "El Salvador","Nicaragua","Costa Rica","Panama","Trinidad and Tobago","Bahamas",
+    "Barbados","Belize","United States of America",
+  ],
+  europe: [
+    "Albania","Andorra","Austria","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria",
+    "Croatia","Cyprus","Czech Republic","Czechia","Denmark","Estonia","Finland","France",
+    "Germany","Greece","Hungary","Iceland","Ireland","Italy","Kosovo","Latvia",
+    "Liechtenstein","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro",
+    "Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","Russia",
+    "San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Turkey",
+    "Ukraine","United Kingdom","UK","Vatican","Great Britain","England","Scotland","Wales",
+  ],
+  asia: [
+    "Afghanistan","Armenia","Azerbaijan","Bahrain","Bangladesh","Bhutan","Brunei",
+    "Cambodia","China","Georgia","India","Indonesia","Iran","Iraq","Israel","Japan",
+    "Jordan","Kazakhstan","Kuwait","Kyrgyzstan","Laos","Lebanon","Malaysia","Maldives",
+    "Mongolia","Myanmar","Nepal","North Korea","Oman","Pakistan","Palestine","Philippines",
+    "Qatar","Saudi Arabia","Singapore","South Korea","Sri Lanka","Syria","Taiwan",
+    "Tajikistan","Thailand","Timor-Leste","Turkmenistan","United Arab Emirates","UAE",
+    "Uzbekistan","Vietnam","Yemen","Australia","New Zealand","Hong Kong","Macau",
+  ],
+};
 
-  const rows = await db.select().from(contacts).where(
-    and(
-      eq(contacts.tenantId, tenantId),
-      status ? eq(contacts.status, status) : undefined,
-      search ? or(
-        like(contacts.firstName, `%${search}%`),
-        like(contacts.lastName, `%${search}%`),
-        like(contacts.email, `%${search}%`),
-        like(contacts.company, `%${search}%`),
-      ) : undefined,
-    )
-  ).orderBy(desc(contacts.createdAt)).limit(limit).offset(offset);
+export async function getContacts(tenantId: string, opts: { search?: string; status?: string; region?: string; limit?: number; offset?: number } = {}) {
+  const { search, status, region, limit = 50, offset = 0 } = opts;
 
-  const [{ total }] = await db.select({ total: count() }).from(contacts).where(
-    and(
-      eq(contacts.tenantId, tenantId),
-      status ? eq(contacts.status, status) : undefined,
-      search ? or(
-        like(contacts.firstName, `%${search}%`),
-        like(contacts.lastName, `%${search}%`),
-        like(contacts.email, `%${search}%`),
-        like(contacts.company, `%${search}%`),
-      ) : undefined,
-    )
+  const regionCountries = region && REGION_COUNTRIES[region.toLowerCase()];
+
+  const buildWhere = () => and(
+    eq(contacts.tenantId, tenantId),
+    status ? eq(contacts.status, status) : undefined,
+    regionCountries ? inArray(contacts.country, regionCountries) : undefined,
+    search ? or(
+      like(contacts.firstName, `%${search}%`),
+      like(contacts.lastName, `%${search}%`),
+      like(contacts.email, `%${search}%`),
+      like(contacts.company, `%${search}%`),
+      like(contacts.country, `%${search}%`),
+    ) : undefined,
   );
+
+  const rows = await db.select().from(contacts)
+    .where(buildWhere())
+    .orderBy(desc(contacts.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const [{ total }] = await db.select({ total: count() }).from(contacts).where(buildWhere());
 
   return { data: rows, total: Number(total) };
 }

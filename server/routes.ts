@@ -67,10 +67,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Contacts ─────────────────────────────────────────
   app.get("/api/contacts", authenticate, async (req: AuthRequest, res) => {
     try {
-      const { search, status, limit, offset } = req.query;
+      const { search, status, region, limit, offset } = req.query;
       const result = await storage.getContacts(req.user!.tenantId, {
         search: search as string,
         status: status as string,
+        region: region as string,
         limit: limit ? Number(limit) : 50,
         offset: offset ? Number(offset) : 0,
       });

@@ -280,17 +280,27 @@ export default function ContactsPage() {
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState("");
   const [importOpen, setImportOpen]   = useState(false);
+  const [region, setRegion]           = useState("");
   const [page, setPage]               = useState(1);
 
   const PAGE_SIZE = 50;
 
-  // Reset to page 1 whenever search or filter changes
-  React.useEffect(() => { setPage(1); }, [search, statusFilter]);
+  const REGION_TABS = [
+    { key: "",       label: "All",    flag: "🌍" },
+    { key: "africa", label: "Africa", flag: "🌍" },
+    { key: "usa",    label: "Americas", flag: "🌎" },
+    { key: "europe", label: "Europe", flag: "🌍" },
+    { key: "asia",   label: "Asia",   flag: "🌏" },
+  ];
+
+  // Reset to page 1 whenever search, filter, or region changes
+  React.useEffect(() => { setPage(1); }, [search, statusFilter, region]);
 
   const offset = (page - 1) * PAGE_SIZE;
   const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
   if (search) params.set("search", search);
   if (statusFilter) params.set("status", statusFilter);
+  if (region) params.set("region", region);
   const queryKey = `/api/contacts?${params.toString()}`;
   const { data, isLoading } = useQuery<{ data: any[]; total: number }>({ queryKey: [queryKey] });
 
@@ -354,6 +364,46 @@ export default function ContactsPage() {
         onClose={() => setImportOpen(false)}
         onDone={() => { qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/contacts") }); }}
       />
+      {/* Region Tabs */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 16, flexWrap: "wrap", borderBottom: "1px solid var(--border)", paddingBottom: 0 }}>
+        {REGION_TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setRegion(tab.key)}
+            data-testid={`tab-region-${tab.key || "all"}`}
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: region === tab.key ? 700 : 500,
+              color: region === tab.key ? "var(--primary)" : "var(--text-secondary)",
+              background: "transparent",
+              border: "none",
+              borderBottom: region === tab.key ? "2px solid var(--primary)" : "2px solid transparent",
+              cursor: "pointer",
+              marginBottom: -1,
+              transition: "all 0.15s",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {tab.label}
+            {data && region === tab.key && (
+              <span style={{
+                background: "var(--primary)",
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 700,
+                borderRadius: 10,
+                padding: "1px 6px",
+                lineHeight: 1.6,
+              }}>{data.total}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Search + Filter Bar */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
