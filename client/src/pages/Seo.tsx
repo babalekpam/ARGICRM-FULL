@@ -145,37 +145,95 @@ export default function SeoPage() {
       {/* ── KEYWORDS ── */}
       {tab === "Keywords" && (
         <div>
-          <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-            <input className="input" placeholder="Seed keyword (e.g. CRM software)" value={researchForm.seed} onChange={e => setResearchForm(p => ({ ...p, seed: e.target.value }))} onKeyDown={e => e.key === "Enter" && runResearch()} style={{ flex: 1 }} />
-            <button className="btn btn-primary" disabled={running || !researchForm.seed} onClick={runResearch}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Search size={14} />} Research</button>
+          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+            <input className="input" placeholder="Seed keyword (e.g. CRM software)" value={researchForm.seed}
+              onChange={e => setResearchForm(p => ({ ...p, seed: e.target.value }))}
+              onKeyDown={e => e.key === "Enter" && runResearch()} style={{ flex: 1 }} />
+            <select className="input" value={researchForm.count} onChange={e => setResearchForm(p => ({ ...p, count: Number(e.target.value) }))} style={{ width: 90 }}>
+              {[10, 20, 50].map(n => <option key={n} value={n}>{n} results</option>)}
+            </select>
+            <button className="btn btn-primary" disabled={running || !researchForm.seed} onClick={runResearch}>
+              {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Search size={14} />} Research
+            </button>
           </div>
 
-          <div className="card" style={{ overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 100px 100px 80px 80px 50px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-              {["Keyword", "Search Volume", "Difficulty", "CPC", "Intent", "Rank", ""].map(h => (
-                <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
-              ))}
-            </div>
+          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             {!keywordsData?.data?.length ? (
-              <Empty icon={Search} title="No keywords yet" desc='Enter a seed keyword above and click "Research" to discover opportunities' />
-            ) : keywordsData.data.map((kw: any) => (
-              <div key={kw.id} className="table-row" style={{ gridTemplateColumns: "1fr 120px 100px 100px 80px 80px 50px", gap: 12 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{kw.keyword}</div>
-                <div style={{ fontWeight: 700, color: "var(--brand-light)" }}>{Number(kw.searchVolume).toLocaleString()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 40, height: 5, borderRadius: 3, background: "var(--bg-overlay)" }}>
-                    <div style={{ width: `${kw.difficulty}%`, height: "100%", borderRadius: 3, background: DIFF_COLOR(kw.difficulty) }} />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: DIFF_COLOR(kw.difficulty) }}>{kw.difficulty}</span>
-                </div>
-                <div style={{ fontSize: 13 }}>${Number(kw.cpc || 0).toFixed(2)}</div>
-                <div><span className={`badge ${kw.intent === "transactional" ? "badge-green" : kw.intent === "commercial" ? "badge-blue" : kw.intent === "navigational" ? "badge-purple" : "badge-gray"}`}>{kw.intent || "—"}</span></div>
-                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{kw.currentRank ? `#${kw.currentRank}` : "—"}</div>
-                <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} onClick={() => deleteKw(kw.id)}><Trash2 size={12} /></button>
+              <Empty icon={Search} title="No keywords yet" desc='Enter a seed keyword above and click "Research" to discover keyword opportunities' />
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", minWidth: 620, borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
+                      {[
+                        { label: "Keyword",       w: "auto" },
+                        { label: "Volume",         w: 100 },
+                        { label: "Difficulty",     w: 130 },
+                        { label: "CPC",            w: 80 },
+                        { label: "Intent",         w: 110 },
+                        { label: "Rank",           w: 70 },
+                        { label: "",               w: 44 },
+                      ].map(h => (
+                        <th key={h.label} style={{ width: h.w, padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+                          {h.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {keywordsData.data.map((kw: any, i: number) => (
+                      <tr key={kw.id} style={{ borderBottom: i < keywordsData.data.length - 1 ? "1px solid var(--border)" : "none", transition: "background 0.1s" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-hover)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>{kw.keyword}</span>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: "#3b82f6" }}>{Number(kw.searchVolume || 0).toLocaleString()}</span>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ flex: 1, maxWidth: 60, height: 6, borderRadius: 4, background: "var(--bg-overlay)", overflow: "hidden" }}>
+                              <div style={{ width: `${Math.min(kw.difficulty, 100)}%`, height: "100%", borderRadius: 4, background: DIFF_COLOR(kw.difficulty) }} />
+                            </div>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: DIFF_COLOR(kw.difficulty), minWidth: 24 }}>{kw.difficulty}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>${Number(kw.cpc || 0).toFixed(2)}</span>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{
+                            display: "inline-block", padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                            background: kw.intent === "transactional" ? "rgba(16,185,129,0.12)" : kw.intent === "commercial" ? "rgba(59,130,246,0.12)" : kw.intent === "navigational" ? "rgba(139,92,246,0.12)" : "var(--bg-elevated)",
+                            color: kw.intent === "transactional" ? "#10b981" : kw.intent === "commercial" ? "#3b82f6" : kw.intent === "navigational" ? "#8b5cf6" : "var(--text-muted)",
+                          }}>
+                            {kw.intent || "—"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: kw.currentRank ? "var(--text-primary)" : "var(--text-muted)" }}>
+                            {kw.currentRank ? `#${kw.currentRank}` : "—"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 8px", textAlign: "center" }}>
+                          <button className="btn btn-ghost btn-sm" style={{ padding: "4px 6px", color: "#ef4444" }} onClick={() => deleteKw(kw.id)} title="Delete">
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            )}
           </div>
-          {keywordsData && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>{keywordsData.total} keywords in database</div>}
+          {keywordsData && keywordsData.total > 0 && (
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
+              {keywordsData.total} keyword{keywordsData.total !== 1 ? "s" : ""} tracked
+            </div>
+          )}
         </div>
       )}
 
@@ -265,28 +323,67 @@ export default function SeoPage() {
             <input className="input" placeholder="Domain (e.g. mysite.com)" value={backlinksForm.domain} onChange={e => setBacklinksForm(p => ({ ...p, domain: e.target.value }))} style={{ flex: 1 }} />
             <button className="btn btn-primary" disabled={running || !backlinksForm.domain} onClick={runBacklinks}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Link size={14} />} Analyze Backlinks</button>
           </div>
-          <div className="card" style={{ overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 180px 80px 80px 100px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-              {["Source Domain", "Anchor Text", "DA", "PA", "Type"].map(h => (
-                <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
-              ))}
-            </div>
-            {!backlinksData?.data?.length ? <Empty icon={Link} title="No backlinks yet" desc='Enter your domain and click "Analyze Backlinks"' /> :
-              backlinksData.data.map((bl: any) => (
-                <div key={bl.id} className="table-row" style={{ gridTemplateColumns: "1fr 180px 80px 80px 100px", gap: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{bl.sourceDomain}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 300 }}>{bl.sourceUrl}</div>
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bl.anchorText}</div>
-                  <div style={{ fontWeight: 700, color: bl.domainAuthority >= 60 ? "#10b981" : "#f59e0b" }}>{bl.domainAuthority}</div>
-                  <div style={{ fontSize: 13 }}>{bl.pageAuthority}</div>
-                  <div><span className={`badge ${bl.isDoFollow ? "badge-green" : "badge-gray"}`}>{bl.isDoFollow ? "dofollow" : "nofollow"}</span></div>
-                </div>
-              ))
-            }
+          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+            {!backlinksData?.data?.length ? (
+              <Empty icon={Link} title="No backlinks yet" desc='Enter your domain and click "Analyze Backlinks"' />
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", minWidth: 540, borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
+                      {[
+                        { label: "Source Domain", w: "auto" },
+                        { label: "Anchor Text",   w: 160 },
+                        { label: "DA",            w: 70 },
+                        { label: "PA",            w: 70 },
+                        { label: "Type",          w: 100 },
+                      ].map(h => (
+                        <th key={h.label} style={{ width: h.w, padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+                          {h.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {backlinksData.data.map((bl: any, i: number) => (
+                      <tr key={bl.id} style={{ borderBottom: i < backlinksData.data.length - 1 ? "1px solid var(--border)" : "none", transition: "background 0.1s" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-hover)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <td style={{ padding: "12px 14px" }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>{bl.sourceDomain}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 280 }}>{bl.sourceUrl}</div>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ fontSize: 12, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", maxWidth: 150 }}>{bl.anchorText}</span>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: bl.domainAuthority >= 60 ? "#10b981" : bl.domainAuthority >= 30 ? "#f59e0b" : "#ef4444" }}>{bl.domainAuthority}</span>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{bl.pageAuthority}</span>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{
+                            display: "inline-block", padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                            background: bl.isDoFollow ? "rgba(16,185,129,0.12)" : "var(--bg-elevated)",
+                            color: bl.isDoFollow ? "#10b981" : "var(--text-muted)",
+                          }}>
+                            {bl.isDoFollow ? "dofollow" : "nofollow"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-          {backlinksData && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>{backlinksData.total} backlinks tracked</div>}
+          {backlinksData && backlinksData.total > 0 && (
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
+              {backlinksData.total} backlink{backlinksData.total !== 1 ? "s" : ""} tracked
+            </div>
+          )}
         </div>
       )}
 
