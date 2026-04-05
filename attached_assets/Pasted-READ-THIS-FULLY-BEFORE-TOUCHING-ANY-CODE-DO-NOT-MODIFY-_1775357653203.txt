@@ -1,0 +1,280 @@
+READ THIS FULLY BEFORE TOUCHING ANY CODE. DO NOT MODIFY ANYTHING. YOUR ONLY JOB RIGHT NOW IS TO ANALYZE AND TEST.
+
+🔍 MISSION
+You are a senior QA engineer and platform auditor. Perform a complete end-to-end analysis and test of the entire ArgiCRM platform built by ARGILETTE LLC. Every module, every route, every component, every API call, every database table, every integration — nothing is skipped. When done, deliver a full written report.
+
+📋 STEP 1 — CODEBASE ANALYSIS
+Before running any test, read and map the entire codebase:
+
+List every file in the project with its purpose
+Map every backend route (method + path + what it does)
+Map every frontend page and component
+Map every database table and its relationships
+Map every external API integration (Claude, Stripe, Flutterwave, SES, etc.)
+Map every environment variable in .env and flag any that are missing or empty
+Identify every service file and what it connects to
+Flag any dead code, unused imports, or orphaned files
+
+Output this as a structured inventory before proceeding.
+
+📋 STEP 2 — DATABASE TEST
+Test every database table:
+
+Confirm connection to PostgreSQL is active
+List every table and confirm it exists
+Confirm every table has the correct columns and data types
+Run a COUNT on every table and report how many records exist
+Test INSERT, SELECT, UPDATE, DELETE on each table
+Check all foreign key relationships are intact
+Check for missing indexes on frequently queried columns
+Flag any table with 0 records that should have seed data
+Flag any column that should have a NOT NULL constraint but doesn't
+
+Report: table name · status · record count · issues found
+
+📋 STEP 3 — BACKEND API TEST
+Test every single API route without exception:
+For each route test:
+
+Does the route exist and respond
+Does it return the correct HTTP status code
+Does it return the correct data structure
+Does it fail gracefully with a proper error message when given bad input
+Does the JWT auth middleware block unauthenticated requests correctly
+Does it correctly read from and write to the database
+
+Routes to test by module:
+Auth Routes
+
+POST /api/auth/register — create a new user
+POST /api/auth/login — login and receive JWT token
+POST /api/auth/logout
+POST /api/auth/forgot-password
+POST /api/auth/reset-password
+
+CRM Routes
+
+GET/POST/PUT/DELETE contacts
+GET/POST/PUT/DELETE leads
+GET/POST/PUT/DELETE deals
+GET pipeline stages
+GET/POST activities and notes
+
+E-Commerce Routes
+
+POST create store — confirm it does NOT loop
+GET store by user
+POST/PUT/DELETE products
+GET orders
+POST connect domain
+GET verify domain DNS status
+
+Projects Routes
+
+GET projects page — confirm it does NOT return blank
+POST create project
+GET/POST/PUT/DELETE tasks
+GET project by ID
+
+Account Routes
+
+GET account page — confirm it does NOT return blank
+PUT update profile
+GET user settings
+PUT update settings
+
+Billing Routes
+
+GET/POST invoices
+POST connect bank account — confirm it is functional
+POST Stripe payment intent
+POST Flutterwave payment
+GET payment history
+
+Data Marketplace Routes
+
+GET leads with filters
+POST purchase leads
+GET credit balance
+POST data ingestion trigger
+
+AI Routes
+
+POST ARIA chat — confirm Claude responds
+POST skill execution — test 5 skills across different domains
+GET usage log
+GET credits remaining
+
+Admin Routes
+
+GET admin dashboard data
+GET all users
+GET all orders
+GET ingestion logs
+POST trigger data ingestion
+
+Report per route: path · method · status code received · response time · pass/fail · error details if failed
+
+📋 STEP 4 — FRONTEND PAGE TEST
+Test every page in the React frontend:
+For each page confirm:
+
+Page renders without a blank screen
+Page renders without a console error
+All data loads correctly from the API
+All buttons and interactive elements work
+Forms submit correctly and show success/error feedback
+Navigation links work and go to the correct page
+Page is responsive on mobile screen size (375px width)
+Auth-protected pages redirect to login when no token present
+
+Pages to test:
+
+Landing / Home page
+Login page
+Register page
+Dashboard / Overview
+CRM — Contacts page
+CRM — Leads page
+CRM — Deals / Pipeline page
+Projects page (was reported blank — confirm fixed)
+Account / Profile page (was reported blank — confirm fixed)
+Billing page
+Bank account linking page (was reported broken — confirm fixed)
+E-Commerce tab
+Store creation flow (was reported looping — confirm fixed)
+Data Marketplace page
+AI Skills page
+ARIA dialog (open it, send a message, confirm Claude responds)
+Admin dashboard
+Settings page
+
+Report per page: page name · renders (yes/no) · data loads (yes/no) · console errors · mobile responsive (yes/no) · issues found
+
+📋 STEP 5 — INTEGRATION TEST
+Test every third-party integration:
+Claude API (Anthropic)
+
+Send a test message through ARIA and confirm a real response comes back
+Execute one skill and confirm output is returned
+Confirm the API key is loaded from environment variables correctly
+Confirm token usage is being logged to ai_usage_log table
+
+Stripe
+
+Confirm Stripe SDK is initialized with correct key
+Create a test payment intent and confirm it returns a client secret
+Confirm webhook endpoint exists and responds with 200
+
+Flutterwave
+
+Confirm Flutterwave SDK is initialized
+Confirm payment initialization route responds correctly
+Confirm African currency (XOF, NGN) is handled correctly
+
+Amazon SES
+
+Send a test email to a test address
+Confirm delivery confirmation is received
+Confirm transactional email templates exist (order confirmation, welcome, password reset)
+
+NPI Registry
+
+Call the NPI API with a test query
+Confirm records are returned and mapped to the unified lead schema
+
+Google Places API
+
+Call with a test business search
+Confirm results are returned and mapped correctly
+
+Report per integration: name · connected (yes/no) · test result · error details if failed
+
+📋 STEP 6 — SECURITY TEST
+Run a security audit on the platform:
+
+Confirm every protected route rejects requests with no JWT token
+Confirm every protected route rejects requests with an expired JWT token
+Confirm passwords are hashed in the database (never stored in plain text)
+Confirm API keys and secrets are in environment variables only — never hardcoded in any file
+Confirm rate limiting is active on auth routes (login, register)
+Confirm CORS is configured and only allows expected origins
+Confirm SQL injection protection is in place (parameterized queries used everywhere)
+Confirm user A cannot access user B's data (tenant isolation)
+Confirm admin routes are protected by admin role check, not just JWT
+
+Report: check name · pass/fail · file location of issue if failed
+
+📋 STEP 7 — PERFORMANCE TEST
+Run basic performance checks:
+
+Measure response time of the 10 most-used API routes
+Flag any route taking longer than 500ms
+Check database queries for missing indexes on filter/search columns
+Check if any API route makes unnecessary multiple database calls that could be combined
+Check if frontend assets are optimized (images lazy loaded, code split)
+Check if any Claude API call is made without a timeout handler
+
+
+📋 STEP 8 — DELIVER THE FULL REPORT
+When all tests are complete, deliver a structured report in this exact format:
+ARGICRM PLATFORM AUDIT REPORT
+Generated: [date]
+Audited by: Replit AI Agent
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXECUTIVE SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total routes tested:
+Total pages tested:
+Total integrations tested:
+Total issues found:
+Critical issues (blocking):
+Major issues (degrading):
+Minor issues (cosmetic):
+Overall platform health score: X/100
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL ISSUES — FIX IMMEDIATELY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[List each critical issue with: location · what is broken · impact · recommended fix]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MAJOR ISSUES — FIX THIS WEEK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[List each major issue with: location · what is broken · impact · recommended fix]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MINOR ISSUES — FIX WHEN POSSIBLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[List each minor issue]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WHAT IS WORKING CORRECTLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[List everything that passed all tests]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MISSING FEATURES DETECTED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[List anything referenced in code but not yet built]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECURITY FINDINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[List all security issues with severity rating]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PERFORMANCE FINDINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[List slow routes and optimization recommendations]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RECOMMENDED FIX ORDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. [Most critical fix first]
+2.
+3.
+[Continue in priority order]
+
+FINAL RULE: Do not fix anything during this audit. Analyze, test, and report only. Fixes will be done in a separate session once the full report is received.
