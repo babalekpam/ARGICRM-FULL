@@ -188,7 +188,15 @@ export async function runHealthCheck(checkType: string): Promise<{
   }
 }
 
+// 30-second cache to prevent runAllHealthChecks from hammering DB under memory pressure
+let _healthCache: { ts: number; data: Record<string, any> } | null = null;
+const HEALTH_CACHE_TTL = 30_000;
+
 export async function runAllHealthChecks(): Promise<Record<string, any>> {
+  if (_healthCache && Date.now() - _healthCache.ts < HEALTH_CACHE_TTL) {
+    return _healthCache.data;
+  }
+
   const checks = ["database", "auth", "ai_service", "memory", "environment", "uptime"];
   const results: Record<string, any> = {};
 
@@ -214,6 +222,9 @@ export async function runAllHealthChecks(): Promise<Record<string, any>> {
       healingEmitter.emit("critical_issue", { check, ...result });
     }
   }
+
+  // Cache result to reduce DB pressure under high memory
+  _healthCache = { ts: Date.now(), data: results };
 
   return results;
 }

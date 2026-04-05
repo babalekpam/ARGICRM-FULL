@@ -1,0 +1,272 @@
+ArgiCRM Round 3 fixes. DO NOT rebuild anything. Fix only what is listed below in exact order. Confirm each fix before moving to the next. Report every file changed and every line modified.
+
+🔴 CRITICAL FIXES FIRST
+
+FIX 1 — Three routes returning HTML instead of JSON
+File: server/routes.ts
+Search the entire file for these three route definitions:
+
+admin/stats
+marketplace/browse
+ai/provider-info
+
+For each one confirm it is actually mounted in the Express app BEFORE the Vite catch-all wildcard. The Vite catch-all looks like:
+typescriptapp.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/dist/index.html"));
+});
+Every API route MUST be registered before this line. If any of the three routes are registered after it or not registered at all, move them above the catch-all.
+If the routes exist in a sub-router file but the router is not mounted, add:
+typescriptimport { adminRouter } from "./routes/admin";
+import { marketplaceRouter } from "./routes/marketplace";
+import { aiRouter } from "./routes/ai";
+
+app.use("/api/admin", authenticate, adminRouter);
+app.use("/api/marketplace", authenticate, marketplaceRouter);
+app.use("/api/ai", authenticate, aiRouter);
+Make sure these lines appear BEFORE the Vite catch-all.
+Test:
+GET /api/admin/stats       → must return JSON not HTML
+GET /api/marketplace/browse → must return JSON with leads data
+GET /api/ai/provider-info  → must return JSON with provider config
+
+FIX 2 — POST /api/deals returns 500 (title NOT NULL constraint)
+File: server/routes.ts or server/routes/deals.ts
+Find the deals INSERT handler. The API receives name but the database column is title with NOT NULL.
+Fix option A — map name to title in the INSERT:
+typescriptawait db.insert(deals).values({
+  title: body.name || body.title,   // accept either field
+  tenantId: req.user!.tenantId,
+  ...rest
+});
+Fix option B — drop the NOT NULL constraint:
+sqlALTER TABLE deals ALTER COLUMN title DROP NOT NULL;
+Use Fix option A — it is safer and requires no DB migration.
+Also update the deals schema in Drizzle to accept both name and title:
+typescripttitle: varchar("title", { length: 255 }),  // remove .notNull()
+Test: POST /api/deals with a name field must return 201 not 500.
+
+FIX 3 — Memory heap at 97% (server will crash under load)
+File: wherever marketplace leads, lead gen results, or session data are cached in memory
+Search the codebase for:
+
+Large arrays stored in module-level variables
+let leads = [] or const cache = {} at module scope
+Any data structure that grows without a size limit
+
+For each one found add an LRU limit:
+typescript// Replace unbounded arrays with size-limited cache
+const MAX_CACHE_SIZE = 500;
+
+function addToCache(cache: any[], item: any) {
+  cache.push(item);
+  if (cache.length > MAX_CACHE_SIZE) {
+    cache.shift(); // remove oldest
+  }
+}
+Also add a memory guard to the healing system so it logs but does not crash:
+typescriptif (heapUsedPercent > 90) {
+  console.warn(`[MEMORY] Heap at ${heapUsedPercent}% — clearing caches`);
+  clearAllCaches(); // implement this to null out large in-memory structures
+}
+Test: Server log must no longer show CRITICAL memory alerts after a few minutes of running.
+
+🟡 MAJOR FIXES SECOND
+
+FIX 4 — Seed data guard fires too early
+File: server/seed-demo.ts
+Find this line:
+typescriptif (count > 0) return;
+Change it to:
+typescriptif (count >= 10) return;
+Then immediately run the seed for the platform owner tenant by calling the seed function directly on startup regardless of the guard this one time. Add a one-time force flag:
+typescriptconst FORCE_RESEED = true; // set to false after first successful seed
+
+async function seedIfNeeded(tenantId: string) {
+  const count = await getContactCount(tenantId);
+  if (!FORCE_RESEED && count >= 10) return;
+  await seedDemoData(tenantId);
+  console.log("[SEED] Demo data seeded for tenant:", tenantId);
+}
+The seed must insert for the platform owner tenant:
+
+10 contacts (mix of US and African names, real industries)
+5 leads across different pipeline stages
+3 deals (1 won, 1 active, 1 lost)
+3 invoices (1 paid, 1 pending, 1 overdue)
+2 campaigns
+5 tasks with future due dates
+3 workflow templates in crm_workflows
+
+After seeding set FORCE_RESEED = false.
+Test:
+GET /api/contacts  → must return 10+ records
+GET /api/leads     → must return 5+ records
+GET /api/deals     → must return 3+ records
+GET /api/invoices  → must return 3+ records
+
+FIX 5 — Admin stats accessible to non-admin users (security gap)
+File: server/routes.ts or server/routes/admin.ts
+Find the /api/admin/stats handler and add a role check at the very top:
+typescriptrouter.get("/stats", authenticate, async (req, res) => {
+  try {
+    // Add this guard immediately
+    if (
+      req.user?.role !== "platform_owner" &&
+      req.user?.role !== "admin"
+    ) {
+      return res.status(403).json({ 
+        error: "Access denied. Admin role required." 
+      });
+    }
+    // existing stats code below
+  } catch (err) {
+    console.error("GET /admin/stats error:", err);
+    res.status(500).json({ error: "Failed to fetch admin stats" });
+  }
+});
+Apply the same role check to ALL routes under /api/admin/:
+
+/api/admin/tenants
+/api/admin/stats
+/api/admin/users
+/api/admin/ingestion
+
+Test:
+Regular user JWT → GET /api/admin/stats  → must return 403
+Admin JWT        → GET /api/admin/stats  → must return 200 + data
+
+FIX 6 — Healing kill switch at wrong route path
+File: server/routes/healing.ts
+Confirm the pause and resume endpoints exist and add them if missing:
+typescriptrouter.post("/pause", authenticate, requireRole("admin"), (req, res) => {
+  healingSystem.pause();
+  res.json({ status: "paused", timestamp: new Date().toISOString() });
+});
+
+router.post("/resume", authenticate, requireRole("admin"), (req, res) => {
+  healingSystem.resume();
+  res.json({ status: "running", timestamp: new Date().toISOString() });
+});
+
+router.get("/status", authenticate, requireRole("admin"), (req, res) => {
+  res.json({ 
+    status: healingSystem.isPaused ? "paused" : "running",
+    lastRun: healingSystem.lastRun,
+    nextRun: healingSystem.nextRun
+  });
+});
+Confirm the router is mounted at:
+typescriptapp.use("/api/healing", healingRouter);
+Test:
+POST /api/healing/pause  → 200 + {"status":"paused"}
+POST /api/healing/resume → 200 + {"status":"running"}
+GET  /api/healing/status → 200 + status object
+
+FIX 7 — NPI Registry returning 0 results
+File: server/routes/leadgen.ts or wherever the NPI route lives
+Find the NPI API call and fix the request format:
+typescriptrouter.get("/npi", authenticate, async (req, res) => {
+  try {
+    const { specialty, state, city, limit = 10 } = req.query;
+
+    const params = new URLSearchParams({
+      version: "2.1",
+      limit: String(limit),
+      ...(specialty && { taxonomy_description: String(specialty) }),
+      ...(state && { state: String(state) }),
+      ...(city && { city: String(city) }),
+    });
+
+    const response = await fetch(
+      `https://npiregistry.cms.hhs.gov/api/?${params}`
+    );
+    const data = await response.json();
+
+    const results = (data.results || []).map((r: any) => ({
+      npi: r.number,
+      name: `${r.basic?.first_name || ""} ${r.basic?.last_name || ""}`.trim(),
+      organization: r.basic?.organization_name || "",
+      specialty: r.taxonomies?.[0]?.desc || "",
+      address: r.addresses?.[0]?.address_1 || "",
+      city: r.addresses?.[0]?.city || "",
+      state: r.addresses?.[0]?.state || "",
+      phone: r.addresses?.[0]?.telephone_number || "",
+    }));
+
+    res.json({ count: results.length, results });
+  } catch (err) {
+    console.error("NPI fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch NPI data" });
+  }
+});
+Test:
+GET /api/leadgen/npi?specialty=dentist&state=TX&limit=5
+→ must return 5 real NPI provider records with name, address, phone
+
+FIX 8 — Healing health endpoint too slow (1044ms)
+File: server/routes/healing.ts — the /health endpoint
+Cache the health check result for 30 seconds so it does not run expensive DB queries on every call:
+typescriptlet healthCache: any = null;
+let healthCacheTime = 0;
+const HEALTH_CACHE_TTL = 30000; // 30 seconds
+
+router.get("/health", authenticate, async (req, res) => {
+  try {
+    const now = Date.now();
+    if (healthCache && (now - healthCacheTime) < HEALTH_CACHE_TTL) {
+      return res.json({ ...healthCache, cached: true });
+    }
+    // existing health check logic
+    const result = await runHealthCheck();
+    healthCache = result;
+    healthCacheTime = now;
+    res.json(result);
+  } catch (err) {
+    console.error("Healing health error:", err);
+    res.status(500).json({ error: "Health check failed" });
+  }
+});
+Test:
+GET /api/healing/health → must respond in under 100ms (cached)
+
+✅ FINAL VERIFICATION AFTER ALL FIXES
+Run every test below and confirm each passes:
+GET  /api/admin/stats           → JSON not HTML · 200 · admin only
+GET  /api/marketplace/browse    → JSON with leads · 200
+GET  /api/ai/provider-info      → JSON with provider config · 200
+POST /api/deals                 → 201 · deal created (not 500)
+GET  /api/contacts              → 10+ seed records
+GET  /api/leads                 → 5+ seed records
+GET  /api/deals                 → 3+ seed records
+GET  /api/invoices              → 3+ seed records
+POST /api/healing/pause         → 200 + paused status
+POST /api/healing/resume        → 200 + running status
+GET  /api/healing/status        → 200 + status object
+GET  /api/healing/health        → 200 in under 100ms
+GET  /api/leadgen/npi?specialty=dentist&state=TX → 5+ real records
+Non-admin JWT → /api/admin/stats → 403 (not 200)
+Admin JWT     → /api/admin/stats → 200
+Server memory → heap must be below 80% after 5 minutes running
+
+📋 DELIVER THIS REPORT WHEN DONE
+ROUND 3 FIX REPORT
+
+FIX 1 — HTML routes:          PASS / FAIL
+FIX 2 — Deals 500:            PASS / FAIL
+FIX 3 — Memory heap:          PASS / FAIL
+FIX 4 — Seed data:            PASS / FAIL
+FIX 5 — Admin security:       PASS / FAIL
+FIX 6 — Healing kill switch:  PASS / FAIL
+FIX 7 — NPI registry:         PASS / FAIL
+FIX 8 — Health cache:         PASS / FAIL
+
+Fixes confirmed: X/8
+Files modified: [list every file and what changed]
+
+Previous health score: 74/100
+Current health score:  X/100
+Target score:          90+/100
+
+Remaining issues: [list anything still broken]
+
+DO NOT touch any passing feature. Only modify the files explicitly listed above.

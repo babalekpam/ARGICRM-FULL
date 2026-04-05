@@ -60,6 +60,31 @@ async function incrementUsage(tenantId: string, count: number): Promise<void> {
   }
 }
 
+// ── GET /api/marketplace/browse ─────────────────────────────────
+// Browse marketplace leads (first 50 available, blurred for lower plans)
+router.get("/browse", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const plan = getEffectivePlan(req);
+    const canAccess = isOwner(req) || planAtLeast(plan, "professional");
+    const leads = await db.select().from(marketplaceLeads)
+      .where(eq(marketplaceLeads.available, true))
+      .orderBy(desc(marketplaceLeads.createdAt))
+      .limit(50);
+    const exportsUsed = await getUsage(req.user!.tenantId);
+    const quota = MARKETPLACE_MONTHLY_QUOTA[plan as PlanId] ?? 0;
+    const data = leads.map((l, i) => {
+      if (!canAccess || i >= 3) {
+        return { ...l, email: "***@***.***", firstName: "***", lastName: "***", phone: "***", blurred: true };
+      }
+      return { ...l, blurred: false };
+    });
+    res.json({ data, total: leads.length, quota, exportsUsed, requiresUpgrade: !canAccess });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to browse marketplace" });
+  }
+});
+
 // ── GET /api/marketplace/stats ──────────────────────────────────
 // Returns totals, user quota, ingestion health
 router.get("/stats", authenticate, async (req: AuthRequest, res) => {

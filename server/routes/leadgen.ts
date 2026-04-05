@@ -396,6 +396,36 @@ router.post("/apollo/companies", authenticate, requireFeature("ai.lead_generatio
   res.json({ results, total: results.length, source: "apollo" });
 });
 
+// ── NPI Registry (Healthcare Providers) ─────────────────────────
+router.get("/npi", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { name, specialty, state, city, limit = "10" } = req.query as Record<string, string>;
+    const params = new URLSearchParams({ limit: String(Math.min(Number(limit), 200)) });
+    if (name) { params.set("first_name", name.split(" ")[0]); if (name.split(" ")[1]) params.set("last_name", name.split(" ").slice(1).join(" ")); }
+    if (specialty) params.set("taxonomy_description", specialty);
+    if (state) params.set("state", state);
+    if (city) params.set("city", city);
+    const url = `https://npiregistry.cms.hhs.gov/api/?version=2.1&${params.toString()}`;
+    const resp = await fetch(url);
+    if (!resp.ok) return res.status(502).json({ error: "NPI registry unavailable", status: resp.status });
+    const data = await resp.json() as { result_count?: number; results?: any[] };
+    const results = (data.results || []).map((r: any) => ({
+      npi: r.number,
+      type: r.enumeration_type === "NPI-1" ? "individual" : "organization",
+      name: r.basic?.organization_name || `${r.basic?.first_name || ""} ${r.basic?.last_name || ""}`.trim(),
+      specialty: r.taxonomies?.[0]?.desc,
+      state: r.addresses?.[0]?.state,
+      city: r.addresses?.[0]?.city,
+      phone: r.addresses?.[0]?.telephone_number,
+      address: r.addresses?.[0]?.address_1,
+    }));
+    res.json({ results, total: data.result_count || results.length, source: "NPI Registry (CMS)" });
+  } catch (err: any) {
+    console.error("[NPI] Error:", err?.message);
+    res.status(500).json({ error: err?.message || "NPI lookup failed" });
+  }
+});
+
 // ── Public Intent Hunter — Reddit/LinkedIn/Quora/Forums ──────────
 router.post("/intent-hunt", authenticate, requireFeature("ai.lead_generation"), async (req: AuthRequest, res) => {
   const { industry, keywords = [], maxResults = 40 } = req.body;

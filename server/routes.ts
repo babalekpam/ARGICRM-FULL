@@ -8,8 +8,9 @@ import { aiRateLimit } from "./middleware/ai-rate-limit.js";
 import rateLimit from "express-rate-limit";
 import * as storage from "./storage.js";
 import { db } from "./db.js";
-import { contacts } from "@shared/schema.js";
-import { eq } from "drizzle-orm";
+import { contacts, tenants, users, leads, deals } from "@shared/schema.js";
+import { agentSessions, agentMessages } from "@shared/schema-extended.js";
+import { eq, sql as rawSql, gte, desc as descOp } from "drizzle-orm";
 import authRouter from "./routes/auth.js";
 import agentRouter from "./routes/agents.js";
 import adminRouter from "./routes/admin.js";
@@ -305,7 +306,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/deals", authenticate, async (req: AuthRequest, res) => {
     try {
-      const deal = await storage.createDeal({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
+      const body = req.body;
+      const deal = await storage.createDeal({
+        ...body,
+        title: body.name || body.title || "New Deal",
+        tenantId: req.user!.tenantId,
+        createdBy: req.user!.id,
+      });
       res.status(201).json(deal);
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create deal" }); }
   });
@@ -611,14 +618,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Platform Admin ────────────────────────────────────
-  app.get("/api/admin/tenants", authenticate, async (req: AuthRequest, res) => {
-    if (req.user!.email !== (process.env.PLATFORM_OWNER_EMAIL || "abel@argilette.com")) {
+  const OWNER_EMAIL = process.env.PLATFORM_OWNER_EMAIL || "abel@argilette.com";
+  function requirePlatformOwner(req: AuthRequest, res: any, next: any) {
+    if (req.user?.email !== OWNER_EMAIL && req.user?.role !== "platform_owner" && req.user?.role !== "admin") {
       return res.status(403).json({ error: "Platform owner access required" });
     }
+    next();
+  }
+
+  app.get("/api/admin/tenants", authenticate, requirePlatformOwner, async (req: AuthRequest, res) => {
     try {
       const all = await storage.getAllTenants();
       res.json(all);
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch tenants" }); }
+  });
+
+  app.get("/api/admin/stats", authenticate, requirePlatformOwner, async (req: AuthRequest, res) => {
+    try {
+      const [tenantCount] = await db.select({ n: rawSql<number>`count(*)` }).from(tenants);
+      const [userCount] = await db.select({ n: rawSql<number>`count(*)` }).from(users);
+      const [contactCount] = await db.select({ n: rawSql<number>`count(*)` }).from(contacts);
+      const [leadCount] = await db.select({ n: rawSql<number>`count(*)` }).from(leads);
+      const [dealStats] = await db.select({ count: rawSql<number>`count(*)`, revenue: rawSql<number>`coalesce(sum(value::numeric),0)` }).from(deals).where(eq(deals.stage, "closed_won"));
+      const [sessionCount] = await db.select({ n: rawSql<number>`count(*)` }).from(agentSessions);
+      const [messageCount] = await db.select({ n: rawSql<number>`count(*)` }).from(agentMessages);
+      const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const [newTenants] = await db.select({ n: rawSql<number>`count(*)` }).from(tenants).where(gte(tenants.createdAt, thirtyDaysAgo));
+      const planDist = await db.select({ plan: tenants.subscriptionPlan, count: rawSql<number>`count(*)` }).from(tenants).groupBy(tenants.subscriptionPlan);
+      res.json({
+        tenants: { total: Number(tenantCount.n), new30d: Number(newTenants.n) },
+        users: Number(userCount.n),
+        contacts: Number(contactCount.n),
+        leads: Number(leadCount.n),
+        deals: { won: Number(dealStats.count), revenue: Number(dealStats.revenue) },
+        agents: { sessions: Number(sessionCount.n), messages: Number(messageCount.n) },
+        plans: planDist.map(p => ({ plan: p.plan, count: Number(p.count) })),
+      });
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch admin stats" }); }
   });
 
   // ─── AI Features ──────────────────────────────────────
@@ -650,6 +686,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── AI Provider Status ─────────────────────────────
   app.get("/api/ai/provider", authenticate, async (req: AuthRequest, res) => {
+    const { getProviderInfo } = await import("./services/ai-adapter.js");
+    res.json(getProviderInfo());
+  });
+
+  // ─── AI Provider Info (alias for /provider) ──────────
+  app.get("/api/ai/provider-info", authenticate, async (req: AuthRequest, res) => {
     const { getProviderInfo } = await import("./services/ai-adapter.js");
     res.json(getProviderInfo());
   });

@@ -15,7 +15,7 @@ export async function seedDemoData() {
   try {
     // Check if contacts already exist — skip if yes
     const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(contacts).where(eq(contacts.tenantId, TENANT_ID));
-    if (Number(n) > 0) return;
+    if (Number(n) >= 10) return;
 
     console.log("[SEED] Inserting demo data for ARGILETTE LLC…");
 
@@ -44,9 +44,9 @@ export async function seedDemoData() {
 
     // ── 3 Sample Deals ───────────────────────────────────────────────
     await db.insert(deals).values([
-      { tenantId: TENANT_ID, name: "TechSolutions Dakar — CRM Enterprise", value: "24000", stage: "closed_won", probability: 100, expectedCloseDate: new Date("2026-03-15"), contactId: demoContacts[0].id, notes: "12-month enterprise contract signed" },
-      { tenantId: TENANT_ID, name: "FinTech Lagos — Growth Plan", value: "8400", stage: "proposal", probability: 65, expectedCloseDate: new Date("2026-04-30"), contactId: demoContacts[1].id, notes: "Proposal for 24-month Growth subscription" },
-      { tenantId: TENANT_ID, name: "GrowthCo USA — Agency License", value: "47880", stage: "negotiation", probability: 80, expectedCloseDate: new Date("2026-04-15"), contactId: demoContacts[2].id, notes: "Agency Starter 12 workspaces — negotiating pricing" },
+      { tenantId: TENANT_ID, title: "TechSolutions Dakar — CRM Enterprise", value: "24000", stage: "closed_won", probability: 100, expectedCloseDate: new Date("2026-03-15"), contactId: demoContacts[0].id, notes: "12-month enterprise contract signed" },
+      { tenantId: TENANT_ID, title: "FinTech Lagos — Growth Plan", value: "8400", stage: "proposal", probability: 65, expectedCloseDate: new Date("2026-04-30"), contactId: demoContacts[1].id, notes: "Proposal for 24-month Growth subscription" },
+      { tenantId: TENANT_ID, title: "GrowthCo USA — Agency License", value: "47880", stage: "negotiation", probability: 80, expectedCloseDate: new Date("2026-04-15"), contactId: demoContacts[2].id, notes: "Agency Starter 12 workspaces — negotiating pricing" },
     ]);
 
     // ── 2 Sample Campaigns ───────────────────────────────────────────

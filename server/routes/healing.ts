@@ -111,13 +111,13 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
 });
 
 // ── Healing system kill switch ──────────────────────────────────
-router.post("/pause", authenticate, requireRole("super_admin", "admin"), (req, res) => {
+router.post("/pause", authenticate, requireRole("super_admin", "admin", "platform_owner"), (req, res) => {
   pauseHealing();
   console.warn("[HEALING] System paused by admin:", (req as any).user?.email);
   res.json({ status: "paused", message: "Healing system paused. No auto-fixes will run until resumed." });
 });
 
-router.post("/resume", authenticate, requireRole("super_admin", "admin"), (req, res) => {
+router.post("/resume", authenticate, requireRole("super_admin", "admin", "platform_owner"), (req, res) => {
   resumeHealing();
   console.log("[HEALING] System resumed by admin:", (req as any).user?.email);
   res.json({ status: "running", message: "Healing system resumed. Auto-fixes are active." });
