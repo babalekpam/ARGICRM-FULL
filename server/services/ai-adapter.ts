@@ -18,7 +18,7 @@
  */
 
 import axios from "axios";
-import Anthropic from "@anthropic-ai/sdk";
+import { askClaude, streamClaude } from "./claude.js";
 
 // ═══════════════════════════════════════════════════════════════
 // PROVIDER DEFINITIONS
@@ -248,24 +248,16 @@ export async function complete(opts: AICompletionOpts): Promise<string> {
   throw lastError || new Error("All AI providers failed");
 }
 
-// ─── Anthropic Claude (official SDK) ────────────────────────────
-async function callAnthropic(config: ProviderConfig, model: string, opts: AICompletionOpts): Promise<string> {
-  const apiKey = opts.tenantApiKey || process.env.ANTHROPIC_API_KEY!;
-  const client = new Anthropic({ apiKey });
-
-  const system = opts.system || opts.messages.find(m => m.role === "system")?.content;
-  const userMessages = opts.messages
+// ─── Anthropic Claude — delegates to claude.ts (single source of truth) ──────
+async function callAnthropic(_config: ProviderConfig, model: string, opts: AICompletionOpts): Promise<string> {
+  const system = opts.system || opts.messages.find(m => m.role === "system")?.content || "You are a helpful AI assistant.";
+  const userMsg  = opts.messages.filter(m => m.role !== "system").at(-1)?.content || "";
+  const history  = opts.messages
     .filter(m => m.role !== "system")
+    .slice(0, -1)
     .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: opts.maxTokens || 1024,
-    ...(system ? { system } : {}),
-    messages: userMessages,
-  });
-
-  return (response.content[0] as any)?.text || "";
+  return askClaude(system, userMsg, history, { model, maxTokens: opts.maxTokens || 1024 });
 }
 
 // ─── OpenAI-compatible (works for OpenAI, Groq, Mistral, etc.) ──
@@ -334,26 +326,15 @@ export async function* stream(opts: AICompletionOpts): AsyncGenerator<string> {
   const model = opts.fast ? config.fastModel : config.defaultModel;
 
   if (config.format === "anthropic") {
-    // Anthropic streaming via official SDK
-    const apiKey = process.env.ANTHROPIC_API_KEY!;
-    const client = new Anthropic({ apiKey });
-    const system = opts.system || opts.messages.find(m => m.role === "system")?.content;
-    const userMessages = opts.messages
+    // Anthropic streaming — delegates to claude.ts (single source of truth)
+    const system  = opts.system || opts.messages.find(m => m.role === "system")?.content || "You are a helpful AI assistant.";
+    const userMsg = opts.messages.filter(m => m.role !== "system").at(-1)?.content || "";
+    const history = opts.messages
       .filter(m => m.role !== "system")
+      .slice(0, -1)
       .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-    const anthropicStream = await client.messages.stream({
-      model,
-      max_tokens: opts.maxTokens || 2048,
-      ...(system ? { system } : {}),
-      messages: userMessages,
-    });
-
-    for await (const event of anthropicStream) {
-      if (event.type === "content_block_delta" && (event.delta as any).type === "text_delta") {
-        yield (event.delta as any).text || "";
-      }
-    }
+    yield* streamClaude(system, userMsg, history, model);
   } else {
     // OpenAI-compatible streaming
     const apiKey = process.env[config.envKey];
