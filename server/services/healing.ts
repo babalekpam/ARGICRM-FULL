@@ -150,12 +150,16 @@ export async function runHealthCheck(checkType: string): Promise<{
       const heapUsedMB = Math.round(used.heapUsed / 1024 / 1024);
       const heapTotalMB = Math.round(used.heapTotal / 1024 / 1024);
       const rss = Math.round(used.rss / 1024 / 1024);
-      const pct = Math.round((used.heapUsed / used.heapTotal) * 100);
+      // Use the NODE_OPTIONS max-old-space-size as denominator for accurate % reporting
+      const nodeOpts = process.env.NODE_OPTIONS || "";
+      const maxMatch = nodeOpts.match(/--max-old-space-size=(\d+)/);
+      const maxAllowedMB = maxMatch ? parseInt(maxMatch[1]) : heapTotalMB;
+      const pct = Math.round((heapUsedMB / maxAllowedMB) * 100);
       return {
-        status: pct > 90 ? "critical" : pct > 70 ? "degraded" : "healthy",
+        status: pct > 85 ? "critical" : pct > 65 ? "degraded" : "healthy",
         latencyMs: Date.now() - start,
-        message: `Heap: ${heapUsedMB}MB / ${heapTotalMB}MB (${pct}%)`,
-        details: { heapUsedMB, heapTotalMB, rssMB: rss, heapPercent: pct }
+        message: `Heap: ${heapUsedMB}MB / ${maxAllowedMB}MB (${pct}%)`,
+        details: { heapUsedMB, heapTotalMB, maxAllowedMB, rssMB: rss, heapPercent: pct }
       };
     }
 

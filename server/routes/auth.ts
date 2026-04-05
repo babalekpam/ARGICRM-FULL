@@ -1,9 +1,29 @@
 import { Router } from "express";
 import { z } from "zod";
+import rateLimit from "express-rate-limit";
 import { authenticate, generateToken, hashPassword, verifyPassword, type AuthRequest } from "../middleware/auth.js";
 import * as storage from "../storage.js";
 import { sendWelcomeEmail, sendTeamInviteEmail, sendPasswordChangedEmail } from "../services/email.js";
 import { PLAN_MAP, PLAN_HIERARCHY } from "@shared/plans";
+
+const loginRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: "Too many login attempts. Please try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Rate limit per-email (from body) + IP combo to prevent both brute force AND IP-based attacks
+    const email = req.body?.email || req.ip || "unknown";
+    return `${req.ip}:${email}`;
+  },
+  skip: (req) => {
+    // Skip rate limiting for the platform owner's own IP during development
+    return false;
+  },
+});
+
+const failedAttempts = new Map<string, { count: number; lockedUntil?: Date }>();
 
 const router = Router();
 
@@ -98,7 +118,7 @@ router.post("/register", async (req, res) => {
 });
 
 // ─── Login ───────────────────────────────────────────────
-router.post("/login", async (req, res) => {
+router.post("/login", loginRateLimit, async (req, res) => {
   try {
     const schema = z.object({
       email: z.string().email(),
@@ -106,12 +126,39 @@ router.post("/login", async (req, res) => {
     });
 
     const { email, password } = schema.parse(req.body);
+
+    // Per-account lockout after 5 consecutive wrong password attempts
+    const attempts = failedAttempts.get(email);
+    if (attempts?.lockedUntil && attempts.lockedUntil > new Date()) {
+      return res.status(429).json({ error: "Account temporarily locked due to too many failed attempts. Try again in 15 minutes." });
+    }
+
     const user = await storage.getUserByEmailGlobal(email);
 
-    if (!user || !user.isActive) return res.status(401).json({ error: "Invalid email or password" });
+    if (!user || !user.isActive) {
+      // Track failed attempt even for non-existent accounts (prevents enumeration via timing)
+      const current = failedAttempts.get(email) || { count: 0 };
+      current.count += 1;
+      if (current.count >= 5) {
+        current.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+      failedAttempts.set(email, current);
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
 
     const valid = await verifyPassword(password, user.passwordHash ?? "");
-    if (!valid) return res.status(401).json({ error: "Invalid email or password" });
+    if (!valid) {
+      const current = failedAttempts.get(email) || { count: 0 };
+      current.count += 1;
+      if (current.count >= 5) {
+        current.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+      failedAttempts.set(email, current);
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    // Successful login — clear failed attempt counter
+    failedAttempts.delete(email);
 
     const tenant = await storage.getTenantById(user.tenantId);
     if (tenant?.subscriptionStatus === "blocked") return res.status(403).json({ error: "This account has been blocked. Contact support@argilette.com." });

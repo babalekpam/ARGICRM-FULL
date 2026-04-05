@@ -253,6 +253,7 @@ export const stores = pgTable("stores", {
   subdomain: varchar("subdomain"),
   customDomain: text("custom_domain"),
   domainStatus: varchar("domain_status").default("none"),
+  status: varchar("status").default("active"),
   aiBuilt: boolean("ai_built").default(false),
   storeData: jsonb("store_data").default(sql`'{}'::jsonb`),
   categories: jsonb("categories").default(sql`'[]'::jsonb`),

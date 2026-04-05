@@ -37,9 +37,20 @@ Action response:
   "needsConfirmation": false
 }
 
+== CRITICAL LANGUAGE RULE ==
+Detect the language of the user's message and ALWAYS respond in that EXACT same language.
+If the user writes in French, your ENTIRE response must be in French — every word.
+If the user writes in English, respond entirely in English.
+If the user mixes languages, match the dominant language.
+NEVER switch languages unless the user explicitly asks you to.
+Examples:
+- User: "Montre-moi mes contacts" → Respond ENTIRELY in French
+- User: "Affiche mon pipeline" → Respond ENTIRELY in French
+- User: "Show me my contacts" → Respond entirely in English
+- User: "Créer un nouveau lead" → Respond ENTIRELY in French
+
 == EXECUTION RULES ==
 Set needsConfirmation: true ONLY for: deletes, mass emails, sending contracts to multiple people.
-Respond in the SAME language the user writes in (EN or FR).
 Be concise and action-oriented — confirm what you DID, not what you will do.
 Never invent data — if something doesn't exist, say so.
 For unclear instructions, ask exactly ONE clarifying question.
@@ -1005,6 +1016,11 @@ router.post("/chat", authenticate, async (req: AuthRequest, res) => {
       };
     }
 
+    // Detect user input language using distinctly French words only
+    // Excludes bilingual terms like "contacts", "leads", "pipeline", "prospects" (same in both languages)
+    const FR_PATTERN = /\b(montre|affiche|créer|crée|montre-moi|affiche-moi|mon\b|mes\b|ma\b|notre|nos|factures|campagnes|tâches|dossiers|combien|quel|quelle|comment|où|qui|quand|tous|toutes|nouveau|nouvelle|ajouter|supprimer|modifier|envoyer|voir|montrer|rechercher|trouver|générer|faire|obtenir|donne|donne-moi|merci|bonjour|salut|aidez|pouvez|voulez|votre|vos|liste\s|affiche\s|montre\s)\b/i;
+    const isInputFrench = FR_PATTERN.test(message);
+
     if (parsed.action && !parsed.needsConfirmation) {
       try {
         const result = await executeAriaAction(parsed.action, user, user.tenantId);
@@ -1017,6 +1033,18 @@ router.post("/chat", authenticate, async (req: AuthRequest, res) => {
       } catch (e: any) {
         finalMessage = `I encountered an issue: ${e.message}`;
       }
+    }
+
+    // If user wrote in French and response is still English, translate it
+    if (isInputFrench && finalMessage && !parsed.needsConfirmation) {
+      try {
+        const translated = await completeForTenant(user.tenantId, {
+          messages: [{ role: "user" as const, content: `Translate this CRM response to French. Keep all names, emails, numbers, and proper nouns in their original form. Return only the translated text, no preamble:\n\n${finalMessage}` }],
+          system: "You are a professional French translator for a CRM application. Translate the given text to French. Keep proper names, emails, companies, numbers unchanged. Return only the translation.",
+          maxTokens: 800,
+        });
+        finalMessage = translated;
+      } catch { /* keep original if translation fails */ }
     }
     try {
       await db.insert(ariaAuditLog).values({

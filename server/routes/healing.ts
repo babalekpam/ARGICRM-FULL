@@ -111,15 +111,27 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
 });
 
 // ── Healing system kill switch ──────────────────────────────────
-router.post("/pause", authenticate, requireRole("super_admin", "admin", "platform_owner"), (req, res) => {
+function requirePlatformOwnerOnly(req: any, res: any, next: any) {
+  const user = req.user;
+  if (
+    user?.role === "platform_owner" ||
+    user?.email === process.env.PLATFORM_OWNER_EMAIL ||
+    user?.email === "abel@argilette.com"
+  ) {
+    return next();
+  }
+  return res.status(403).json({ error: "Access denied. Platform owner only." });
+}
+
+router.post("/pause", authenticate, requirePlatformOwnerOnly, (req, res) => {
   pauseHealing();
-  console.warn("[HEALING] System paused by admin:", (req as any).user?.email);
+  console.warn("[HEALING] System paused by platform owner:", (req as any).user?.email);
   res.json({ status: "paused", message: "Healing system paused. No auto-fixes will run until resumed." });
 });
 
-router.post("/resume", authenticate, requireRole("super_admin", "admin", "platform_owner"), (req, res) => {
+router.post("/resume", authenticate, requirePlatformOwnerOnly, (req, res) => {
   resumeHealing();
-  console.log("[HEALING] System resumed by admin:", (req as any).user?.email);
+  console.log("[HEALING] System resumed by platform owner:", (req as any).user?.email);
   res.json({ status: "running", message: "Healing system resumed. Auto-fixes are active." });
 });
 

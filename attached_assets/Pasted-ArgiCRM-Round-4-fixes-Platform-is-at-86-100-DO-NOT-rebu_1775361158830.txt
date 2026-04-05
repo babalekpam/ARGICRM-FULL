@@ -1,0 +1,305 @@
+ArgiCRM Round 4 fixes. Platform is at 86/100. DO NOT rebuild anything. Fix only what is listed below in exact order. Confirm each fix before moving to the next. Report every file changed and every line modified.
+
+🔴 CRITICAL FIXES FIRST
+
+FIX 1 — Memory heap at 97% (raise Node.js heap ceiling)
+File: package.json or Replit .replit config file
+Find the start command. It currently looks like:
+json"start": "node dist/index.js"
+or
+run = "node dist/index.js"
+Change it to:
+json"start": "node --max-old-space-size=512 dist/index.js"
+or in .replit:
+run = "node --max-old-space-size=512 dist/index.js"
+If using tsx or ts-node for development:
+json"dev": "NODE_OPTIONS='--max-old-space-size=512' tsx server/index.ts"
+After restarting confirm in server logs that heap is no longer at 97%.
+Test: Server must run for 5 minutes without any CRITICAL memory alert. Heap must stay below 80%.
+
+FIX 2 — Seed data guard fires on contacts only — tasks, campaigns, invoices never seeded
+File: server/seed-demo.ts
+The current guard checks contacts only:
+typescriptif (contactCount >= 10) return;
+Replace the entire guard with per-resource checks:
+typescriptasync function seedIfNeeded(tenantId: string) {
+
+  const [
+    contactCount,
+    leadCount,
+    dealCount,
+    taskCount,
+    campaignCount,
+    invoiceCount
+  ] = await Promise.all([
+    getCount("contacts", tenantId),
+    getCount("leads", tenantId),
+    getCount("deals", tenantId),
+    getCount("tasks", tenantId),
+    getCount("campaigns", tenantId),
+    getCount("invoices", tenantId),
+  ]);
+
+  if (contactCount < 10)  await seedContacts(tenantId);
+  if (leadCount < 5)      await seedLeads(tenantId);
+  if (dealCount < 3)      await seedDeals(tenantId);
+  if (taskCount < 5)      await seedTasks(tenantId);
+  if (campaignCount < 2)  await seedCampaigns(tenantId);
+  if (invoiceCount < 3)   await seedInvoices(tenantId);
+
+  console.log("[SEED] Per-resource seed complete for tenant:", tenantId);
+}
+Seed content for missing resources:
+Tasks (seed 5):
+typescriptconst tasks = [
+  { title: "Follow up with John Smith", dueDate: tomorrow, priority: "high", status: "pending" },
+  { title: "Prepare Q2 sales report", dueDate: nextWeek, priority: "medium", status: "pending" },
+  { title: "Schedule demo with TechCorp", dueDate: tomorrow, priority: "high", status: "pending" },
+  { title: "Review and send proposal to ABC Corp", dueDate: nextWeek, priority: "medium", status: "pending" },
+  { title: "Update CRM pipeline stages", dueDate: nextWeek, priority: "low", status: "pending" },
+];
+Campaigns (seed 2):
+typescriptconst campaigns = [
+  { name: "Q2 Healthcare Outreach", status: "active", type: "email", target: "healthcare", sent: 245, opened: 89, replied: 12 },
+  { name: "TechZone Product Launch", status: "draft", type: "email", target: "technology", sent: 0, opened: 0, replied: 0 },
+];
+Invoices (seed 3):
+typescriptconst invoices = [
+  { number: "INV-001", client: "ABC Medical Group", amount: 2500, status: "paid", dueDate: lastMonth },
+  { number: "INV-002", client: "TechCorp Solutions", amount: 4800, status: "pending", dueDate: nextWeek },
+  { number: "INV-003", client: "Global Health Partners", amount: 1200, status: "overdue", dueDate: lastWeek },
+];
+Test:
+GET /api/tasks     → must return 5+ records
+GET /api/campaigns → must return 2+ records
+GET /api/invoices  → must return 3+ records (paid · pending · overdue)
+
+🟡 MAJOR FIXES SECOND
+
+FIX 3 — Healing pause accessible to all tenant super_admins (security vulnerability)
+File: server/routes/healing.ts
+The current check requireRole("super_admin", "admin", "platform_owner") allows ANY tenant's super_admin to pause the global healing system.
+Replace with a strict platform owner only check:
+typescriptfunction requirePlatformOwnerOnly(req: Request, res: Response, next: NextFunction) {
+  const user = req.user;
+  if (
+    user?.role === "platform_owner" ||
+    user?.email === process.env.PLATFORM_OWNER_EMAIL
+  ) {
+    return next();
+  }
+  return res.status(403).json({
+    error: "Access denied. Platform owner only."
+  });
+}
+
+// Apply to pause and resume only
+router.post("/pause",  authenticate, requirePlatformOwnerOnly, (req, res) => {
+  healingSystem.pause();
+  res.json({ status: "paused", timestamp: new Date().toISOString() });
+});
+
+router.post("/resume", authenticate, requirePlatformOwnerOnly, (req, res) => {
+  healingSystem.resume();
+  res.json({ status: "running", timestamp: new Date().toISOString() });
+});
+Add to .env:
+PLATFORM_OWNER_EMAIL=abel@argilette.com
+Test:
+Platform owner JWT → POST /api/healing/pause  → 200 + paused
+Tenant super_admin JWT → POST /api/healing/pause → 403
+Regular user JWT → POST /api/healing/pause → 403
+
+FIX 4 — Login has no rate limiting (brute force unrestricted)
+File: server/routes/auth.ts
+Find the login route and add rate limiting. Import or reuse the existing rate limiter:
+typescriptimport rateLimit from "express-rate-limit";
+
+const loginRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 20,                     // max 20 attempts per window
+  message: {
+    error: "Too many login attempts. Please try again in 15 minutes."
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post("/login", loginRateLimit, async (req, res) => {
+  // existing login code
+});
+Also add a stricter lockout after 5 consecutive wrong password attempts for the same email:
+typescript// Track failed attempts in memory (or Redis if available)
+const failedAttempts = new Map<string, { count: number; lockedUntil?: Date }>();
+
+// At the start of login handler
+const attempts = failedAttempts.get(email);
+if (attempts?.lockedUntil && attempts.lockedUntil > new Date()) {
+  return res.status(429).json({
+    error: "Account temporarily locked. Try again in 15 minutes."
+  });
+}
+
+// On wrong password
+const current = failedAttempts.get(email) || { count: 0 };
+current.count += 1;
+if (current.count >= 5) {
+  current.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+}
+failedAttempts.set(email, current);
+
+// On successful login — clear the counter
+failedAttempts.delete(email);
+Test:
+Send 25 rapid POST /api/auth/login requests
+Expected: 429 Too Many Requests after 20 attempts
+
+Send 5 wrong password attempts for same email
+Expected: account locked for 15 minutes on 6th attempt
+
+FIX 5 — ARIA responds in English regardless of input language
+File: wherever the ARIA system prompt is defined (likely server/services/claude.ts or server/routes/aria.ts)
+Find the system prompt string and add language mirroring instruction:
+typescriptconst ARIA_SYSTEM_PROMPT = `
+You are ARIA, the AI Command Agent inside ArgiCRM by ARGILETTE LLC.
+You help business professionals execute tasks across CRM, E-Commerce,
+Projects, Billing, Marketing, and all platform modules.
+
+CRITICAL LANGUAGE RULE:
+Detect the language of the user's message and ALWAYS respond in that 
+exact same language. If the user writes in French, respond entirely 
+in French. If they write in English, respond in English. If they mix 
+languages, match the dominant language. Never switch languages unless 
+the user explicitly asks you to.
+
+Examples:
+- User: "Montre-moi mes contacts" → Respond entirely in French
+- User: "Show me my contacts" → Respond entirely in English
+- User: "Créer un nouveau lead" → Respond entirely in French
+
+You have access to the following platform actions:
+CRM: create/read/update/delete contacts, leads, deals, pipelines
+E-Commerce: create stores, add products, manage orders, link domains
+Projects: create/manage projects and tasks
+Billing: create invoices, track payments, connect payment accounts
+Marketing: draft campaigns, schedule posts, manage sequences
+Settings: manage account, team members, integrations
+
+Current user context: {USER_CONTEXT}
+`;
+Test:
+POST /api/aria/chat with message: "Montre-moi mes contacts"
+Expected: ARIA responds entirely in French
+
+POST /api/aria/chat with message: "Affiche mon pipeline"
+Expected: ARIA responds entirely in French with pipeline data
+
+POST /api/aria/chat with message: "Show me my leads"
+Expected: ARIA responds in English
+
+🟢 MINOR FIXES LAST
+
+FIX 6 — NPI taxonomy fuzzy matching
+File: server/routes/leadgen.ts — the /npi route handler
+Add a taxonomy lookup map so users can search with plain language terms:
+typescriptconst NPI_TAXONOMY_MAP: Record<string, string> = {
+  // Plain term → exact NPI taxonomy string
+  "cardiologist":        "Cardiovascular Disease (Cardiology)",
+  "cardiology":          "Cardiovascular Disease (Cardiology)",
+  "psychiatrist":        "Psychiatry & Neurology",
+  "psychiatry":          "Psychiatry & Neurology",
+  "urgent care":         "Emergency Medicine",
+  "urgentcare":          "Emergency Medicine",
+  "dentist":             "Dentist",
+  "dental":              "Dentist",
+  "dermatologist":       "Dermatology",
+  "neurologist":         "Neurology",
+  "oncologist":          "Medical Oncology",
+  "pediatrician":        "Pediatrics",
+  "obgyn":               "Obstetrics & Gynecology",
+  "ob-gyn":              "Obstetrics & Gynecology",
+  "orthopedic":          "Orthopaedic Surgery",
+  "radiologist":         "Radiology",
+  "surgeon":             "Surgery",
+  "family medicine":     "Family Medicine",
+  "general practice":    "General Practice",
+  "internal medicine":   "Internal Medicine",
+  "ophthalmologist":     "Ophthalmology",
+  "chiropractor":        "Chiropractic",
+  "physical therapy":    "Physical Therapist",
+  "nurse practitioner":  "Nurse Practitioner",
+  "physician assistant": "Physician Assistant",
+};
+
+function resolveNPITaxonomy(input: string): string {
+  const normalized = input.toLowerCase().trim();
+  return NPI_TAXONOMY_MAP[normalized] || input; // fallback to raw input
+}
+
+// In the route handler
+const taxonomy = resolveNPITaxonomy(req.query.specialty as string);
+const params = new URLSearchParams({
+  version: "2.1",
+  limit: String(limit),
+  taxonomy_description: taxonomy,
+  ...(state && { state: String(state) }),
+  ...(city && { city: String(city) }),
+});
+Test:
+GET /api/leadgen/npi?specialty=cardiologist&state=CA → 5+ records
+GET /api/leadgen/npi?specialty=psychiatrist&state=NY → 5+ records
+GET /api/leadgen/npi?specialty=urgent+care&state=FL → 5+ records
+GET /api/leadgen/npi?specialty=dentist&state=TX     → 5+ records (was already working)
+
+FIX 7 — E-commerce store status field empty on creation
+File: server/routes/ecommerce.ts or wherever the store POST handler is
+Find the store INSERT and add a default status:
+typescriptawait db.insert(stores).values({
+  ...body,
+  tenantId: req.user!.tenantId,
+  status: "active",           // add this
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
+Also confirm the GET store response includes the status field in the SELECT.
+Test:
+POST /api/ecommerce/stores → 201 + response body includes status: "active"
+GET  /api/ecommerce/stores/:id → returns status field populated
+
+✅ FINAL VERIFICATION AFTER ALL FIXES
+Server memory heap          → below 80% after 5 minutes running
+GET /api/tasks              → 5+ seeded records
+GET /api/campaigns          → 2+ seeded records
+GET /api/invoices           → 3+ seeded records (paid/pending/overdue)
+Platform owner → POST /api/healing/pause  → 200
+Tenant super_admin → POST /api/healing/pause → 403
+POST /api/auth/login × 25 rapid → 429 after 20 attempts
+POST /api/auth/login wrong password × 5 same email → locked on 6th
+POST /api/aria/chat "Montre-moi mes contacts" → French response
+POST /api/aria/chat "Show me my leads" → English response
+GET /api/leadgen/npi?specialty=cardiologist&state=CA → 5+ records
+GET /api/leadgen/npi?specialty=psychiatrist&state=NY → 5+ records
+GET /api/leadgen/npi?specialty=urgent+care&state=FL → 5+ records
+POST /api/ecommerce/stores → response includes status: "active"
+
+📋 DELIVER THIS REPORT WHEN DONE
+ROUND 4 FIX REPORT
+
+FIX 1 — Memory heap raised:       PASS / FAIL · heap now at X%
+FIX 2 — Seed data per-resource:   PASS / FAIL · tasks X · campaigns X · invoices X
+FIX 3 — Healing restricted:       PASS / FAIL · super_admin now gets 403
+FIX 4 — Login rate limiting:      PASS / FAIL · 429 fires after X attempts
+FIX 5 — ARIA language mirroring:  PASS / FAIL · French input returns French
+FIX 6 — NPI taxonomy mapping:     PASS / FAIL · cardiologist/psychiatrist now return records
+FIX 7 — Store status field:       PASS / FAIL · status populated on creation
+
+Fixes confirmed: X/7
+Files modified: [list every file and exact lines changed]
+
+Previous health score: 86/100
+Current health score:  X/100
+Target:                95/100
+
+Remaining issues: [list anything still open]
+
+DO NOT touch any passing feature. Modify only the files explicitly listed above.

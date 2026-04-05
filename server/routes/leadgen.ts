@@ -397,12 +397,45 @@ router.post("/apollo/companies", authenticate, requireFeature("ai.lead_generatio
 });
 
 // ── NPI Registry (Healthcare Providers) ─────────────────────────
+const NPI_TAXONOMY_MAP: Record<string, string> = {
+  "cardiologist":        "Cardiovascular Disease",
+  "cardiology":          "Cardiovascular Disease",
+  "psychiatrist":        "Psychiatry & Neurology",
+  "psychiatry":          "Psychiatry & Neurology",
+  "urgent care":         "Emergency Medicine",
+  "urgentcare":          "Emergency Medicine",
+  "dentist":             "Dentist",
+  "dental":              "Dentist",
+  "dermatologist":       "Dermatology",
+  "neurologist":         "Neurology",
+  "oncologist":          "Medical Oncology",
+  "pediatrician":        "Pediatrics",
+  "obgyn":               "Obstetrics & Gynecology",
+  "ob-gyn":              "Obstetrics & Gynecology",
+  "orthopedic":          "Orthopaedic Surgery",
+  "radiologist":         "Radiology",
+  "surgeon":             "Surgery",
+  "family medicine":     "Family Medicine",
+  "general practice":    "General Practice",
+  "internal medicine":   "Internal Medicine",
+  "ophthalmologist":     "Ophthalmology",
+  "chiropractor":        "Chiropractic",
+  "physical therapy":    "Physical Therapist",
+  "nurse practitioner":  "Nurse Practitioner",
+  "physician assistant": "Physician Assistant",
+};
+
+function resolveNPITaxonomy(input: string): string {
+  const normalized = input.toLowerCase().trim();
+  return NPI_TAXONOMY_MAP[normalized] || input;
+}
+
 router.get("/npi", authenticate, async (req: AuthRequest, res) => {
   try {
     const { name, specialty, state, city, limit = "10" } = req.query as Record<string, string>;
     const params = new URLSearchParams({ limit: String(Math.min(Number(limit), 200)) });
     if (name) { params.set("first_name", name.split(" ")[0]); if (name.split(" ")[1]) params.set("last_name", name.split(" ").slice(1).join(" ")); }
-    if (specialty) params.set("taxonomy_description", specialty);
+    if (specialty) params.set("taxonomy_description", resolveNPITaxonomy(specialty));
     if (state) params.set("state", state);
     if (city) params.set("city", city);
     const url = `https://npiregistry.cms.hhs.gov/api/?version=2.1&${params.toString()}`;

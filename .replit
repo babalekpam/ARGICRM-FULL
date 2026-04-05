@@ -45,3 +45,5 @@ integrations = ["javascript_mem_db:1.0.0", "javascript_log_in_with_replit:1.0.0"
 
 [userenv.shared]
 JWT_SECRET = "cc91b7f577ec73d4e90497703c40294977299f7e6d6f770ee058fc82c8a617c9bd0ee62d0b5f77f0a6f9692ff1c13fbb"
+NODE_OPTIONS = "--max-old-space-size=512"
+PLATFORM_OWNER_EMAIL = "abel@argilette.com"
