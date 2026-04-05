@@ -9,6 +9,7 @@
 
 import * as storage from "../storage.js";
 import { complete, ask, AIProvider, AICompletionOpts } from "./ai-adapter.js";
+import { askClaude, streamClaude } from "./claude.js";
 import { checkCredits } from "./ai-credits.js";
 
 // ─── Monthly quota per plan ──────────────────────────────────────────────────
@@ -99,10 +100,22 @@ export async function completeForTenant(tenantId: string, opts: AICompletionOpts
     });
   }
 
-  // Platform key path — enforce hard credit limit FIRST, then legacy count
-  await checkCredits(tenantId);          // throws 429 if exhausted
+  // Platform key path — Anthropic Claude is the only provider used here.
+  // Go directly to claude.ts — no adapter fallback to other providers.
+  await checkCredits(tenantId);           // throws 429 if exhausted
   await checkAndIncrementUsage(tenantId); // legacy count (still used by old quota UI)
-  return complete(opts);
+
+  const system  = opts.system || opts.messages.find(m => m.role === "system")?.content || "You are a helpful AI assistant.";
+  const userMsg = opts.messages.filter(m => m.role !== "system").at(-1)?.content || "";
+  const history = opts.messages
+    .filter(m => m.role !== "system")
+    .slice(0, -1)
+    .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
+
+  return askClaude(system, userMsg, history, {
+    model: opts.fast ? "claude-haiku-4-5" : "claude-sonnet-4-5",
+    maxTokens: opts.maxTokens || 1024,
+  });
 }
 
 // ─── Convenience wrappers ────────────────────────────────────────────────────
