@@ -1,0 +1,302 @@
+ArgiCRM has just completed a full round of critical fixes. DO NOT modify any code. Your only job is to run a complete re-audit of the entire platform and confirm every fix was applied correctly, every previously working feature still works, and identify any new issues introduced. Deliver a full report when done.
+
+🔍 STEP 1 — VERIFY EVERY FIX FROM ROUND 1
+Test each fix explicitly and report pass or fail:
+FIX 1 — ARIA 401
+POST /api/aria/chat with valid JWT
+Expected: 200 + Claude response
+Result: PASS or FAIL
+
+FIX 2 — /api/me route
+GET /api/me with valid JWT
+Expected: 200 + user JSON object (not HTML)
+Result: PASS or FAIL
+
+FIX 3 — UUID/VARCHAR type mismatch
+GET /api/finance/transactions with valid JWT
+Expected: 200 + transactions array (not timeout)
+GET /api/ecommerce/orders with valid JWT
+Expected: 200 + orders array (not timeout)
+GET /api/seo/projects with valid JWT
+Expected: 200 + projects array (not timeout)
+GET /api/invoices with valid JWT
+Expected: 200 + invoices array (not 500)
+Result each: PASS or FAIL
+
+FIX 4 — try/catch on all async routes
+Trigger a bad DB input on finance, seo, and ecommerce routes
+Expected: proper JSON error in under 2 seconds (not 30s timeout)
+Result: PASS or FAIL
+
+FIX 5 — Global Search
+GET /api/search?q=test with valid JWT
+Expected: 200 + results array (not 500)
+Result: PASS or FAIL
+
+FIX 6 — Invoices
+GET /api/invoices with valid JWT
+Expected: 200 + invoice array (not 500)
+Result: PASS or FAIL
+
+FIX 7 — Registration without domain
+POST /api/auth/register with email, password, firstName, lastName, companyName only
+Expected: 201 + user created, domain auto-generated
+Result: PASS or FAIL
+
+FIX 8 — Password change rate limiting
+Send 25 rapid POST requests to /api/auth/change-password
+Expected: 429 Too Many Requests after limit
+Result: PASS or FAIL
+
+FIX 9 — Team invite blank firstName
+POST /api/team/invite without firstName field
+Expected: user created with email prefix as firstName, not blank
+Result: PASS or FAIL
+
+FIX 10 — Claude API timeout
+Simulate a stalled Claude call
+Expected: 504 timeout response in 30 seconds (not indefinite hang)
+Result: PASS or FAIL
+
+FIX 11 — console.error in all catch blocks
+Trigger an intentional error on any route
+Expected: error details visible in server log
+Result: PASS or FAIL
+
+FIX 12 — Demo seed data
+GET /api/contacts, /api/leads, /api/deals, /api/campaigns, /api/invoices
+Expected: each returns at least 3+ records for new tenant
+Result: PASS or FAIL
+
+FIX 13 — Healing system kill switch
+POST /api/admin/healing/pause with admin JWT
+Expected: 200 + status paused
+POST /api/admin/healing/resume with admin JWT
+Expected: 200 + status running
+Result: PASS or FAIL
+
+🔍 STEP 2 — REGRESSION TEST
+Confirm everything that was working before is STILL working after the fixes:
+GET  /api/health                     → 200 {"status":"ok"}
+POST /api/auth/login                 → 200 + JWT token
+POST /api/auth/logout                → 200
+GET  /api/dashboard                  → 200 + dashboard data
+GET  /api/contacts                   → 200 + contacts array
+POST /api/contacts                   → 201 + new contact
+PUT  /api/contacts/:id               → 200 + updated contact
+DELETE /api/contacts/:id             → 200 + deleted
+GET  /api/leads                      → 200 + leads array
+POST /api/leads                      → 201 + new lead
+PUT  /api/leads/:id                  → 200 + updated
+DELETE /api/leads/:id                → 200 + deleted
+GET  /api/deals                      → 200 + deals array
+POST /api/deals                      → 201 + new deal
+PUT  /api/deals/:id                  → 200 + updated
+DELETE /api/deals/:id                → 200 + deleted
+GET  /api/tasks                      → 200 + tasks array
+POST /api/tasks                      → 201 + new task
+GET  /api/accounts                   → 200 + accounts array
+GET  /api/campaigns                  → 200 + campaigns array
+GET  /api/activities                 → 200 + activities array
+GET  /api/users                      → 200 + users array
+GET  /api/settings                   → 200 + settings object
+PUT  /api/settings                   → 200 + updated settings
+GET  /api/admin/stats                → 200 + admin data
+GET  /api/admin/tenants              → 200 + tenant list
+GET  /api/marketplace/browse         → 200 + leads data
+GET  /api/leadgen/stats              → 200 + stats
+GET  /api/healing/health             → 200
+GET  /api/skills                     → 200 + skills list
+GET  /api/ai/provider-info           → 200 + provider data
+POST /api/ai/email                   → 200 + generated email
+POST /api/ai/score-lead              → 200 + lead score
+GET  /api/ecommerce/stores           → 200 + stores array
+GET  /api/ecommerce/products         → 200 + products array
+GET  /api/workflows                  → 200
+GET  /api/contracts                  → 200
+Report each: route · status code · response time · PASS or FAIL
+
+🔍 STEP 3 — FULL FRONTEND PAGE TEST
+Open every page and confirm it renders with real data:
+Landing / Home page
+Login page
+Register page              → test without domain field
+Dashboard                  → must show data not empty state
+CRM Contacts page          → must show seed contacts
+CRM Leads page             → must show seed leads
+CRM Deals / Pipeline       → must show seed deals
+Projects page              → must render (was blank before)
+Account / Profile page     → must render with user data (was blank before)
+Billing / Invoices page    → must show seed invoices (was 500 before)
+Bank account linking       → must render linking UI
+Finance / Transactions     → must show data (was timeout before)
+E-Commerce tab             → must render
+E-Commerce Orders          → must show data (was timeout before)
+Store creation flow        → must complete without looping
+SEO Projects page          → must show data (was timeout before)
+Data Marketplace           → must show 2183+ leads with filters
+AI Skills page             → must show all skill domains
+ARIA Dialog                → open it · type a message · confirm Claude responds
+Admin Dashboard            → must show platform stats
+Settings page              → must load user preferences
+Search bar                 → type any query · must return results (was 500 before)
+Healing system admin UI    → must show pause/resume toggle
+Report each: page name · renders (yes/no) · data loads (yes/no) · console errors (yes/no) · PASS or FAIL
+
+🔍 STEP 4 — NEW INTEGRATION TESTS
+Test every integration including newly added keys:
+ANTHROPIC CLAUDE
+Send message through ARIA dialog
+Expected: real Claude response returned
+Confirm: token usage logged in ai_usage_log table
+Result: PASS or FAIL
+
+STRIPE (if keys added)
+Create test payment intent via /api/billing/payment-intent
+Expected: returns client_secret
+Confirm: webhook endpoint /api/billing/webhook responds 200
+Result: PASS or FAIL · or SKIPPED if keys not yet added
+
+FLUTTERWAVE (if keys added)
+Initialize test payment via /api/billing/flutterwave/initialize
+Expected: returns payment link
+Result: PASS or FAIL · or SKIPPED if keys not yet added
+
+EMAIL / SMTP (if keys added)
+POST /api/test/email with test address
+Expected: email delivered and confirmed
+Result: PASS or FAIL · or SKIPPED if keys not yet added
+
+GOOGLE MAPS API (if key added)
+Search for businesses via /api/leadgen/places?q=urgent+care+texas
+Expected: returns business results
+Result: PASS or FAIL · or SKIPPED if key not yet added
+
+NPI REGISTRY (no key required)
+GET /api/leadgen/npi?specialty=dentist&state=TX
+Expected: returns provider records
+Result: PASS or FAIL
+
+MARKETPLACE DATA
+GET /api/marketplace/browse?industry=healthcare&market=US
+Expected: returns filtered leads from 2183 records
+Result: PASS or FAIL
+
+🔍 STEP 5 — SECURITY RE-TEST
+Unauthenticated request to /api/contacts        → must return 401
+Unauthenticated request to /api/aria/chat       → must return 401 (was passing before fix)
+Expired JWT on /api/dashboard                   → must return 401
+Non-admin JWT on /api/admin/stats               → must return 403
+Password change — 25 rapid requests             → must return 429 after limit
+SQL injection attempt on /api/search?q=1;DROP   → must return empty results not error
+User A token accessing User B data              → must return 403 or empty
+ARIA chat with valid JWT                        → must return 200 (critical — was 401 before)
+
+🔍 STEP 6 — PERFORMANCE RE-TEST
+Measure response times on all key routes and flag anything over 500ms:
+GET /api/health
+GET /api/dashboard
+GET /api/contacts
+GET /api/leads
+GET /api/deals
+GET /api/tasks
+GET /api/finance/transactions   ← was timeout, must now respond
+GET /api/ecommerce/orders       ← was timeout, must now respond
+GET /api/seo/projects           ← was timeout, must now respond
+GET /api/invoices               ← was 500, must now respond
+GET /api/search?q=test          ← was 500, must now respond
+POST /api/aria/chat             ← was 401, must now respond with AI
+POST /api/ai/email
+POST /api/ai/score-lead
+GET /api/healing/health
+GET /api/marketplace/browse
+
+📋 DELIVER THIS EXACT REPORT FORMAT
+ARGICRM RE-AUDIT REPORT — ROUND 2
+Generated: [date]
+Previous health score: 58/100
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX VERIFICATION RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 1 ARIA 401:              PASS / FAIL
+FIX 2 /api/me route:         PASS / FAIL
+FIX 3 UUID/VARCHAR:          PASS / FAIL
+FIX 4 try/catch:             PASS / FAIL
+FIX 5 Global Search:         PASS / FAIL
+FIX 6 Invoices:              PASS / FAIL
+FIX 7 Registration:          PASS / FAIL
+FIX 8 Rate limiting:         PASS / FAIL
+FIX 9 Team invite name:      PASS / FAIL
+FIX 10 Claude timeout:       PASS / FAIL
+FIX 11 Error logging:        PASS / FAIL
+FIX 12 Seed data:            PASS / FAIL
+FIX 13 Healing kill switch:  PASS / FAIL
+
+Fixes confirmed: X/13
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGRESSION TEST RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Features still working: X/35
+Regressions introduced: X
+[List any regressions with file and cause]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FRONTEND PAGE RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pages passing: X/24
+Pages failing: X
+[List failing pages with reason]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEW ISSUES FOUND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[List any new issues introduced by the fixes]
+[Severity: Critical / Major / Minor]
+[File location and recommended fix]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENVIRONMENT VARIABLES STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ANTHROPIC_API_KEY:       SET / MISSING
+STRIPE_SECRET_KEY:       SET / MISSING
+STRIPE_PUBLISHABLE_KEY:  SET / MISSING
+STRIPE_WEBHOOK_SECRET:   SET / MISSING
+FLUTTERWAVE_SECRET_KEY:  SET / MISSING
+FLUTTERWAVE_PUBLIC_KEY:  SET / MISSING
+SMTP_HOST:               SET / MISSING
+SMTP_USER:               SET / MISSING
+SMTP_PASSWORD:           SET / MISSING
+GOOGLE_MAPS_API_KEY:     SET / MISSING
+DEEPGRAM_API_KEY:        SET / MISSING
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECURITY RE-TEST RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Pass / Fail per check]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PERFORMANCE RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Route · response time · status]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UPDATED PLATFORM HEALTH SCORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Previous score:  58/100
+Current score:   X/100
+Improvement:     +X points
+
+Remaining critical issues: X
+Remaining major issues: X
+Remaining minor issues: X
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT RECOMMENDED ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. [Highest priority remaining action]
+2.
+3.
+
+DO NOT fix anything during this test. Analyze, test, and report only. Send me the full report and I will generate the next round of fixes.
