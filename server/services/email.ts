@@ -43,14 +43,19 @@ export async function sendWithTenantSmtp(
   t.close();
 }
 
+const SMTP_HOST = process.env.SMTP_HOST || "argilette.com";
+const SMTP_USER = process.env.SMTP_USER || "info@argilette.com";
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+
 const transporter = nodemailer.createTransport({
-  host: "smtp.zoho.com",
-  port: 465,
-  secure: true,
+  host: SMTP_HOST,
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465,
   auth: {
-    user: "info@argilette.com",
+    user: SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
   },
+  tls: { rejectUnauthorized: false },
 });
 
 async function send(to: string, subject: string, html: string) {
