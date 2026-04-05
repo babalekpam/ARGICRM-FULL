@@ -106,12 +106,17 @@ For unclear instructions, ask exactly ONE clarifying question.
 - For workflows/automations, entity = "workflow"; types: CREATE (name, triggerType, executionMode, actions[]), READ/SUMMARIZE (list with stats), UPDATE (workflowId|name + action=enable|disable OR executionMode=auto|supervised), RUN (workflowId|name — manually trigger), DELETE (workflowId|name)
 
 == ENGAGEMENT / OUTREACH REQUESTS ==
-When a user says "engage leads", "reach out to contacts", "start a campaign for", "propose our product to", "pitch to leads/contacts", or any sales outreach request:
-- Do NOT just READ/LIST records. This is a campaign or outreach task.
-- First check if relevant leads/contacts exist. If yes → suggest creating a targeted CAMPAIGN (entity=campaign) with a personalized email sequence. Offer to create the campaign.
-- If no leads exist → navigate to /leadgen and explain how to generate leads first. OR create a campaign targeting the contacts who match the criteria.
-- Provide actionable next steps (create campaign, use lead gen, set up workflow).
-- Example: "engage our African leads proposing NaviMED" → create campaign named "NaviMED African Outreach", type=email, summarize what was done.`;
+CRITICAL: When a user says "engage", "reach out", "pitch", "propose product to", "start outreach", "send emails to", "contact leads/contacts" — this ALWAYS means CREATE a campaign. NEVER respond with READ/SUMMARIZE for engagement requests.
+
+CORRECT behavior for engagement requests:
+  action: { type: "CREATE", entity: "campaign", data: { name: "<descriptive name>", type: "email", targetAudience: "<who>", goals: "<product/pitch>" } }
+WRONG behavior for engagement requests (DO NOT DO THIS):
+  action: { type: "READ", entity: "lead" }   ← this is WRONG for "engage leads"
+
+- If the user mentions a specific product or pitch, use it as the campaign goal and name.
+- Example: "engage our African leads proposing NaviMED" → CREATE campaign "NaviMED African Outreach", type=email, targetAudience="African leads", goals="Propose NaviMED EHR/EMR solution"
+- Example: "can you engage our leads" → CREATE campaign "Lead Outreach Campaign", type=email
+- Example: "reach out to healthcare contacts" → CREATE campaign "Healthcare Contact Outreach", type=email, targetAudience="Healthcare contacts"`;
 
 // ── Helper: fuzzy date parsing ─────────────────────────────────────────────
 function parseDueDate(raw: string | undefined): Date | null {
@@ -258,7 +263,10 @@ async function executeAriaAction(
     }
     const counts = await db.execute(sql`SELECT status, COUNT(*)::int as n FROM leads WHERE tenant_id = ${tenantId} GROUP BY status`);
     const summary = (counts.rows as any[]).map((r: any) => `${r.n} ${r.status}`).join(", ");
-    if (!rows.length) return `No leads found${filter !== "recent" && filter !== "all" ? ` with status "${filter}"` : ""}. Use the Leads page to add leads or Lead Gen to discover new prospects.`;
+    if (!rows.length) {
+      const statusMsg = filter !== "recent" && filter !== "all" ? ` with status "${filter}"` : "";
+      return `No leads found${statusMsg} in your pipeline yet.\n\n**Next steps:**\n• Go to /leadgen to discover and import prospects automatically\n• Add leads manually from the Leads page\n• Say "create a campaign" to start outreach even without leads — I'll set one up for your contacts`;
+    }
     const list = rows.map((l: any) => `• ${[l.firstName, l.lastName].filter(Boolean).join(" ") || l.email || "(no name)"} — ${l.status} ${l.company ? `· ${l.company}` : ""}`).join("\n");
     return `Pipeline: ${summary || "empty"}.\n\n${filter === "recent" ? "Recent" : filter} leads:\n${list}`;
   }
@@ -871,6 +879,27 @@ router.post("/chat", authenticate, async (req: AuthRequest, res) => {
     }
     let finalMessage = parsed.message;
     let navigateTo: string | null = null;
+
+    // ── Server-side engagement intent override ────────────────────────────────
+    // If the model incorrectly returns READ/lead for an engagement request, fix it.
+    const ENGAGE_KEYWORDS = /\b(engage|outreach|reach\s*out|pitch|propose|send\s*(email|message)|contact\s+(all|our|the)\s+(leads|contacts))\b/i;
+    if (
+      parsed.action &&
+      parsed.action.type === "READ" &&
+      parsed.action.entity === "lead" &&
+      ENGAGE_KEYWORDS.test(message)
+    ) {
+      // Override: create a campaign instead
+      const campaignName = message.length < 80
+        ? `Outreach: ${message.slice(0, 60)}`
+        : "Lead Outreach Campaign";
+      parsed.action = {
+        type: "CREATE",
+        entity: "campaign",
+        data: { name: campaignName, type: "email", targetAudience: "leads", goals: message },
+      };
+    }
+
     if (parsed.action && !parsed.needsConfirmation) {
       try {
         const result = await executeAriaAction(parsed.action, user, user.tenantId);
