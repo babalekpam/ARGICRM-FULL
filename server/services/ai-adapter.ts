@@ -7,8 +7,8 @@
  *   a) A tenant supplies their own non-Anthropic key
  *   b) An explicit `provider` override is passed to complete()
  *
- * Fallback order (only used when Anthropic key is absent):
- *   2. OpenAI GPT-4        (OPENAI_API_KEY)
+ * Fallback order (OpenAI is the first fallback when Claude is unavailable):
+ *   2. OpenAI GPT-4        (OPENAI_API_KEY)  ← automatic fallback from Claude
  *   3. Google Gemini       (GOOGLE_AI_KEY)
  *   4. Groq (Llama 3.3)   (GROQ_API_KEY)
  *   5. Mistral             (MISTRAL_API_KEY)

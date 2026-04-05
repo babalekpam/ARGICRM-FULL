@@ -100,8 +100,7 @@ export async function completeForTenant(tenantId: string, opts: AICompletionOpts
     });
   }
 
-  // Platform key path — Anthropic Claude is the only provider used here.
-  // Go directly to claude.ts — no adapter fallback to other providers.
+  // Platform key path — Claude first, OpenAI as fallback if Claude is unavailable.
   await checkCredits(tenantId);           // throws 429 if exhausted
   await checkAndIncrementUsage(tenantId); // legacy count (still used by old quota UI)
 
@@ -112,10 +111,23 @@ export async function completeForTenant(tenantId: string, opts: AICompletionOpts
     .slice(0, -1)
     .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-  return askClaude(system, userMsg, history, {
-    model: opts.fast ? "claude-haiku-4-5" : "claude-sonnet-4-5",
-    maxTokens: opts.maxTokens || 1024,
-  });
+  try {
+    return await askClaude(system, userMsg, history, {
+      model: opts.fast ? "claude-haiku-4-5" : "claude-sonnet-4-5",
+      maxTokens: opts.maxTokens || 1024,
+    });
+  } catch (err: any) {
+    // Only fall back to OpenAI on availability/rate errors — not on logic errors
+    const msg = (err.message || "").toLowerCase();
+    const isAvailabilityError = msg.includes("overloaded") || msg.includes("529") ||
+      msg.includes("503") || msg.includes("502") || msg.includes("unavailable") ||
+      msg.includes("rate") || msg.includes("timeout");
+
+    if (!isAvailabilityError || !process.env.OPENAI_API_KEY) throw err;
+
+    console.warn("[AI] Claude unavailable, falling back to OpenAI:", err.message?.slice(0, 80));
+    return complete({ ...opts, provider: "openai" });
+  }
 }
 
 // ─── Convenience wrappers ────────────────────────────────────────────────────
