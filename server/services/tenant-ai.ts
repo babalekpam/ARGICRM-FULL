@@ -18,8 +18,9 @@ export const PLAN_LIMITS: Record<string, number> = {
   free:         50,
   starter:      200,
   professional: 500,
-  business:     1000,
-  enterprise:   -1,   // -1 = unlimited
+  business:     1000,  // legacy name
+  growth:       1000,  // renamed from business
+  enterprise:   -1,    // -1 = unlimited
 };
 
 function currentMonth(): string {

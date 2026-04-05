@@ -161,17 +161,17 @@ export default function LandingPage() {
   ];
 
   const PLANS = [
-    { name: "Starter", price: "$69", period: "/mo", desc: "For small teams getting started", users: "5 users", contacts: "2,000 contacts", features: [t("landing_for_t1_title"), "Email campaigns", "Pipeline management", "Basic reporting"], color: "#3b82f6", popular: false, cta: t("landing_price_cta_trial") },
+    { name: "Starter", price: "$49", period: "/mo", desc: "For small teams getting started", users: "5 users", contacts: "2,000 contacts", features: [t("landing_for_t1_title"), "Email campaigns", "Pipeline management", "Basic reporting"], color: "#3b82f6", popular: false, cta: t("landing_price_cta_trial") },
     { name: "Professional", price: "$179", period: "/mo", desc: "Most popular for growing teams", users: "25 users", contacts: "10,000 contacts", features: ["Everything in Starter", t("landing_feat_f1_title"), "Lead scoring", "Advanced analytics", "Priority support"], color: "#8b5cf6", popular: true, cta: t("landing_price_cta_trial") },
-    { name: "Business", price: "$349", period: "/mo", desc: "For scaling organizations", users: "Unlimited", contacts: "50,000 contacts", features: ["Everything in Pro", t("landing_wl_f1_title"), "API access", "Dedicated support", "Custom integrations"], color: "#10b981", popular: false, cta: t("landing_price_cta_trial") },
+    { name: "Growth", price: "$349", period: "/mo", desc: "For scaling organizations", users: "Unlimited", contacts: "50,000 contacts", features: ["Everything in Pro", t("landing_wl_f1_title"), "API access", "Dedicated support", "Custom integrations"], color: "#10b981", popular: false, cta: t("landing_price_cta_trial") },
   ];
 
   const AGENCY_PLANS = [
-    { name: "Agency Starter", price: "$499", period: "/mo", seats: "Up to 10 client workspaces", highlight: false,
+    { name: "Agency Starter", price: "$399", period: "/mo", seats: "Up to 10 client workspaces · ~$40/workspace", highlight: false,
       features: [t("landing_wl_f1_title"), t("landing_wl_f2_title"), t("landing_wl_f3_title"), "Priority support", "Agency management dashboard"] },
-    { name: "Agency Pro", price: "$999", period: "/mo", seats: "Up to 30 client workspaces", highlight: true,
+    { name: "Agency Pro", price: "$999", period: "/mo", seats: "Up to 30 client workspaces · ~$33/workspace", highlight: true,
       features: ["Everything in Starter", "API & webhook access", "Custom onboarding flow", "Dedicated account manager", "SLA guarantee", "Volume discounts"] },
-    { name: "Enterprise", price: "Custom", period: "", seats: "Unlimited workspaces", highlight: false,
+    { name: "Enterprise", price: "Custom", period: "", seats: "Unlimited workspaces · Revenue share available", highlight: false,
       features: ["Unlimited white-label seats", "Revenue share model", "Co-branding available", "On-premise option", "Custom contract & SLA"] },
   ];
 

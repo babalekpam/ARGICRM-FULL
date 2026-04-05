@@ -30,8 +30,9 @@ export const PLAN_CREDITS: Record<string, number> = {
   free:         50,
   starter:      200,
   professional: 500,
-  business:     1000,
-  enterprise:   -1,   // -1 = unlimited
+  business:     1000,  // legacy name
+  growth:       1000,  // renamed from business
+  enterprise:   -1,    // -1 = unlimited
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -44,7 +45,8 @@ export const RATE_LIMITS: Record<string, { perMinute: number; perHour: number; p
   free:         { perMinute: 3,  perHour: 20,   perDay: 50   },
   starter:      { perMinute: 5,  perHour: 50,   perDay: 200  },
   professional: { perMinute: 15, perHour: 200,  perDay: 1000 },
-  business:     { perMinute: 30, perHour: 500,  perDay: 5000 },
+  business:     { perMinute: 30, perHour: 500,  perDay: 5000  },  // legacy name
+  growth:       { perMinute: 30, perHour: 500,  perDay: 5000  },  // renamed from business
   enterprise:   { perMinute: 60, perHour: 1000, perDay: 20000 },
 };
 
