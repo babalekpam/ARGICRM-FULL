@@ -5,6 +5,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { authenticate, requireRole, type AuthRequest } from "./middleware/auth.js";
 import { aiRateLimit } from "./middleware/ai-rate-limit.js";
+import rateLimit from "express-rate-limit";
 import * as storage from "./storage.js";
 import { db } from "./db.js";
 import { contacts } from "@shared/schema.js";
@@ -32,6 +33,23 @@ import contractsRouter from "./routes/contracts.js";
 export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Core Auth ──────────────────────────────────────
   app.use("/api/auth", authRouter);
+
+  // ─── Profile (alias for /api/auth/me so all clients agree) ────
+  app.get("/api/me", authenticate, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUserById(req.user!.id);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      const tenant = await storage.getTenantById(user.tenantId);
+      const { passwordHash, ...safeUser } = user as any;
+      res.json({
+        user: safeUser,
+        tenant: tenant ? { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt, settings: tenant.settings } : null,
+      });
+    } catch (err) {
+      console.error("GET /api/me error:", err);
+      res.status(500).json({ error: "Failed to load profile" });
+    }
+  });
   // ─── AI Agents ─────────────────────────────────────
   app.use("/api/agents", agentRouter);
   // ─── AI Tools (deal intelligence, email, meeting) ──
@@ -61,8 +79,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/email", emailTrackingRouter);
   // ─── Super Admin ───────────────────────────────────
   app.use("/api/superadmin", adminRouter);
-  // ─── ARIA AI Command Agent (rate-limited per plan) ──
-  app.use("/api/aria", aiRateLimit, ariaRouter);
+  // ─── ARIA AI Command Agent (auth first, then rate-limit per plan) ──
+  app.use("/api/aria", authenticate, aiRateLimit, ariaRouter);
   // ─── Public Storefront API (no auth) ───────────────
   app.use("/api/public", publicRouter);
   // ─── Contracts & e-Signing ─────────────────────────
@@ -97,28 +115,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contact = await storage.getContactById(req.params.id, req.user!.tenantId);
       if (!contact) return res.status(404).json({ error: "Contact not found" });
       res.json(contact);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch contact" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch contact" }); }
   });
 
   app.post("/api/contacts", authenticate, async (req: AuthRequest, res) => {
     try {
       const contact = await storage.createContact({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
       res.status(201).json(contact);
-    } catch (err) { res.status(500).json({ error: "Failed to create contact" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create contact" }); }
   });
 
   app.put("/api/contacts/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       const contact = await storage.updateContact(req.params.id, req.user!.tenantId, req.body);
       res.json(contact);
-    } catch (err) { res.status(500).json({ error: "Failed to update contact" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update contact" }); }
   });
 
   app.delete("/api/contacts/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       await storage.deleteContact(req.params.id, req.user!.tenantId);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to delete contact" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete contact" }); }
   });
 
   // ─── CSV / Excel Import ───────────────────────────────
@@ -253,28 +271,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit: req.query.limit ? Number(req.query.limit) : 50,
       });
       res.json(result);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch leads" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch leads" }); }
   });
 
   app.post("/api/leads", authenticate, async (req: AuthRequest, res) => {
     try {
       const lead = await storage.createLead({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
       res.status(201).json(lead);
-    } catch (err) { res.status(500).json({ error: "Failed to create lead" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create lead" }); }
   });
 
   app.put("/api/leads/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       const lead = await storage.updateLead(req.params.id, req.user!.tenantId, req.body);
       res.json(lead);
-    } catch (err) { res.status(500).json({ error: "Failed to update lead" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update lead" }); }
   });
 
   app.delete("/api/leads/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       await storage.deleteLead(req.params.id, req.user!.tenantId);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to delete lead" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete lead" }); }
   });
 
   // ─── Deals ────────────────────────────────────────────
@@ -282,28 +300,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const result = await storage.getDeals(req.user!.tenantId, { stage: req.query.stage as string });
       res.json(result);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch deals" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch deals" }); }
   });
 
   app.post("/api/deals", authenticate, async (req: AuthRequest, res) => {
     try {
       const deal = await storage.createDeal({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
       res.status(201).json(deal);
-    } catch (err) { res.status(500).json({ error: "Failed to create deal" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create deal" }); }
   });
 
   app.put("/api/deals/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       const deal = await storage.updateDeal(req.params.id, req.user!.tenantId, req.body);
       res.json(deal);
-    } catch (err) { res.status(500).json({ error: "Failed to update deal" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update deal" }); }
   });
 
   app.delete("/api/deals/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       await storage.deleteDeal(req.params.id, req.user!.tenantId);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to delete deal" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete deal" }); }
   });
 
   // ─── Tasks ────────────────────────────────────────────
@@ -314,28 +332,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assignedTo: req.query.assignedTo as string,
       });
       res.json(tasks);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch tasks" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch tasks" }); }
   });
 
   app.post("/api/tasks", authenticate, async (req: AuthRequest, res) => {
     try {
       const task = await storage.createTask({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
       res.status(201).json(task);
-    } catch (err) { res.status(500).json({ error: "Failed to create task" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create task" }); }
   });
 
   app.put("/api/tasks/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       const task = await storage.updateTask(req.params.id, req.user!.tenantId, req.body);
       res.json(task);
-    } catch (err) { res.status(500).json({ error: "Failed to update task" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update task" }); }
   });
 
   app.delete("/api/tasks/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       await storage.deleteTask(req.params.id, req.user!.tenantId);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to delete task" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete task" }); }
   });
 
   // ─── Accounts ─────────────────────────────────────────
@@ -343,28 +361,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const result = await storage.getAccounts(req.user!.tenantId, { search: req.query.search as string });
       res.json(result);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch accounts" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch accounts" }); }
   });
 
   app.post("/api/accounts", authenticate, async (req: AuthRequest, res) => {
     try {
       const account = await storage.createAccount({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
       res.status(201).json(account);
-    } catch (err) { res.status(500).json({ error: "Failed to create account" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create account" }); }
   });
 
   app.put("/api/accounts/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       const account = await storage.updateAccount(req.params.id, req.user!.tenantId, req.body);
       res.json(account);
-    } catch (err) { res.status(500).json({ error: "Failed to update account" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update account" }); }
   });
 
   app.delete("/api/accounts/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       await storage.deleteAccount(req.params.id, req.user!.tenantId);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to delete account" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete account" }); }
   });
 
   // ─── Activities ────────────────────────────────────────
@@ -375,14 +393,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dealId: req.query.dealId as string,
       });
       res.json(acts);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch activities" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch activities" }); }
   });
 
   app.post("/api/activities", authenticate, async (req: AuthRequest, res) => {
     try {
       const activity = await storage.createActivity({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
       res.status(201).json(activity);
-    } catch (err) { res.status(500).json({ error: "Failed to create activity" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create activity" }); }
   });
 
   // ─── Campaigns ─────────────────────────────────────────
@@ -390,28 +408,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const camps = await storage.getCampaigns(req.user!.tenantId);
       res.json(camps);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch campaigns" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch campaigns" }); }
   });
 
   app.post("/api/campaigns", authenticate, async (req: AuthRequest, res) => {
     try {
       const campaign = await storage.createCampaign({ ...req.body, tenantId: req.user!.tenantId });
       res.status(201).json(campaign);
-    } catch (err) { res.status(500).json({ error: "Failed to create campaign" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create campaign" }); }
   });
 
   app.put("/api/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       const campaign = await storage.updateCampaign(req.params.id, req.user!.tenantId, req.body);
       res.json(campaign);
-    } catch (err) { res.status(500).json({ error: "Failed to update campaign" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update campaign" }); }
   });
 
   app.delete("/api/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       await storage.deleteCampaign(req.params.id, req.user!.tenantId);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to delete campaign" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete campaign" }); }
   });
 
   // ─── Invoices ─────────────────────────────────────────
@@ -419,28 +437,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const invs = await storage.getInvoices(req.user!.tenantId);
       res.json(invs);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch invoices" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch invoices" }); }
   });
 
   app.post("/api/invoices", authenticate, async (req: AuthRequest, res) => {
     try {
       const invoice = await storage.createInvoice({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
       res.status(201).json(invoice);
-    } catch (err) { res.status(500).json({ error: "Failed to create invoice" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create invoice" }); }
   });
 
   app.put("/api/invoices/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       const invoice = await storage.updateInvoice(req.params.id, req.user!.tenantId, req.body);
       res.json(invoice);
-    } catch (err) { res.status(500).json({ error: "Failed to update invoice" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update invoice" }); }
   });
 
   app.delete("/api/invoices/:id", authenticate, async (req: AuthRequest, res) => {
     try {
       await storage.deleteInvoice(req.params.id, req.user!.tenantId);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to delete invoice" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete invoice" }); }
   });
 
   // ─── Dashboard ─────────────────────────────────────────
@@ -448,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stats = await storage.getDashboardStats(req.user!.tenantId);
       res.json(stats);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch dashboard stats" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch dashboard stats" }); }
   });
 
   // ─── Users (tenant) ────────────────────────────────────
@@ -456,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userList = await storage.getUsersByTenant(req.user!.tenantId);
       res.json(userList.map(u => ({ id: u.id, email: u.email, firstName: u.firstName, lastName: u.lastName, role: u.role, isActive: u.isActive, lastLoginAt: u.lastLoginAt, createdAt: u.createdAt })));
-    } catch (err) { res.status(500).json({ error: "Failed to fetch users" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch users" }); }
   });
 
   app.put("/api/users/:id", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
@@ -464,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { role, isActive, firstName, lastName } = req.body;
       const user = await storage.updateUser(req.params.id, { role, isActive, firstName, lastName });
       res.json({ id: user.id, email: user.email, firstName: user.firstName, role: user.role });
-    } catch (err) { res.status(500).json({ error: "Failed to update user" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update user" }); }
   });
 
   app.delete("/api/users/:id", authenticate, requireRole("super_admin"), async (req: AuthRequest, res) => {
@@ -472,7 +490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.params.id === req.user!.id) return res.status(400).json({ error: "Cannot delete yourself" });
       await storage.deleteUser(req.params.id);
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to delete user" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete user" }); }
   });
 
   // ─── Settings ─────────────────────────────────────────
@@ -481,7 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenant = await storage.getTenantById(req.user!.tenantId);
       if (!tenant) return res.status(404).json({ error: "Workspace not found" });
       res.json({ name: tenant.name, domain: tenant.domain, settings: tenant.settings, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt });
-    } catch (err) { res.status(500).json({ error: "Failed to fetch settings" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch settings" }); }
   });
 
   app.put("/api/settings", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
@@ -489,7 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name, settings } = req.body;
       const tenant = await storage.updateTenant(req.user!.tenantId, { name, settings });
       res.json({ name: tenant.name, settings: tenant.settings });
-    } catch (err) { res.status(500).json({ error: "Failed to update settings" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update settings" }); }
   });
 
   // ─── SMTP Settings ─────────────────────────────────────
@@ -500,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const smtp = (tenant.settings as any)?.smtp || {};
       // Never send password back to frontend — return masked version
       res.json({ ...smtp, pass: smtp.pass ? "••••••••" : "" });
-    } catch (err) { res.status(500).json({ error: "Failed to fetch SMTP settings" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch SMTP settings" }); }
   });
 
   app.put("/api/settings/smtp", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
@@ -518,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       await storage.updateTenant(req.user!.tenantId, { settings: updatedSettings });
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to save SMTP settings" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to save SMTP settings" }); }
   });
 
   app.post("/api/settings/smtp/test", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
@@ -549,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usageCount: config.usageCount,
         usageLimit: config.limit,
       });
-    } catch (err) { res.status(500).json({ error: "Failed to fetch AI settings" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch AI settings" }); }
   });
 
   app.put("/api/settings/ai", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
@@ -567,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to save AI settings" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to save AI settings" }); }
   });
 
   app.delete("/api/settings/ai/key", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
@@ -580,7 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         settings: { ...currentSettings, ai: { ...currentAi, apiKey: null, provider: null } },
       });
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Failed to remove API key" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to remove API key" }); }
   });
 
   // ─── Profile ──────────────────────────────────────────
@@ -589,7 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { firstName, lastName, profileImageUrl, preferredLanguage } = req.body;
       const user = await storage.updateUser(req.user!.id, { firstName, lastName, profileImageUrl, preferredLanguage });
       res.json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profileImageUrl: user.profileImageUrl });
-    } catch (err) { res.status(500).json({ error: "Failed to update profile" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update profile" }); }
   });
 
   // ─── Platform Admin ────────────────────────────────────
@@ -600,7 +618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const all = await storage.getAllTenants();
       res.json(all);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch tenants" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch tenants" }); }
   });
 
   // ─── AI Features ──────────────────────────────────────
@@ -659,13 +677,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getDeals(tid, { limit: 50 }),
         storage.getAccounts(tid, { search: q, limit: 5 }),
       ]);
-      const filteredDeals = dls.filter((d: any) => d.name?.toLowerCase().includes(q) || d.contactName?.toLowerCase().includes(q)).slice(0, 5);
+      const dealsList = Array.isArray(dls) ? dls : (dls as any).data || [];
+      const filteredDeals = dealsList.filter((d: any) => d.name?.toLowerCase().includes(q) || d.contactName?.toLowerCase().includes(q)).slice(0, 5);
       res.json({ contacts: cts, leads: lds, deals: filteredDeals, accounts: acts });
-    } catch (err) { res.status(500).json({ error: "Search failed" }); }
+    } catch (err) {
+      console.error("GET /api/search error:", err);
+      res.status(500).json({ error: "Search failed" });
+    }
   });
 
-  // ─── Change Password ───────────────────────────────
-  app.post("/api/auth/change-password", authenticate, async (req: AuthRequest, res) => {
+  // ─── Change Password (rate-limited: 10/15min to prevent brute-force) ──
+  const changePwRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: "Too many password change attempts, please try again later" } });
+  app.post("/api/auth/change-password", changePwRateLimit, authenticate, async (req: AuthRequest, res) => {
     try {
       const { currentPassword, newPassword } = req.body;
       if (!currentPassword || !newPassword) return res.status(400).json({ error: "Both passwords required" });
@@ -684,13 +707,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       sendPasswordChangedEmail({ to: user.email, firstName: user.firstName || "" })
         .catch(e => console.error("[EMAIL] Password-changed email failed:", e));
 
-    } catch (err) { res.status(500).json({ error: "Failed to change password" }); }
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to change password" }); }
   });
 
   // ─── Invite Team Member ────────────────────────────
   app.post("/api/team/invite", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
     try {
-      const { email, firstName, lastName, role } = req.body;
+      const { email, lastName, role } = req.body;
+      const firstName = req.body.firstName || email.split("@")[0];
       if (!email) return res.status(400).json({ error: "Email is required" });
       const existing = await storage.getUserByEmailGlobal(email);
       if (existing) return res.status(409).json({ error: "A user with this email already exists" });

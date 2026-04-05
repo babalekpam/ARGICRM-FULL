@@ -23,7 +23,7 @@ import {
 // ═══════════════════════════════════════════════════
 export const pipelines = pgTable("pipelines", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   stages: jsonb("stages").$type<Array<{ id: string; name: string; order: number; color: string; probability: number }>>().default([]),
   isDefault: boolean("is_default").default(false),
@@ -35,20 +35,21 @@ export const pipelines = pgTable("pipelines", {
 // ═══════════════════════════════════════════════════
 export const invoices = pgTable("invoices", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
-  number: text("number").notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  number: text("invoice_number").notNull(),
   contactId: uuid("contact_id").references(() => contacts.id),
   accountId: uuid("account_id").references(() => accounts.id),
   dealId: uuid("deal_id").references(() => deals.id),
   status: text("status").default("draft"),
   subtotal: decimal("subtotal", { precision: 12, scale: 2 }).default("0"),
-  tax: decimal("tax", { precision: 12, scale: 2 }).default("0"),
+  tax: decimal("tax_amount", { precision: 12, scale: 2 }).default("0"),
+  discountAmount: decimal("discount_amount", { precision: 12, scale: 2 }).default("0"),
   total: decimal("total", { precision: 12, scale: 2 }).default("0"),
   currency: text("currency").default("USD"),
   dueDate: timestamp("due_date"),
   paidAt: timestamp("paid_at"),
   notes: text("notes"),
-  items: jsonb("items").$type<Array<{ description: string; quantity: number; unitPrice: number; total: number }>>().default([]),
+  items: jsonb("line_items").$type<Array<{ description: string; quantity: number; unitPrice: number; total: number }>>().default([]),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -63,7 +64,7 @@ export type InsertInvoice = typeof invoices.$inferInsert;
 // ═══════════════════════════════════════════════════
 export const aiUsage = pgTable("ai_usage", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   userId: uuid("user_id").references(() => users.id),
   type: text("type").notNull(),
   tokens: integer("tokens").default(0),
@@ -83,7 +84,7 @@ export type AgentType = typeof agentTypes[number];
 
 export const agents = pgTable("agents", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   type: text("type").notNull(),
   name: text("name").notNull(),
   isActive: boolean("is_active").default(true),
@@ -96,7 +97,7 @@ export const agents = pgTable("agents", {
 
 export const agentMemories = pgTable("agent_memories", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   agentType: text("agent_type").notNull(),
   category: text("category").notNull(),
   key: text("key").notNull(),
@@ -117,7 +118,7 @@ export const agentMemories = pgTable("agent_memories", {
 
 export const agentSessions = pgTable("agent_sessions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   userId: uuid("user_id").references(() => users.id).notNull(),
   agentType: text("agent_type").notNull(),
   title: text("title"),
@@ -135,7 +136,7 @@ export const agentSessions = pgTable("agent_sessions", {
 export const agentMessages = pgTable("agent_messages", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   sessionId: uuid("session_id").references(() => agentSessions.id, { onDelete: "cascade" }).notNull(),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   role: text("role").notNull(),
   content: text("content").notNull(),
   tokensUsed: integer("tokens_used").default(0),
@@ -147,7 +148,7 @@ export const agentMessages = pgTable("agent_messages", {
 
 export const agentTasks = pgTable("agent_tasks", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   agentType: text("agent_type").notNull(),
   sessionId: uuid("session_id").references(() => agentSessions.id),
   title: text("title").notNull(),
@@ -164,7 +165,7 @@ export const agentTasks = pgTable("agent_tasks", {
 
 export const agentLeadGenResults = pgTable("agent_lead_gen_results", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   sessionId: uuid("session_id").references(() => agentSessions.id),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -191,7 +192,7 @@ export type AgentTask = typeof agentTasks.$inferSelect;
 // ═══════════════════════════════════════════════════
 export const companies = pgTable("companies", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   domain: text("domain"),
   website: text("website"),
@@ -227,7 +228,7 @@ export const companies = pgTable("companies", {
 
 export const prospects = pgTable("prospects", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   companyId: uuid("company_id").references(() => companies.id),
   firstName: text("first_name").notNull(),
   lastName: text("last_name"),
@@ -274,7 +275,7 @@ export const prospects = pgTable("prospects", {
 
 export const prospectLists = pgTable("prospect_lists", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   filters: jsonb("filters").$type<{
@@ -297,7 +298,7 @@ export const prospectLists = pgTable("prospect_lists", {
 
 export const sequences = pgTable("sequences", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   status: text("status").default("draft"),
@@ -315,7 +316,7 @@ export const sequences = pgTable("sequences", {
 
 export const websiteVisitors = pgTable("website_visitors", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   visitorId: text("visitor_id"),
   companyName: text("company_name"),
   companyDomain: text("company_domain"),
@@ -334,7 +335,7 @@ export const websiteVisitors = pgTable("website_visitors", {
 
 export const technographics = pgTable("technographics", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   companyId: uuid("company_id").references(() => companies.id),
   companyDomain: text("company_domain"),
   technology: text("technology").notNull(),
@@ -346,7 +347,7 @@ export const technographics = pgTable("technographics", {
 
 export const intentSignals = pgTable("intent_signals", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   companyDomain: text("company_domain"),
   companyName: text("company_name"),
   topic: text("topic").notNull(),
@@ -431,9 +432,11 @@ export type ErrorLog = typeof errorLogs.$inferSelect;
 // ═══════════════════════════════════════════════════
 export const seoProjects = pgTable("seo_projects", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   domain: text("domain").notNull(),
+  status: text("status").default("active"),
+  settings: jsonb("settings").$type<Record<string, any>>().default({}),
   country: text("country").default("US"),
   language: text("language").default("en"),
   competitors: jsonb("competitors").$type<string[]>().default([]),
@@ -444,7 +447,7 @@ export const seoProjects = pgTable("seo_projects", {
 
 export const seoAudits = pgTable("seo_audits", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   projectId: uuid("project_id").references(() => seoProjects.id),
   score: integer("score").default(0),
   issues: jsonb("issues").$type<Array<{ type: string; severity: string; description: string; count: number; urls: string[] }>>().default([]),
@@ -455,7 +458,7 @@ export const seoAudits = pgTable("seo_audits", {
 
 export const contentIdeas = pgTable("content_ideas", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   projectId: uuid("project_id").references(() => seoProjects.id),
   title: text("title").notNull(),
   keyword: text("keyword"),
@@ -474,7 +477,7 @@ export type SeoProject = typeof seoProjects.$inferSelect;
 // ═══════════════════════════════════════════════════
 export const products = pgTable("products", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   storeId: uuid("store_id").references(() => stores.id),
   name: text("name").notNull(),
   slug: text("slug"),
@@ -504,13 +507,13 @@ export const products = pgTable("products", {
 
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   storeId: uuid("store_id").references(() => stores.id),
   orderNumber: text("order_number").notNull(),
   status: text("status").default("pending"),
   customerName: text("customer_name"),
   customerEmail: text("customer_email"),
-  customerPhone: text("customer_phone"),
+  customerPhone: text("customer_phone").default(""),
   shippingAddress: jsonb("shipping_address").$type<Record<string, any>>().default({}),
   items: jsonb("items").$type<Array<{ productId: string; name: string; qty: number; price: number; total: number }>>().default([]),
   subtotal: decimal("subtotal", { precision: 12, scale: 2 }).default("0"),
@@ -533,7 +536,7 @@ export type Order = typeof orders.$inferSelect;
 // ═══════════════════════════════════════════════════
 export const transactions = pgTable("transactions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   type: text("type").notNull(),
   category: text("category"),
   description: text("description").notNull(),
@@ -541,10 +544,9 @@ export const transactions = pgTable("transactions", {
   currency: text("currency").default("USD"),
   exchangeRate: decimal("exchange_rate", { precision: 10, scale: 6 }).default("1"),
   amountUsd: decimal("amount_usd", { precision: 15, scale: 2 }),
-  date: timestamp("date").notNull(),
+  date: timestamp("transaction_date"),
   accountId: text("account_id"),
   contactId: uuid("contact_id").references(() => contacts.id),
-  invoiceId: uuid("invoice_id").references(() => invoices.id),
   tags: jsonb("tags").$type<string[]>().default([]),
   reconciled: boolean("reconciled").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -552,7 +554,7 @@ export const transactions = pgTable("transactions", {
 
 export const bankAccounts = pgTable("bank_accounts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   accountType: text("account_type").default("checking"),
   currency: text("currency").default("USD"),
@@ -565,7 +567,7 @@ export const bankAccounts = pgTable("bank_accounts", {
 
 export const taxRates = pgTable("tax_rates", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   rate: decimal("rate", { precision: 6, scale: 4 }).notNull(),
   country: text("country"),
@@ -579,7 +581,7 @@ export const taxRates = pgTable("tax_rates", {
 // ═══════════════════════════════════════════════════
 export const employees = pgTable("employees", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   userId: uuid("user_id").references(() => users.id),
   firstName: text("first_name").notNull(),
   lastName: text("last_name"),
@@ -604,7 +606,7 @@ export const employees = pgTable("employees", {
 
 export const projectTasks = pgTable("project_tasks", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   title: text("title").notNull(),
   description: text("description"),
@@ -625,7 +627,7 @@ export const projectTasks = pgTable("project_tasks", {
 
 export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   type: text("type").default("file"),
   mimeType: text("mime_type"),
@@ -649,7 +651,7 @@ export type Document = typeof documents.$inferSelect;
 // ═══════════════════════════════════════════════════
 export const funnels = pgTable("funnels", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   offer: text("offer"),
@@ -667,7 +669,7 @@ export const funnels = pgTable("funnels", {
 
 export const reputationReviews = pgTable("reputation_reviews", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   platform: text("platform").notNull(),
   reviewerName: text("reviewer_name"),
   rating: integer("rating").default(5),
@@ -687,7 +689,7 @@ export type Funnel = typeof funnels.$inferSelect;
 // ═══════════════════════════════════════════════════
 export const clientPortalAccess = pgTable("client_portal_access", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   contactId: uuid("contact_id").references(() => contacts.id),
   email: text("email").notNull(),
   accessToken: text("access_token"),
@@ -699,7 +701,7 @@ export const clientPortalAccess = pgTable("client_portal_access", {
 
 export const whitelabelSettings = pgTable("whitelabel_settings", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull().unique(),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull().unique(),
   brandName: text("brand_name"),
   logo: text("logo"),
   favicon: text("favicon"),

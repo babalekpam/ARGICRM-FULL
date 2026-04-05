@@ -1,0 +1,182 @@
+ArgiCRM is already built and live. DO NOT rebuild or restructure anything. You have a full audit report. Your ONLY job is to fix the issues listed below in exact order. After each fix, confirm what file was changed and what line was modified. Do not move to the next fix until the current one is confirmed working.
+
+🔴 CRITICAL FIXES — DO THESE FIRST
+
+FIX 1 — ARIA Chat 401 Unauthorized (1 line change)
+File: server/index.ts line 65
+Change this:
+typescriptapp.use("/api/aria", aiRateLimit, ariaRouter)
+To this:
+typescriptapp.use("/api/aria", authenticate, aiRateLimit, ariaRouter)
+Test: POST /api/aria/chat with a valid JWT token must return a Claude response, not 401.
+
+FIX 2 — /api/me returns HTML instead of JSON
+File: server/routes.ts line 34
+Add this route directly in routes.ts:
+typescriptapp.get("/api/me", authenticate, async (req, res) => {
+  try {
+    const user = await storage.getUser(req.user!.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    const { passwordHash, ...safeUser } = user;
+    res.json(safeUser);
+  } catch (err) {
+    console.error("GET /api/me error:", err);
+    res.status(500).json({ error: "Failed to load profile" });
+  }
+});
+Test: GET /api/me with valid token must return user JSON, not HTML.
+
+FIX 3 — UUID vs VARCHAR type mismatch (fixes Finance, E-Commerce Orders, SEO, and Invoices in one shot)
+File: shared/schema-extended.ts
+Find every column defined as:
+typescriptuuid("tenant_id").references(() => tenants.id)
+Change ALL of them to:
+typescriptvarchar("tenant_id").references(() => tenants.id)
+Affected tables to fix: transactions, orders, invoices, seo_projects, bank_accounts
+After changing the schema run:
+bashnpm run db:push
+Test: GET /api/finance/transactions, GET /api/ecommerce/orders, GET /api/seo/projects — all must return 200 with data, not timeout.
+
+FIX 4 — Add try/catch to all bare async route handlers
+Files: server/routes/finance.ts, server/routes/seo.ts, server/routes.ts
+Wrap every async route handler that is missing try/catch using this pattern:
+typescriptrouter.get("/transactions", authenticate, async (req, res) => {
+  try {
+    // existing code here
+  } catch (err) {
+    console.error("GET /transactions error:", err);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
+Apply this to every route in finance.ts lines 190–218, seo.ts lines 53–57, and every route in routes.ts that currently has no try/catch.
+Test: Every route must return a proper error message instead of hanging on timeout.
+
+FIX 5 — Global Search 500 error
+File: server/routes.ts lines 651–668
+Add console.error logging to the catch block first to expose the real error:
+typescript} catch (err) {
+  console.error("GET /api/search error:", err);
+  res.status(500).json({ error: "Search failed" });
+}
+Check the server log after testing — the type mismatch fix from FIX 3 likely already resolves this. If not, fix the specific table query that is throwing.
+Test: GET /api/search?q=test must return results array, not 500.
+
+FIX 6 — Invoices 500 error
+File: server/storage.ts lines 364–366
+Add error logging to the invoices catch block:
+typescript} catch (err) {
+  console.error("Invoices fetch error:", err);
+  res.status(500).json({ error: "Failed to fetch invoices" });
+}
+The UUID fix from FIX 3 should already resolve the root cause. Confirm by testing after FIX 3 is applied.
+Test: GET /api/invoices must return 200 with invoice array.
+
+🟡 MAJOR FIXES — DO THESE SECOND
+
+FIX 7 — Make domain field optional on registration
+File: server/routes/auth.ts
+Find the register validation block and make domain optional:
+typescript// If domain is not provided, auto-generate from companyName
+const domain = body.domain || 
+  body.companyName.toLowerCase().replace(/\s+/g, '-') + '.argicrm.app';
+Also improve the validation error response to list exactly which fields are missing.
+Test: POST /api/auth/register with only email, password, firstName, lastName, companyName must succeed.
+
+FIX 8 — Add rate limiting to password change endpoint
+File: server/routes/auth.ts
+Import the existing auth rate limiter and apply it:
+typescriptrouter.post("/change-password", authRateLimit, authenticate, async (req, res) => {
+  // existing code
+});
+Test: More than 20 rapid POST requests to /api/auth/change-password must return 429.
+
+FIX 9 — Fix team invite blank firstName
+File: server/routes/auth.ts — team invite handler
+Add this fallback:
+typescriptconst firstName = body.firstName || body.email.split('@')[0];
+Test: POST /api/team/invite must create a user with a non-empty firstName.
+
+FIX 10 — Add Claude API timeout handler
+File: services/claude.js or wherever Claude API is called
+Wrap every Claude call with a timeout:
+typescriptconst timeoutPromise = new Promise((_, reject) =>
+  setTimeout(() => reject(new Error("Claude API timeout")), 30000)
+);
+
+const response = await Promise.race([
+  client.messages.create({ ... }),
+  timeoutPromise
+]);
+Test: If Claude does not respond in 30 seconds the route must return a 504 error, not hang forever.
+
+FIX 11 — Add console.error to ALL catch blocks
+Search the entire codebase for:
+typescriptcatch (err) {
+  res.status(500)
+Every single one of these must have console.error(err) or console.error("context:", err) added before the res.status line. No exceptions.
+This is non-negotiable — without this, debugging production issues is impossible.
+
+FIX 12 — Add demo seed data
+Create a new file server/seed-demo.ts:
+Insert the following demo records for the platform owner's tenant:
+
+10 sample contacts (mix of US and African names)
+5 sample leads across pipeline stages
+3 sample deals (1 won, 1 lost, 1 active)
+2 sample campaigns
+3 sample invoices (1 paid, 1 pending, 1 overdue)
+5 sample tasks with due dates
+3 sample workflow templates in crm_workflows
+
+Run once on startup if tables are empty:
+typescriptif (contactCount === 0) await seedDemoData(tenantId);
+Test: A fresh login must show populated data across all CRM pages.
+
+FIX 13 — Add healing system kill switch
+File: wherever the healing system cron job is initialized
+Add an admin API endpoint:
+typescriptrouter.post("/api/admin/healing/pause", requireRole("admin"), (req, res) => {
+  healingSystem.pause();
+  res.json({ status: "paused" });
+});
+
+router.post("/api/admin/healing/resume", requireRole("admin"), (req, res) => {
+  healingSystem.resume();
+  res.json({ status: "running" });
+});
+Also add a pause/resume toggle button to the existing admin dashboard UI.
+
+🔑 ENVIRONMENT VARIABLES — ADD THESE TO REPLIT SECRETS
+After all code fixes are done, add these secrets in Replit:
+STRIPE_SECRET_KEY          = sk_live_...
+STRIPE_PUBLISHABLE_KEY     = pk_live_...
+STRIPE_WEBHOOK_SECRET      = whsec_...
+FLUTTERWAVE_SECRET_KEY     = FLWSECK_...
+FLUTTERWAVE_PUBLIC_KEY     = FLWPUBK_...
+SMTP_HOST                  = smtp.your-provider.com
+SMTP_USER                  = your@email.com
+GOOGLE_MAPS_API_KEY        = AIza...
+After adding each key, test the corresponding feature immediately.
+
+✅ FINAL VERIFICATION — RUN AFTER ALL FIXES
+After every fix is applied, test these in order:
+1. POST /api/auth/login              → 200 + JWT token
+2. GET  /api/me                      → 200 + user JSON (not HTML)
+3. POST /api/aria/chat               → 200 + Claude response (not 401)
+4. GET  /api/finance/transactions    → 200 + data (not timeout)
+5. GET  /api/ecommerce/orders        → 200 + data (not timeout)
+6. GET  /api/seo/projects            → 200 + data (not timeout)
+7. GET  /api/invoices                → 200 + invoice array (not 500)
+8. GET  /api/search?q=test           → 200 + results (not 500)
+9. POST /api/auth/register           → 200 without domain field
+10. GET /api/contacts                → 200 + seed data visible
+
+DELIVER A SUMMARY when done showing:
+
+Every file changed
+Every line modified
+Every test result from the final verification list above
+Updated platform health score (target: 85+/100)
+
+
+DO NOT touch any working module. Touch only the files explicitly listed above.

@@ -188,33 +188,48 @@ ${rawTxs.slice(0, 50).map((t, i) => `${i + 1}. ${t.type.toUpperCase()} $${t.amou
 
 // ── Transactions ────────────────────────────────────────────────
 router.get("/transactions", authenticate, async (req: AuthRequest, res) => {
-  const { type, from, to, limit = "100" } = req.query as any;
-  const rows = await db.select().from(transactions).where(
-    and(
-      eq(transactions.tenantId, req.user!.tenantId),
-      type ? eq(transactions.type, type) : undefined,
-      from ? gte(transactions.date, new Date(from)) : undefined,
-      to ? lte(transactions.date, new Date(to)) : undefined,
-    )
-  ).orderBy(desc(transactions.date)).limit(Number(limit));
+  try {
+    const { type, from, to, limit = "100" } = req.query as any;
+    const rows = await db.select().from(transactions).where(
+      and(
+        eq(transactions.tenantId, req.user!.tenantId),
+        type ? eq(transactions.type, type) : undefined,
+        from ? gte(transactions.date, new Date(from)) : undefined,
+        to ? lte(transactions.date, new Date(to)) : undefined,
+      )
+    ).orderBy(desc(transactions.date)).limit(Number(limit));
 
-  const [totals] = await db.select({
-    income: sql<number>`coalesce(sum(case when type='income' then amount::numeric else 0 end),0)`,
-    expenses: sql<number>`coalesce(sum(case when type='expense' then abs(amount::numeric) else 0 end),0)`,
-    count: sql<number>`count(*)`,
-  }).from(transactions).where(eq(transactions.tenantId, req.user!.tenantId));
+    const [totals] = await db.select({
+      income: sql<number>`coalesce(sum(case when type='income' then amount::numeric else 0 end),0)`,
+      expenses: sql<number>`coalesce(sum(case when type='expense' then abs(amount::numeric) else 0 end),0)`,
+      count: sql<number>`count(*)`,
+    }).from(transactions).where(eq(transactions.tenantId, req.user!.tenantId));
 
-  res.json({ data: rows, totals: { income: Number(totals.income), expenses: Number(totals.expenses), net: Number(totals.income) - Number(totals.expenses), count: Number(totals.count) } });
+    res.json({ data: rows, totals: { income: Number(totals.income), expenses: Number(totals.expenses), net: Number(totals.income) - Number(totals.expenses), count: Number(totals.count) } });
+  } catch (err) {
+    console.error("GET /finance/transactions error:", err);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
 });
 
 router.post("/transactions", authenticate, async (req: AuthRequest, res) => {
-  const [tx] = await db.insert(transactions).values({ tenantId: req.user!.tenantId, ...req.body, date: new Date(req.body.date || Date.now()) }).returning();
-  res.status(201).json(tx);
+  try {
+    const [tx] = await db.insert(transactions).values({ tenantId: req.user!.tenantId, ...req.body, date: new Date(req.body.date || Date.now()) }).returning();
+    res.status(201).json(tx);
+  } catch (err) {
+    console.error("POST /finance/transactions error:", err);
+    res.status(500).json({ error: "Failed to create transaction" });
+  }
 });
 
 router.delete("/transactions/:id", authenticate, async (req: AuthRequest, res) => {
-  await db.delete(transactions).where(and(eq(transactions.id, req.params.id), eq(transactions.tenantId, req.user!.tenantId)));
-  res.json({ success: true });
+  try {
+    await db.delete(transactions).where(and(eq(transactions.id, req.params.id), eq(transactions.tenantId, req.user!.tenantId)));
+    res.json({ success: true });
+  } catch (err) {
+    console.error("DELETE /finance/transactions error:", err);
+    res.status(500).json({ error: "Failed to delete transaction" });
+  }
 });
 
 // ── Tax Rates ───────────────────────────────────────────────────
@@ -249,50 +264,60 @@ router.post("/calculate-tax", authenticate, async (req: AuthRequest, res) => {
 
 // ── Financial Reports ───────────────────────────────────────────
 router.get("/reports/pl", authenticate, async (req: AuthRequest, res) => {
-  const { year = new Date().getFullYear(), month } = req.query as any;
+  try {
+    const { year = new Date().getFullYear(), month } = req.query as any;
 
-  const startDate = month ? new Date(year, Number(month) - 1, 1) : new Date(year, 0, 1);
-  const endDate = month ? new Date(year, Number(month), 0) : new Date(year, 11, 31);
+    const startDate = month ? new Date(year, Number(month) - 1, 1) : new Date(year, 0, 1);
+    const endDate = month ? new Date(year, Number(month), 0) : new Date(year, 11, 31);
 
-  const [totals] = await db.select({
-    revenue: sql<number>`coalesce(sum(case when type='income' then amount::numeric else 0 end),0)`,
-    expenses: sql<number>`coalesce(sum(case when type='expense' then abs(amount::numeric) else 0 end),0)`,
-  }).from(transactions).where(
-    and(eq(transactions.tenantId, req.user!.tenantId), gte(transactions.date, startDate), lte(transactions.date, endDate))
-  );
+    const [totals] = await db.select({
+      revenue: sql<number>`coalesce(sum(case when type='income' then amount::numeric else 0 end),0)`,
+      expenses: sql<number>`coalesce(sum(case when type='expense' then abs(amount::numeric) else 0 end),0)`,
+    }).from(transactions).where(
+      and(eq(transactions.tenantId, req.user!.tenantId), gte(transactions.date, startDate), lte(transactions.date, endDate))
+    );
 
-  const byCategory = await db.select({
-    category: transactions.category,
-    type: transactions.type,
-    total: sql<number>`sum(abs(amount::numeric))`,
-  }).from(transactions).where(
-    and(eq(transactions.tenantId, req.user!.tenantId), gte(transactions.date, startDate), lte(transactions.date, endDate))
-  ).groupBy(transactions.category, transactions.type);
+    const byCategory = await db.select({
+      category: transactions.category,
+      type: transactions.type,
+      total: sql<number>`sum(abs(amount::numeric))`,
+    }).from(transactions).where(
+      and(eq(transactions.tenantId, req.user!.tenantId), gte(transactions.date, startDate), lte(transactions.date, endDate))
+    ).groupBy(transactions.category, transactions.type);
 
-  const revenue = Number(totals.revenue);
-  const expenses = Number(totals.expenses);
-  const grossProfit = revenue - expenses;
-  const margin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+    const revenue = Number(totals.revenue);
+    const expenses = Number(totals.expenses);
+    const grossProfit = revenue - expenses;
+    const margin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
 
-  res.json({ period: { year, month: month || "full" }, revenue, expenses, grossProfit, margin: Math.round(margin * 10) / 10, byCategory });
+    res.json({ period: { year, month: month || "full" }, revenue, expenses, grossProfit, margin: Math.round(margin * 10) / 10, byCategory });
+  } catch (err) {
+    console.error("GET /finance/reports/pl error:", err);
+    res.status(500).json({ error: "Failed to generate P&L report" });
+  }
 });
 
 router.get("/reports/cashflow", authenticate, async (req: AuthRequest, res) => {
-  const months = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    const start = new Date(d.getFullYear(), d.getMonth(), 1);
-    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  try {
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
 
-    const [m] = await db.select({
-      income: sql<number>`coalesce(sum(case when type='income' then amount::numeric else 0 end),0)`,
-      expense: sql<number>`coalesce(sum(case when type='expense' then abs(amount::numeric) else 0 end),0)`,
-    }).from(transactions).where(and(eq(transactions.tenantId, req.user!.tenantId), gte(transactions.date, start), lte(transactions.date, end)));
+      const [m] = await db.select({
+        income: sql<number>`coalesce(sum(case when type='income' then amount::numeric else 0 end),0)`,
+        expense: sql<number>`coalesce(sum(case when type='expense' then abs(amount::numeric) else 0 end),0)`,
+      }).from(transactions).where(and(eq(transactions.tenantId, req.user!.tenantId), gte(transactions.date, start), lte(transactions.date, end)));
 
-    months.push({ month: start.toLocaleString("default", { month: "short" }), year: start.getFullYear(), income: Number(m.income), expense: Number(m.expense), net: Number(m.income) - Number(m.expense) });
+      months.push({ month: start.toLocaleString("default", { month: "short" }), year: start.getFullYear(), income: Number(m.income), expense: Number(m.expense), net: Number(m.income) - Number(m.expense) });
+    }
+    res.json(months);
+  } catch (err) {
+    console.error("GET /finance/reports/cashflow error:", err);
+    res.status(500).json({ error: "Failed to generate cashflow report" });
   }
-  res.json(months);
 });
 
 export default router;

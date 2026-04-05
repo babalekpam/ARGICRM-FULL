@@ -51,23 +51,43 @@ function safeParseJSON(text: string, fallback: any = null) {
 
 // ── Projects ───────────────────────────────────────────────────
 router.get("/projects", authenticate, async (req: AuthRequest, res) => {
-  const rows = await db.select().from(seoProjects).where(eq(seoProjects.tenantId, req.user!.tenantId)).orderBy(desc(seoProjects.createdAt));
-  res.json(rows);
+  try {
+    const rows = await db.select().from(seoProjects).where(eq(seoProjects.tenantId, req.user!.tenantId)).orderBy(desc(seoProjects.createdAt));
+    res.json(rows);
+  } catch (err) {
+    console.error("GET /seo/projects error:", err);
+    res.status(500).json({ error: "Failed to fetch SEO projects" });
+  }
 });
 
 router.post("/projects", authenticate, async (req: AuthRequest, res) => {
-  const [p] = await db.insert(seoProjects).values({ tenantId: req.user!.tenantId, ...req.body }).returning();
-  res.status(201).json(p);
+  try {
+    const [p] = await db.insert(seoProjects).values({ tenantId: req.user!.tenantId, ...req.body }).returning();
+    res.status(201).json(p);
+  } catch (err) {
+    console.error("POST /seo/projects error:", err);
+    res.status(500).json({ error: "Failed to create SEO project" });
+  }
 });
 
 router.put("/projects/:id", authenticate, async (req: AuthRequest, res) => {
-  const [p] = await db.update(seoProjects).set({ ...req.body, updatedAt: new Date() }).where(and(eq(seoProjects.id, req.params.id), eq(seoProjects.tenantId, req.user!.tenantId))).returning();
-  res.json(p);
+  try {
+    const [p] = await db.update(seoProjects).set({ ...req.body, updatedAt: new Date() }).where(and(eq(seoProjects.id, req.params.id), eq(seoProjects.tenantId, req.user!.tenantId))).returning();
+    res.json(p);
+  } catch (err) {
+    console.error("PUT /seo/projects error:", err);
+    res.status(500).json({ error: "Failed to update SEO project" });
+  }
 });
 
 router.delete("/projects/:id", authenticate, async (req: AuthRequest, res) => {
-  await db.delete(seoProjects).where(and(eq(seoProjects.id, req.params.id), eq(seoProjects.tenantId, req.user!.tenantId)));
-  res.json({ success: true });
+  try {
+    await db.delete(seoProjects).where(and(eq(seoProjects.id, req.params.id), eq(seoProjects.tenantId, req.user!.tenantId)));
+    res.json({ success: true });
+  } catch (err) {
+    console.error("DELETE /seo/projects error:", err);
+    res.status(500).json({ error: "Failed to delete SEO project" });
+  }
 });
 
 // ── Keyword Research ───────────────────────────────────────────

@@ -12,7 +12,7 @@ router.post("/register", async (req, res) => {
   try {
     const schema = z.object({
       companyName: z.string().min(2).max(100),
-      domain: z.string().min(2).max(50).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, hyphens"),
+      domain: z.string().min(2).max(50).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, hyphens").optional(),
       firstName: z.string().min(1).max(50),
       lastName: z.string().min(1).max(50),
       email: z.string().email(),
@@ -20,7 +20,12 @@ router.post("/register", async (req, res) => {
       plan: z.enum(["trial", "starter", "professional", "business", "enterprise"]).optional().default("trial"),
     });
 
-    const body = schema.parse(req.body);
+    const parsed = schema.parse(req.body);
+    // Auto-generate domain from companyName if not provided
+    const body = {
+      ...parsed,
+      domain: parsed.domain || parsed.companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50),
+    };
 
     // Check domain availability
     const existing = await storage.getTenantByDomain(`${body.domain}.argilette.org`);

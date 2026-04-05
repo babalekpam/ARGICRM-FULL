@@ -5,7 +5,7 @@ import { healthChecks, errorLogs, performanceMetrics } from "@shared/schema-exte
 import { eq, desc, and, sql, gte, lt } from "drizzle-orm";
 import {
   runAllHealthChecks, runHealthCheck, getPerformanceSummary,
-  logError, attemptAutoHeal
+  logError, attemptAutoHeal, pauseHealing, resumeHealing, isHealingPaused
 } from "../services/healing.js";
 
 const router = Router();
@@ -108,6 +108,23 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
     performance: perfSummary,
     circuits: Object.entries(circuits).map(([name, c]) => ({ name, state: c.state, failures: c.failures })),
   });
+});
+
+// ── Healing system kill switch ──────────────────────────────────
+router.post("/pause", authenticate, requireRole("super_admin", "admin"), (req, res) => {
+  pauseHealing();
+  console.warn("[HEALING] System paused by admin:", (req as any).user?.email);
+  res.json({ status: "paused", message: "Healing system paused. No auto-fixes will run until resumed." });
+});
+
+router.post("/resume", authenticate, requireRole("super_admin", "admin"), (req, res) => {
+  resumeHealing();
+  console.log("[HEALING] System resumed by admin:", (req as any).user?.email);
+  res.json({ status: "running", message: "Healing system resumed. Auto-fixes are active." });
+});
+
+router.get("/status", authenticate, (req, res) => {
+  res.json({ paused: isHealingPaused(), status: isHealingPaused() ? "paused" : "running" });
 });
 
 export default router;

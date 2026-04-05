@@ -708,12 +708,18 @@ export function healingMiddleware() {
 // ═══════════════════════════════════════════════════════════════
 
 let schedulerRunning = false;
+let healingPaused = false;
+
+export function pauseHealing() { healingPaused = true; }
+export function resumeHealing() { healingPaused = false; }
+export function isHealingPaused() { return healingPaused; }
 
 export function startHealingScheduler() {
   if (schedulerRunning) return;
   schedulerRunning = true;
 
   const run = async () => {
+    if (healingPaused) return;
     try {
       // 1. Run health checks
       const health = await runAllHealthChecks();

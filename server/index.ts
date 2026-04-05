@@ -296,6 +296,23 @@ async function runStartupMigrations() {
           AND ai_credits_remaining != -1
       `).catch(() => {});
 
+      // ── Fix transactions schema (add columns missing from original CREATE TABLE) ──
+      await client.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS exchange_rate decimal(10,6) DEFAULT 1`).catch(() => {});
+      await client.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS amount_usd decimal(15,2)`).catch(() => {});
+      await client.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS account_id text`).catch(() => {});
+      await client.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS tags jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS reconciled boolean DEFAULT false`).catch(() => {});
+
+      // ── Fix orders schema ──
+      await client.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone text DEFAULT ''`).catch(() => {});
+      await client.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency text DEFAULT 'USD'`).catch(() => {});
+
+      // ── Fix seo_projects schema ──
+      await client.query(`ALTER TABLE seo_projects ADD COLUMN IF NOT EXISTS country text DEFAULT 'US'`).catch(() => {});
+      await client.query(`ALTER TABLE seo_projects ADD COLUMN IF NOT EXISTS language text DEFAULT 'en'`).catch(() => {});
+      await client.query(`ALTER TABLE seo_projects ADD COLUMN IF NOT EXISTS competitors jsonb DEFAULT '[]'::jsonb`).catch(() => {});
+      await client.query(`ALTER TABLE seo_projects ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(() => {});
+
       console.log("[MIGRATE] Agent table schemas synced");
     } catch (e: any) { console.warn("[MIGRATE] Column migration warning:", e.message?.slice(0, 80)); }
 
@@ -463,6 +480,10 @@ async function main() {
 
   // ─── Register all API routes ───────────────────────────
   const server = await registerRoutes(app);
+
+  // ─── Seed Demo Data (runs once if tables are empty) ───
+  const { seedDemoData } = await import("./seed-demo.js");
+  seedDemoData().catch(err => console.error("[SEED] Error:", err));
 
   // ─── Start Code Healing System ─────────────────────────
   const { startHealingScheduler, healingMiddleware } = await import("./services/healing.js");

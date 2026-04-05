@@ -56,15 +56,23 @@ export async function askClaude(
 ): Promise<string> {
   const model = opts.model ?? (opts.fast ? "claude-haiku-4-5" : "claude-sonnet-4-5");
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: opts.maxTokens ?? 4096,
-    system: systemPrompt,
-    messages: [
-      ...history,
-      { role: "user", content: userMessage },
-    ],
-  });
+  const CLAUDE_TIMEOUT_MS = 30_000;
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Claude API timeout after 30s")), CLAUDE_TIMEOUT_MS)
+  );
+
+  const response = await Promise.race([
+    client.messages.create({
+      model,
+      max_tokens: opts.maxTokens ?? 4096,
+      system: systemPrompt,
+      messages: [
+        ...history,
+        { role: "user", content: userMessage },
+      ],
+    }),
+    timeoutPromise,
+  ]);
 
   // ── Log every token, every call ──────────────────────────────
   if (ctx.tenantId) {
