@@ -1,20 +1,22 @@
 /**
  * ARGILETTE UNIVERSAL AI ADAPTER
- * 
- * Auto-detects whichever AI API keys are configured and uses the best
- * available provider. Falls back through the chain automatically.
- * 
- * Priority order (set by default, overrideable via AI_PROVIDER env var):
- *   1. Anthropic Claude    (ANTHROPIC_API_KEY)
+ *
+ * Anthropic Claude is the PRIMARY and PREFERRED provider.
+ * When ANTHROPIC_API_KEY is present it is ALWAYS used — no env var can
+ * override this.  Other providers are only reached in two scenarios:
+ *   a) A tenant supplies their own non-Anthropic key
+ *   b) An explicit `provider` override is passed to complete()
+ *
+ * Fallback order (only used when Anthropic key is absent):
  *   2. OpenAI GPT-4        (OPENAI_API_KEY)
  *   3. Google Gemini       (GOOGLE_AI_KEY)
- *   4. Groq (Llama 3.3)   (GROQ_API_KEY)       — fastest + free tier
+ *   4. Groq (Llama 3.3)   (GROQ_API_KEY)
  *   5. Mistral             (MISTRAL_API_KEY)
  *   6. Cohere              (COHERE_API_KEY)
- *   7. Together AI         (TOGETHER_API_KEY)   — open source models
+ *   7. Together AI         (TOGETHER_API_KEY)
  *   8. Fireworks AI        (FIREWORKS_API_KEY)
- *   9. Perplexity          (PERPLEXITY_API_KEY) — good for research/web
- *  10. Ollama              (OLLAMA_BASE_URL)    — fully local, zero cost
+ *   9. Perplexity          (PERPLEXITY_API_KEY)
+ *  10. Ollama              (OLLAMA_BASE_URL)
  */
 
 import axios from "axios";
@@ -148,16 +150,25 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
 // ═══════════════════════════════════════════════════════════════
 
 export function getAvailableProviders(): AIProvider[] {
+  // Anthropic is unconditionally first when the key is present.
+  // No env var can push it out of position — it is always the preferred provider.
+  if (PROVIDERS.anthropic.available()) {
+    const rest: AIProvider[] = [
+      "openai", "google", "groq", "mistral",
+      "cohere", "together", "fireworks", "perplexity", "ollama",
+    ];
+    return ["anthropic", ...rest.filter(p => PROVIDERS[p].available())];
+  }
+
+  // Anthropic key absent — respect AI_PROVIDER override or full fallback chain.
   const override = process.env.AI_PROVIDER as AIProvider;
   if (override && PROVIDERS[override]?.available()) return [override];
 
-  const priority: AIProvider[] = [
-    "anthropic", "openai", "google", "groq",
-    "mistral", "cohere", "together", "fireworks",
-    "perplexity", "ollama"
+  const fallback: AIProvider[] = [
+    "openai", "google", "groq", "mistral",
+    "cohere", "together", "fireworks", "perplexity", "ollama",
   ];
-
-  return priority.filter(p => PROVIDERS[p].available());
+  return fallback.filter(p => PROVIDERS[p].available());
 }
 
 export function getActiveProvider(): AIProvider | null {
