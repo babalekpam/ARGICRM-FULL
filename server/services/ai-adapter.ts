@@ -18,6 +18,7 @@
  */
 
 import axios from "axios";
+import Anthropic from "@anthropic-ai/sdk";
 
 // ═══════════════════════════════════════════════════════════════
 // PROVIDER DEFINITIONS
@@ -44,8 +45,8 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
     name: "Anthropic Claude",
     envKey: "ANTHROPIC_API_KEY",
     baseUrl: "https://api.anthropic.com",
-    defaultModel: "claude-sonnet-4-20250514",
-    fastModel: "claude-haiku-4-5-20251001",
+    defaultModel: "claude-sonnet-4-5",
+    fastModel: "claude-haiku-4-5",
     maxTokensKey: "max_tokens",
     format: "anthropic",
     available: () => !!process.env.ANTHROPIC_API_KEY,
@@ -247,30 +248,24 @@ export async function complete(opts: AICompletionOpts): Promise<string> {
   throw lastError || new Error("All AI providers failed");
 }
 
-// ─── Anthropic Claude ────────────────────────────────────────────
+// ─── Anthropic Claude (official SDK) ────────────────────────────
 async function callAnthropic(config: ProviderConfig, model: string, opts: AICompletionOpts): Promise<string> {
-  const messages = opts.messages.filter(m => m.role !== "system");
+  const apiKey = opts.tenantApiKey || process.env.ANTHROPIC_API_KEY!;
+  const client = new Anthropic({ apiKey });
+
   const system = opts.system || opts.messages.find(m => m.role === "system")?.content;
+  const userMessages = opts.messages
+    .filter(m => m.role !== "system")
+    .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-  const res = await axios.post(
-    `${config.baseUrl}/v1/messages`,
-    {
-      model,
-      max_tokens: opts.maxTokens || 1024,
-      ...(system ? { system } : {}),
-      messages: messages.map(m => ({ role: m.role, content: m.content })),
-    },
-    {
-      headers: {
-        "x-api-key": opts.tenantApiKey || process.env.ANTHROPIC_API_KEY!,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      timeout: 60000,
-    }
-  );
+  const response = await client.messages.create({
+    model,
+    max_tokens: opts.maxTokens || 1024,
+    ...(system ? { system } : {}),
+    messages: userMessages,
+  });
 
-  return res.data.content?.[0]?.text || "";
+  return (response.content[0] as any)?.text || "";
 }
 
 // ─── OpenAI-compatible (works for OpenAI, Groq, Mistral, etc.) ──
@@ -339,29 +334,24 @@ export async function* stream(opts: AICompletionOpts): AsyncGenerator<string> {
   const model = opts.fast ? config.fastModel : config.defaultModel;
 
   if (config.format === "anthropic") {
-    // Anthropic streaming
-    const res = await axios.post(
-      `${config.baseUrl}/v1/messages`,
-      {
-        model,
-        max_tokens: opts.maxTokens || 2048,
-        stream: true,
-        messages: opts.messages.filter(m => m.role !== "system").map(m => ({ role: m.role, content: m.content })),
-        ...(opts.system ? { system: opts.system } : {}),
-      },
-      {
-        headers: { "x-api-key": process.env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
-        responseType: "stream",
-      }
-    );
+    // Anthropic streaming via official SDK
+    const apiKey = process.env.ANTHROPIC_API_KEY!;
+    const client = new Anthropic({ apiKey });
+    const system = opts.system || opts.messages.find(m => m.role === "system")?.content;
+    const userMessages = opts.messages
+      .filter(m => m.role !== "system")
+      .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-    for await (const chunk of res.data) {
-      const lines = chunk.toString().split("\n").filter((l: string) => l.startsWith("data:"));
-      for (const line of lines) {
-        try {
-          const data = JSON.parse(line.slice(5));
-          if (data.type === "content_block_delta") yield data.delta?.text || "";
-        } catch {}
+    const anthropicStream = await client.messages.stream({
+      model,
+      max_tokens: opts.maxTokens || 2048,
+      ...(system ? { system } : {}),
+      messages: userMessages,
+    });
+
+    for await (const event of anthropicStream) {
+      if (event.type === "content_block_delta" && (event.delta as any).type === "text_delta") {
+        yield (event.delta as any).text || "";
       }
     }
   } else {
