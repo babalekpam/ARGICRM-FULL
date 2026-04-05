@@ -15,6 +15,21 @@ router.get("/stores", authenticate, async (req: AuthRequest, res) => {
   res.json(rows);
 });
 
+router.get("/stores/:id", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const [store] = await db
+      .select()
+      .from(stores)
+      .where(and(eq(stores.id, req.params.id), eq(stores.tenantId, req.user!.tenantId)))
+      .limit(1);
+    if (!store) return res.status(404).json({ error: "Store not found" });
+    res.json(store);
+  } catch (err) {
+    console.error("GET /ecommerce/stores/:id error:", err);
+    res.status(500).json({ error: "Failed to fetch store" });
+  }
+});
+
 router.post("/stores", authenticate, async (req: AuthRequest, res) => {
   const slug = req.body.name?.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-") + "-" + Date.now().toString().slice(-4);
   const [store] = await db.insert(stores).values({ ...req.body, tenantId: req.user!.tenantId, userId: req.user!.id, slug, status: req.body.status || "active" }).returning();

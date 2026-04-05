@@ -476,4 +476,32 @@ router.post("/admin/trigger", authenticate, requireRole("admin"), async (req: Au
   triggerIngestion(source).catch(err => console.error("[Marketplace] Manual trigger error:", err));
 });
 
+// ── GET /api/marketplace/credits ─────────────────────────────────
+// Returns the calling tenant's AI credit balance
+router.get("/credits", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const rows = await db.execute(
+      sql`SELECT ai_credits_remaining, ai_credits_monthly, ai_spend_mtd, plan, subscription_plan
+          FROM tenants WHERE id = ${req.user!.tenantId} LIMIT 1`
+    );
+    const t = (rows as any).rows?.[0] ?? (rows as any)[0];
+    if (!t) return res.status(404).json({ error: "Tenant not found" });
+
+    const monthly   = Number(t.ai_credits_monthly   ?? 0);
+    const remaining = Number(t.ai_credits_remaining  ?? 0);
+    const used      = Math.max(0, monthly - remaining);
+
+    res.json({
+      remaining,
+      monthly,
+      used,
+      plan:        t.subscription_plan ?? t.plan ?? "starter",
+      percentUsed: monthly > 0 ? Math.round((used / monthly) * 100) : 0,
+    });
+  } catch (err) {
+    console.error("GET /marketplace/credits error:", err);
+    res.status(500).json({ error: "Failed to fetch credits" });
+  }
+});
+
 export default router;

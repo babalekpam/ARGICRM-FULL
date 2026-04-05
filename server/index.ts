@@ -528,6 +528,17 @@ async function main() {
     if (!process.env.DATABASE_URL) {
       console.warn("⚠️  DATABASE_URL not set — database features will fail");
     }
+
+    // Warm the healing health checks directly so first user request is fast
+    setTimeout(async () => {
+      try {
+        const { runAllHealthChecks } = await import("./services/healing.js");
+        await runAllHealthChecks();
+        console.log("[WARMUP] Healing health cache warmed");
+      } catch (err) {
+        console.warn("[WARMUP] Cache warm failed (non-critical):", err);
+      }
+    }, 2000); // 2s delay to ensure all middleware is ready
   });
 }
 

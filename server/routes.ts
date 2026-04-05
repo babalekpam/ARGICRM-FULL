@@ -344,7 +344,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks", authenticate, async (req: AuthRequest, res) => {
     try {
-      const task = await storage.createTask({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
+      const task = await storage.createTask({
+        ...req.body,
+        tenantId: req.user!.tenantId,
+        createdBy: req.user!.id,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+      });
       res.status(201).json(task);
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create task" }); }
   });
@@ -405,9 +410,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/activities", authenticate, async (req: AuthRequest, res) => {
     try {
-      const activity = await storage.createActivity({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
+      const activity = await storage.createActivity({
+        tenantId: req.user!.tenantId,
+        createdBy: req.user!.id,
+        type:      req.body.type      || "note",
+        channel:   req.body.channel   || "other",
+        direction: req.body.direction || "outbound",
+        content:   req.body.content   || req.body.note || req.body.description || "",
+        contactId: req.body.contactId || req.body.entityId || null,
+        dealId:    req.body.dealId    || null,
+        meta:      req.body.meta      || {},
+      });
       res.status(201).json(activity);
-    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create activity" }); }
+    } catch (err) { console.error("POST /activities error:", err); res.status(500).json({ error: "Failed to create activity" }); }
   });
 
   // ─── Campaigns ─────────────────────────────────────────
@@ -449,9 +464,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/invoices", authenticate, async (req: AuthRequest, res) => {
     try {
-      const invoice = await storage.createInvoice({ ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id });
+      const body = req.body;
+      // Accept both naming conventions: clientName/client/name + amount/total
+      const clientName = body.clientName || body.client || body.name || "";
+      const total      = body.total      || body.amount || 0;
+      const invoiceNumber = body.number || body.invoiceNumber || `INV-${Date.now()}`;
+      const status     = body.status  || "pending";
+      const dueDate    = body.dueDate ? new Date(body.dueDate) : null;
+
+      if (!clientName) {
+        return res.status(400).json({
+          error: "Validation failed",
+          required: ["clientName (or client)", "amount (or total)"],
+          optional: ["number", "status", "dueDate"],
+        });
+      }
+
+      const invoice = await storage.createInvoice({
+        tenantId: req.user!.tenantId,
+        createdBy: req.user!.id as any,
+        number: invoiceNumber,
+        total: String(total),
+        notes: clientName,
+        status,
+        dueDate,
+      } as any);
       res.status(201).json(invoice);
-    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create invoice" }); }
+    } catch (err) { console.error("POST /invoices error:", err); res.status(500).json({ error: "Failed to create invoice" }); }
   });
 
   app.put("/api/invoices/:id", authenticate, async (req: AuthRequest, res) => {

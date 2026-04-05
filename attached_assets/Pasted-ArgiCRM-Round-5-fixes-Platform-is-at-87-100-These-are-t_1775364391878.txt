@@ -1,0 +1,338 @@
+ArgiCRM Round 5 fixes. Platform is at 87/100. These are the final fixes before launch. DO NOT rebuild anything. Fix only what is listed below in exact order. Confirm each fix before moving to the next. Report every file changed and every line modified.
+
+🔴 CRITICAL FIXES FIRST — LAUNCH BLOCKERS
+
+FIX 1 — POST /api/activities fails with undocumented NOT NULL fields
+File: shared/schema.ts line 187 + server/routes.ts line 406
+The activities table has channel, direction, and content as NOT NULL but the API never tells callers what is required and returns a silent 500.
+Fix in two parts:
+Part A — Make fields nullable in the schema:
+typescriptchannel:   varchar("channel", { length: 50 }),    // remove .notNull()
+direction: varchar("direction", { length: 50 }),   // remove .notNull()
+content:   text("content"),                         // remove .notNull()
+Run after schema change:
+bashnpm run db:push
+Part B — Add defaults in the route handler so existing callers never break:
+typescriptrouter.post("/activities", authenticate, async (req, res) => {
+  try {
+    const activity = await db.insert(activities).values({
+      tenantId: req.user!.tenantId,
+      userId:   req.user!.id,
+      type:     req.body.type || "note",
+      channel:  req.body.channel   || "other",
+      direction:req.body.direction || "outbound",
+      content:  req.body.content   || req.body.note || req.body.description || "",
+      entityId: req.body.entityId  || req.body.contactId || req.body.leadId || req.body.dealId,
+      entityType: req.body.entityType || "contact",
+      createdAt: new Date(),
+    }).returning();
+    res.status(201).json(activity[0]);
+  } catch (err) {
+    console.error("POST /activities error:", err);
+    res.status(500).json({ error: "Failed to create activity" });
+  }
+});
+Test:
+POST /api/activities {"type":"call","note":"Spoke with client"}  → 201
+POST /api/activities {"type":"email","content":"Sent proposal"}  → 201
+POST /api/activities {"type":"note"}                             → 201 (all defaults applied)
+
+FIX 2 — POST /api/tasks fails when dueDate is provided
+File: server/routes.ts line 347
+The dueDate arrives as a string from the client but the DB expects a Date object.
+Find the tasks INSERT handler and add date parsing:
+typescriptrouter.post("/tasks", authenticate, async (req, res) => {
+  try {
+    const task = await db.insert(tasks).values({
+      tenantId:  req.user!.tenantId,
+      userId:    req.user!.id,
+      title:     req.body.title,
+      priority:  req.body.priority || "medium",
+      status:    req.body.status   || "pending",
+      dueDate:   req.body.dueDate 
+                   ? new Date(req.body.dueDate)   // parse string → Date
+                   : null,
+      assignedTo: req.body.assignedTo || req.user!.id,
+      createdAt:  new Date(),
+    }).returning();
+    res.status(201).json(task[0]);
+  } catch (err) {
+    console.error("POST /tasks error:", err);
+    res.status(500).json({ error: "Failed to create task" });
+  }
+});
+Test:
+POST /api/tasks {"title":"Call client","dueDate":"2026-04-15"}     → 201
+POST /api/tasks {"title":"Send proposal","dueDate":"2026-04-20T10:00:00Z"} → 201
+POST /api/tasks {"title":"No date task"}                           → 201
+
+FIX 3 — GET /api/ecommerce/stores/:id missing (returns HTML)
+File: server/routes/ecommerce.ts
+Add the missing individual store endpoint:
+typescriptrouter.get("/stores/:id", authenticate, async (req, res) => {
+  try {
+    const store = await db
+      .select()
+      .from(stores)
+      .where(
+        and(
+          eq(stores.id, req.params.id),
+          eq(stores.tenantId, req.user!.tenantId)
+        )
+      )
+      .limit(1);
+
+    if (!store.length) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+    res.json(store[0]);
+  } catch (err) {
+    console.error("GET /ecommerce/stores/:id error:", err);
+    res.status(500).json({ error: "Failed to fetch store" });
+  }
+});
+Make sure this is registered BEFORE any catch-all route.
+Test:
+GET /api/ecommerce/stores/:id with valid store ID → 200 + store JSON with status field
+GET /api/ecommerce/stores/nonexistent-id         → 404 not HTML
+GET /api/ecommerce/stores/:id (other tenant ID)  → 404 (tenant isolation)
+
+FIX 4 — GET /api/marketplace/credits missing (returns HTML)
+File: server/routes/marketplace.ts
+Add the missing credits endpoint:
+typescriptrouter.get("/credits", authenticate, async (req, res) => {
+  try {
+    const tenant = await db
+      .select({
+        aiCreditsRemaining: tenants.aiCreditsRemaining,
+        aiCreditsMonthly:   tenants.aiCreditsMonthly,
+        planType:           tenants.planType,
+        creditsUsedMtd:     tenants.aiSpendMtd,
+      })
+      .from(tenants)
+      .where(eq(tenants.id, req.user!.tenantId))
+      .limit(1);
+
+    if (!tenant.length) {
+      return res.status(404).json({ error: "Tenant not found" });
+    }
+
+    const t = tenant[0];
+    res.json({
+      remaining:   t.aiCreditsRemaining ?? 0,
+      monthly:     t.aiCreditsMonthly ?? 0,
+      used:        (t.aiCreditsMonthly ?? 0) - (t.aiCreditsRemaining ?? 0),
+      plan:        t.planType ?? "starter",
+      percentUsed: t.aiCreditsMonthly
+        ? Math.round(((t.aiCreditsMonthly - t.aiCreditsRemaining) / t.aiCreditsMonthly) * 100)
+        : 0,
+    });
+  } catch (err) {
+    console.error("GET /marketplace/credits error:", err);
+    res.status(500).json({ error: "Failed to fetch credits" });
+  }
+});
+Test:
+GET /api/marketplace/credits with valid JWT → 200 + JSON with remaining/monthly/used/plan
+GET /api/marketplace/credits no JWT         → 401
+
+FIX 5 — New tenant registration gets empty CRM (no onboarding seed)
+File: server/routes/auth.ts — the register handler
+After a new user is successfully created, trigger a lightweight seed for their tenant:
+typescript// After successful user + tenant creation in the register handler
+const newTenantId = createdTenant.id;
+
+// Fire and forget — do not await, do not block the response
+seedNewTenantOnboarding(newTenantId).catch(err =>
+  console.error("[SEED] Onboarding seed failed for tenant:", newTenantId, err)
+);
+
+res.status(201).json({ token, user: safeUser });
+Create the onboarding seed function in server/seed-demo.ts:
+typescriptexport async function seedNewTenantOnboarding(tenantId: string) {
+  console.log("[SEED] Starting onboarding seed for new tenant:", tenantId);
+
+  // 3 sample contacts
+  await db.insert(contacts).values([
+    { tenantId, firstName: "Sarah", lastName: "Johnson", email: "sarah@acmecorp.com", company: "Acme Corp", status: "active" },
+    { tenantId, firstName: "James", lastName: "Osei", email: "james@techghanaltd.com", company: "TechGhana Ltd", status: "active" },
+    { tenantId, firstName: "Marie", lastName: "Dupont", email: "marie@paristech.fr", company: "Paris Technologies", status: "active" },
+  ]);
+
+  // 2 sample leads
+  await db.insert(leads).values([
+    { tenantId, firstName: "Sarah", lastName: "Johnson", company: "Acme Corp", value: 5000, stage: "qualified", source: "referral" },
+    { tenantId, firstName: "James", lastName: "Osei", company: "TechGhana Ltd", value: 3200, stage: "proposal", source: "website" },
+  ]);
+
+  // 1 sample deal
+  await db.insert(deals).values([
+    { tenantId, title: "Acme Corp — Q2 Contract", value: 5000, stage: "negotiation", probability: 70 },
+  ]);
+
+  // 2 sample tasks
+  await db.insert(tasks).values([
+    { tenantId, title: "Follow up with Sarah Johnson", priority: "high", status: "pending", dueDate: new Date(Date.now() + 86400000) },
+    { tenantId, title: "Send proposal to James Osei", priority: "medium", status: "pending", dueDate: new Date(Date.now() + 3 * 86400000) },
+  ]);
+
+  console.log("[SEED] Onboarding seed complete for tenant:", tenantId);
+}
+Test:
+POST /api/auth/register (new email)
+→ 201 success
+
+Immediately after with new tenant's JWT:
+GET /api/contacts → must return 3 records
+GET /api/leads    → must return 2 records
+GET /api/deals    → must return 1 record
+GET /api/tasks    → must return 2 records
+
+🟡 MAJOR FIXES SECOND
+
+FIX 6 — POST /api/invoices expects {number, total} but callers send {clientName, amount}
+File: server/routes.ts — invoice POST handler
+Accept both field name formats and add proper validation error messages:
+typescriptrouter.post("/invoices", authenticate, async (req, res) => {
+  try {
+    const body = req.body;
+
+    // Accept both naming conventions
+    const invoiceNumber = body.number    || body.invoiceNumber ||
+                          `INV-${Date.now()}`;
+    const total         = body.total     || body.amount        || 0;
+    const clientName    = body.clientName|| body.client        || body.name || "";
+    const status        = body.status    || "pending";
+    const dueDate       = body.dueDate   ? new Date(body.dueDate) : null;
+
+    if (!clientName) {
+      return res.status(400).json({
+        error: "Validation failed",
+        required: ["clientName (or client)", "amount (or total)"],
+        optional: ["number", "status", "dueDate"]
+      });
+    }
+
+    const invoice = await db.insert(invoices).values({
+      tenantId: req.user!.tenantId,
+      number:   invoiceNumber,
+      total:    total,
+      clientName,
+      status,
+      dueDate,
+      createdAt: new Date(),
+    }).returning();
+
+    res.status(201).json(invoice[0]);
+  } catch (err) {
+    console.error("POST /invoices error:", err);
+    res.status(500).json({ error: "Failed to create invoice" });
+  }
+});
+Test:
+POST /api/invoices {"clientName":"ABC Corp","amount":2500}              → 201
+POST /api/invoices {"client":"TechGhana","total":4800,"status":"pending"} → 201
+POST /api/invoices {}                                                     → 400 + helpful error
+
+🟢 MINOR FIXES LAST
+
+FIX 7 — No rate limiting on PUT /api/auth/password
+File: server/routes/auth.ts
+Import the existing login rate limiter and apply it to the password change endpoint:
+typescriptrouter.put("/password", loginRateLimit, authenticate, async (req, res) => {
+  // existing password change code
+});
+Also add per-account lockout matching the login protection:
+typescript// At the top of the handler — check lockout same as login
+const attempts = failedAttempts.get(req.user!.email);
+if (attempts?.lockedUntil && attempts.lockedUntil > new Date()) {
+  return res.status(429).json({
+    error: "Too many attempts. Account temporarily locked."
+  });
+}
+Test:
+Send 25 rapid PUT /api/auth/password requests → 429 after 20 attempts
+
+FIX 8 — Warm healing health cache on server startup
+File: server/index.ts or wherever the server starts
+Add a startup cache warm after the server begins listening:
+typescript// After app.listen(...)
+server.on("listening", async () => {
+  console.log(`[SERVER] ArgiCRM listening on port ${PORT}`);
+
+  // Warm the healing health cache immediately
+  // so first user request hits cache not cold DB
+  try {
+    await fetch(`http://localhost:${PORT}/api/healing/health`, {
+      headers: { "x-internal-warmup": "true" }
+    });
+    console.log("[WARMUP] Healing health cache warmed");
+  } catch (err) {
+    console.warn("[WARMUP] Cache warm failed (non-critical):", err);
+  }
+});
+Test:
+Restart server
+Immediately call GET /api/healing/health
+Expected: response under 150ms even on first call
+
+✅ FINAL VERIFICATION AFTER ALL 8 FIXES
+POST /api/activities {"type":"call","note":"Test"}
+  → 201 (not 500)
+
+POST /api/tasks {"title":"Test task","dueDate":"2026-04-20"}
+  → 201 (not 500)
+
+GET  /api/ecommerce/stores/:id (valid ID)
+  → 200 + store JSON with status field (not HTML)
+
+GET  /api/marketplace/credits
+  → 200 + JSON with remaining/monthly/used/plan (not HTML)
+
+POST /api/auth/register (brand new email)
+  → 201, then immediately:
+  GET /api/contacts (new tenant JWT) → 3 records
+  GET /api/leads    (new tenant JWT) → 2 records
+  GET /api/deals    (new tenant JWT) → 1 record
+  GET /api/tasks    (new tenant JWT) → 2 records
+
+POST /api/invoices {"clientName":"Test Corp","amount":1500}
+  → 201 (not 500)
+
+PUT  /api/auth/password × 25 rapid
+  → 429 after 20 attempts
+
+GET  /api/healing/health (immediately after server restart)
+  → 200 under 150ms (warmed cache)
+
+📋 DELIVER THIS REPORT WHEN DONE
+ROUND 5 FIX REPORT
+
+FIX 1 — Activities NOT NULL:     PASS/FAIL
+FIX 2 — Tasks dueDate parsing:   PASS/FAIL
+FIX 3 — Store GET by ID:         PASS/FAIL
+FIX 4 — Marketplace credits:     PASS/FAIL
+FIX 5 — New tenant onboarding:   PASS/FAIL · contacts X · leads X · deals X · tasks X
+FIX 6 — Invoice field mapping:   PASS/FAIL
+FIX 7 — Password rate limiting:  PASS/FAIL
+FIX 8 — Healing cache warmup:    PASS/FAIL · cold start time: Xms
+
+Fixes confirmed: X/8
+Files modified: [list every file and exact lines changed]
+
+Previous health score: 87/100
+Current health score:  X/100
+Target:                95/100
+
+Launch readiness: YES / NOT YET
+Remaining blockers: [list only true blockers]
+
+Missing environment variables still needed for launch:
+- STRIPE_SECRET_KEY + STRIPE_PUBLISHABLE_KEY + STRIPE_WEBHOOK_SECRET
+- FLUTTERWAVE_SECRET_KEY + FLUTTERWAVE_PUBLIC_KEY
+- SMTP_HOST + SMTP_USER
+
+Confirm: are there any remaining code issues
+blocking launch once env vars are added? YES/NO
+
+DO NOT touch any passing feature. Modify only the files explicitly listed above. After this round the only remaining items should be environment variables — all code issues must be resolved.

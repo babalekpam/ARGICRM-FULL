@@ -11,6 +11,32 @@ import { eq, sql } from "drizzle-orm";
 
 const TENANT_ID = "cadbdecb-5886-4b05-a6bb-99a893293ec4"; // ARGILETTE LLC
 
+// ─── Lightweight onboarding seed for new tenant registrations ────────────────
+export async function seedNewTenantOnboarding(tenantId: string): Promise<void> {
+  console.log("[SEED] Starting onboarding seed for new tenant:", tenantId);
+  try {
+    await db.insert(contacts).values([
+      { tenantId, firstName: "Sarah", lastName: "Johnson", email: `sarah.johnson.${Date.now()}@acmecorp.com`, company: "Acme Corp", status: "active" },
+      { tenantId, firstName: "James", lastName: "Osei", email: `james.osei.${Date.now()}@techghanaltd.com`, company: "TechGhana Ltd", status: "active" },
+      { tenantId, firstName: "Marie", lastName: "Dupont", email: `marie.dupont.${Date.now()}@paristech.fr`, company: "Paris Technologies", status: "active" },
+    ]);
+    await db.insert(leads).values([
+      { tenantId, firstName: "Sarah", lastName: "Johnson", company: "Acme Corp", value: "5000", stage: "qualified", source: "referral" },
+      { tenantId, firstName: "James", lastName: "Osei", company: "TechGhana Ltd", value: "3200", stage: "proposal", source: "website" },
+    ] as any);
+    await db.insert(deals).values([
+      { tenantId, title: "Acme Corp — Q2 Contract", value: "5000", stage: "negotiation", probability: 70 },
+    ] as any);
+    await db.insert(tasks).values([
+      { tenantId, title: "Follow up with Sarah Johnson", priority: "high", status: "pending", dueDate: new Date(Date.now() + 86400000) },
+      { tenantId, title: "Send proposal to James Osei", priority: "medium", status: "pending", dueDate: new Date(Date.now() + 3 * 86400000) },
+    ] as any);
+    console.log("[SEED] Onboarding seed complete for tenant:", tenantId);
+  } catch (err) {
+    console.error("[SEED] Onboarding seed error (non-critical):", err);
+  }
+}
+
 async function getCount(table: any, tenantId: string): Promise<number> {
   const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(table).where(eq(table.tenantId, tenantId));
   return Number(n);

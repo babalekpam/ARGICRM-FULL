@@ -5,6 +5,7 @@ import { authenticate, generateToken, hashPassword, verifyPassword, type AuthReq
 import * as storage from "../storage.js";
 import { sendWelcomeEmail, sendTeamInviteEmail, sendPasswordChangedEmail } from "../services/email.js";
 import { PLAN_MAP, PLAN_HIERARCHY } from "@shared/plans";
+import { seedNewTenantOnboarding } from "../seed-demo.js";
 
 const loginRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -99,6 +100,11 @@ router.post("/register", async (req, res) => {
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
       tenant: { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt },
     });
+
+    // Fire-and-forget onboarding seed so new tenant sees sample data
+    seedNewTenantOnboarding(tenant.id).catch(err =>
+      console.error("[SEED] Onboarding seed failed for tenant:", tenant.id, err)
+    );
 
     // Send welcome email (non-blocking)
     sendWelcomeEmail({
@@ -267,6 +273,43 @@ router.post("/invite", authenticate, async (req: AuthRequest, res) => {
     if (err.name === "ZodError") return res.status(400).json({ error: "Validation failed", details: err.errors });
     console.error("Invite error:", err);
     res.status(500).json({ error: "Failed to invite user" });
+  }
+});
+
+// ─── PUT /api/auth/password (rate-limited alias for password change) ──────────
+router.put("/password", loginRateLimit, authenticate, async (req: AuthRequest, res) => {
+  try {
+    // Check per-account lockout (same as login)
+    const attempts = failedAttempts.get(req.user!.email);
+    if (attempts?.lockedUntil && attempts.lockedUntil > new Date()) {
+      return res.status(429).json({ error: "Too many attempts. Account temporarily locked." });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Both currentPassword and newPassword are required" });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters" });
+    }
+
+    const user = await storage.getUserById(req.user!.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const valid = await verifyPassword(currentPassword, user.passwordHash || "");
+    if (!valid) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    const hash = await hashPassword(newPassword);
+    await storage.updateUser(req.user!.id, { passwordHash: hash });
+    res.json({ success: true });
+
+    sendPasswordChangedEmail({ to: user.email, firstName: user.firstName || "" })
+      .catch(e => console.error("[EMAIL] Password-changed email failed:", e));
+  } catch (err: any) {
+    console.error("PUT /auth/password error:", err);
+    res.status(500).json({ error: "Failed to change password" });
   }
 });
 
