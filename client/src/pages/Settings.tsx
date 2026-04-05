@@ -57,6 +57,7 @@ export default function SettingsPage() {
   const { data: wlData } = useQuery<any>({ queryKey:["/api/ops/whitelabel"] });
   const { data: smtpData } = useQuery<any>({ queryKey:["/api/settings/smtp"] });
   const { data: aiData, refetch: refetchAI } = useQuery<any>({ queryKey:["/api/settings/ai"] });
+  const { data: usageData } = useQuery<any>({ queryKey:["/api/ai/usage"], refetchInterval: 30000 });
   const [aiKey, setAiKey] = useState("");
   const [aiProvider, setAiProvider] = useState("openai");
   const [aiSaved, setAiSaved] = useState(false);
@@ -510,7 +511,112 @@ export default function SettingsPage() {
 
           {tab==="ai"&&(
             <div style={{display:"flex",flexDirection:"column",gap:16}}>
-              {/* Usage card */}
+
+              {/* ── USAGE DASHBOARD ─────────────────────────────── */}
+              {(()=>{
+                const ud = usageData;
+                const limit = ud?.monthlyLimit ?? aiData?.usageLimit ?? 50;
+                const remaining = ud?.creditsRemaining ?? (limit - (aiData?.usageCount||0));
+                const used = ud?.creditsUsed ?? (aiData?.usageCount||0);
+                const pct = limit === -1 ? 0 : Math.min(100, (used / Math.max(1, limit)) * 100);
+                const barColor = pct >= 95 ? "#ef4444" : pct >= 80 ? "#f59e0b" : "var(--accent)";
+                const isUnlimited = limit === -1 || ud?.hasOwnKey || aiData?.hasApiKey;
+                const plan = (ud?.plan || aiData?.plan || "starter");
+
+                return (
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
+                  {/* Header */}
+                  <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12,marginBottom:20}}>
+                    <div>
+                      <div style={{fontSize:16,fontWeight:700,marginBottom:2}}>AI Usage Dashboard</div>
+                      <div style={{fontSize:13,color:"var(--text-muted)"}}>
+                        {isUnlimited ? "Unlimited — your own API key is active." : `${plan.charAt(0).toUpperCase()+plan.slice(1)} plan · resets on the 1st of each month`}
+                      </div>
+                    </div>
+                    {!isUnlimited && ud?.spendMtd && Number(ud.spendMtd) > 0 && (
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:11,color:"var(--text-muted)"}}>Platform cost MTD</div>
+                        <div style={{fontSize:14,fontWeight:700}}>${Number(ud.spendMtd).toFixed(4)}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Credits bar */}
+                  {!isUnlimited && (
+                    <>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <span style={{fontSize:13,fontWeight:600}}>Credits Used</span>
+                        <span style={{fontSize:13,fontWeight:700,color:barColor}}>{used} / {limit}</span>
+                      </div>
+                      <div style={{height:10,background:"var(--border)",borderRadius:5,overflow:"hidden",marginBottom:6}}>
+                        <div style={{height:"100%",width:`${pct}%`,background:barColor,borderRadius:5,transition:"width 0.5s ease"}}/>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                        <span style={{fontSize:12,color:"var(--text-muted)"}}>
+                          {remaining > 0 ? `${remaining} credits remaining this month` : "Credits exhausted"}
+                        </span>
+                        <span style={{fontSize:12,color:barColor,fontWeight:600}}>{pct.toFixed(0)}% used</span>
+                      </div>
+
+                      {/* Warning / upgrade CTA */}
+                      {pct >= 80 && (
+                        <div style={{
+                          display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",
+                          padding:"12px 16px",borderRadius:8,marginBottom:16,
+                          background: pct >= 95 ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)",
+                          border: `1px solid ${pct >= 95 ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.25)"}`,
+                        }}>
+                          <div>
+                            <div style={{fontSize:13,fontWeight:600,color:pct>=95?"#ef4444":"#f59e0b"}}>
+                              {pct >= 95 ? "Credits almost exhausted" : "Approaching credit limit"}
+                            </div>
+                            <div style={{fontSize:12,color:"var(--text-muted)"}}>
+                              You have {remaining} credits left — upgrade to keep going.
+                            </div>
+                          </div>
+                          <button
+                            data-testid="button-upgrade-cta"
+                            onClick={()=>window.open("https://argilette.org/pricing","_blank")}
+                            style={{flexShrink:0,background:"var(--accent)",color:"#fff",border:"none",borderRadius:7,padding:"8px 18px",fontSize:12,fontWeight:600,cursor:"pointer"}}
+                          >
+                            Upgrade Plan
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Breakdown by feature */}
+                  {ud?.byFeature?.length > 0 && (
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>Usage by Feature — This Month</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr auto auto auto",gap:"0 16px",alignItems:"center"}}>
+                        {["Feature","Calls","Tokens","Cost"].map(h=>(
+                          <div key={h} style={{fontSize:11,color:"var(--text-muted)",fontWeight:600,paddingBottom:6,borderBottom:"1px solid var(--border)"}}>{h}</div>
+                        ))}
+                        {ud.byFeature.map((row:any,i:number)=>[
+                          <div key={`fn-${i}`} style={{fontSize:13,padding:"6px 0",borderBottom:"1px solid var(--border)",textTransform:"capitalize"}}>{row.feature}</div>,
+                          <div key={`fc-${i}`} style={{fontSize:13,padding:"6px 0",borderBottom:"1px solid var(--border)",textAlign:"right",fontWeight:600}}>{row.calls}</div>,
+                          <div key={`ft-${i}`} style={{fontSize:12,padding:"6px 0",borderBottom:"1px solid var(--border)",textAlign:"right",color:"var(--text-muted)"}}>{((row.input_tokens||0)+(row.output_tokens||0)).toLocaleString()}</div>,
+                          <div key={`fd-${i}`} style={{fontSize:12,padding:"6px 0",borderBottom:"1px solid var(--border)",textAlign:"right",color:"var(--text-muted)"}}>
+                            ${Number(row.cost_usd||0).toFixed(4)}
+                          </div>,
+                        ])}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty state */}
+                  {(!ud?.byFeature || ud.byFeature.length === 0) && (
+                    <div style={{textAlign:"center",padding:"24px 0",color:"var(--text-muted)",fontSize:13}}>
+                      No AI usage yet this month. Start a conversation with ARIA to see your usage here.
+                    </div>
+                  )}
+                </div>
+                );
+              })()}
+
+              {/* Legacy quota card (kept for backward compat) */}
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
                 <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>AI Usage</div>
                 <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:20}}>

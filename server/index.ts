@@ -258,6 +258,44 @@ async function runStartupMigrations() {
       await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS last_enriched_at timestamp`).catch(() => {});
       await client.query(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => {});
 
+      // ── AI Credits & Usage ──────────────────────────────────────────────────
+      await client.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ai_credits_remaining INTEGER DEFAULT 200`).catch(() => {});
+      await client.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ai_credits_monthly INTEGER DEFAULT 200`).catch(() => {});
+      await client.query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ai_spend_mtd DECIMAL(10,4) DEFAULT 0`).catch(() => {});
+      // Extend existing ai_usage table with markup column
+      await client.query(`ALTER TABLE ai_usage ADD COLUMN IF NOT EXISTS markup_charged DECIMAL(10,4) DEFAULT 0`).catch(() => {});
+      // Monthly summary table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS ai_usage_summary (
+          id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          tenant_id    uuid NOT NULL,
+          month        DATE NOT NULL,
+          total_calls  INTEGER DEFAULT 0,
+          total_tokens INTEGER DEFAULT 0,
+          total_cost_usd DECIMAL(10,4) DEFAULT 0,
+          total_charged  DECIMAL(10,4) DEFAULT 0,
+          margin         DECIMAL(10,4) DEFAULT 0,
+          UNIQUE(tenant_id, month)
+        )
+      `).catch(() => {});
+      // Backfill ai_credits_remaining based on plan if still null / 0
+      await client.query(`
+        UPDATE tenants SET ai_credits_remaining = CASE
+          WHEN COALESCE(subscription_plan, plan) IN ('trial','trialing','free') THEN 50
+          WHEN COALESCE(subscription_plan, plan) = 'starter'      THEN 200
+          WHEN COALESCE(subscription_plan, plan) = 'professional' THEN 500
+          WHEN COALESCE(subscription_plan, plan) = 'business'     THEN 1000
+          ELSE 200
+        END
+        WHERE ai_credits_remaining IS NULL OR ai_credits_remaining = 0
+      `).catch(() => {});
+      // Enterprise tenants get unlimited marker (-1)
+      await client.query(`
+        UPDATE tenants SET ai_credits_remaining = -1
+        WHERE COALESCE(subscription_plan, plan) = 'enterprise'
+          AND ai_credits_remaining != -1
+      `).catch(() => {});
+
       console.log("[MIGRATE] Agent table schemas synced");
     } catch (e: any) { console.warn("[MIGRATE] Column migration warning:", e.message?.slice(0, 80)); }
 

@@ -9,6 +9,7 @@
 
 import * as storage from "../storage.js";
 import { complete, ask, AIProvider, AICompletionOpts } from "./ai-adapter.js";
+import { checkCredits } from "./ai-credits.js";
 
 // ─── Monthly quota per plan ──────────────────────────────────────────────────
 export const PLAN_LIMITS: Record<string, number> = {
@@ -88,6 +89,7 @@ export async function completeForTenant(tenantId: string, opts: AICompletionOpts
 
   const aiSettings: any = (tenant.settings as any)?.ai || {};
 
+  // If the tenant has their own API key — skip credit check, use their key directly
   if (aiSettings.apiKey && aiSettings.provider) {
     return complete({
       ...opts,
@@ -96,7 +98,9 @@ export async function completeForTenant(tenantId: string, opts: AICompletionOpts
     });
   }
 
-  await checkAndIncrementUsage(tenantId);
+  // Platform key path — enforce hard credit limit FIRST, then legacy count
+  await checkCredits(tenantId);          // throws 429 if exhausted
+  await checkAndIncrementUsage(tenantId); // legacy count (still used by old quota UI)
   return complete(opts);
 }
 

@@ -4,6 +4,7 @@ import { z } from "zod";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import { authenticate, requireRole, type AuthRequest } from "./middleware/auth.js";
+import { aiRateLimit } from "./middleware/ai-rate-limit.js";
 import * as storage from "./storage.js";
 import { db } from "./db.js";
 import { contacts } from "@shared/schema.js";
@@ -60,8 +61,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/email", emailTrackingRouter);
   // ─── Super Admin ───────────────────────────────────
   app.use("/api/superadmin", adminRouter);
-  // ─── ARIA AI Command Agent ──────────────────────────
-  app.use("/api/aria", ariaRouter);
+  // ─── ARIA AI Command Agent (rate-limited per plan) ──
+  app.use("/api/aria", aiRateLimit, ariaRouter);
   // ─── Public Storefront API (no auth) ───────────────
   app.use("/api/public", publicRouter);
   // ─── Contracts & e-Signing ─────────────────────────
@@ -633,6 +634,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/ai/provider", authenticate, async (req: AuthRequest, res) => {
     const { getProviderInfo } = await import("./services/ai-adapter.js");
     res.json(getProviderInfo());
+  });
+
+  // ─── AI Usage Dashboard ──────────────────────────────
+  app.get("/api/ai/usage", authenticate, async (req: AuthRequest, res) => {
+    try {
+      const { getUsageDashboard } = await import("./services/ai-credits.js");
+      const data = await getUsageDashboard(req.user!.tenantId);
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // ─── Global Search ────────────────────────────────

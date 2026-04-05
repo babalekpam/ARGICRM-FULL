@@ -1,0 +1,124 @@
+LAYER 1 — TRACK EVERY TOKEN PER CLIENT
+Every single Claude API call must log to your database:
+javascript// In your /services/claude.js — add this to every call
+
+const response = await client.messages.create({ ... });
+
+// Log usage immediately after every call
+await db.query(`
+  INSERT INTO ai_usage_log 
+  (user_id, tenant_id, feature, input_tokens, output_tokens, 
+   cost_usd, timestamp)
+  VALUES ($1, $2, $3, $4, $5, $6, NOW())
+`, [
+  userId,
+  tenantId,
+  featureName,
+  response.usage.input_tokens,
+  response.usage.output_tokens,
+  calculateCost(response.usage)
+]);
+javascript// Cost calculator
+function calculateCost(usage) {
+  const inputCost  = (usage.input_tokens  / 1000000) * 3.00;
+  const outputCost = (usage.output_tokens / 1000000) * 15.00;
+  return inputCost + outputCost;
+}
+
+LAYER 2 — HARD USAGE LIMITS PER CLIENT
+Before every Claude API call, check if the client has credits remaining:
+javascriptasync function checkCreditsAndCall(tenantId, systemPrompt, message) {
+
+  // 1. Check remaining credits
+  const client = await db.query(`
+    SELECT ai_credits_remaining, plan_type 
+    FROM tenants WHERE id = $1
+  `, [tenantId]);
+
+  // 2. BLOCK if out of credits
+  if (client.rows[0].ai_credits_remaining <= 0) {
+    throw new Error("AI credits exhausted. Please upgrade your plan.");
+  }
+
+  // 3. Call Claude
+  const response = await askClaude(systemPrompt, message);
+
+  // 4. Deduct 1 credit
+  await db.query(`
+    UPDATE tenants 
+    SET ai_credits_remaining = ai_credits_remaining - 1 
+    WHERE id = $1
+  `, [tenantId]);
+
+  return response;
+}
+
+LAYER 3 — ANTHROPIC SPEND LIMITS (YOUR SAFETY NET)
+At console.anthropic.com:
+
+Go to Billing → Usage Limits
+Set a monthly hard limit (e.g. $200/month max)
+Set an alert at 80% so you get an email warning before hitting the cap
+This means even if your code has a bug causing runaway calls — Anthropic cuts it off automatically
+
+
+📊 DATABASE TABLES TO BUILD
+sql-- Track every client's AI allocation
+ALTER TABLE tenants ADD COLUMN ai_credits_remaining INTEGER DEFAULT 500;
+ALTER TABLE tenants ADD COLUMN ai_credits_monthly   INTEGER DEFAULT 500;
+ALTER TABLE tenants ADD COLUMN ai_spend_mtd         DECIMAL(10,4) DEFAULT 0;
+
+-- Log every single AI call
+CREATE TABLE ai_usage_log (
+  id              SERIAL PRIMARY KEY,
+  tenant_id       INTEGER REFERENCES tenants(id),
+  user_id         INTEGER REFERENCES users(id),
+  feature         VARCHAR(100),  -- 'aria', 'skill_sales_01', 'store_builder'
+  input_tokens    INTEGER,
+  output_tokens   INTEGER,
+  cost_usd        DECIMAL(10,6),
+  markup_charged  DECIMAL(10,4),
+  timestamp       TIMESTAMP DEFAULT NOW()
+);
+
+-- Monthly usage summary per client
+CREATE TABLE ai_usage_summary (
+  tenant_id       INTEGER,
+  month           DATE,
+  total_calls     INTEGER,
+  total_tokens    INTEGER,
+  total_cost_usd  DECIMAL(10,4),
+  total_charged   DECIMAL(10,4),
+  margin          DECIMAL(10,4)
+);
+
+📈 CLIENT-FACING USAGE DASHBOARD
+Show clients their usage so they feel in control and upgrade willingly:
+
+Credits used this month vs plan limit
+Progress bar (turns amber at 80%, red at 95%)
+Breakdown by feature (ARIA / Skills / Store Builder)
+"You have 47 credits remaining — upgrade to keep going" banner
+One-click upgrade button that opens Stripe checkout
+
+
+🚨 PROTECTION AGAINST ABUSE
+Add these rules to prevent any one client from bankrupting you:
+javascript// Rate limiting per client
+const RATE_LIMITS = {
+  starter: { perMinute: 5,  perHour: 50,  perDay: 200  },
+  growth:  { perMinute: 15, perHour: 200, perDay: 1000 },
+  pro:     { perMinute: 30, perHour: 500, perDay: 5000 },
+  agency:  { perMinute: 60, perHour: 1000, perDay: 20000 }
+};
+
+// Max tokens per single call
+const MAX_TOKENS = {
+  aria:          1000,   // chat messages stay short
+  skill:         4096,   // skills need more room
+  store_builder: 2048,   // store generation
+  enrichment:    1000    // data enrichment
+};
+
+💵 YOUR REVENUE PROTECTION SUMMARY
+ProtectionWhat It DoesToken loggingKnow exactly what every client costs youCredit systemClient can never use more than they paid forRate limitingNo client can spike your bill with rapid callsAnthropic hard capEven a code bug can't exceed your set limit5–10x markupYou profit even if usage is higher than expectedUsage dashboardClients self-upgrade when they hit limits
