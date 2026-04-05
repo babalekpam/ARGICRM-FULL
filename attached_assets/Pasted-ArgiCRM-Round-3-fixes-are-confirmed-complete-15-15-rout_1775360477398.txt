@@ -1,0 +1,374 @@
+ArgiCRM Round 3 fixes are confirmed complete. 15/15 routes passing. DO NOT modify any code. Run a full re-audit of the entire platform. Test everything without exception. Deliver a complete report.
+
+🔍 STEP 1 — VERIFY ALL ROUND 3 FIXES
+FIX 1 — Three routes now returning JSON
+GET /api/admin/stats
+Expected: JSON with tenants, users, contacts, leads, deals, AI agents counts
+Must NOT return HTML
+
+GET /api/marketplace/browse
+Expected: JSON with leads array and plan-based blurring applied
+Must NOT return HTML
+
+GET /api/ai/provider-info
+Expected: JSON with AI provider configuration
+Must NOT return HTML
+
+FIX 2 — Deals creation
+POST /api/deals with body: {"name":"Test Deal","value":5000,"stage":"prospecting"}
+Expected: 201 + deal created with title mapped from name
+POST /api/deals with body: {"title":"Test Deal 2","value":3000,"stage":"qualified"}
+Expected: 201 + deal created directly with title
+
+FIX 3 — Memory heap
+Check server logs after 5 minutes of running
+Expected: heap must be below 80% — no CRITICAL memory alerts
+
+FIX 4 — Seed data
+GET /api/contacts  → must return 10+ records
+GET /api/leads     → must return 5+ records
+GET /api/deals     → must return 3+ records
+GET /api/invoices  → must return 3+ records
+GET /api/campaigns → must return 2+ records
+GET /api/tasks     → must return 5+ records
+
+FIX 5 — Admin security
+Regular user JWT → GET /api/admin/stats   → must return 403
+Regular user JWT → GET /api/admin/tenants → must return 403
+Platform owner JWT → GET /api/admin/stats → must return 200 + data
+
+FIX 6 — Healing kill switch
+POST /api/healing/pause  with platform_owner JWT → 200 + {"status":"paused"}
+POST /api/healing/resume with platform_owner JWT → 200 + {"status":"running"}
+POST /api/healing/pause  with regular user JWT   → must return 403
+
+FIX 7 — NPI Registry
+GET /api/leadgen/npi?specialty=dentist&state=TX&limit=5
+Expected: 5+ real provider records with name, address, phone, specialty
+GET /api/leadgen/npi?specialty=cardiologist&state=FL&limit=5
+Expected: 5+ real provider records
+
+FIX 8 — Health check caching
+GET /api/healing/health → first call, note response time
+GET /api/healing/health → second call immediately after
+Expected: second call must respond under 50ms (cached)
+Both must return JSON not HTML
+
+🔍 STEP 2 — FULL REGRESSION TEST
+Confirm everything that was working in Round 2 is still working:
+GET  /api/health                        → 200 under 50ms
+POST /api/auth/login                    → 200 + JWT token
+POST /api/auth/logout                   → 200
+GET  /api/me                            → 200 + user JSON not HTML
+GET  /api/dashboard                     → 200 + dashboard data
+GET  /api/contacts                      → 200 + 10+ records
+POST /api/contacts                      → 201 + new contact created
+PUT  /api/contacts/:id                  → 200 + contact updated
+DEL  /api/contacts/:id                  → 200 + contact deleted
+GET  /api/leads                         → 200 + 5+ records
+POST /api/leads                         → 201 + new lead created
+PUT  /api/leads/:id                     → 200 + updated
+DEL  /api/leads/:id                     → 200 + deleted
+GET  /api/deals                         → 200 + 3+ records
+POST /api/deals                         → 201 + created (not 500)
+PUT  /api/deals/:id                     → 200 + updated
+DEL  /api/deals/:id                     → 200 + deleted
+GET  /api/tasks                         → 200 + 5+ records
+POST /api/tasks                         → 201 + created
+GET  /api/accounts                      → 200
+GET  /api/campaigns                     → 200 + 2+ records
+GET  /api/activities                    → 200
+GET  /api/users                         → 200
+GET  /api/settings                      → 200
+PUT  /api/settings                      → 200 + updated
+GET  /api/invoices                      → 200 + 3+ records
+GET  /api/finance/transactions          → 200 (was timeout)
+GET  /api/ecommerce/orders              → 200 (was timeout)
+GET  /api/ecommerce/stores              → 200
+GET  /api/ecommerce/products            → 200
+GET  /api/seo/projects                  → 200 (was timeout)
+GET  /api/search?q=test                 → 200 + results (was 500)
+GET  /api/workflows                     → 200
+GET  /api/contracts                     → 200
+GET  /api/skills                        → 200 + skills list
+GET  /api/leadgen/stats                 → 200
+GET  /api/marketplace/browse            → 200 + JSON (was HTML)
+GET  /api/admin/stats                   → 200 + JSON (was HTML)
+GET  /api/ai/provider-info              → 200 + JSON (was HTML)
+POST /api/aria/chat                     → 200 + Claude response (was 401)
+POST /api/ai/email                      → 200 + generated email
+POST /api/ai/score-lead                 → 200 + lead score
+GET  /api/healing/health                → 200 + JSON under 100ms
+GET  /api/admin/tenants                 → 200 + tenant list (admin only)
+POST /api/auth/register (no domain)    → 201 + user created
+Report each: route · status code · response time · PASS or FAIL
+
+🔍 STEP 3 — DEEP FEATURE TEST
+Go beyond basic route checks and test actual functionality:
+ARIA AI AGENT
+Send: "Show me all my contacts"
+Expected: ARIA returns list or summary of contacts from the database
+
+Send: "Create a new lead called John Smith from TechCorp"
+Expected: ARIA confirms lead created and it appears in GET /api/leads
+
+Send: "What is my pipeline value this month?"
+Expected: ARIA returns a calculated summary from deals data
+
+Send: "Draft a follow-up email for my top lead"
+Expected: ARIA returns a professional email draft
+
+Send a message in French: "Montre-moi mes contacts"
+Expected: ARIA responds in French
+SKILLS LIBRARY
+POST /api/skills/run with skill_id targeting sales domain
+Expected: 200 + professional skill output from Claude
+
+POST /api/skills/run with skill_id targeting healthcare domain
+Expected: 200 + healthcare-specific professional output
+
+POST /api/skills/run with skill_id targeting Africa market domain
+Expected: 200 + Africa-relevant output in correct language
+
+GET /api/skills → confirm all 78 skills listed across 12 domains
+DATA MARKETPLACE
+GET /api/marketplace/browse?industry=healthcare&market=US
+Expected: filtered healthcare leads from US
+
+GET /api/marketplace/browse?industry=healthcare&market=Africa
+Expected: filtered healthcare leads from Africa
+
+GET /api/marketplace/browse?industry=technology&market=US
+Expected: filtered tech company leads
+
+POST /api/marketplace/purchase (with valid credit balance)
+Expected: leads unlocked and deducted from credit balance
+
+GET /api/marketplace/credits
+Expected: returns current credit balance for the tenant
+NPI REGISTRY
+GET /api/leadgen/npi?specialty=dentist&state=TX
+GET /api/leadgen/npi?specialty=cardiologist&state=CA
+GET /api/leadgen/npi?specialty=urgent+care&state=FL
+GET /api/leadgen/npi?specialty=psychiatrist&state=NY
+Expected: all return 5+ real provider records with complete data
+E-COMMERCE STORE BUILDER
+POST /api/ecommerce/stores (create a new store)
+Expected: store created without looping — state machine must be
+idle → building → complete, never loop back to building
+
+GET /api/ecommerce/stores/:id
+Expected: returns store with correct data
+
+POST /api/ecommerce/products (add product to store)
+Expected: 201 + product created
+HEALING SYSTEM
+GET /api/healing/health
+Expected: system status, last run time, next run time, memory stats
+
+POST /api/healing/pause → confirm paused
+Wait 10 seconds
+GET /api/healing/health → confirm no new healing runs occurred
+POST /api/healing/resume → confirm running
+GET /api/healing/health → confirm next run scheduled
+
+🔍 STEP 4 — COMPLETE FRONTEND PAGE TEST
+Test every single page renders with real data:
+Landing / Home page
+→ Renders fully · all sections visible · no console errors
+
+Login page
+→ Login with correct credentials → redirects to dashboard
+→ Login with wrong credentials → shows error message
+
+Register page
+→ Register without domain field → creates account successfully
+→ Shows auto-generated domain in confirmation
+
+Dashboard
+→ Renders with real data · contacts count · leads count · deals value
+→ Must NOT show empty state with 0s everywhere
+
+CRM Contacts page
+→ Shows 10+ seeded contacts
+→ Search works · filter works · add new contact works
+
+CRM Leads page
+→ Shows 5+ seeded leads
+→ Pipeline stages visible · drag and drop works
+
+CRM Deals / Pipeline page
+→ Shows 3+ seeded deals
+→ Kanban board renders · deal cards show correct values
+
+Projects page
+→ Renders with data · was blank in Round 1 · confirm fixed
+
+Account / Profile page
+→ Renders with user data · was blank in Round 1 · confirm fixed
+→ Edit profile saves correctly
+
+Billing / Invoices page
+→ Shows 3+ seeded invoices · paid/pending/overdue status visible
+→ Create new invoice button works
+
+Finance / Transactions page
+→ Shows transactions · was timing out in Round 1 · confirm fast
+
+E-Commerce tab
+→ Shows existing stores
+→ Create new store button opens AI interview flow · does NOT loop
+
+E-Commerce Orders
+→ Shows orders · was timing out in Round 1 · confirm fast
+
+SEO Projects page
+→ Shows projects · was timing out in Round 1 · confirm fast
+
+Data Marketplace page
+→ Shows leads with blurred preview
+→ Filters work (industry · market · location)
+→ Upgrade CTA visible for locked records
+
+AI Skills page
+→ All 12 domains visible
+→ Click a skill → runs → returns professional output
+
+ARIA Dialog
+→ Opens with Ctrl+Space or the floating button
+→ Send a message → Claude responds
+→ Acts on platform data (reads contacts, creates records)
+→ Conversation history persists in session
+
+Admin Dashboard
+→ Accessible to platform owner only
+→ Shows tenant count · user count · revenue · AI usage
+→ Non-admin gets redirected
+
+Settings page
+→ Profile settings load and save
+→ Notification preferences work
+
+Search bar
+→ Type any contact name → returns results instantly
+→ Type a company name → returns matching leads and deals
+
+Healing System UI
+→ Shows pause/resume toggle
+→ Shows current status and last run time
+Report each: page name · renders (yes/no) · data loads (yes/no) · console errors (yes/no) · mobile responsive (yes/no) · PASS or FAIL
+
+🔍 STEP 5 — SECURITY AUDIT ROUND 3
+Unauthenticated → /api/contacts           → 401   PASS/FAIL
+Unauthenticated → /api/aria/chat          → 401   PASS/FAIL
+Unauthenticated → /api/admin/stats        → 401   PASS/FAIL
+Expired JWT → /api/dashboard              → 401   PASS/FAIL
+Regular user → /api/admin/stats           → 403   PASS/FAIL
+Regular user → /api/admin/tenants         → 403   PASS/FAIL
+Regular user → /api/healing/pause         → 403   PASS/FAIL
+SQL injection → /api/search?q=1';DROP     → safe empty results   PASS/FAIL
+Cross-tenant → User A reads User B data   → 403 or empty         PASS/FAIL
+Password change → 25 rapid requests       → 429 after limit      PASS/FAIL
+ARIA with valid JWT                        → 200 + response       PASS/FAIL
+Admin JWT → /api/admin/stats              → 200 + data           PASS/FAIL
+
+🔍 STEP 6 — PERFORMANCE BENCHMARK
+Measure and report response times for every key route:
+Target: all non-AI routes under 200ms
+Target: AI routes under 5000ms
+Target: healing/health under 100ms (cached)
+Target: server memory heap under 80%
+
+📋 DELIVER THIS EXACT REPORT
+ARGICRM AUDIT REPORT — ROUND 4
+Generated: [date]
+Previous score: 74/100
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ROUND 3 FIX VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIX 1 — HTML routes:          PASS / FAIL
+FIX 2 — Deals creation:       PASS / FAIL
+FIX 3 — Memory heap:          PASS / FAIL
+FIX 4 — Seed data:            PASS / FAIL
+FIX 5 — Admin security:       PASS / FAIL
+FIX 6 — Healing kill switch:  PASS / FAIL
+FIX 7 — NPI registry:         PASS / FAIL
+FIX 8 — Health caching:       PASS / FAIL
+
+Confirmed: X/8
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGRESSION TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Routes passing: X/43
+Regressions: X
+[List any regressions]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEEP FEATURE TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ARIA actions:              X/5  PASS/FAIL
+Skills library:            X/3  PASS/FAIL
+Data marketplace filters:  X/3  PASS/FAIL
+NPI registry queries:      X/4  PASS/FAIL
+Store builder (no loop):   PASS/FAIL
+Healing pause/resume:      PASS/FAIL
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FRONTEND PAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pages passing:  X/24
+Pages failing:  X/24
+[List failing pages with reason]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECURITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Checks passing: X/12
+[List any failures]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PERFORMANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Route · time · status]
+Server memory: X% heap used
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEW ISSUES FOUND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Any new issues with severity and file location]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENVIRONMENT VARIABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ANTHROPIC_API_KEY:       SET / MISSING
+STRIPE_SECRET_KEY:       SET / MISSING
+STRIPE_PUBLISHABLE_KEY:  SET / MISSING
+STRIPE_WEBHOOK_SECRET:   SET / MISSING
+FLUTTERWAVE_SECRET_KEY:  SET / MISSING
+FLUTTERWAVE_PUBLIC_KEY:  SET / MISSING
+SMTP_HOST:               SET / MISSING
+SMTP_USER:               SET / MISSING
+GOOGLE_MAPS_API_KEY:     SET / MISSING
+DEEPGRAM_API_KEY:        SET / MISSING
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UPDATED HEALTH SCORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Previous: 74/100
+Current:  X/100
+Target:   90/100
+
+Remaining critical issues: X
+Remaining major issues: X
+Remaining minor issues: X
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT RECOMMENDED ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1.
+2.
+3.
+
+DO NOT fix anything. Test, analyze, and report only. Send me the full report and I will generate Round 4 fixes.
