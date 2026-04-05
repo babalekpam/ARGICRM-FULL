@@ -144,6 +144,21 @@ export default function CampaignsPage() {
               {[{l:"Type",v:sel.type?.replace("_"," ")},{l:"Target Audience",v:sel.targetAudience},{l:"Goals",v:sel.goals},{l:"Budget",v:sel.budget?`$${Number(sel.budget).toLocaleString()}`:null},{l:"Actual Cost",v:sel.actualCost?`$${Number(sel.actualCost).toLocaleString()}`:null},{l:"Start Date",v:sel.startDate?new Date(sel.startDate).toLocaleDateString():null},{l:"End Date",v:sel.endDate?new Date(sel.endDate).toLocaleDateString():null}].filter(f=>f.v).map(f=>(
                 <div key={f.l}><div style={{fontSize:10,color:"var(--text-muted)",marginBottom:2}}>{f.l}</div><div style={{fontSize:13}}>{f.v}</div></div>
               ))}
+              {sel.subject&&(
+                <div style={{marginTop:4}}>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>Email Subject</div>
+                  <div style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 12px",fontSize:13,fontWeight:600}}>{sel.subject}</div>
+                </div>
+              )}
+              {sel.content&&(
+                <div style={{marginTop:4}}>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>Email Body</div>
+                  <div style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"12px",fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:280,overflowY:"auto"}}>{sel.content}</div>
+                </div>
+              )}
+              {!sel.subject&&!sel.content&&sel.type==="email"&&(
+                <div style={{background:"rgba(99,102,241,0.07)",border:"1px dashed rgba(99,102,241,0.3)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--text-muted)"}}>No email content yet. Ask ARIA: "write email content for the [name] campaign"</div>
+              )}
               {sel.budget&&sel.actualCost&&(
                 <div style={{marginTop:8}}>
                   <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>Budget Utilization</div>

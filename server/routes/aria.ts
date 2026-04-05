@@ -84,9 +84,11 @@ For unclear instructions, ask exactly ONE clarifying question.
 - DELETE: data.invoiceId — needsConfirmation: true
 
 == CAMPAIGNS ==
-- CREATE: extract name, type (email|social|event|paid|content|sms), budget, startDate, endDate, goals, targetAudience. Status defaults to draft.
+- CREATE: extract name, type (email|social|event|paid|content|sms), budget, startDate, endDate, goals, targetAudience. Status defaults to draft. For email campaigns, AI auto-generates a personalised cold email (subject + body) shown directly in the response.
 - READ/SUMMARIZE: data.filter = "all"|"active"|"draft"|"completed"
-- UPDATE: data.campaignId or data.name (fuzzy); fields: status, budget, goals
+- UPDATE: data.campaignId or data.name (fuzzy); fields: status, budget, goals, subject, content
+- GENERATE email content for existing campaign: type=UPDATE, entity=campaign, data.name="...", data.generateContent=true, data.goals="what to pitch"
+- Example "write emails for the Outreach campaign": type=UPDATE, entity=campaign, data.name="Outreach", data.generateContent=true
 
 == PROJECTS ==
 - CREATE: extract name, description, status (planning|active|completed), priority (low|medium|high)
@@ -588,19 +590,99 @@ async function executeAriaAction(
   // CAMPAIGNS
   // ──────────────────────────────────────────────────────────────────────────
   if (type === "CREATE" && entity === "campaign") {
+    // Fetch up to 3 real contacts to personalise the email
+    const contactRows = await db.select().from(contacts)
+      .where(eq(contacts.tenantId, tenantId))
+      .orderBy(desc(contacts.createdAt))
+      .limit(3);
+
+    const isEmail = (data.type || "email") === "email";
+    const offer   = data.goals || data.targetAudience || "our services";
+    const brand   = "ARGILETTE";
+
+    let generatedSubject = "";
+    let generatedContent = "";
+
+    if (isEmail) {
+      // Build a personalised, role-specific cold email using the B2B cold-email skill
+      const contactCtx = contactRows.length
+        ? contactRows.map((c: any) => {
+            const name    = [c.firstName, c.lastName].filter(Boolean).join(" ") || c.email;
+            const company = c.company || "their company";
+            const title   = c.jobTitle || "decision maker";
+            return `- ${name} (${title} at ${company})`;
+          }).join("\n")
+        : "- no contacts yet — use generic prospect";
+
+      const aiPrompt = `You are a senior B2B sales strategist writing a cold email outreach campaign for ${brand}.
+
+Campaign goal: ${offer}
+Target audience: ${data.targetAudience || "business contacts"}
+Sample contacts to personalise for:
+${contactCtx}
+
+Write ONE cold email template that:
+1. Has a subject line that creates curiosity (NOT clickbait, NOT generic)
+2. Opens with a specific, personalised hook referencing their role/industry
+3. States ONE clear value proposition in ≤2 sentences
+4. Ends with a soft CTA: suggest a 15-min discovery call
+5. Total body ≤ 150 words
+6. Includes a P.S. line with a relevant insight
+
+Use {{first_name}} and {{company}} as merge tags for personalisation.
+
+Respond ONLY in this JSON format — no markdown:
+{
+  "subject": "the email subject line",
+  "body": "the full email body with merge tags"
+}`;
+
+      try {
+        const raw = await completeForTenant(tenantId, {
+          messages: [{ role: "user", content: aiPrompt }],
+          maxTokens: 600,
+        });
+        let parsed: any = {};
+        try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch {
+          // Fallback: extract from plain text
+          const subMatch = raw.match(/subject["\s:]+([^\n"]+)/i);
+          parsed = { subject: subMatch?.[1]?.trim() || "", body: raw };
+        }
+        generatedSubject = parsed.subject || "";
+        generatedContent = parsed.body   || "";
+      } catch { /* AI unavailable — save without content */ }
+    }
+
     const row: any = {
       tenantId,
       name:   data.name || "New Campaign",
       type:   data.type || "email",
       status: "draft",
     };
+    if (generatedSubject)    row.subject        = generatedSubject;
+    if (generatedContent)    row.content        = generatedContent;
     if (data.budget)         row.budget         = String(data.budget);
     if (data.goals)          row.goals          = data.goals;
     if (data.targetAudience) row.targetAudience = data.targetAudience;
     if (data.startDate)      row.startDate      = parseDueDate(data.startDate);
     if (data.endDate)        row.endDate        = parseDueDate(data.endDate);
+    if (contactRows.length)  row.recipientCount = contactRows.length;
+
     await db.insert(campaigns).values(row);
-    return `Campaign "${row.name}" (${row.type}) created as a draft.`;
+
+    // Return the generated email directly in the chat so the user can see it
+    if (generatedSubject || generatedContent) {
+      return `Campaign **"${row.name}"** created as a draft in Campaigns.\n\n` +
+        `---\n` +
+        `**Subject:** ${generatedSubject || "(none)"}\n\n` +
+        `**Email body:**\n${generatedContent}\n\n` +
+        `---\n` +
+        (contactRows.length
+          ? `Personalised for ${contactRows.length} contact(s). Open **Campaigns** to review, edit, and schedule.`
+          : `No contacts found yet — add contacts first, then the email will be automatically personalised. Open **Campaigns** to review.`);
+    }
+
+    return `Campaign "${row.name}" (${row.type}) created as a draft. Open **Campaigns** to add email content and schedule it.`;
   }
 
   if ((type === "READ" || type === "SUMMARIZE") && entity === "campaign") {
@@ -625,11 +707,34 @@ async function executeAriaAction(
     }
     if (!id) return "I couldn't find that campaign. Please provide the name or ID.";
     const upd: any = { updatedAt: new Date() };
-    if (data.status !== undefined) upd.status = data.status;
-    if (data.budget !== undefined) upd.budget = String(data.budget);
-    if (data.goals  !== undefined) upd.goals  = data.goals;
+    if (data.status  !== undefined) upd.status  = data.status;
+    if (data.budget  !== undefined) upd.budget  = String(data.budget);
+    if (data.goals   !== undefined) upd.goals   = data.goals;
+    if (data.subject !== undefined) upd.subject = data.subject;
+    if (data.content !== undefined) upd.content = data.content;
+
+    // If user asks to regenerate / write email content for this campaign
+    if (data.action === "generate_content" || data.generateContent) {
+      const contactRows = await db.select().from(contacts).where(eq(contacts.tenantId, tenantId)).orderBy(desc(contacts.createdAt)).limit(3);
+      const contactCtx = contactRows.length
+        ? contactRows.map((c: any) => `- ${[c.firstName, c.lastName].filter(Boolean).join(" ") || c.email} (${c.jobTitle || "contact"} at ${c.company || "their company"})`).join("\n")
+        : "- no contacts yet";
+      const existingGoals = data.goals || "";
+      try {
+        const raw = await completeForTenant(tenantId, {
+          messages: [{ role: "user", content: `Write a personalized B2B cold email for this campaign.\nGoals/Offer: ${existingGoals || "our platform"}\nContacts:\n${contactCtx}\n\nSubject line + body (≤150 words, soft CTA, P.S. line). Use {{first_name}} {{company}} merge tags.\n\nJSON only: {"subject":"...","body":"..."}` }],
+          maxTokens: 500,
+        });
+        let parsed: any = {};
+        try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch {}
+        if (parsed.subject) upd.subject = parsed.subject;
+        if (parsed.body)    upd.content = parsed.body;
+      } catch {}
+    }
+
     await db.update(campaigns).set(upd).where(and(eq(campaigns.id, id), eq(campaigns.tenantId, tenantId)));
-    return `Campaign updated.`;
+    const updatedSubject = upd.subject ? `\n\n**Subject:** ${upd.subject}\n\n**Body:**\n${upd.content || ""}` : "";
+    return `Campaign updated.${updatedSubject}`;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
