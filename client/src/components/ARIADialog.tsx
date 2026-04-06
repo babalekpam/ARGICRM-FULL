@@ -2,6 +2,13 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Bot, X, Minus, Send, Loader2, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { apiRequest } from "../lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+
+// Keys to refresh whenever ARIA modifies data
+const CRM_QUERY_KEYS = [
+  "/api/contacts", "/api/leads", "/api/deals", "/api/tasks",
+  "/api/accounts", "/api/invoices", "/api/campaigns", "/api/dashboard",
+];
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -32,6 +39,7 @@ const SUGGESTIONS = [
 
 export default function ARIADialog() {
   const [, setLocation] = useLocation();
+  const qc = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [status, setStatus] = useState<ARIAStatus>("ready");
@@ -122,6 +130,11 @@ export default function ARIADialog() {
         }, 800);
       }
 
+      // Invalidate all CRM caches so pages refresh with ARIA's changes
+      if (!result.pendingAction) {
+        CRM_QUERY_KEYS.forEach(key => qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith(key) }));
+      }
+
       setStatus("done");
       setTimeout(() => setStatus("ready"), 2000);
     } catch (err: any) {
@@ -144,6 +157,7 @@ export default function ARIADialog() {
       const result: any = await apiRequest("POST", "/api/aria/confirm", { action: pendingAction });
       setMessages(prev => [...prev, { role: "assistant", content: result.response || "Done.", module: "general" }]);
       setPendingAction(null);
+      CRM_QUERY_KEYS.forEach(key => qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith(key) }));
       setStatus("done");
       setTimeout(() => setStatus("ready"), 2000);
     } catch {

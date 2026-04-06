@@ -256,6 +256,7 @@ async function executeAriaAction(
     if (!allContacts.length) return "No contacts found in your CRM to enrich.";
 
     let enriched = 0;
+    let addedToLeads = 0;
     let skipped = 0;
     for (const c of allContacts) {
       try {
@@ -276,9 +277,29 @@ Company: ${c.company || "unknown"}`;
         } else {
           skipped++;
         }
+
+        // Also add enriched contact to leads if not already there
+        const existingLead = c.email
+          ? await db.select({ id: leads.id }).from(leads)
+              .where(and(eq(leads.tenantId, tenantId), eq(leads.email, c.email))).limit(1)
+          : [];
+        if (!existingLead.length) {
+          const { randomUUID } = await import("crypto");
+          await db.insert(leads).values({
+            id: randomUUID(), tenantId,
+            firstName: c.firstName, lastName: c.lastName || "",
+            email: c.email || "", phone: c.phone || "",
+            company: c.company || "",
+            jobTitle: upd.jobTitle || c.jobTitle || "",
+            status: "new", source: c.source || "other",
+            score: 60, notes: upd.notes || c.notes || "",
+            createdBy: null, createdAt: new Date(), updatedAt: new Date(),
+          });
+          addedToLeads++;
+        }
       } catch { skipped++; }
     }
-    return `Enrichment complete. ${enriched} contact${enriched !== 1 ? "s" : ""} updated with job titles, locations, and bios. ${skipped > 0 ? `${skipped} already had full profiles and were skipped.` : ""}`;
+    return `Enrichment complete. ${enriched} contact${enriched !== 1 ? "s" : ""} updated with job titles, locations, and bios — and ${addedToLeads} added to your Leads list. ${skipped > 0 ? `${skipped} skipped (already complete).` : ""}`;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
