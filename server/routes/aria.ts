@@ -60,6 +60,7 @@ For unclear instructions, ask exactly ONE clarifying question.
 - READ/SUMMARIZE: data.filter = "recent"|"all"|"search", data.query for name/email search
 - UPDATE: data.email or data.contactId to identify; fields: firstName, lastName, company, phone, email, notes
 - DELETE: data.email or data.contactId — needsConfirmation: true
+- ENRICH: When user says "enrich contacts", "enrich all contacts", "enrich our contact list", "enrich the contacts" — use type=ENRICH, entity=contact, data.scope="all". For a single contact: data.scope="one", data.email or data.contactId.
 
 == LEADS ==
 - CREATE: extract firstName, lastName, email, company, source, jobTitle, notes
@@ -247,6 +248,37 @@ async function executeAriaAction(
     if (!id) return "Contact not found. Please provide their email or ID.";
     await db.delete(contacts).where(and(eq(contacts.id, id), eq(contacts.tenantId, tenantId)));
     return `Contact has been permanently deleted.`;
+  }
+
+  if (type === "ENRICH" && entity === "contact") {
+    // Bulk enrichment — fetch all contacts for this tenant and enrich with AI
+    const allContacts = await db.select().from(contacts).where(eq(contacts.tenantId, tenantId)).limit(50);
+    if (!allContacts.length) return "No contacts found in your CRM to enrich.";
+
+    let enriched = 0;
+    let skipped = 0;
+    for (const c of allContacts) {
+      try {
+        const prompt = `Enrich this B2B contact. Return ONLY JSON with these fields:
+{"title":"job title","department":"dept","seniority":"c-suite|vp|director|manager|individual","location":"City, Country","bio":"1 sentence bio","confidence":"high|medium|low"}
+Name: ${[c.firstName, c.lastName].filter(Boolean).join(" ") || "unknown"}
+Email: ${c.email || "unknown"}
+Company: ${c.company || "unknown"}`;
+        const enrichData = await completeForTenant(tenantId, { messages: [{ role: "user", content: prompt }], maxTokens: 200 });
+        const parsed = JSON.parse(enrichData.replace(/```json|```/g, "").trim());
+        const upd: any = { updatedAt: new Date() };
+        if (parsed.title    && !c.jobTitle) upd.jobTitle = parsed.title;
+        if (parsed.location && !c.city)     upd.city = parsed.location.split(",")[0]?.trim();
+        if (parsed.bio      && !c.notes)    upd.notes = parsed.bio;
+        if (Object.keys(upd).length > 1) {
+          await db.update(contacts).set(upd).where(and(eq(contacts.id, c.id), eq(contacts.tenantId, tenantId)));
+          enriched++;
+        } else {
+          skipped++;
+        }
+      } catch { skipped++; }
+    }
+    return `Enrichment complete. ${enriched} contact${enriched !== 1 ? "s" : ""} updated with job titles, locations, and bios. ${skipped > 0 ? `${skipped} already had full profiles and were skipped.` : ""}`;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
