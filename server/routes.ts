@@ -10,7 +10,7 @@ import * as storage from "./storage.js";
 import { db } from "./db.js";
 import { contacts, tenants, users, leads, deals } from "@shared/schema.js";
 import { agentSessions, agentMessages } from "@shared/schema-extended.js";
-import { eq, sql as rawSql, gte, desc as descOp } from "drizzle-orm";
+import { eq, and, sql as rawSql, gte, desc as descOp } from "drizzle-orm";
 import authRouter from "./routes/auth.js";
 import agentRouter from "./routes/agents.js";
 import adminRouter from "./routes/admin.js";
@@ -138,6 +138,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteContact(req.params.id, req.user!.tenantId);
       res.json({ success: true });
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete contact" }); }
+  });
+
+  // Promote contact → lead
+  app.post("/api/contacts/:id/to-lead", authenticate, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.user!.tenantId;
+      const rows = await db.select().from(contacts).where(and(eq(contacts.id, req.params.id), eq(contacts.tenantId, tenantId))).limit(1);
+      if (!rows.length) return res.status(404).json({ error: "Contact not found" });
+      const c = rows[0];
+      // Check if lead with same email already exists
+      if (c.email) {
+        const existing = await db.select({ id: leads.id }).from(leads)
+          .where(and(eq(leads.tenantId, tenantId), eq(leads.email, c.email))).limit(1);
+        if (existing.length) return res.json({ leadId: existing[0].id, alreadyExisted: true });
+      }
+      const { randomUUID } = await import("crypto");
+      const leadId = randomUUID();
+      await db.insert(leads).values({
+        id: leadId, tenantId,
+        firstName: c.firstName, lastName: c.lastName || "",
+        email: c.email || "", phone: c.phone || "",
+        company: c.company || "", jobTitle: c.jobTitle || "",
+        status: "new", source: c.source || "other",
+        score: 50, notes: c.notes || "",
+        createdBy: req.user!.id, createdAt: new Date(), updatedAt: new Date(),
+      });
+      res.json({ leadId, alreadyExisted: false });
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to promote contact to lead" }); }
   });
 
   // ─── CSV / Excel Import ───────────────────────────────
@@ -294,6 +322,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteLead(req.params.id, req.user!.tenantId);
       res.json({ success: true });
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete lead" }); }
+  });
+
+  // Convert lead → contact
+  app.post("/api/leads/:id/convert", authenticate, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.user!.tenantId;
+      const leadRows = await db.select().from(leads).where(and(eq(leads.id, req.params.id), eq(leads.tenantId, tenantId))).limit(1);
+      if (!leadRows.length) return res.status(404).json({ error: "Lead not found" });
+      const lead = leadRows[0];
+      // Check if contact with same email already exists
+      if (lead.email) {
+        const existing = await db.select({ id: contacts.id }).from(contacts)
+          .where(and(eq(contacts.tenantId, tenantId), eq(contacts.email, lead.email))).limit(1);
+        if (existing.length) {
+          // Already exists — just mark lead converted
+          await db.update(leads).set({ status: "converted", updatedAt: new Date() }).where(eq(leads.id, lead.id));
+          return res.json({ contactId: existing[0].id, alreadyExisted: true });
+        }
+      }
+      const { randomUUID } = await import("crypto");
+      const contactId = randomUUID();
+      await db.insert(contacts).values({
+        id: contactId, tenantId,
+        firstName: lead.firstName, lastName: lead.lastName || "",
+        email: lead.email || "", phone: lead.phone || "",
+        company: lead.company || "", jobTitle: lead.jobTitle || "",
+        status: "active", source: lead.source || "other",
+        notes: lead.notes || "", createdBy: req.user!.id,
+        createdAt: new Date(), updatedAt: new Date(),
+      });
+      await db.update(leads).set({ status: "converted", updatedAt: new Date() }).where(eq(leads.id, lead.id));
+      res.json({ contactId, alreadyExisted: false });
+    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to convert lead" }); }
   });
 
   // ─── Deals ────────────────────────────────────────────

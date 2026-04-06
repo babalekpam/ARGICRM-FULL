@@ -5,7 +5,7 @@ import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
 import { apiRequest } from "../lib/api";
 import { useLanguage } from "../contexts/LanguageContext";
-import { UserPlus, Trash2, Edit, TrendingUp } from "lucide-react";
+import { UserPlus, Trash2, Edit, TrendingUp, UserCheck } from "lucide-react";
 
 const LEAD_STATUS = [
   { value: "new", label: "New" }, { value: "contacted", label: "Contacted" },
@@ -28,8 +28,22 @@ export function LeadsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const [converting, setConverting] = useState<string | null>(null);
   const { data, isLoading } = useQuery<{ data: any[]; total: number }>({ queryKey: ["/api/leads"] });
   const delMut = useMutation({ mutationFn: (id: string) => apiRequest("DELETE", `/api/leads/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/leads"] }) });
+
+  const convertToContact = async (lead: any) => {
+    if (!confirm(`Convert "${lead.firstName} ${lead.lastName}" to a contact?`)) return;
+    setConverting(lead.id);
+    try {
+      const result: any = await apiRequest("POST", `/api/leads/${lead.id}/convert`);
+      qc.invalidateQueries({ queryKey: ["/api/leads"] });
+      qc.invalidateQueries({ queryKey: ["/api/contacts"] });
+      qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      alert(result.alreadyExisted ? "Lead marked as converted — contact already existed." : "Lead successfully converted to contact!");
+    } catch (err: any) { alert(err.message || "Conversion failed"); }
+    finally { setConverting(null); }
+  };
 
   const openAdd = () => { setEditing(null); setForm(BLANK_LEAD); setError(""); setModal(true); };
   const openEdit = (l: any) => { setEditing(l); setForm({ firstName: l.firstName, lastName: l.lastName || "", email: l.email || "", phone: l.phone || "", company: l.company || "", jobTitle: l.jobTitle || "", status: l.status, source: l.source || "", score: String(l.score || 50), estimatedValue: l.estimatedValue || "", notes: l.notes || "" }); setError(""); setModal(true); };
@@ -78,8 +92,20 @@ export function LeadsPage() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 4 }}>
-              <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => openEdit(l)}><Edit size={14} /></button>
-              <button className="btn btn-ghost btn-sm" style={{ padding: 6, color: "#ef4444" }} onClick={() => { if (confirm("Delete lead?")) delMut.mutate(l.id); }}><Trash2 size={14} /></button>
+              {l.status !== "converted" && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: 6, color: "#10b981" }}
+                  title="Convert to Contact"
+                  disabled={converting === l.id}
+                  onClick={() => convertToContact(l)}
+                  data-testid={`btn-convert-lead-${l.id}`}
+                >
+                  <UserCheck size={14} />
+                </button>
+              )}
+              <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => openEdit(l)} data-testid={`btn-edit-lead-${l.id}`}><Edit size={14} /></button>
+              <button className="btn btn-ghost btn-sm" style={{ padding: 6, color: "#ef4444" }} onClick={() => { if (confirm("Delete lead?")) delMut.mutate(l.id); }} data-testid={`btn-delete-lead-${l.id}`}><Trash2 size={14} /></button>
             </div>
           </div>
         ))}

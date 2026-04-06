@@ -7,7 +7,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 import {
   UserPlus, Search, Mail, Phone, Building2, Trash2, Edit,
   MapPin, Globe, Upload, FileSpreadsheet, CheckCircle2,
-  AlertCircle, XCircle, RefreshCw, Download,
+  AlertCircle, XCircle, RefreshCw, Download, TrendingUp,
 } from "lucide-react";
 
 const STATUS_OPTIONS = [
@@ -340,6 +340,19 @@ export default function ContactsPage() {
     onSuccess: () => qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/contacts") }),
   });
 
+  const [promotingId, setPromotingId] = useState<string | null>(null);
+  const promoteToLead = async (c: any) => {
+    const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ");
+    if (!confirm(`Add "${fullName}" to the Leads list?`)) return;
+    setPromotingId(c.id);
+    try {
+      const result: any = await apiRequest("POST", `/api/contacts/${c.id}/to-lead`);
+      qc.invalidateQueries({ queryKey: ["/api/leads"] });
+      alert(result.alreadyExisted ? "This contact is already in your leads list." : `${fullName} added to Leads!`);
+    } catch (err: any) { alert(err.message || "Failed to add to leads"); }
+    finally { setPromotingId(null); }
+  };
+
   const openAdd = () => { setEditing(null); setForm(BLANK); setError(""); setModalOpen(true); };
   const openEdit = (c: any) => {
     setEditing(c);
@@ -586,6 +599,16 @@ export default function ContactsPage() {
                         <Globe size={14} />
                       </a>
                     )}
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ padding: "5px 8px", display: "flex", alignItems: "center", color: "#f59e0b" }}
+                      title="Add to Leads"
+                      disabled={promotingId === c.id}
+                      onClick={() => promoteToLead(c)}
+                      data-testid={`btn-to-lead-${c.id}`}
+                    >
+                      <TrendingUp size={14} />
+                    </button>
                     <button
                       className="btn btn-ghost btn-sm"
                       style={{ padding: "5px 8px", display: "flex", alignItems: "center", gap: 5 }}
