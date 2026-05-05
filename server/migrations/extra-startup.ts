@@ -82,6 +82,70 @@ const STATEMENTS: string[] = [
      ON "council_decisions" ("tenant_id", "topic", "status")`,
   `CREATE INDEX IF NOT EXISTS "idx_council_decisions_triggered_by"
      ON "council_decisions" ("tenant_id", "triggered_by")`,
+
+  // ─── users TOTP + force_password_change columns (§8.1) ─────────────────
+  // Idempotent ALTERs so existing production rows pick up the new columns
+  // with safe defaults. Recovery codes are stored as bcrypt hashes (text[]).
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "force_password_change" boolean DEFAULT false`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_secret" text`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_enabled" boolean DEFAULT false`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "mfa_recovery_codes" text[]`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_enrolled_at" timestamp`,
+
+  // ─── api_keys (§8.6) ───────────────────────────────────────────────
+  // Stores bcrypt hashes only; the plaintext is shown ONCE on creation.
+  `CREATE TABLE IF NOT EXISTS "api_keys" (
+     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+     "tenant_id" varchar NOT NULL,
+     "name" text NOT NULL,
+     "hashed_key" text NOT NULL,
+     "prefix" varchar(8) NOT NULL,
+     "scopes" text[] NOT NULL DEFAULT ARRAY[]::text[],
+     "last_used_at" timestamp,
+     "created_by" varchar,
+     "revoked_at" timestamp,
+     "created_at" timestamp DEFAULT now()
+   )`,
+  `CREATE INDEX IF NOT EXISTS "idx_api_keys_tenant"
+     ON "api_keys" ("tenant_id")`,
+  `CREATE INDEX IF NOT EXISTS "idx_api_keys_prefix"
+     ON "api_keys" ("prefix")`,
+
+  // ─── webhook_endpoints + webhook_deliveries (§8.6) ───────────────────
+  `CREATE TABLE IF NOT EXISTS "webhook_endpoints" (
+     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+     "tenant_id" varchar NOT NULL,
+     "url" text NOT NULL,
+     "events" text[] NOT NULL DEFAULT ARRAY[]::text[],
+     "secret" text NOT NULL,
+     "is_active" boolean NOT NULL DEFAULT true,
+     "last_success_at" timestamp,
+     "last_failure_at" timestamp,
+     "failure_count" integer NOT NULL DEFAULT 0,
+     "created_by" varchar,
+     "created_at" timestamp DEFAULT now()
+   )`,
+  `CREATE INDEX IF NOT EXISTS "idx_webhook_endpoints_tenant"
+     ON "webhook_endpoints" ("tenant_id")`,
+
+  `CREATE TABLE IF NOT EXISTS "webhook_deliveries" (
+     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+     "tenant_id" varchar NOT NULL,
+     "endpoint_id" uuid NOT NULL,
+     "event" varchar NOT NULL,
+     "payload" jsonb NOT NULL,
+     "status" varchar NOT NULL DEFAULT 'pending',
+     "attempts" integer NOT NULL DEFAULT 0,
+     "last_status_code" integer,
+     "last_response" text,
+     "last_attempt_at" timestamp,
+     "delivered_at" timestamp,
+     "created_at" timestamp DEFAULT now()
+   )`,
+  `CREATE INDEX IF NOT EXISTS "idx_webhook_deliveries_tenant_created"
+     ON "webhook_deliveries" ("tenant_id", "created_at" DESC)`,
+  `CREATE INDEX IF NOT EXISTS "idx_webhook_deliveries_endpoint"
+     ON "webhook_deliveries" ("endpoint_id", "status")`,
 ];
 
 let didRun = false;
@@ -106,5 +170,8 @@ export async function runExtraMigrations(): Promise<void> {
     }
   }
   didRun = true;
-  console.log("[STARTUP] Extra migrations completed (audit_logs, council_topics, council_decisions)");
+  console.log(
+    "[STARTUP] Extra migrations completed " +
+    "(audit_logs, council_topics, council_decisions, users.mfa_columns, api_keys, webhooks)"
+  );
 }

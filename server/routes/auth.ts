@@ -3,7 +3,10 @@ import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { authenticate, generateToken, hashPassword, verifyPassword, type AuthRequest } from "../middleware/auth.js";
 import { issueAuthCookies, clearAuthCookies } from "../middleware/csrf.js";
+import { verifyTotpForLogin } from "./totp.js";
 import * as storage from "../storage.js";
+import { db } from "../db.js";
+import { sql } from "drizzle-orm";
 import { sendWelcomeEmail, sendTeamInviteEmail, sendPasswordChangedEmail } from "../services/email.js";
 import { PLAN_MAP, PLAN_HIERARCHY } from "@shared/plans";
 import { seedNewTenantOnboarding } from "../seed-demo.js";
@@ -15,19 +18,35 @@ const loginRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    // Rate limit per-email (from body) + IP combo to prevent both brute force AND IP-based attacks
     const email = req.body?.email || req.ip || "unknown";
     return `${req.ip}:${email}`;
   },
-  skip: (req) => {
-    // Skip rate limiting for the platform owner's own IP during development
-    return false;
-  },
+  skip: () => false,
 });
 
 const failedAttempts = new Map<string, { count: number; lockedUntil?: Date }>();
 
 const router = Router();
+
+// Read MFA columns (force_password_change + totp_enabled) for a user. If the
+// columns haven't been migrated yet, the query simply returns NULL and we
+// treat them as defaults (false). Safe across a rolling deploy.
+async function readMfaFlags(userId: string): Promise<{
+  force_password_change: boolean; totp_enabled: boolean;
+}> {
+  try {
+    const r = await db.execute(sql`
+      SELECT force_password_change, totp_enabled FROM users WHERE id = ${userId} LIMIT 1
+    `);
+    const row = r.rows[0] as any;
+    return {
+      force_password_change: !!row?.force_password_change,
+      totp_enabled: !!row?.totp_enabled,
+    };
+  } catch {
+    return { force_password_change: false, totp_enabled: false };
+  }
+}
 
 // ─── Register new tenant + admin ─────────────────────
 router.post("/register", async (req, res) => {
@@ -43,22 +62,19 @@ router.post("/register", async (req, res) => {
     });
 
     const parsed = schema.parse(req.body);
-    // Auto-generate domain from companyName if not provided
     const body = {
       ...parsed,
       domain: parsed.domain || parsed.companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50),
     };
 
-    // Check domain availability
     const existing = await storage.getTenantByDomain(`${body.domain}.argilette.org`);
     if (existing) return res.status(409).json({ error: "This domain is already taken. Choose another." });
 
-    // Also check if email exists across ANY tenant to prevent confusion
     const existingUser = await storage.getUserByEmailGlobal(body.email);
     if (existingUser) return res.status(409).json({ error: "An account with this email already exists." });
 
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
+    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
     const planDef = PLAN_MAP[body.plan] || PLAN_MAP["trial"];
 
@@ -96,23 +112,20 @@ router.post("/register", async (req, res) => {
       permissions: [],
     });
 
-    // Set httpOnly auth cookie + non-HttpOnly CSRF cookie alongside the JSON
-    // body. Existing clients that use the JSON token via Bearer header keep
-    // working; new cookie-based clients also get CSRF protection.
     issueAuthCookies(res, token);
 
     res.status(201).json({
       token,
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
       tenant: { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt },
+      mustChangePassword: false,
+      requiresTotp: false,
     });
 
-    // Fire-and-forget onboarding seed so new tenant sees sample data
     seedNewTenantOnboarding(tenant.id).catch(err =>
       console.error("[SEED] Onboarding seed failed for tenant:", tenant.id, err)
     );
 
-    // Send welcome email (non-blocking)
     sendWelcomeEmail({
       to: user.email,
       firstName: user.firstName || "",
@@ -129,17 +142,18 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ─── Login ───────────────────────────────────────────────────
+// ─── Login (with TOTP + force_password_change handling) ───────────────
 router.post("/login", loginRateLimit, async (req, res) => {
   try {
     const schema = z.object({
       email: z.string().email(),
       password: z.string().min(1),
+      totpCode: z.string().regex(/^\d{6}$/).optional(),
+      recoveryCode: z.string().min(8).optional(),
     });
 
-    const { email, password } = schema.parse(req.body);
+    const { email, password, totpCode, recoveryCode } = schema.parse(req.body);
 
-    // Per-account lockout after 5 consecutive wrong password attempts
     const attempts = failedAttempts.get(email);
     if (attempts?.lockedUntil && attempts.lockedUntil > new Date()) {
       return res.status(429).json({ error: "Account temporarily locked due to too many failed attempts. Try again in 15 minutes." });
@@ -148,12 +162,9 @@ router.post("/login", loginRateLimit, async (req, res) => {
     const user = await storage.getUserByEmailGlobal(email);
 
     if (!user || !user.isActive) {
-      // Track failed attempt even for non-existent accounts (prevents enumeration via timing)
       const current = failedAttempts.get(email) || { count: 0 };
       current.count += 1;
-      if (current.count >= 5) {
-        current.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
-      }
+      if (current.count >= 5) current.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
       failedAttempts.set(email, current);
       return res.status(401).json({ error: "Invalid email or password" });
     }
@@ -162,15 +173,27 @@ router.post("/login", loginRateLimit, async (req, res) => {
     if (!valid) {
       const current = failedAttempts.get(email) || { count: 0 };
       current.count += 1;
-      if (current.count >= 5) {
-        current.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
-      }
+      if (current.count >= 5) current.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
       failedAttempts.set(email, current);
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    // Successful login — clear failed attempt counter
     failedAttempts.delete(email);
+
+    // ─── TOTP gate (if enrolled) ──────────────────────────────────
+    const flags = await readMfaFlags(user.id);
+    if (flags.totp_enabled) {
+      if (!totpCode && !recoveryCode) {
+        return res.status(200).json({
+          requiresTotp: true,
+          message: "This account has TOTP enabled. Submit `totpCode` or `recoveryCode` along with email + password.",
+        });
+      }
+      const result = await verifyTotpForLogin(user.id, totpCode, recoveryCode);
+      if (!result.ok) {
+        return res.status(401).json({ error: "Invalid TOTP or recovery code" });
+      }
+    }
 
     const tenant = await storage.getTenantById(user.tenantId);
     if (tenant?.subscriptionStatus === "blocked") return res.status(403).json({ error: "This account has been blocked. Contact support@argilette.com." });
@@ -188,13 +211,14 @@ router.post("/login", loginRateLimit, async (req, res) => {
       permissions: [],
     });
 
-    // Set httpOnly auth cookie + CSRF cookie
     issueAuthCookies(res, token);
 
     res.json({
       token,
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
       tenant: { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt },
+      mustChangePassword: flags.force_password_change,
+      requiresTotp: false,
     });
   } catch (err: any) {
     if (err.name === "ZodError") return res.status(400).json({ error: "Invalid email or password format" });
@@ -210,9 +234,16 @@ router.get("/me", authenticate, async (req: AuthRequest, res) => {
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const tenant = await storage.getTenantById(user.tenantId);
+    const flags = await readMfaFlags(user.id);
 
     res.json({
-      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, profileImageUrl: user.profileImageUrl },
+      user: {
+        id: user.id, email: user.email,
+        firstName: user.firstName, lastName: user.lastName,
+        role: user.role, profileImageUrl: user.profileImageUrl,
+        mustChangePassword: flags.force_password_change,
+        totpEnabled: flags.totp_enabled,
+      },
       tenant: tenant ? { id: tenant.id, name: tenant.name, domain: tenant.domain, plan: tenant.subscriptionPlan, trialEndsAt: tenant.trialEndsAt, settings: tenant.settings } : null,
     });
   } catch (err) {
@@ -221,13 +252,13 @@ router.get("/me", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// ─── Logout (clears cookies; clients should also drop their localStorage token) ───
-router.post("/logout", (req, res) => {
+// ─── Logout ────────────────────────────────────────────────────────
+router.post("/logout", (_req, res) => {
   clearAuthCookies(res);
   res.json({ message: "Logged out successfully" });
 });
 
-// ─── Invite user to tenant ──────────────────────────
+// ─── Invite user ──────────────────────────────────────────────────
 router.post("/invite", authenticate, async (req: AuthRequest, res) => {
   try {
     if (!["super_admin", "admin"].includes(req.user!.role)) {
@@ -265,9 +296,12 @@ router.post("/invite", authenticate, async (req: AuthRequest, res) => {
       emailVerified: true,
     });
 
+    // New invitees must change password on first login.
+    await db.execute(sql`UPDATE users SET force_password_change = true WHERE id = ${user.id}`)
+      .catch(() => { /* column not migrated yet — skip */ });
+
     res.status(201).json({ user: { id: user.id, email: user.email, firstName: user.firstName, role: user.role } });
 
-    // Send invite email (non-blocking)
     const inviterTenant = await storage.getTenantById(req.user!.tenantId).catch(() => null);
     sendTeamInviteEmail({
       to: user.email,
@@ -285,10 +319,9 @@ router.post("/invite", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// ─── PUT /api/auth/password (rate-limited alias for password change) ──────
+// ─── PUT /api/auth/password (rate-limited, also clears force_password_change) ───
 router.put("/password", loginRateLimit, authenticate, async (req: AuthRequest, res) => {
   try {
-    // Check per-account lockout (same as login)
     const attempts = failedAttempts.get(req.user!.email);
     if (attempts?.lockedUntil && attempts.lockedUntil > new Date()) {
       return res.status(429).json({ error: "Too many attempts. Account temporarily locked." });
@@ -306,12 +339,12 @@ router.put("/password", loginRateLimit, authenticate, async (req: AuthRequest, r
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const valid = await verifyPassword(currentPassword, user.passwordHash || "");
-    if (!valid) {
-      return res.status(401).json({ error: "Current password is incorrect" });
-    }
+    if (!valid) return res.status(401).json({ error: "Current password is incorrect" });
 
     const hash = await hashPassword(newPassword);
     await storage.updateUser(req.user!.id, { passwordHash: hash });
+    await db.execute(sql`UPDATE users SET force_password_change = false WHERE id = ${req.user!.id}`)
+      .catch(() => { /* column not migrated yet */ });
     res.json({ success: true });
 
     sendPasswordChangedEmail({ to: user.email, firstName: user.firstName || "" })
