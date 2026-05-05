@@ -34,6 +34,14 @@ export function clearToken() {
   localStorage.removeItem("tenant");
 }
 
+// Read the CSRF cookie set by the server on login/register. The cookie is
+// non-HttpOnly precisely so the client can read it and echo it back.
+function getCsrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)argilette_csrf=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export async function apiRequest<T = any>(
   method: string,
   path: string,
@@ -44,6 +52,15 @@ export async function apiRequest<T = any>(
     "Content-Type": "application/json",
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  // Echo the CSRF cookie value as a header on mutating methods. The server
+  // ignores this when a Bearer token is present, but it costs nothing to
+  // always send it; future cookie-only clients are protected automatically.
+  const upper = method.toUpperCase();
+  if (upper !== "GET" && upper !== "HEAD" && upper !== "OPTIONS") {
+    const csrf = getCsrfToken();
+    if (csrf) headers["X-CSRF-Token"] = csrf;
+  }
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,

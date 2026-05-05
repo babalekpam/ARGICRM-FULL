@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { authenticate, generateToken, hashPassword, verifyPassword, type AuthRequest } from "../middleware/auth.js";
+import { issueAuthCookies, clearAuthCookies } from "../middleware/csrf.js";
 import * as storage from "../storage.js";
 import { sendWelcomeEmail, sendTeamInviteEmail, sendPasswordChangedEmail } from "../services/email.js";
 import { PLAN_MAP, PLAN_HIERARCHY } from "@shared/plans";
@@ -28,7 +29,7 @@ const failedAttempts = new Map<string, { count: number; lockedUntil?: Date }>();
 
 const router = Router();
 
-// ─── Register new tenant + admin ─────────────────────────
+// ─── Register new tenant + admin ─────────────────────
 router.post("/register", async (req, res) => {
   try {
     const schema = z.object({
@@ -95,6 +96,11 @@ router.post("/register", async (req, res) => {
       permissions: [],
     });
 
+    // Set httpOnly auth cookie + non-HttpOnly CSRF cookie alongside the JSON
+    // body. Existing clients that use the JSON token via Bearer header keep
+    // working; new cookie-based clients also get CSRF protection.
+    issueAuthCookies(res, token);
+
     res.status(201).json({
       token,
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
@@ -123,7 +129,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ─── Login ───────────────────────────────────────────────
+// ─── Login ───────────────────────────────────────────────────
 router.post("/login", loginRateLimit, async (req, res) => {
   try {
     const schema = z.object({
@@ -182,6 +188,9 @@ router.post("/login", loginRateLimit, async (req, res) => {
       permissions: [],
     });
 
+    // Set httpOnly auth cookie + CSRF cookie
+    issueAuthCookies(res, token);
+
     res.json({
       token,
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
@@ -194,7 +203,7 @@ router.post("/login", loginRateLimit, async (req, res) => {
   }
 });
 
-// ─── Get current user ─────────────────────────────────────
+// ─── Get current user ──────────────────────────────────
 router.get("/me", authenticate, async (req: AuthRequest, res) => {
   try {
     const user = await storage.getUserById(req.user!.id);
@@ -212,13 +221,13 @@ router.get("/me", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// ─── Logout (client-side clears token, this is informational) ────────────────
+// ─── Logout (clears cookies; clients should also drop their localStorage token) ───
 router.post("/logout", (req, res) => {
-  res.clearCookie("auth-token");
+  clearAuthCookies(res);
   res.json({ message: "Logged out successfully" });
 });
 
-// ─── Invite user to tenant ────────────────────────────────
+// ─── Invite user to tenant ──────────────────────────
 router.post("/invite", authenticate, async (req: AuthRequest, res) => {
   try {
     if (!["super_admin", "admin"].includes(req.user!.role)) {
@@ -276,7 +285,7 @@ router.post("/invite", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// ─── PUT /api/auth/password (rate-limited alias for password change) ──────────
+// ─── PUT /api/auth/password (rate-limited alias for password change) ──────
 router.put("/password", loginRateLimit, authenticate, async (req: AuthRequest, res) => {
   try {
     // Check per-account lockout (same as login)
