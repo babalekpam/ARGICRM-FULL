@@ -21,6 +21,8 @@ import InvoicesPage from "./pages/Invoices";
 import SettingsPage from "./pages/Settings";
 import TeamPage from "./pages/Team";
 import AgentsPage from "./pages/Agents";
+import CouncilPage from "./pages/Council";
+import CouncilUsagePage from "./pages/CouncilUsage";
 import IntelligencePage from "./pages/Intelligence";
 import HealingPage from "./pages/Healing";
 import SeoPage from "./pages/Seo";
@@ -92,6 +94,8 @@ function AppRoutes() {
       <Route path="/settings">{() => <Guard><SettingsPage /></Guard>}</Route>
       <Route path="/team">{() => <Guard><TeamPage /></Guard>}</Route>
       <Route path="/agents">{() => <Guard><AgentsPage /></Guard>}</Route>
+      <Route path="/council">{() => <Guard><CouncilPage /></Guard>}</Route>
+      <Route path="/council/usage">{() => <Guard><CouncilUsagePage /></Guard>}</Route>
       <Route path="/intelligence">{() => <Guard><IntelligencePage /></Guard>}</Route>
       <Route path="/healing">{() => <Guard><HealingPage /></Guard>}</Route>
       <Route path="/seo">{() => <Guard><SeoPage /></Guard>}</Route>

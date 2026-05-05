@@ -11,7 +11,9 @@ import { z } from "zod";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
 import {
   convene, getDecision, listDecisions, applyDecision, rejectDecision,
-  BUILTIN_TOPICS,
+  getUsage,
+  BUILTIN_TOPICS, COUNCIL_MONTHLY_QUOTA,
+  CouncilPlanError, CouncilQuotaError,
 } from "../services/council/index.js";
 
 const router = Router();
@@ -44,6 +46,22 @@ router.post("/decisions", async (req: AuthRequest, res) => {
     res.status(201).json(result);
   } catch (err: any) {
     if (err.name === "ZodError") return res.status(400).json({ error: "Validation failed", details: err.errors });
+    if (err instanceof CouncilPlanError) {
+      return res.status(402).json({
+        error: err.message,
+        code: err.code,
+        currentPlan: err.currentPlan,
+        requiredPlan: err.requiredPlan,
+      });
+    }
+    if (err instanceof CouncilQuotaError) {
+      return res.status(429).json({
+        error: err.message,
+        code: err.code,
+        used: err.used,
+        limit: err.limit,
+      });
+    }
     if (String(err?.message || "").startsWith("Unknown council topic")) {
       return res.status(400).json({ error: err.message });
     }
@@ -96,6 +114,17 @@ router.post("/decisions/:id/reject", async (req: AuthRequest, res) => {
   }
 });
 
+// ─── Cost-transparency usage dashboard data ─────────────────────
+router.get("/usage", async (req: AuthRequest, res) => {
+  try {
+    const data = await getUsage(req.user!.tenantId);
+    res.json(data);
+  } catch (err: any) {
+    console.error("GET /council/usage:", err);
+    res.status(500).json({ error: err.message || "Failed to load usage" });
+  }
+});
+
 // ─── List built-in topic templates ───────────────────────────────
 router.get("/topics", (_req: AuthRequest, res) => {
   res.json(
@@ -108,6 +137,11 @@ router.get("/topics", (_req: AuthRequest, res) => {
       minPlan: t.minPlan,
     })),
   );
+});
+
+// ─── Plan-tier quota matrix (read-only, for UI display) ─────────────────
+router.get("/quotas", (_req: AuthRequest, res) => {
+  res.json(COUNCIL_MONTHLY_QUOTA);
 });
 
 export default router;

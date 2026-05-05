@@ -7,6 +7,10 @@
  * client polls GET /api/council/decisions/:id until status leaves
  * 'running'.
  *
+ * Plan-tier gating: each topic declares a minPlan; convene() resolves the
+ * tenant's current plan from the tenants table and rejects with HTTP 402
+ * (UpgradeRequiredError shape) if the plan is below the topic's floor.
+ *
  * Money-touching topics (discount.approve, refund.issue, invoice.send,
  * campaign.send.bulk) require manual apply()/reject() — enforced via the
  * topic template's requiresManualApproval flag. The flag is server-side
@@ -14,11 +18,13 @@
  */
 import { db } from "../../db.js";
 import { councilDecisions, type CouncilDecision } from "@shared/schema-extended";
-import { eq, and, desc } from "drizzle-orm";
+import { tenants } from "@shared/schema";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { runEnsemble } from "./ensemble.js";
 import { runDebate } from "./debate.js";
 import { tally, parseStructured, type ParticipantResult } from "./consensus.js";
 import { BUILTIN_TOPICS, getTopic, type TopicTemplate } from "./topics.js";
+import { planAtLeast, PLAN_HIERARCHY, type PlanId } from "@shared/plans";
 import type { AIProvider } from "../ai-adapter.js";
 
 export interface ConveneOpts {
@@ -31,10 +37,81 @@ export interface ConveneOpts {
   participants?: Array<{ kind: "provider" | "agent"; name: string; weight?: number }>;
 }
 
+export class CouncilPlanError extends Error {
+  code = "PLAN_UPGRADE_REQUIRED";
+  status = 402;
+  currentPlan: string;
+  requiredPlan: string;
+  constructor(currentPlan: string, requiredPlan: string) {
+    super(`This topic requires the '${requiredPlan}' plan or higher (current: '${currentPlan}').`);
+    this.currentPlan = currentPlan;
+    this.requiredPlan = requiredPlan;
+  }
+}
+
+export class CouncilQuotaError extends Error {
+  code = "COUNCIL_QUOTA_EXCEEDED";
+  status = 429;
+  used: number;
+  limit: number;
+  constructor(used: number, limit: number) {
+    super(`Monthly council quota exceeded (${used}/${limit}). Upgrade your plan or wait until next month.`);
+    this.used = used;
+    this.limit = limit;
+  }
+}
+
+// Per-plan monthly council-decision allowance. -1 = unlimited.
+const COUNCIL_MONTHLY_QUOTA: Record<PlanId, number> = {
+  trial:        5,
+  starter:      50,
+  professional: 500,
+  business:     2000,
+  enterprise:   -1,
+};
+
+async function resolveTenantPlan(tenantId: string): Promise<PlanId> {
+  const rows = await db.select({
+    plan: tenants.plan,
+    subscriptionPlan: tenants.subscriptionPlan,
+  }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+  const r = rows[0] as any;
+  const raw = (r?.subscriptionPlan || r?.plan || "trial").toLowerCase();
+  // Coerce unknown plan values back to 'trial' rather than crashing.
+  return (PLAN_HIERARCHY as readonly string[]).includes(raw) ? (raw as PlanId) : "trial";
+}
+
+async function countDecisionsThisMonth(tenantId: string): Promise<number> {
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const r = await db.execute(sql`
+    SELECT count(*)::int AS n
+    FROM council_decisions
+    WHERE tenant_id = ${tenantId} AND created_at >= ${monthStart.toISOString()}::timestamp
+  `);
+  return Number((r.rows[0] as any)?.n || 0);
+}
+
 export async function convene(opts: ConveneOpts): Promise<{ decisionId: string; status: string }> {
   const tpl = getTopic(opts.topic);
   if (!tpl) {
     throw new Error(`Unknown council topic: ${opts.topic}. Known: ${Object.keys(BUILTIN_TOPICS).join(", ")}`);
+  }
+
+  // ─── Plan-tier gating ──────────────────────────────────────
+  const tenantPlan = await resolveTenantPlan(opts.tenantId);
+  if (!planAtLeast(tenantPlan, tpl.minPlan as PlanId)) {
+    throw new CouncilPlanError(tenantPlan, tpl.minPlan);
+  }
+
+  // ─── Monthly quota gate ────────────────────────────────────
+  const monthlyLimit = COUNCIL_MONTHLY_QUOTA[tenantPlan];
+  if (monthlyLimit !== -1) {
+    const used = await countDecisionsThisMonth(opts.tenantId);
+    if (used >= monthlyLimit) {
+      throw new CouncilQuotaError(used, monthlyLimit);
+    }
   }
 
   const mode = opts.mode || tpl.defaultMode;
@@ -177,8 +254,6 @@ export async function applyDecision(decisionId: string, tenantId: string, approv
   if (decision.status !== "succeeded") {
     throw new Error(`Cannot apply decision in status '${decision.status}'. Status must be 'succeeded'.`);
   }
-  // Money-touching guardrail check would go here in v2 (consult tpl.requiresManualApproval).
-  // For v1, applyDecision is always a manual human action so the check is implicit.
 
   await db.update(councilDecisions).set({
     status: "applied",
@@ -202,4 +277,76 @@ export async function rejectDecision(decisionId: string, tenantId: string, appro
   return { rejected: true, decisionId };
 }
 
+/**
+ * Council usage summary for the cost-transparency dashboard.
+ * Returns: monthly quota, used count this month, status breakdown,
+ * topic breakdown, average confidence, total credits + USD cost,
+ * and a 30-day daily history for charting.
+ */
+export async function getUsage(tenantId: string) {
+  const plan = await resolveTenantPlan(tenantId);
+  const monthlyLimit = COUNCIL_MONTHLY_QUOTA[plan];
+
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const month = await db.execute(sql`
+    SELECT
+      count(*)::int                                     AS total_calls,
+      coalesce(sum(cost_credits), 0)::int               AS total_credits,
+      coalesce(sum(cost_usd), 0)                         AS total_cost_usd,
+      coalesce(avg((outcome->>'confidence')::numeric), 0) AS avg_confidence,
+      sum(case when status = 'succeeded' then 1 else 0 end)::int AS succeeded,
+      sum(case when status = 'failed'    then 1 else 0 end)::int AS failed,
+      sum(case when status = 'applied'   then 1 else 0 end)::int AS applied,
+      sum(case when status = 'rejected_by_human' then 1 else 0 end)::int AS rejected
+    FROM council_decisions
+    WHERE tenant_id = ${tenantId} AND created_at >= ${monthStart.toISOString()}::timestamp
+  `);
+  const summary = (month.rows[0] as any) || {};
+
+  const byTopic = await db.execute(sql`
+    SELECT topic,
+           count(*)::int                                AS calls,
+           coalesce(avg((outcome->>'confidence')::numeric), 0) AS avg_confidence,
+           coalesce(avg(jsonb_array_length(coalesce(dissent, '[]'::jsonb))), 0) AS avg_dissent,
+           coalesce(sum(cost_credits), 0)::int           AS credits,
+           coalesce(sum(cost_usd), 0)                    AS cost_usd
+    FROM council_decisions
+    WHERE tenant_id = ${tenantId} AND created_at >= ${monthStart.toISOString()}::timestamp
+    GROUP BY topic
+    ORDER BY calls DESC
+  `);
+
+  const history = await db.execute(sql`
+    SELECT to_char(created_at, 'YYYY-MM-DD') AS day,
+           count(*)::int                       AS calls,
+           coalesce(sum(cost_credits), 0)::int AS credits
+    FROM council_decisions
+    WHERE tenant_id = ${tenantId} AND created_at >= now() - interval '30 days'
+    GROUP BY day
+    ORDER BY day
+  `);
+
+  return {
+    plan,
+    monthlyLimit,
+    used: Number(summary.total_calls || 0),
+    remaining: monthlyLimit === -1 ? -1 : Math.max(0, monthlyLimit - Number(summary.total_calls || 0)),
+    totalCredits: Number(summary.total_credits || 0),
+    totalCostUsd: Number(summary.total_cost_usd || 0).toFixed(4),
+    avgConfidence: Number(summary.avg_confidence || 0),
+    statusBreakdown: {
+      succeeded: Number(summary.succeeded || 0),
+      failed:    Number(summary.failed || 0),
+      applied:   Number(summary.applied || 0),
+      rejected:  Number(summary.rejected || 0),
+    },
+    byTopic: byTopic.rows,
+    history: history.rows,
+  };
+}
+
 export { BUILTIN_TOPICS, getTopic, listTopicNames } from "./topics.js";
+export { COUNCIL_MONTHLY_QUOTA };
