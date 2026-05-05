@@ -1,9 +1,54 @@
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
 import { db } from "./db.js";
 import { tenants, users } from "@shared/schema";
 import { pipelines } from "@shared/schema-extended";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
+
+// ─── Password generation ────────────────────────────────
+// Random URL-safe 32-char password. Used as the bootstrap admin password
+// whenever PLATFORM_OWNER_PASSWORD is not provided (and rejected outright
+// in production — the auto-generated flow is the only supported one there).
+function generateRandomPassword(): string {
+  return crypto.randomBytes(24).toString("base64url"); // ~32 chars, URL-safe
+}
+
+// Resolve the bootstrap password according to the documented contract:
+//   - Production: env vars are ignored. Always auto-generate. Caller writes
+//     the result to ./bootstrap-credentials.txt (mode 0600).
+//   - Development: if PLATFORM_OWNER_PASSWORD is set, use it. Otherwise
+//     auto-generate and write the file (same as production).
+function resolveBootstrapPassword(): { password: string; persisted: boolean } {
+  const envPwd = process.env.PLATFORM_OWNER_PASSWORD;
+  const isProd = process.env.NODE_ENV === "production";
+  if (envPwd && !isProd) return { password: envPwd, persisted: false };
+  if (envPwd && isProd) {
+    console.warn(
+      "[SEED] PLATFORM_OWNER_PASSWORD is set in production and will be ignored. " +
+      "Production bootstraps must use the auto-generated flow."
+    );
+  }
+  return { password: generateRandomPassword(), persisted: true };
+}
+
+function writeBootstrapCredentialsFile(email: string, password: string): string {
+  const file = path.resolve(process.cwd(), "bootstrap-credentials.txt");
+  const body =
+    `# Argilette CRM — bootstrap credentials\n` +
+    `# Generated: ${new Date().toISOString()}\n` +
+    `#\n` +
+    `# Read this file ONCE, log in, change the password immediately, then delete it.\n` +
+    `# This file is mode 0600 and is .gitignored — do not commit.\n` +
+    `\n` +
+    `email:    ${email}\n` +
+    `password: ${password}\n`;
+  fs.writeFileSync(file, body, { mode: 0o600, flag: "w" });
+  try { fs.chmodSync(file, 0o600); } catch { /* best-effort on platforms without chmod */ }
+  return file;
+}
 
 async function seed() {
   console.log("🌱 Seeding database (clean — no mock data)...\n");
@@ -32,7 +77,8 @@ async function seed() {
   const existing = await db.query.users.findFirst({ where: eq(users.email, ownerEmail) });
 
   if (!existing) {
-    const hash = await bcrypt.hash(process.env.PLATFORM_OWNER_PASSWORD || "ArgiletteSecure2024!", 12);
+    const { password, persisted } = resolveBootstrapPassword();
+    const hash = await bcrypt.hash(password, 12);
     await db.insert(users).values({
       tenantId: platformTenant.id,
       email: ownerEmail,
@@ -45,8 +91,18 @@ async function seed() {
       isAdmin: true,
     });
     console.log("✅ Owner created:", ownerEmail);
+
+    if (persisted) {
+      const file = writeBootstrapCredentialsFile(ownerEmail, password);
+      console.log("\n🔐 Bootstrap credentials written to:");
+      console.log(`   ${file}`);
+      console.log("   (mode 0600, .gitignored — read once, log in, rotate, delete)\n");
+    } else {
+      console.log("\n🔐 Bootstrap password sourced from PLATFORM_OWNER_PASSWORD env var.");
+      console.log("   Rotate immediately after first login.\n");
+    }
   } else {
-    console.log("⏭️  Owner already exists");
+    console.log("⏭️  Owner already exists (no bootstrap-credentials.txt rewritten)");
   }
 
   // ─── Default Pipeline ────────────────────────────────────
@@ -71,7 +127,6 @@ async function seed() {
   }
 
   console.log("\n✨ Done — clean workspace.\n");
-  console.log("  Login: abel@argilette.com / ArgiletteSecure2024!\n");
   process.exit(0);
 }
 
