@@ -5,6 +5,9 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { authenticate, requireRole, type AuthRequest } from "./middleware/auth.js";
 import { aiRateLimit } from "./middleware/ai-rate-limit.js";
+import { csrfProtection } from "./middleware/csrf.js";
+import { auditMiddleware } from "./middleware/audit.js";
+import { runExtraMigrations } from "./migrations/extra-startup.js";
 import rateLimit from "express-rate-limit";
 import * as storage from "./storage.js";
 import { db } from "./db.js";
@@ -30,8 +33,25 @@ import analyticsRouter from "./routes/analytics.js";
 import workflowsRouter from "./routes/workflows.js";
 import skillsRouter from "./routes/skills.js";
 import contractsRouter from "./routes/contracts.js";
+import councilRouter from "./routes/council.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // ─── Startup migrations for security/AI-council tables ──
+  // Idempotent CREATE TABLE IF NOT EXISTS for audit_logs,
+  // council_topics, council_decisions. Must run before any handler
+  // that might insert into them (audit middleware below does).
+  await runExtraMigrations().catch(e =>
+    console.warn("[STARTUP] Extra migrations failed (non-fatal):", String(e?.message || e).slice(0, 200))
+  );
+
+  // ─── Global security/observability middleware ───────────
+  // CSRF: only triggers on cookie-authenticated mutating methods.
+  // Bearer-authenticated API clients bypass it (see middleware/csrf.ts).
+  app.use(csrfProtection);
+  // Audit: fires on res.finish for mutations + auth events. Best-effort
+  // insert into audit_logs; never blocks the response.
+  app.use(auditMiddleware);
+
   // ─── Core Auth ──────────────────────────────────────
   app.use("/api/auth", authRouter);
 
@@ -53,6 +73,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // ─── AI Agents ─────────────────────────────────────
   app.use("/api/agents", agentRouter);
+  // ─── AI Council (multi-provider/specialist deliberation) ──
+  app.use("/api/council", councilRouter);
   // ─── AI Tools (deal intelligence, email, meeting) ──
   app.use("/api/ai", aiRouter);
   // ─── Analytics ─────────────────────────────────────
@@ -755,6 +777,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         plans: planDist.map(p => ({ plan: p.plan, count: Number(p.count) })),
       });
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch admin stats" }); }
+  });
+
+  // ─── Audit Log (§8.5) — tenant-scoped, super_admin/admin only ──
+  app.get("/api/audit-logs", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const limit = Math.min(Number(req.query.limit) || 100, 500);
+      const tid = req.user!.tenantId;
+      const action = req.query.action as string | undefined;
+      const entity = req.query.entity as string | undefined;
+      const actor  = req.query.actor as string | undefined;
+
+      // Build a parametrised query — drizzle's sql template handles escaping.
+      const filters: any[] = [rawSql`tenant_id = ${tid}`];
+      if (action) filters.push(rawSql`action = ${action}`);
+      if (entity) filters.push(rawSql`entity = ${entity}`);
+      if (actor)  filters.push(rawSql`actor_user_id = ${actor}`);
+      const where = filters.reduce((a, b, i) => i === 0 ? b : rawSql`${a} AND ${b}`);
+
+      const r = await db.execute(rawSql`
+        SELECT id, actor_user_id, actor_type, action, entity, entity_id,
+               method, path, status_code, ip, latency_ms, created_at
+        FROM audit_logs
+        WHERE ${where}
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+      `);
+      res.json(r.rows);
+    } catch (err) {
+      console.error("GET /audit-logs error:", err);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
   });
 
   // ─── AI Features ──────────────────────────────────────
