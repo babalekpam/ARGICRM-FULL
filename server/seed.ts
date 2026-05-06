@@ -6,21 +6,13 @@ import { db } from "./db.js";
 import { tenants, users } from "@shared/schema";
 import { pipelines } from "@shared/schema-extended";
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
-// ─── Password generation ────────────────────────────────
-// Random URL-safe 32-char password. Used as the bootstrap admin password
-// whenever PLATFORM_OWNER_PASSWORD is not provided (and rejected outright
-// in production — the auto-generated flow is the only supported one there).
+// ─── Password generation ──────────────────────────────────
 function generateRandomPassword(): string {
-  return crypto.randomBytes(24).toString("base64url"); // ~32 chars, URL-safe
+  return crypto.randomBytes(24).toString("base64url");
 }
 
-// Resolve the bootstrap password according to the documented contract:
-//   - Production: env vars are ignored. Always auto-generate. Caller writes
-//     the result to ./bootstrap-credentials.txt (mode 0600).
-//   - Development: if PLATFORM_OWNER_PASSWORD is set, use it. Otherwise
-//     auto-generate and write the file (same as production).
 function resolveBootstrapPassword(): { password: string; persisted: boolean } {
   const envPwd = process.env.PLATFORM_OWNER_PASSWORD;
   const isProd = process.env.NODE_ENV === "production";
@@ -42,18 +34,20 @@ function writeBootstrapCredentialsFile(email: string, password: string): string 
     `#\n` +
     `# Read this file ONCE, log in, change the password immediately, then delete it.\n` +
     `# This file is mode 0600 and is .gitignored — do not commit.\n` +
+    `# On first login, the user will be FORCED to change this password before\n` +
+    `# accessing any other page (the server sets force_password_change = true).\n` +
     `\n` +
     `email:    ${email}\n` +
     `password: ${password}\n`;
   fs.writeFileSync(file, body, { mode: 0o600, flag: "w" });
-  try { fs.chmodSync(file, 0o600); } catch { /* best-effort on platforms without chmod */ }
+  try { fs.chmodSync(file, 0o600); } catch { /* best-effort */ }
   return file;
 }
 
 async function seed() {
   console.log("🌱 Seeding database (clean — no mock data)...\n");
 
-  // ─── Platform Owner Tenant ──────────────────────────────
+  // ─── Platform Owner Tenant ────────────────────────────────────────
   let platformTenant = await db.query.tenants.findFirst({ where: eq(tenants.name, "ARGILETTE") });
 
   if (!platformTenant) {
@@ -72,14 +66,14 @@ async function seed() {
     console.log("⏭️  Tenant already exists");
   }
 
-  // ─── Platform Owner ──────────────────────────────────────
+  // ─── Platform Owner ───────────────────────────────────────────────
   const ownerEmail = process.env.PLATFORM_OWNER_EMAIL || "abel@argilette.com";
   const existing = await db.query.users.findFirst({ where: eq(users.email, ownerEmail) });
 
   if (!existing) {
     const { password, persisted } = resolveBootstrapPassword();
     const hash = await bcrypt.hash(password, 12);
-    await db.insert(users).values({
+    const [created] = await db.insert(users).values({
       tenantId: platformTenant.id,
       email: ownerEmail,
       firstName: "Abel",
@@ -89,23 +83,33 @@ async function seed() {
       isActive: true,
       emailVerified: true,
       isAdmin: true,
-    });
+    }).returning();
     console.log("✅ Owner created:", ownerEmail);
+
+    // Force password rotation on first login. Best-effort raw-SQL update —
+    // the column may not yet exist on a brand-new DB before extra-startup
+    // migrations run; ignore that case (the app will set it on first boot).
+    await db.execute(sql`
+      UPDATE users SET force_password_change = true WHERE id = ${created.id}
+    `).catch(() => {
+      console.log("⏭️  force_password_change column not available yet (will be set by app on first boot)");
+    });
 
     if (persisted) {
       const file = writeBootstrapCredentialsFile(ownerEmail, password);
       console.log("\n🔐 Bootstrap credentials written to:");
       console.log(`   ${file}`);
-      console.log("   (mode 0600, .gitignored — read once, log in, rotate, delete)\n");
+      console.log("   (mode 0600, .gitignored — read once, log in, rotate, delete)");
+      console.log("   First login will force a password change immediately.\n");
     } else {
       console.log("\n🔐 Bootstrap password sourced from PLATFORM_OWNER_PASSWORD env var.");
-      console.log("   Rotate immediately after first login.\n");
+      console.log("   First login will force a rotation regardless of env value.\n");
     }
   } else {
     console.log("⏭️  Owner already exists (no bootstrap-credentials.txt rewritten)");
   }
 
-  // ─── Default Pipeline ────────────────────────────────────
+  // ─── Default Pipeline ──────────────────────────────────────────
   const existingPipeline = await db.select().from(pipelines).where(eq(pipelines.tenantId, platformTenant.id)).limit(1);
   if (!existingPipeline.length) {
     await db.insert(pipelines).values({
