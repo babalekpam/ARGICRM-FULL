@@ -8,6 +8,8 @@ interface User {
   lastName?: string | null;
   role: string;
   avatar?: string | null;
+  mustChangePassword?: boolean;
+  totpEnabled?: boolean;
 }
 
 interface Tenant {
@@ -29,8 +31,13 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
+interface LoginOpts { totpCode?: string; recoveryCode?: string; }
+export type LoginResult =
+  | { ok: true; user: User; tenant: Tenant; mustChangePassword: boolean }
+  | { ok: false; requiresTotp: true; message: string };
+
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, opts?: LoginOpts) => Promise<LoginResult>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -73,10 +80,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { refreshUser(); }, [refreshUser]);
 
-  const login = async (email: string, password: string) => {
-    const data = await apiRequest<{ token: string; user: User; tenant: Tenant }>("POST", "/api/auth/login", { email, password });
+  const login = async (email: string, password: string, opts: LoginOpts = {}): Promise<LoginResult> => {
+    const data = await apiRequest<any>("POST", "/api/auth/login", {
+      email, password,
+      ...(opts.totpCode    ? { totpCode: opts.totpCode } : {}),
+      ...(opts.recoveryCode ? { recoveryCode: opts.recoveryCode } : {}),
+    });
+
+    // MFA gate: server returns 200 with requiresTotp:true and no token.
+    if (data?.requiresTotp && !data?.token) {
+      return { ok: false, requiresTotp: true, message: data.message || "TOTP required" };
+    }
+
     setToken(data.token);
     setState({ user: data.user, tenant: data.tenant, loading: false, isAuthenticated: true });
+    return {
+      ok: true,
+      user: data.user,
+      tenant: data.tenant,
+      mustChangePassword: !!data.mustChangePassword,
+    };
   };
 
   const register = async (formData: RegisterData) => {

@@ -5,3 +5,8 @@ dist/
 migrations/
 uploads/
 .DS_Store
+
+# bootstrap-credentials.txt is written by the seed script (mode 0600)
+# on first run when no PLATFORM_OWNER_PASSWORD is supplied. Read once,
+# rotate, delete — never commit.
+bootstrap-credentials.txt

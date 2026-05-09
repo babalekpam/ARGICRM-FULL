@@ -5,7 +5,8 @@
  * This file is intentionally excluded from drizzle.config.ts
  * so drizzle-kit never tries to push them (avoiding publish
  * conflict dialogs). They are created on first production
- * boot via the startup migration in server/index.ts.
+ * boot via the startup migration in server/index.ts and
+ * server/migrations/extra-startup.ts.
  */
 import {
   pgTable, text, integer, boolean, timestamp, decimal,
@@ -798,3 +799,90 @@ export const ariaAuditLog = pgTable("aria_audit_log", {
   status: text("status").default("success"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// ═══════════════════════════════════════════════════
+// AUDIT LOGS (§8.5) — security audit trail
+// Tenant-scoped. One row per mutation + auth event. Sensitive fields
+// (password, token, apiKey, stripe secrets, smtp pass, totp_secret)
+// are redacted by server/middleware/audit.ts before insert.
+// ═══════════════════════════════════════════════════
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"),
+  actorUserId: varchar("actor_user_id"),
+  actorType: varchar("actor_type").notNull().default("user"), // user | api_key | system | agent | anonymous
+  action: varchar("action").notNull(),                         // create | update | delete | login | logout | register | password_change | invite_user | export | ...
+  entity: varchar("entity").notNull(),                         // contact | deal | invoice | user | tenant | settings | auth | ...
+  entityId: varchar("entity_id"),
+  method: varchar("method"),
+  path: text("path"),
+  statusCode: integer("status_code"),
+  ip: varchar("ip"),
+  userAgent: text("user_agent"),
+  requestBody: jsonb("request_body"),
+  responseMeta: jsonb("response_meta"),
+  latencyMs: integer("latency_ms"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("idx_audit_logs_tenant_created").on(t.tenantId, t.createdAt),
+  index("idx_audit_logs_tenant_entity").on(t.tenantId, t.entity, t.entityId),
+  index("idx_audit_logs_actor").on(t.tenantId, t.actorUserId),
+]);
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+// ═══════════════════════════════════════════════════
+// AI COUNCIL (§9) — multi-provider/specialist deliberation layer
+// ═══════════════════════════════════════════════════
+//
+// council_topics: pre-defined decision types (discount.approve, lead.score,
+// deal.advance, ...). Tenant-specific overrides supported via a non-null
+// tenant_id; null tenant_id = global default.
+//
+// council_decisions: every deliberation produces one row. Stores the full
+// per-round transcript, the consensus outcome, dissent record, cost in
+// credits + USD, and the human approver (if any). Replay reads from this
+// row and re-runs against participants[].providers/agent versions.
+//
+export const councilTopics = pgTable("council_topics", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"), // null = global default
+  name: varchar("name").notNull(),
+  description: text("description"),
+  defaultMode: varchar("default_mode").notNull(), // 'ensemble' | 'debate'
+  defaultParticipants: jsonb("default_participants").notNull().default(sql`'[]'::jsonb`),
+  systemPromptTemplate: text("system_prompt_template").notNull(),
+  guardrails: jsonb("guardrails").notNull().default(sql`'{}'::jsonb`),
+  requiresManualApproval: boolean("requires_manual_approval").notNull().default(true),
+  minPlan: varchar("min_plan").notNull().default("starter"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type CouncilTopic = typeof councilTopics.$inferSelect;
+export type InsertCouncilTopic = typeof councilTopics.$inferInsert;
+
+export const councilDecisions = pgTable("council_decisions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull(),
+  topic: varchar("topic").notNull(),
+  mode: varchar("mode").notNull(), // 'ensemble' | 'debate'
+  status: varchar("status").notNull().default("pending"), // pending | running | succeeded | failed | rejected_by_human | applied
+  inputs: jsonb("inputs").notNull(),
+  participants: jsonb("participants").notNull(), // [{kind:'provider'|'agent', name, weight?}]
+  rounds: jsonb("rounds").notNull().default(sql`'[]'::jsonb`), // [{round:1, statements:[{participant, text, vote?}]}]
+  outcome: jsonb("outcome"), // {recommendation, vote, confidence: 0..1, reasons: [...]}
+  dissent: jsonb("dissent"), // [{participant, position, why}]
+  costCredits: integer("cost_credits").notNull().default(0),
+  costUsd: decimal("cost_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+  latencyMs: integer("latency_ms"),
+  triggeredBy: varchar("triggered_by"),
+  triggerSource: varchar("trigger_source"), // 'ui' | 'workflow' | 'api' | 'agent'
+  approvedBy: varchar("approved_by"),
+  appliedAt: timestamp("applied_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [
+  index("idx_council_decisions_tenant_created").on(t.tenantId, t.createdAt),
+  index("idx_council_decisions_tenant_topic").on(t.tenantId, t.topic, t.status),
+  index("idx_council_decisions_triggered_by").on(t.tenantId, t.triggeredBy),
+]);
+export type CouncilDecision = typeof councilDecisions.$inferSelect;
+export type InsertCouncilDecision = typeof councilDecisions.$inferInsert;

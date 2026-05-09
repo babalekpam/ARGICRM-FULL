@@ -34,12 +34,29 @@ Or just click the **▶ Run** button — the `.replit` file handles everything.
 
 ---
 
-## 🔐 Default Login Credentials
+## 🔐 First-Run Setup
 
-| Account | Email | Password |
-|---|---|---|
-| Platform Owner | `abel@argilette.com` | `ArgiletteSecure2024!` |
-| Demo Account | `demo@argilette.com` | `Demo123456!` |
+Default passwords are **no longer shipped in this repo**. On the first run
+the seed script creates the platform-owner account using one of two flows:
+
+**Auto-generated (recommended)** — if you set neither `PLATFORM_OWNER_EMAIL`
+nor `PLATFORM_OWNER_PASSWORD`, the seed generates a random 32-char password
+and writes it to `./bootstrap-credentials.txt` (mode `0600`).
+
+```bash
+cat ./bootstrap-credentials.txt
+# email:    <generated-or-default>
+# password: <random>
+```
+
+Read it once, log in, change the password immediately, and delete the file.
+
+**Custom (development only)** — if you set both env vars and `NODE_ENV !==
+"production"`, the seed uses your values. Setting these in production is
+rejected by the seed script.
+
+On first login the account is forced through a password change and TOTP
+enrollment if its role is `admin` or higher.
 
 ---
 

@@ -19,8 +19,12 @@ import AccountsPage from "./pages/Accounts";
 import CampaignsPage from "./pages/Campaigns";
 import InvoicesPage from "./pages/Invoices";
 import SettingsPage from "./pages/Settings";
+import SettingsSecurityPage from "./pages/SettingsSecurity";
+import ForcePasswordChangePage from "./pages/ForcePasswordChange";
 import TeamPage from "./pages/Team";
 import AgentsPage from "./pages/Agents";
+import CouncilPage from "./pages/Council";
+import CouncilUsagePage from "./pages/CouncilUsage";
 import IntelligencePage from "./pages/Intelligence";
 import HealingPage from "./pages/Healing";
 import SeoPage from "./pages/Seo";
@@ -59,15 +63,17 @@ function useNoIndex() {
 }
 
 function Guard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   useNoIndex();
   if (loading) return null;
   if (!isAuthenticated) return <Redirect to="/login" />;
+  // Force password change on first login — server flag drives client redirect.
+  if (user?.mustChangePassword) return <Redirect to="/forced-password-change" />;
   return <>{children}</>;
 }
 
 function AppRoutes() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   if (loading) return (
     <div style={{ position: "fixed", inset: 0, background: "#080d1a", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
       <img src="/assets/logo.png" alt="ARGI CRM" style={{ height: 56, width: "auto", objectFit: "contain" }} />
@@ -77,10 +83,14 @@ function AppRoutes() {
 
   return (
     <Switch>
-      <Route path="/">{() => isAuthenticated ? <Redirect to="/dashboard" /> : <LandingPage />}</Route>
+      <Route path="/">{() => isAuthenticated ? <Redirect to={user?.mustChangePassword ? "/forced-password-change" : "/dashboard"} /> : <LandingPage />}</Route>
       <Route path="/landing">{() => <LandingPage />}</Route>
       <Route path="/login">{() => isAuthenticated ? <Redirect to="/dashboard" /> : <LoginPage />}</Route>
       <Route path="/register">{() => isAuthenticated ? <Redirect to="/dashboard" /> : <RegisterPage />}</Route>
+      {/* Forced password change — authenticated but bypasses Guard's redirect */}
+      <Route path="/forced-password-change">{() =>
+        !isAuthenticated ? <Redirect to="/login" /> : <ForcePasswordChangePage />
+      }</Route>
       <Route path="/dashboard">{() => <Guard><DashboardPage /></Guard>}</Route>
       <Route path="/contacts">{() => <Guard><ContactsPage /></Guard>}</Route>
       <Route path="/leads">{() => <Guard><LeadsPage /></Guard>}</Route>
@@ -90,8 +100,11 @@ function AppRoutes() {
       <Route path="/campaigns">{() => <Guard><CampaignsPage /></Guard>}</Route>
       <Route path="/invoices">{() => <Guard><InvoicesPage /></Guard>}</Route>
       <Route path="/settings">{() => <Guard><SettingsPage /></Guard>}</Route>
+      <Route path="/settings/security">{() => <Guard><SettingsSecurityPage /></Guard>}</Route>
       <Route path="/team">{() => <Guard><TeamPage /></Guard>}</Route>
       <Route path="/agents">{() => <Guard><AgentsPage /></Guard>}</Route>
+      <Route path="/council">{() => <Guard><CouncilPage /></Guard>}</Route>
+      <Route path="/council/usage">{() => <Guard><CouncilUsagePage /></Guard>}</Route>
       <Route path="/intelligence">{() => <Guard><IntelligencePage /></Guard>}</Route>
       <Route path="/healing">{() => <Guard><HealingPage /></Guard>}</Route>
       <Route path="/seo">{() => <Guard><SeoPage /></Guard>}</Route>

@@ -5,6 +5,9 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { authenticate, requireRole, type AuthRequest } from "./middleware/auth.js";
 import { aiRateLimit } from "./middleware/ai-rate-limit.js";
+import { csrfProtection } from "./middleware/csrf.js";
+import { auditMiddleware } from "./middleware/audit.js";
+import { runExtraMigrations } from "./migrations/extra-startup.js";
 import rateLimit from "express-rate-limit";
 import * as storage from "./storage.js";
 import { db } from "./db.js";
@@ -12,6 +15,7 @@ import { contacts, tenants, users, leads, deals } from "@shared/schema.js";
 import { agentSessions, agentMessages } from "@shared/schema-extended.js";
 import { eq, and, sql as rawSql, gte, desc as descOp } from "drizzle-orm";
 import authRouter from "./routes/auth.js";
+import totpRouter from "./routes/totp.js";
 import agentRouter from "./routes/agents.js";
 import adminRouter from "./routes/admin.js";
 import intelligenceRouter from "./routes/intelligence.js";
@@ -30,10 +34,43 @@ import analyticsRouter from "./routes/analytics.js";
 import workflowsRouter from "./routes/workflows.js";
 import skillsRouter from "./routes/skills.js";
 import contractsRouter from "./routes/contracts.js";
+import councilRouter from "./routes/council.js";
+import apiKeysRouter from "./routes/api-keys.js";
+import webhooksRouter from "./routes/webhooks.js";
+import v1Router from "./routes/v1/index.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // ─── Core Auth ──────────────────────────────────────
+  // ─── Startup migrations for security/AI-council/public-API tables ──
+  // Idempotent CREATE TABLE IF NOT EXISTS for audit_logs, council_*,
+  // api_keys, webhook_*. Must run before any handler that might insert.
+  await runExtraMigrations().catch(e =>
+    console.warn("[STARTUP] Extra migrations failed (non-fatal):", String(e?.message || e).slice(0, 200))
+  );
+
+  // ─── Global security/observability middleware ───────────────
+  // CSRF: only triggers on cookie-authenticated mutating methods.
+  // Bearer-authenticated API clients bypass it (see middleware/csrf.ts).
+  app.use(csrfProtection);
+  // Audit: fires on res.finish for mutations + auth events. Best-effort
+  // insert into audit_logs; never blocks the response.
+  app.use(auditMiddleware);
+
+  // ─── Public versioned API (Bearer API key auth) ───────────────
+  // Mounted BEFORE /api/auth so /api/v1/* doesn't accidentally hit
+  // session-auth handlers.
+  app.use("/api/v1", v1Router);
+
+  // ─── TOTP / MFA endpoints (mounted BEFORE /api/auth so totp wins) ──
+  app.use("/api/auth/totp", totpRouter);
+
+  // ─── Core Auth ─────────────────────────────────────
   app.use("/api/auth", authRouter);
+
+  // ─── API key management ────────────────────────────────
+  app.use("/api/api-keys", apiKeysRouter);
+
+  // ─── Webhook endpoint management ───────────────────────────
+  app.use("/api/webhooks", webhooksRouter);
 
   // ─── Profile (alias for /api/auth/me so all clients agree) ────
   app.get("/api/me", authenticate, async (req: AuthRequest, res) => {
@@ -51,40 +88,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to load profile" });
     }
   });
-  // ─── AI Agents ─────────────────────────────────────
+  // ─── AI Agents ───────────────────────────────────
   app.use("/api/agents", agentRouter);
+  // ─── AI Council (multi-provider/specialist deliberation) ──
+  app.use("/api/council", councilRouter);
   // ─── AI Tools (deal intelligence, email, meeting) ──
   app.use("/api/ai", aiRouter);
-  // ─── Analytics ─────────────────────────────────────
+  // ─── Analytics ──────────────────────────────────
   app.use("/api/analytics", analyticsRouter);
   // ─── Workflow Automation ────────────────────────────
   app.use("/api/workflows", workflowsRouter);
   // ─── Skills Library ────────────────────────────────
   app.use("/api/skills", skillsRouter);
-  // ─── Lead Intelligence ─────────────────────────────
+  // ─── Lead Intelligence ──────────────────────────────
   app.use("/api/intelligence", intelligenceRouter);
-  // ─── Code Healing ──────────────────────────────────
+  // ─── Code Healing ─────────────────────────────────
   app.use("/api/healing", healingRouter);
-  // ─── SEO Platform ──────────────────────────────────
+  // ─── SEO Platform ─────────────────────────────────
   app.use("/api/seo", seoRouter);
-  // ─── E-commerce ────────────────────────────────────
+  // ─── E-commerce ───────────────────────────────────
   app.use("/api/ecommerce", ecommerceRouter);
-  // ─── Finance ───────────────────────────────────────
+  // ─── Finance ─────────────────────────────────────
   app.use("/api/finance", financeRouter);
   // ─── Operations (HR, Projects, Marketing, WL) ──────
   app.use("/api/ops", operationsRouter);
-  // ─── Autonomous Lead Generation ────────────────────
+  // ─── Autonomous Lead Generation ────────────────────────
   app.use("/api/leadgen", leadgenRouter);
-  // ─── Data Marketplace ──────────────────────────────
+  // ─── Data Marketplace ───────────────────────────────
   app.use("/api/marketplace", marketplaceRouter);
   app.use("/api/email", emailTrackingRouter);
-  // ─── Super Admin ───────────────────────────────────
+  // ─── Super Admin ─────────────────────────────────
   app.use("/api/superadmin", adminRouter);
   // ─── ARIA AI Command Agent (auth first, then rate-limit per plan) ──
   app.use("/api/aria", authenticate, aiRateLimit, ariaRouter);
-  // ─── Public Storefront API (no auth) ───────────────
+  // ─── Public Storefront API (no auth) ───────────────────
   app.use("/api/public", publicRouter);
-  // ─── Contracts & e-Signing ─────────────────────────
+  // ─── Contracts & e-Signing ──────────────────────────
   app.use("/api/contracts", contractsRouter);
   // Public signing endpoints (no auth prefix so they share the router)
   app.get("/api/sign/:token", (req, res, next) => {
@@ -96,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     (contractsRouter as any)(req, res, next);
   });
 
-  // ─── Contacts ─────────────────────────────────────────
+  // ─── Contacts ────────────────────────────────────────
   app.get("/api/contacts", authenticate, async (req: AuthRequest, res) => {
     try {
       const { search, status, region, limit, offset } = req.query;
@@ -147,7 +186,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rows = await db.select().from(contacts).where(and(eq(contacts.id, req.params.id), eq(contacts.tenantId, tenantId))).limit(1);
       if (!rows.length) return res.status(404).json({ error: "Contact not found" });
       const c = rows[0];
-      // Check if lead with same email already exists
       if (c.email) {
         const existing = await db.select({ id: leads.id }).from(leads)
           .where(and(eq(leads.tenantId, tenantId), eq(leads.email, c.email))).limit(1);
@@ -168,10 +206,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to promote contact to lead" }); }
   });
 
-  // ─── CSV / Excel Import ───────────────────────────────
+  // ─── CSV / Excel Import ──────────────────────────────────────
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
-  // Column aliases: maps common spreadsheet headers → our field names
   const FIELD_ALIASES: Record<string, string> = {
     "first name": "firstName", "firstname": "firstName", "first": "firstName", "prénom": "firstName",
     "last name": "lastName", "lastname": "lastName", "last": "lastName", "nom": "lastName", "surname": "lastName",
@@ -199,28 +236,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contacts/import", authenticate, upload.single("file"), async (req: AuthRequest, res) => {
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-
       const ext = (req.file.originalname || "").split(".").pop()?.toLowerCase();
       if (!["csv", "xlsx", "xls"].includes(ext || "")) {
         return res.status(400).json({ error: "Only CSV and Excel files (.csv, .xlsx, .xls) are supported" });
       }
-
-      // Parse file into rows
       const wb = XLSX.read(req.file.buffer, { type: "buffer", raw: false });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-
       if (raw.length < 2) return res.status(400).json({ error: "File is empty or has no data rows" });
 
       const headerRow: string[] = (raw[0] as any[]).map(h => String(h || "").trim());
       const fieldMap = headerRow.map(detectField);
       const dataRows = raw.slice(1).filter(row => row.some((c: any) => String(c).trim()));
-
       if (dataRows.length === 0) return res.status(400).json({ error: "No data rows found in file" });
 
       const tenantId = req.user!.tenantId;
-
-      // Load existing emails + phones for dedup
       const existing = await db.select({ email: contacts.email, phone: contacts.phone }).from(contacts).where(eq(contacts.tenantId, tenantId));
       const existingEmails = new Set(existing.map(c => c.email?.trim().toLowerCase()).filter(Boolean));
       const existingPhones = new Set(existing.map(c => c.phone?.replace(/\D/g, "")).filter(Boolean));
@@ -232,49 +262,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const row = dataRows[i];
         const rec: Record<string, string> = {};
         fieldMap.forEach((field, idx) => { rec[field] = String(row[idx] ?? "").trim(); });
-
-        // Handle "Full Name" → split into first/last
         if (rec.fullName && !rec.firstName) {
           const parts = rec.fullName.trim().split(/\s+/);
           rec.firstName = parts[0] || "";
           rec.lastName  = parts.slice(1).join(" ") || "";
         }
-
         const emailKey = rec.email?.toLowerCase();
         const phoneKey = rec.phone?.replace(/\D/g, "");
-
-        // Dedup check
         if ((emailKey && existingEmails.has(emailKey)) || (phoneKey && existingPhones.has(phoneKey))) {
-          duplicates++;
-          continue;
+          duplicates++; continue;
         }
-
-        if (!rec.firstName && !rec.fullName && !rec.company && !rec.email && !rec.phone) {
-          continue; // Skip truly blank rows silently
-        }
-
+        if (!rec.firstName && !rec.fullName && !rec.company && !rec.email && !rec.phone) continue;
         try {
           await db.insert(contacts).values({
             tenantId,
             firstName:  rec.firstName  || rec.fullName?.split(" ")[0] || "Unknown",
             lastName:   rec.lastName   || rec.fullName?.split(" ").slice(1).join(" ") || "",
-            email:      rec.email      || null,
-            phone:      rec.phone      || null,
-            company:    rec.company    || null,
-            jobTitle:   rec.jobTitle   || null,
-            industry:   rec.industry   || null,
-            city:       rec.city       || null,
-            state:      rec.state      || null,
-            country:    rec.country    || null,
-            website:    rec.website    || null,
-            notes:      rec.notes      || null,
-            status:     rec.status     || "new",
-            source:     rec.source     || null,
-            linkedin:   rec.linkedin   || null,
-            tags:       rec.tags ? [rec.tags] : [],
+            email: rec.email || null, phone: rec.phone || null, company: rec.company || null,
+            jobTitle: rec.jobTitle || null, industry: rec.industry || null,
+            city: rec.city || null, state: rec.state || null, country: rec.country || null,
+            website: rec.website || null, notes: rec.notes || null,
+            status: rec.status || "new", source: rec.source || null,
+            linkedin: rec.linkedin || null, tags: rec.tags ? [rec.tags] : [],
             leadSource: "import_file",
           } as any);
-
           if (emailKey) existingEmails.add(emailKey);
           if (phoneKey) existingPhones.add(phoneKey);
           imported++;
@@ -283,7 +294,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (errorDetails.length < 5) errorDetails.push(`Row ${i + 2}: ${e.message}`);
         }
       }
-
       res.json({ imported, duplicates, errors, total: dataRows.length, errorDetails });
     } catch (err: any) {
       console.error("[contacts/import]", err.message);
@@ -291,12 +301,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ─── Leads ────────────────────────────────────────────
+  // ─── Leads ─────────────────────────────────────────────
   app.get("/api/leads", authenticate, async (req: AuthRequest, res) => {
     try {
       const result = await storage.getLeads(req.user!.tenantId, {
-        search: req.query.search as string,
-        status: req.query.status as string,
+        search: req.query.search as string, status: req.query.status as string,
         limit: req.query.limit ? Number(req.query.limit) : 50,
       });
       res.json(result);
@@ -324,19 +333,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete lead" }); }
   });
 
-  // Convert lead → contact
   app.post("/api/leads/:id/convert", authenticate, async (req: AuthRequest, res) => {
     try {
       const tenantId = req.user!.tenantId;
       const leadRows = await db.select().from(leads).where(and(eq(leads.id, req.params.id), eq(leads.tenantId, tenantId))).limit(1);
       if (!leadRows.length) return res.status(404).json({ error: "Lead not found" });
       const lead = leadRows[0];
-      // Check if contact with same email already exists
       if (lead.email) {
         const existing = await db.select({ id: contacts.id }).from(contacts)
           .where(and(eq(contacts.tenantId, tenantId), eq(contacts.email, lead.email))).limit(1);
         if (existing.length) {
-          // Already exists — just mark lead converted
           await db.update(leads).set({ status: "converted", updatedAt: new Date() }).where(eq(leads.id, lead.id));
           return res.json({ contactId: existing[0].id, alreadyExisted: true });
         }
@@ -357,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to convert lead" }); }
   });
 
-  // ─── Deals ────────────────────────────────────────────
+  // ─── Deals ─────────────────────────────────────────────
   app.get("/api/deals", authenticate, async (req: AuthRequest, res) => {
     try {
       const result = await storage.getDeals(req.user!.tenantId, { stage: req.query.stage as string });
@@ -369,10 +375,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const body = req.body;
       const deal = await storage.createDeal({
-        ...body,
-        title: body.name || body.title || "New Deal",
-        tenantId: req.user!.tenantId,
-        createdBy: req.user!.id,
+        ...body, title: body.name || body.title || "New Deal",
+        tenantId: req.user!.tenantId, createdBy: req.user!.id,
       });
       res.status(201).json(deal);
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to create deal" }); }
@@ -392,12 +396,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete deal" }); }
   });
 
-  // ─── Tasks ────────────────────────────────────────────
+  // ─── Tasks ─────────────────────────────────────────────
   app.get("/api/tasks", authenticate, async (req: AuthRequest, res) => {
     try {
       const tasks = await storage.getTasks(req.user!.tenantId, {
-        status: req.query.status as string,
-        assignedTo: req.query.assignedTo as string,
+        status: req.query.status as string, assignedTo: req.query.assignedTo as string,
       });
       res.json(tasks);
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch tasks" }); }
@@ -406,9 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/tasks", authenticate, async (req: AuthRequest, res) => {
     try {
       const task = await storage.createTask({
-        ...req.body,
-        tenantId: req.user!.tenantId,
-        createdBy: req.user!.id,
+        ...req.body, tenantId: req.user!.tenantId, createdBy: req.user!.id,
         dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
       });
       res.status(201).json(task);
@@ -429,7 +430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete task" }); }
   });
 
-  // ─── Accounts ─────────────────────────────────────────
+  // ─── Accounts ────────────────────────────────────────
   app.get("/api/accounts", authenticate, async (req: AuthRequest, res) => {
     try {
       const result = await storage.getAccounts(req.user!.tenantId, { search: req.query.search as string });
@@ -458,12 +459,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete account" }); }
   });
 
-  // ─── Activities ────────────────────────────────────────
+  // ─── Activities ─────────────────────────────────────────
   app.get("/api/activities", authenticate, async (req: AuthRequest, res) => {
     try {
       const acts = await storage.getActivities(req.user!.tenantId, {
-        contactId: req.query.contactId as string,
-        dealId: req.query.dealId as string,
+        contactId: req.query.contactId as string, dealId: req.query.dealId as string,
       });
       res.json(acts);
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch activities" }); }
@@ -472,15 +472,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/activities", authenticate, async (req: AuthRequest, res) => {
     try {
       const activity = await storage.createActivity({
-        tenantId: req.user!.tenantId,
-        createdBy: req.user!.id,
-        type:      req.body.type      || "note",
-        channel:   req.body.channel   || "other",
+        tenantId: req.user!.tenantId, createdBy: req.user!.id,
+        type: req.body.type || "note", channel: req.body.channel || "other",
         direction: req.body.direction || "outbound",
-        content:   req.body.content   || req.body.note || req.body.description || "",
+        content: req.body.content || req.body.note || req.body.description || "",
         contactId: req.body.contactId || req.body.entityId || null,
-        dealId:    req.body.dealId    || null,
-        meta:      req.body.meta      || {},
+        dealId: req.body.dealId || null, meta: req.body.meta || {},
       });
       res.status(201).json(activity);
     } catch (err) { console.error("POST /activities error:", err); res.status(500).json({ error: "Failed to create activity" }); }
@@ -488,10 +485,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── Campaigns ─────────────────────────────────────────
   app.get("/api/campaigns", authenticate, async (req: AuthRequest, res) => {
-    try {
-      const camps = await storage.getCampaigns(req.user!.tenantId);
-      res.json(camps);
-    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch campaigns" }); }
+    try { res.json(await storage.getCampaigns(req.user!.tenantId)); }
+    catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch campaigns" }); }
   });
 
   app.post("/api/campaigns", authenticate, async (req: AuthRequest, res) => {
@@ -515,24 +510,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete campaign" }); }
   });
 
-  // ─── Invoices ─────────────────────────────────────────
+  // ─── Invoices ────────────────────────────────────────
   app.get("/api/invoices", authenticate, async (req: AuthRequest, res) => {
-    try {
-      const invs = await storage.getInvoices(req.user!.tenantId);
-      res.json(invs);
-    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch invoices" }); }
+    try { res.json(await storage.getInvoices(req.user!.tenantId)); }
+    catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch invoices" }); }
   });
 
   app.post("/api/invoices", authenticate, async (req: AuthRequest, res) => {
     try {
       const body = req.body;
-      // Accept both naming conventions: clientName/client/name + amount/total
       const clientName = body.clientName || body.client || body.name || "";
       const total      = body.total      || body.amount || 0;
       const invoiceNumber = body.number || body.invoiceNumber || `INV-${Date.now()}`;
       const status     = body.status  || "pending";
       const dueDate    = body.dueDate ? new Date(body.dueDate) : null;
-
       if (!clientName) {
         return res.status(400).json({
           error: "Validation failed",
@@ -540,15 +531,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           optional: ["number", "status", "dueDate"],
         });
       }
-
       const invoice = await storage.createInvoice({
-        tenantId: req.user!.tenantId,
-        createdBy: req.user!.id as any,
-        number: invoiceNumber,
-        total: String(total),
-        notes: clientName,
-        status,
-        dueDate,
+        tenantId: req.user!.tenantId, createdBy: req.user!.id as any,
+        number: invoiceNumber, total: String(total), notes: clientName, status, dueDate,
       } as any);
       res.status(201).json(invoice);
     } catch (err) { console.error("POST /invoices error:", err); res.status(500).json({ error: "Failed to create invoice" }); }
@@ -568,15 +553,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete invoice" }); }
   });
 
-  // ─── Dashboard ─────────────────────────────────────────
+  // ─── Dashboard ───────────────────────────────────────────
   app.get("/api/dashboard", authenticate, async (req: AuthRequest, res) => {
-    try {
-      const stats = await storage.getDashboardStats(req.user!.tenantId);
-      res.json(stats);
-    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch dashboard stats" }); }
+    try { res.json(await storage.getDashboardStats(req.user!.tenantId)); }
+    catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch dashboard stats" }); }
   });
 
-  // ─── Users (tenant) ────────────────────────────────────
+  // ─── Users (tenant) ───────────────────────────────────────
   app.get("/api/users", authenticate, async (req: AuthRequest, res) => {
     try {
       const userList = await storage.getUsersByTenant(req.user!.tenantId);
@@ -600,7 +583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to delete user" }); }
   });
 
-  // ─── Settings ─────────────────────────────────────────
+  // ─── Settings ────────────────────────────────────────
   app.get("/api/settings", authenticate, async (req: AuthRequest, res) => {
     try {
       const tenant = await storage.getTenantById(req.user!.tenantId);
@@ -617,13 +600,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update settings" }); }
   });
 
-  // ─── SMTP Settings ─────────────────────────────────────
+  // ─── SMTP Settings ───────────────────────────────────────
   app.get("/api/settings/smtp", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
     try {
       const tenant = await storage.getTenantById(req.user!.tenantId);
       if (!tenant) return res.status(404).json({ error: "Workspace not found" });
       const smtp = (tenant.settings as any)?.smtp || {};
-      // Never send password back to frontend — return masked version
       res.json({ ...smtp, pass: smtp.pass ? "••••••••" : "" });
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch SMTP settings" }); }
   });
@@ -635,13 +617,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!tenant) return res.status(404).json({ error: "Workspace not found" });
       const currentSettings: any = tenant.settings || {};
       const currentSmtp: any = currentSettings.smtp || {};
-      // If pass is the masked sentinel, keep existing password
       const finalPass = (pass && pass !== "••••••••") ? pass : currentSmtp.pass;
-      const updatedSettings = {
-        ...currentSettings,
-        smtp: { host, port: Number(port) || 587, secure: Boolean(secure), user, pass: finalPass, senderName, senderEmail },
-      };
-      await storage.updateTenant(req.user!.tenantId, { settings: updatedSettings });
+      await storage.updateTenant(req.user!.tenantId, {
+        settings: { ...currentSettings, smtp: { host, port: Number(port) || 587, secure: Boolean(secure), user, pass: finalPass, senderName, senderEmail } },
+      });
       res.json({ success: true });
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to save SMTP settings" }); }
   });
@@ -662,17 +641,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ─── AI Settings ───────────────────────────────────────
+  // ─── AI Settings ────────────────────────────────────────
   app.get("/api/settings/ai", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
     try {
-      const { getTenantAIConfig, PLAN_LIMITS } = await import("./services/tenant-ai.js");
+      const { getTenantAIConfig } = await import("./services/tenant-ai.js");
       const config = await getTenantAIConfig(req.user!.tenantId);
       res.json({
-        plan: config.plan,
-        provider: config.provider,
-        hasApiKey: config.hasOwnKey,
-        usageCount: config.usageCount,
-        usageLimit: config.limit,
+        plan: config.plan, provider: config.provider, hasApiKey: config.hasOwnKey,
+        usageCount: config.usageCount, usageLimit: config.limit,
       });
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch AI settings" }); }
   });
@@ -686,10 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentAi: any = currentSettings.ai || {};
       const finalKey = (apiKey && apiKey !== "••••••••") ? apiKey : currentAi.apiKey;
       await storage.updateTenant(req.user!.tenantId, {
-        settings: {
-          ...currentSettings,
-          ai: { ...currentAi, provider: provider || null, apiKey: finalKey || null },
-        },
+        settings: { ...currentSettings, ai: { ...currentAi, provider: provider || null, apiKey: finalKey || null } },
       });
       res.json({ success: true });
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to save AI settings" }); }
@@ -708,7 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to remove API key" }); }
   });
 
-  // ─── Profile ──────────────────────────────────────────
+  // ─── Profile ────────────────────────────────────────────
   app.put("/api/profile", authenticate, async (req: AuthRequest, res) => {
     try {
       const { firstName, lastName, profileImageUrl, preferredLanguage } = req.body;
@@ -717,7 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to update profile" }); }
   });
 
-  // ─── Platform Admin ────────────────────────────────────
+  // ─── Platform Admin ──────────────────────────────────────
   const OWNER_EMAIL = process.env.PLATFORM_OWNER_EMAIL || "abel@argilette.com";
   function requirePlatformOwner(req: AuthRequest, res: any, next: any) {
     if (req.user?.email !== OWNER_EMAIL && req.user?.role !== "platform_owner" && req.user?.role !== "admin") {
@@ -727,10 +700,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   app.get("/api/admin/tenants", authenticate, requirePlatformOwner, async (req: AuthRequest, res) => {
-    try {
-      const all = await storage.getAllTenants();
-      res.json(all);
-    } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch tenants" }); }
+    try { res.json(await storage.getAllTenants()); }
+    catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch tenants" }); }
   });
 
   app.get("/api/admin/stats", authenticate, requirePlatformOwner, async (req: AuthRequest, res) => {
@@ -747,9 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const planDist = await db.select({ plan: tenants.subscriptionPlan, count: rawSql<number>`count(*)` }).from(tenants).groupBy(tenants.subscriptionPlan);
       res.json({
         tenants: { total: Number(tenantCount.n), new30d: Number(newTenants.n) },
-        users: Number(userCount.n),
-        contacts: Number(contactCount.n),
-        leads: Number(leadCount.n),
+        users: Number(userCount.n), contacts: Number(contactCount.n), leads: Number(leadCount.n),
         deals: { won: Number(dealStats.count), revenue: Number(dealStats.revenue) },
         agents: { sessions: Number(sessionCount.n), messages: Number(messageCount.n) },
         plans: planDist.map(p => ({ plan: p.plan, count: Number(p.count) })),
@@ -757,7 +726,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch admin stats" }); }
   });
 
-  // ─── AI Features ──────────────────────────────────────
+  // ─── Audit Log (§8.5) ─ tenant-scoped, super_admin/admin only ──
+  app.get("/api/audit-logs", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
+    try {
+      const limit = Math.min(Number(req.query.limit) || 100, 500);
+      const tid = req.user!.tenantId;
+      const action = req.query.action as string | undefined;
+      const entity = req.query.entity as string | undefined;
+      const actor  = req.query.actor as string | undefined;
+
+      const filters: any[] = [rawSql`tenant_id = ${tid}`];
+      if (action) filters.push(rawSql`action = ${action}`);
+      if (entity) filters.push(rawSql`entity = ${entity}`);
+      if (actor)  filters.push(rawSql`actor_user_id = ${actor}`);
+      const where = filters.reduce((a, b, i) => i === 0 ? b : rawSql`${a} AND ${b}`);
+
+      const r = await db.execute(rawSql`
+        SELECT id, actor_user_id, actor_type, action, entity, entity_id,
+               method, path, status_code, ip, latency_ms, created_at
+        FROM audit_logs
+        WHERE ${where}
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+      `);
+      res.json(r.rows);
+    } catch (err) {
+      console.error("GET /audit-logs error:", err);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
+  // ─── AI Features ─────────────────────────────────────────
   app.post("/api/ai/email", authenticate, async (req: AuthRequest, res) => {
     try {
       const { generateEmailCopy } = await import("./services/ai.js");
@@ -769,45 +768,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         senderCompany: tenant?.name || "Our Company",
       });
       res.json(result);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message || "AI generation failed" });
-    }
+    } catch (err: any) { res.status(500).json({ error: err.message || "AI generation failed" }); }
   });
 
   app.post("/api/ai/score-lead", authenticate, async (req: AuthRequest, res) => {
     try {
       const { scoreLeadWithAI } = await import("./services/ai.js");
-      const result = await scoreLeadWithAI(req.body);
-      res.json(result);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message || "Lead scoring failed" });
-    }
+      res.json(await scoreLeadWithAI(req.body));
+    } catch (err: any) { res.status(500).json({ error: err.message || "Lead scoring failed" }); }
   });
 
-  // ─── AI Provider Status ─────────────────────────────
-  app.get("/api/ai/provider", authenticate, async (req: AuthRequest, res) => {
+  app.get("/api/ai/provider", authenticate, async (_req: AuthRequest, res) => {
     const { getProviderInfo } = await import("./services/ai-adapter.js");
     res.json(getProviderInfo());
   });
 
-  // ─── AI Provider Info (alias for /provider) ──────────
-  app.get("/api/ai/provider-info", authenticate, async (req: AuthRequest, res) => {
+  app.get("/api/ai/provider-info", authenticate, async (_req: AuthRequest, res) => {
     const { getProviderInfo } = await import("./services/ai-adapter.js");
     res.json(getProviderInfo());
   });
 
-  // ─── AI Usage Dashboard ──────────────────────────────
   app.get("/api/ai/usage", authenticate, async (req: AuthRequest, res) => {
     try {
       const { getUsageDashboard } = await import("./services/ai-credits.js");
-      const data = await getUsageDashboard(req.user!.tenantId);
-      res.json(data);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
+      res.json(await getUsageDashboard(req.user!.tenantId));
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
-  // ─── Global Search ────────────────────────────────
+  // ─── Global Search ──────────────────────────────────────
   app.get("/api/search", authenticate, async (req: AuthRequest, res) => {
     try {
       const q = (req.query.q as string || "").trim().toLowerCase();
@@ -822,13 +810,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dealsList = Array.isArray(dls) ? dls : (dls as any).data || [];
       const filteredDeals = dealsList.filter((d: any) => d.name?.toLowerCase().includes(q) || d.contactName?.toLowerCase().includes(q)).slice(0, 5);
       res.json({ contacts: cts, leads: lds, deals: filteredDeals, accounts: acts });
-    } catch (err) {
-      console.error("GET /api/search error:", err);
-      res.status(500).json({ error: "Search failed" });
-    }
+    } catch (err) { console.error("GET /api/search error:", err); res.status(500).json({ error: "Search failed" }); }
   });
 
-  // ─── Change Password (rate-limited: 10/15min to prevent brute-force) ──
+  // ─── Change Password (rate-limited) ──────────────────────
   const changePwRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: "Too many password change attempts, please try again later" } });
   app.post("/api/auth/change-password", changePwRateLimit, authenticate, async (req: AuthRequest, res) => {
     try {
@@ -842,17 +827,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!valid) return res.status(401).json({ error: "Current password is incorrect" });
       const hash = await hashPassword(newPassword);
       await storage.updateUser(req.user!.id, { passwordHash: hash });
+      // Clear force_password_change on success.
+      await db.execute(rawSql`UPDATE users SET force_password_change = false WHERE id = ${req.user!.id}`)
+        .catch(() => { /* column not migrated yet */ });
       res.json({ success: true });
 
-      // Send confirmation email (non-blocking)
       const { sendPasswordChangedEmail } = await import("./services/email.js");
       sendPasswordChangedEmail({ to: user.email, firstName: user.firstName || "" })
         .catch(e => console.error("[EMAIL] Password-changed email failed:", e));
-
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to change password" }); }
   });
 
-  // ─── Invite Team Member ────────────────────────────
+  // ─── Invite Team Member ──────────────────────────────────
   app.post("/api/team/invite", authenticate, requireRole("super_admin", "admin"), async (req: AuthRequest, res) => {
     try {
       const { email, lastName, role } = req.body;
@@ -868,20 +854,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: role || "user", tenantId: req.user!.tenantId,
         passwordHash: hash, isActive: true, emailVerified: false,
       });
+      // Force password change on first login (best-effort if column not migrated).
+      await db.execute(rawSql`UPDATE users SET force_password_change = true WHERE id = ${newUser.id}`)
+        .catch(() => {});
       res.status(201).json({ id: newUser.id, email: newUser.email, firstName: newUser.firstName, role: newUser.role, tempPassword });
 
-      // Send invite email (non-blocking)
       const { sendTeamInviteEmail } = await import("./services/email.js");
       const inviterTenant = await storage.getTenantById(req.user!.tenantId).catch(() => null);
       sendTeamInviteEmail({
-        to: email,
-        firstName: firstName || "",
+        to: email, firstName: firstName || "",
         invitedBy: `${req.user!.firstName || ""} ${req.user!.lastName || ""}`.trim() || req.user!.email,
         workspaceName: inviterTenant?.name || "Argilette",
-        role: role || "user",
-        tempPassword,
+        role: role || "user", tempPassword,
       }).catch(e => console.error("[EMAIL] Team invite email failed:", e));
-
     } catch (err: any) { res.status(500).json({ error: err.message || "Failed to invite user" }); }
   });
 
