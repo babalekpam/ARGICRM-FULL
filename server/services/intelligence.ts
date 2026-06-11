@@ -21,7 +21,7 @@ import { leads, contacts } from "@shared/schema";
 import {
   companies, prospects, prospectLists, sequences, websiteVisitors,
   technographics, intentSignals,
-  type Company, type Prospect,
+  type Company, type Prospect, type Sequence,
 } from "@shared/schema-extended";
 import { eq, and, desc, sql, like, or, gte, lte, inArray } from "drizzle-orm";
 import { logError } from "./healing.js";
@@ -665,7 +665,7 @@ export async function exportProspects(
 // ═══════════════════════════════════════════════════════════════
 
 // No mock data — returns empty when AI is unavailable
-function generateMockProspects(): Prospect[] { return []; }
+function generateMockProspects(tenantId: string, company: string, domain?: string, targetTitles?: string[], count?: number): Prospect[] { return []; }
 async function generateBulkMockProspects(tenantId: string, filters: any, limit: number) {
   return { prospects: [] as Prospect[], total: 0, companies: [] };
 }

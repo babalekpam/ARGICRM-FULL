@@ -32,7 +32,7 @@ interface CircuitBreaker {
   timeout: number; // ms before trying again
 }
 
-const circuits: Record<string, CircuitBreaker> = {
+export const circuits: Record<string, CircuitBreaker> = {
   database: { failures: 0, lastFailure: 0, state: "closed", threshold: 5, timeout: 30000 },
   ai_service: { failures: 0, lastFailure: 0, state: "closed", threshold: 3, timeout: 60000 },
   email_service: { failures: 0, lastFailure: 0, state: "closed", threshold: 5, timeout: 120000 },
@@ -280,7 +280,14 @@ export async function logError(opts: {
 
 export const HEALING_MODE: "automatic" | "supervised" = "automatic";
 
-const BUILT_IN_RULES = [
+interface HealingRule {
+  name: string;
+  pattern: RegExp;
+  category: string;
+  action: (errorId: string, message: string) => Promise<{ success: boolean; action: string; requiresManual?: boolean }>;
+}
+
+const BUILT_IN_RULES: HealingRule[] = [
   // ── DATABASE ─────────────────────────────────────────────────
   {
     name: "Database connection timeout",

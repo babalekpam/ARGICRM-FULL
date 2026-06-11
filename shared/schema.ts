@@ -300,6 +300,7 @@ export type InsertCrmProject = typeof crmProjects.$inferInsert;
 
 export const landingPages = pgTable("landing_pages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull(),
   stepId: varchar("step_id").notNull(),
   headline: varchar("headline").notNull(),
   subheadline: varchar("subheadline"),
@@ -329,6 +330,7 @@ export const abTests = pgTable("ab_tests", {
   targetUrl: text("target_url"),
   status: text("status").notNull().default("draft"),
   trafficSplit: jsonb("traffic_split").default(sql`'{}'::jsonb`),
+  variants: jsonb("variants").default(sql`'[]'::jsonb`),
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
   winnerVariantId: varchar("winner_variant_id"),

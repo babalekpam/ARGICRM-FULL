@@ -1,5 +1,28 @@
 import type { Request, Response, NextFunction } from 'express';
-import { subscriptionService } from '../subscription-service';
+
+// NOTE: There is no subscription-service module in this codebase yet.
+// This local stub fails open (no locking) so the middleware never blocks
+// requests until a real subscription service is implemented.
+interface AccountLockStatus {
+  locked: boolean;
+  reason: string | null;
+  daysLocked: number;
+}
+
+const subscriptionService = {
+  async isAccountLocked(_userId: string): Promise<AccountLockStatus> {
+    return { locked: false, reason: null, daysLocked: 0 };
+  },
+  async isTrialExpired(_userId: string): Promise<boolean> {
+    return false;
+  },
+  async lockAccountForExpiredTrial(_userId: string): Promise<void> {
+    // no-op until a real subscription service exists
+  },
+  async getTrialRemainingDays(_userId: string): Promise<number | null> {
+    return null;
+  },
+};
 
 interface AuthRequest extends Request {
   user?: {

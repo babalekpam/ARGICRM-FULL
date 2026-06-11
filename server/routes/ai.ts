@@ -28,7 +28,7 @@ router.post("/deal-intelligence", authenticate, requireFeature("ai.tools"), asyn
       ? Math.floor((Date.now() - new Date(deal.createdAt).getTime()) / 86400000)
       : 0;
     const isStale = daysSinceUpdate > 7;
-    const isHighValue = (deal.value ?? 0) > 50000;
+    const isHighValue = Number(deal.value ?? 0) > 50000;
 
     let healthScore = 70;
     if (isStale) healthScore -= 20;
@@ -41,7 +41,7 @@ router.post("/deal-intelligence", authenticate, requireFeature("ai.tools"), asyn
     const risks: string[] = [];
     if (isStale) risks.push(`No activity for ${daysSinceUpdate} days`);
     if (daysInPipeline > 90) risks.push("Deal has been open for over 90 days");
-    if (!deal.value || deal.value === 0) risks.push("No deal value set");
+    if (!deal.value || Number(deal.value) === 0) risks.push("No deal value set");
 
     let aiInsights = null;
     if (isAIAvailable()) {

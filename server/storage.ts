@@ -2,6 +2,7 @@ import { eq, and, desc, asc, like, or, count, sum, gte, lte, sql, inArray } from
 import { db } from "./db.js";
 import {
   tenants, users, contacts, leads, deals, tasks, accounts, activities, campaigns,
+  type Tenant, type InsertTenant,
   type User, type InsertUser,
   type Contact, type InsertContact, type Lead, type InsertLead,
   type Deal, type InsertDeal, type Task, type InsertTask,
@@ -68,7 +69,7 @@ export async function getUsersByTenant(tenantId: string) {
 }
 
 export async function createUser(data: InsertUser): Promise<User> {
-  const [user] = await db.insert(users).values({ ...data, email: data.email.toLowerCase() }).returning();
+  const [user] = await db.insert(users).values({ ...data, email: data.email?.toLowerCase() }).returning();
   return user;
 }
 
@@ -192,8 +193,17 @@ export async function getLeads(tenantId: string, opts: { search?: string; status
     )
   ).orderBy(desc(leads.createdAt)).limit(limit).offset(offset);
 
+  // Count must apply the same filters as the page query or pagination totals drift
   const [{ total }] = await db.select({ total: count() }).from(leads).where(
-    and(eq(leads.tenantId, tenantId), status ? eq(leads.status, status) : undefined)
+    and(
+      eq(leads.tenantId, tenantId),
+      status ? eq(leads.status, status) : undefined,
+      search ? or(
+        like(leads.firstName, `%${search}%`),
+        like(leads.email, `%${search}%`),
+        like(leads.company, `%${search}%`),
+      ) : undefined,
+    )
   );
 
   return { data: rows, total: Number(total) };

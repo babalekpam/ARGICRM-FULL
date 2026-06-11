@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { storage } from '../storage.js';
+import * as storage from '../storage.js';
 
 export interface TenantRequest extends Request {
   tenant?: {

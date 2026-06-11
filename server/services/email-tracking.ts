@@ -39,9 +39,9 @@ export async function logEmailEvent(opts: {
   const { tenantId, trackingId, eventType, ip, userAgent, url, isForward } = opts;
 
   // Find email send record
-  const [send] = await db.execute<{
+  const [send] = (await db.execute<{
     id: string; contact_id: string | null; first_opener_ip: string | null; first_opened_at: string | null;
-  }>(sql`SELECT id, contact_id, first_opener_ip, first_opened_at FROM email_sends WHERE tracking_id = ${trackingId}::uuid LIMIT 1`);
+  }>(sql`SELECT id, contact_id, first_opener_ip, first_opened_at FROM email_sends WHERE tracking_id = ${trackingId}::uuid LIMIT 1`)).rows;
 
   if (!send) return null;
 
@@ -80,9 +80,9 @@ export async function detectForward(
   trackingId: string,
   currentIp: string
 ): Promise<boolean> {
-  const [send] = await db.execute<{ first_opener_ip: string | null }>(
+  const [send] = (await db.execute<{ first_opener_ip: string | null }>(
     sql`SELECT first_opener_ip FROM email_sends WHERE tracking_id = ${trackingId}::uuid LIMIT 1`
-  );
+  )).rows;
   if (!send) return false;
   if (!send.first_opener_ip) return false;
   // Different IP = likely a forward
@@ -107,7 +107,7 @@ export async function getContactEmailTimeline(contactId: string, tenantId: strin
 
 // ── Analytics overview for tenant ─────────────────────────────────
 export async function getEmailAnalytics(tenantId: string) {
-  const [totals] = await db.execute<any>(sql`
+  const { rows: [totals] } = await db.execute<any>(sql`
     SELECT
       COUNT(DISTINCT es.id) AS total_sent,
       COUNT(DISTINCT CASE WHEN es.status = 'opened' THEN es.id END) AS total_opened,

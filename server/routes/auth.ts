@@ -88,10 +88,10 @@ router.post("/register", async (req, res) => {
     const token = generateToken({
       id: user.id,
       tenantId: tenant.id,
-      email: user.email,
+      email: user.email ?? "",
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role,
+      role: user.role ?? "user",
       permissions: [],
     });
 
@@ -108,10 +108,10 @@ router.post("/register", async (req, res) => {
 
     // Send welcome email (non-blocking)
     sendWelcomeEmail({
-      to: user.email,
+      to: user.email ?? "",
       firstName: user.firstName || "",
       workspaceName: tenant.name,
-      workspaceDomain: tenant.domain,
+      workspaceDomain: tenant.domain ?? "",
       plan: tenant.subscriptionPlan || "trial",
       trialEndsAt: tenant.trialEndsAt ?? undefined,
     }).catch(err => console.error("[EMAIL] Welcome email failed:", err));
@@ -175,10 +175,10 @@ router.post("/login", loginRateLimit, async (req, res) => {
     const token = generateToken({
       id: user.id,
       tenantId: user.tenantId,
-      email: user.email,
+      email: user.email ?? "",
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role,
+      role: user.role ?? "user",
       permissions: [],
     });
 
@@ -261,11 +261,11 @@ router.post("/invite", authenticate, async (req: AuthRequest, res) => {
     // Send invite email (non-blocking)
     const inviterTenant = await storage.getTenantById(req.user!.tenantId).catch(() => null);
     sendTeamInviteEmail({
-      to: user.email,
+      to: user.email ?? "",
       firstName: user.firstName || "",
       invitedBy: `${req.user!.firstName || ""} ${req.user!.lastName || ""}`.trim() || req.user!.email,
       workspaceName: inviterTenant?.name || "Argilette",
-      role: user.role,
+      role: user.role ?? "user",
       tempPassword: body.password,
     }).catch(err => console.error("[EMAIL] Invite email failed:", err));
 
@@ -305,7 +305,7 @@ router.put("/password", loginRateLimit, authenticate, async (req: AuthRequest, r
     await storage.updateUser(req.user!.id, { passwordHash: hash });
     res.json({ success: true });
 
-    sendPasswordChangedEmail({ to: user.email, firstName: user.firstName || "" })
+    sendPasswordChangedEmail({ to: user.email ?? "", firstName: user.firstName || "" })
       .catch(e => console.error("[EMAIL] Password-changed email failed:", e));
   } catch (err: any) {
     console.error("PUT /auth/password error:", err);

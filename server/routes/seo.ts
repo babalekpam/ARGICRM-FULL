@@ -110,7 +110,6 @@ Return ONLY a JSON array (no markdown):
   "trend": "rising|stable|declining"
 }]` }], maxTokens: 4000 });
       const text = msg;
-      console.log("[SEO/keywords] raw AI response (first 300):", text?.slice(0, 300));
       generated = safeParseJSON(text, []);
       if (!Array.isArray(generated) || generated.length === 0)
         return res.status(500).json({ error: `AI returned an unexpected format: ${text?.slice(0, 200)}` });

@@ -64,7 +64,7 @@ router.post("/projects/:id/tasks", authenticate, async (req: AuthRequest, res) =
   const allTasks = await db.select().from(projectTasks).where(eq(projectTasks.projectId, req.params.id));
   const done = allTasks.filter(t => t.status === "done").length;
   const progress = allTasks.length > 0 ? Math.round((done / allTasks.length) * 100) : 0;
-  await db.update(projects).set({ progress, updatedAt: new Date() }).where(eq(projects.id, req.params.id));
+  await db.update(crmProjects).set({ progress, updatedAt: new Date() }).where(eq(crmProjects.id, req.params.id));
   res.status(201).json(t);
 });
 router.put("/projects/:projectId/tasks/:taskId", authenticate, async (req: AuthRequest, res) => {
@@ -73,7 +73,7 @@ router.put("/projects/:projectId/tasks/:taskId", authenticate, async (req: AuthR
   const allTasks = await db.select().from(projectTasks).where(eq(projectTasks.projectId, req.params.projectId));
   const done = allTasks.filter(t => t.status === "done").length;
   const progress = allTasks.length > 0 ? Math.round((done / allTasks.length) * 100) : 0;
-  await db.update(projects).set({ progress, updatedAt: new Date() }).where(eq(projects.id, req.params.projectId));
+  await db.update(crmProjects).set({ progress, updatedAt: new Date() }).where(eq(crmProjects.id, req.params.projectId));
   res.json(t);
 });
 router.delete("/projects/:projectId/tasks/:taskId", authenticate, async (req: AuthRequest, res) => {

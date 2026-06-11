@@ -9,6 +9,7 @@ import {
 } from "@shared/schema";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 
+export type { AgentType };
 
 // ═══════════════════════════════════════════════════════════════
 // AGENT DEFINITIONS — Each agent's identity, skills & personality
@@ -25,7 +26,7 @@ export const AGENT_DEFINITIONS: Record<AgentType, {
   systemPrompt: string;
 }> = {
 
-  executive: {
+  chief_of_staff: {
     name: "ARIA", role: "Chief of Staff", emoji: "👑", color: "#f59e0b",
     department: "Executive / Strategy",
     skills: [
@@ -219,7 +220,7 @@ PERFORMANCE STANDARDS:
 Always tie marketing recommendations to business metrics (pipeline, revenue, CAC) — not just impressions.`
   },
 
-  support: {
+  customer_support: {
     name: "CARE", role: "Customer Success Agent", emoji: "💙", color: "#06b6d4",
     department: "Customer Experience",
     skills: [
@@ -361,7 +362,7 @@ PRICING FRAMEWORK:
 • Willingness-to-pay research: survey, A/B test, and segment analysis`
   },
 
-  hr: {
+  hr_recruiting: {
     name: "TALENT", role: "People & Recruiting Agent", emoji: "🤝", color: "#f59e0b",
     department: "People Operations",
     skills: [
@@ -543,7 +544,7 @@ CORE KNOWLEDGE DOMAINS:
 • Classification: employee vs contractor matters — misclassification creates significant liability`
   },
 
-  intelligence: {
+  bi_insights: {
     name: "ORACLE", role: "Business Intelligence Agent", emoji: "📊", color: "#14b8a6",
     department: "Data & Analytics",
     skills: [
@@ -926,7 +927,7 @@ export async function executeTool(toolName: string, params: any, tenantId: strin
     }
     case "get_leads": {
       const rows = await db.select().from(leads).where(eq(leads.tenantId, tenantId)).orderBy(desc(leads.createdAt)).limit(params?.limit || 20);
-      return rows.map(l => ({ id: l.id, name: `${l.firstName} ${l.lastName || ""}`.trim(), email: l.email, company: l.company, status: l.status, score: l.score, source: l.source, estimatedValue: l.estimatedValue }));
+      return rows.map(l => ({ id: l.id, name: `${l.firstName} ${l.lastName || ""}`.trim(), email: l.email, company: l.company, status: l.status, score: l.score, source: l.source }));
     }
     case "get_contacts": {
       const rows = await db.select().from(contacts).where(eq(contacts.tenantId, tenantId)).orderBy(desc(contacts.createdAt)).limit(params?.limit || 20);
@@ -959,8 +960,7 @@ export async function executeTool(toolName: string, params: any, tenantId: strin
       const [activity] = await db.insert(activities).values({
         tenantId,
         type: params.type || "note",
-        title: params.title,
-        description: params.description,
+        content: [params.title, params.description].filter(Boolean).join(" — "),
       }).returning();
       return { success: true, activityId: activity.id };
     }
@@ -1093,9 +1093,10 @@ Tenant ID (for reference): ${opts.tenantId}`;
       break;
     }
 
-    const msg = await complete({ messages: [], maxTokens: 1500 });
+    const msg = await complete({ messages: currentMessages, system: systemPrompt, maxTokens: 1500 });
 
-    tokensUsed += msg.usage.input_tokens + msg.usage.output_tokens;
+    // ai-adapter returns plain text without usage metadata — estimate tokens (~4 chars/token)
+    tokensUsed += Math.ceil(msg.length / 4);
     const responseText = msg || "";
 
     // Check for tool calls

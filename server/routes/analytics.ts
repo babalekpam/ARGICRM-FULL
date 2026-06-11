@@ -44,10 +44,11 @@ router.get("/forecast", authenticate, async (req: AuthRequest, res) => {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const wonDeals = allDeals.filter(d => d.stage === "closed_won" && d.closedAt && new Date(d.closedAt) >= sixMonthsAgo);
+    // Deals have no dedicated close timestamp — updatedAt reflects when the stage was last changed (i.e. when it closed)
+    const wonDeals = allDeals.filter(d => d.stage === "closed_won" && d.updatedAt && new Date(d.updatedAt) >= sixMonthsAgo);
     const monthlyMap: Record<string, number> = {};
     for (const d of wonDeals) {
-      const mo = new Date(d.closedAt!).toLocaleString("en-US", { month: "short", year: "2-digit" });
+      const mo = new Date(d.updatedAt!).toLocaleString("en-US", { month: "short", year: "2-digit" });
       monthlyMap[mo] = (monthlyMap[mo] || 0) + (Number(d.value) || 0);
     }
 
@@ -95,8 +96,8 @@ router.get("/win-loss", authenticate, async (req: AuthRequest, res) => {
     }
 
     const monthlyWinLoss = months.map(month => {
-      const monthWon = won.filter(d => d.closedAt && new Date(d.closedAt).toLocaleString("en-US", { month: "short", year: "2-digit" }) === month);
-      const monthLost = lost.filter(d => d.closedAt && new Date(d.closedAt).toLocaleString("en-US", { month: "short", year: "2-digit" }) === month);
+      const monthWon = won.filter(d => d.updatedAt && new Date(d.updatedAt).toLocaleString("en-US", { month: "short", year: "2-digit" }) === month);
+      const monthLost = lost.filter(d => d.updatedAt && new Date(d.updatedAt).toLocaleString("en-US", { month: "short", year: "2-digit" }) === month);
       return { month, won: monthWon.length, lost: monthLost.length };
     });
 
@@ -127,9 +128,9 @@ router.get("/velocity", authenticate, async (req: AuthRequest, res) => {
     const tenantId = req.user!.tenantId;
     const allDeals = await db.select().from(deals).where(eq(deals.tenantId, tenantId));
 
-    const won = allDeals.filter(d => d.stage === "closed_won" && d.createdAt && d.closedAt);
+    const won = allDeals.filter(d => d.stage === "closed_won" && d.createdAt && d.updatedAt);
     const avgCycleLength = won.length > 0
-      ? Math.round(won.reduce((s, d) => s + (new Date(d.closedAt!).getTime() - new Date(d.createdAt!).getTime()) / 86400000, 0) / won.length)
+      ? Math.round(won.reduce((s, d) => s + (new Date(d.updatedAt!).getTime() - new Date(d.createdAt!).getTime()) / 86400000, 0) / won.length)
       : 0;
 
     const openDeals = allDeals.filter(d => d.stage !== "closed_won" && d.stage !== "closed_lost");
@@ -182,7 +183,7 @@ router.get("/rep-performance", authenticate, async (req: AuthRequest, res) => {
     }
 
     for (const d of allDeals) {
-      const assignedId = d.assignedTo || d.createdBy;
+      const assignedId = d.ownerId || d.createdBy;
       if (!assignedId || !repMap[assignedId]) continue;
       repMap[assignedId].totalDeals++;
       repMap[assignedId].totalValue += Number(d.value || 0);

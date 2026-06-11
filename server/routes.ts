@@ -298,6 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         search: req.query.search as string,
         status: req.query.status as string,
         limit: req.query.limit ? Number(req.query.limit) : 50,
+        offset: req.query.offset ? Number(req.query.offset) : 0,
       });
       res.json(result);
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to fetch leads" }); }
@@ -846,7 +847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send confirmation email (non-blocking)
       const { sendPasswordChangedEmail } = await import("./services/email.js");
-      sendPasswordChangedEmail({ to: user.email, firstName: user.firstName || "" })
+      sendPasswordChangedEmail({ to: user.email ?? "", firstName: user.firstName || "" })
         .catch(e => console.error("[EMAIL] Password-changed email failed:", e));
 
     } catch (err) { console.error(err); res.status(500).json({ error: "Failed to change password" }); }

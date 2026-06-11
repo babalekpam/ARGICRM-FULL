@@ -5,7 +5,8 @@ import { healthChecks, errorLogs, performanceMetrics } from "@shared/schema-exte
 import { eq, desc, and, sql, gte, lt } from "drizzle-orm";
 import {
   runAllHealthChecks, runHealthCheck, getPerformanceSummary,
-  logError, attemptAutoHeal, pauseHealing, resumeHealing, isHealingPaused
+  logError, attemptAutoHeal, pauseHealing, resumeHealing, isHealingPaused,
+  circuits
 } from "../services/healing.js";
 
 const router = Router();
@@ -79,7 +80,7 @@ router.get("/circuits", authenticate, async (req: AuthRequest, res) => {
 
 // ── Reset circuit ───────────────────────────────────────────────
 router.post("/circuits/:name/reset", authenticate, requireRole("super_admin", "admin", "platform_owner"), async (req: AuthRequest, res) => {
-  const circuit = (circuits as any)[req.params.name];
+  const circuit = circuits[req.params.name];
   if (!circuit) return res.status(404).json({ error: "Circuit not found" });
   circuit.failures = 0;
   circuit.state = "closed";

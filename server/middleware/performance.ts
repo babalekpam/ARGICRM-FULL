@@ -61,19 +61,19 @@ export function performanceMiddleware(req: Request, res: Response, next: NextFun
 
   // Override res.end to capture response time
   const originalEnd = res.end;
-  res.end = function(chunk?: any) {
+  res.end = function (this: Response, chunk?: any, encoding?: any, cb?: () => void) {
     const responseTime = Date.now() - startTime;
     const isError = res.statusCode >= 400;
-    
+
     monitor.updateMetrics(responseTime, isError);
-    
+
     // Log slow requests
     if (responseTime > 1000) {
     }
-    
+
     // Skip headers to avoid conflicts with static file serving
-    
-    originalEnd.call(this, chunk);
+
+    return originalEnd.call(this, chunk, encoding, cb);
   };
 
   next();
@@ -102,8 +102,17 @@ export function requestSizeLimitMiddleware(maxSize: number = 10 * 1024 * 1024) {
   };
 }
 
+// Request augmented with connection metadata
+interface ConnectionInfoRequest extends Request {
+  connectionInfo?: {
+    timestamp: number;
+    userAgent?: string;
+    ip?: string;
+  };
+}
+
 // Database connection pooling middleware
-export function connectionPoolMiddleware(req: Request, res: Response, next: NextFunction) {
+export function connectionPoolMiddleware(req: ConnectionInfoRequest, res: Response, next: NextFunction) {
   // Add connection info to request
   req.connectionInfo = {
     timestamp: Date.now(),

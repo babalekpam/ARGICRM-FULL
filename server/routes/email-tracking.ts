@@ -26,9 +26,9 @@ router.get("/open/:trackingId.gif", async (req: Request, res: Response) => {
     if (!isBotOrProxy) {
       const isForward = await detectForward(trackingId, ip);
       // Get tenantId from send record
-      const [send] = await db.execute<{ tenant_id: string }>(
+      const [send] = (await db.execute<{ tenant_id: string }>(
         sql`SELECT tenant_id FROM email_sends WHERE tracking_id = ${trackingId}::uuid LIMIT 1`
-      );
+      )).rows;
       if (send) {
         await logEmailEvent({
           tenantId: send.tenant_id,
@@ -60,9 +60,9 @@ router.get("/click/:trackingId/:linkId", async (req: Request, res: Response) => 
 
   let destination = "/";
   try {
-    const [send] = await db.execute<{ tenant_id: string; link_map: any }>(
+    const [send] = (await db.execute<{ tenant_id: string; link_map: any }>(
       sql`SELECT tenant_id, link_map FROM email_sends WHERE tracking_id = ${trackingId}::uuid LIMIT 1`
-    );
+    )).rows;
     if (send) {
       const linkMap = send.link_map || {};
       destination = linkMap[linkId] || "/";
@@ -96,18 +96,18 @@ router.post("/send", authenticate, async (req: AuthRequest, res) => {
 
   // Get tenant SMTP config
   const { db: database } = await import("../db.js");
-  const [tenant] = await database.execute<any>(
+  const [tenant] = (await database.execute<any>(
     sql`SELECT settings FROM tenants WHERE id = ${tenantId} LIMIT 1`
-  );
+  )).rows;
   const smtp = (tenant?.settings as any)?.smtp;
   if (!smtp?.host || !smtp?.user || !smtp?.pass) {
     return res.status(400).json({ error: "SMTP not configured. Go to Settings → SMTP to set it up." });
   }
 
   // Generate tracking ID and link map
-  const [{ tracking_id }] = await database.execute<{ tracking_id: string }>(
+  const [{ tracking_id }] = (await database.execute<{ tracking_id: string }>(
     sql`SELECT gen_random_uuid()::text AS tracking_id`
-  );
+  )).rows;
   const linkMap: Record<string, string> = {};
   const trackedHtml = embedTracking(html, tracking_id, linkMap);
 

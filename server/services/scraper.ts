@@ -810,8 +810,8 @@ export async function searchGitHub(orgName: string): Promise<{
     // Get top repos to extract languages and topics
     const repos = await fetchJSON(`https://api.github.com/orgs/${encodeURIComponent(orgName)}/repos?sort=updated&per_page=10`, headers);
 
-    const languages = [...new Set(repos.map((r: any) => r.language).filter(Boolean))];
-    const topics = [...new Set(repos.flatMap((r: any) => r.topics || []))];
+    const languages = [...new Set<string>(repos.map((r: any) => r.language).filter(Boolean))];
+    const topics = [...new Set<string>(repos.flatMap((r: any) => r.topics || []))];
     const recentRepo = repos[0];
 
     return {

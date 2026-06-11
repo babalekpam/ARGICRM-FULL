@@ -4,7 +4,8 @@ import { isAIAvailable } from "../services/ai-adapter.js";
 import { askForTenant } from "../services/tenant-ai.js";
 import {
   ALL_SKILLS, SKILLS_BY_DOMAIN, DOMAIN_META, getSkillStats,
-  getSkillById, getSkillsByAgent, searchSkills, buildPrompt
+  getSkillById, getSkillsByAgent, searchSkills, buildPrompt,
+  type SkillDomain
 } from "../services/skills/index.js";
 
 const router = Router();
@@ -14,7 +15,7 @@ router.get("/", authenticate, (req: AuthRequest, res) => {
   const { domain, agent, search } = req.query as any;
 
   let skills = ALL_SKILLS;
-  if (domain) skills = SKILLS_BY_DOMAIN[domain as any] || [];
+  if (domain) skills = SKILLS_BY_DOMAIN[domain as SkillDomain] || [];
   if (agent) skills = getSkillsByAgent(agent);
   if (search) skills = searchSkills(search);
 
@@ -35,7 +36,7 @@ router.get("/domains", authenticate, (req: AuthRequest, res) => {
   const domains = Object.entries(DOMAIN_META).map(([key, meta]) => ({
     id: key,
     ...meta,
-    skillCount: SKILLS_BY_DOMAIN[key as any]?.length || 0,
+    skillCount: SKILLS_BY_DOMAIN[key as SkillDomain]?.length || 0,
   }));
   res.json(domains);
 });
