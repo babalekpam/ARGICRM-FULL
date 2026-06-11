@@ -382,6 +382,47 @@ code, pre { font-family: 'JetBrains Mono', monospace; }
   }
   /* ── end Contacts ──────────────────────────────────────── */
 
+  /* ── Deals list view (mobile-first cards → grid ≥680px) ── */
+  .deals-table-header { display: none; }
+
+  .deal-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .deal-row:hover { background: var(--bg-hover); }
+  .deal-row:first-child { border-top: none; }
+  .deal-cell-actions { display: flex; gap: 4px; }
+
+  @media (min-width: 680px) {
+    .deals-table-header {
+      display: grid;
+      grid-template-columns: 1fr 140px 120px 100px 80px;
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+      gap: 12px;
+    }
+    .deals-table-header span {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .deal-row {
+      display: grid;
+      grid-template-columns: 1fr 140px 120px 100px 80px;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+    }
+  }
+  /* ── end Deals ─────────────────────────────────────────── */
+
   .divider {
     height: 1px;
     background: var(--border);
