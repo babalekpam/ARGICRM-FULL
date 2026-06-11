@@ -5,6 +5,11 @@ import { useWhiteLabel } from "../contexts/WhiteLabelContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { SUPPORTED_LANGUAGES } from "@shared/languages";
+import { translations } from "../contexts/LanguageContext";
+
+// Only offer languages that actually have a translation dictionary — listing
+// untranslated languages would silently show English and erode trust.
+const AVAILABLE_LANGUAGES = SUPPORTED_LANGUAGES.filter(l => translations[l.code]);
 import { useQuery } from "@tanstack/react-query";
 import ARIADialog from "./ARIADialog";
 import {
@@ -85,6 +90,7 @@ interface LayoutProps {
 }
 
 function GlobalSearch({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage();
   const [q, setQ] = useState("");
   const [, setLocation] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -104,10 +110,10 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
   function go(path: string) { setLocation(path); onClose(); }
 
   const sections = [
-    { key: "contacts", label: "Contacts", path: (i: any) => `/contacts`, icon: Users },
-    { key: "leads", label: "Leads", path: (i: any) => `/leads`, icon: UserPlus },
-    { key: "deals", label: "Deals", path: (i: any) => `/deals`, icon: TrendingUp },
-    { key: "accounts", label: "Accounts", path: (i: any) => `/accounts`, icon: Building2 },
+    { key: "contacts", label: t("nav_contacts"), path: (i: any) => `/contacts`, icon: Users },
+    { key: "leads", label: t("nav_leads"), path: (i: any) => `/leads`, icon: UserPlus },
+    { key: "deals", label: t("nav_deals"), path: (i: any) => `/deals`, icon: TrendingUp },
+    { key: "accounts", label: t("nav_accounts"), path: (i: any) => `/accounts`, icon: Building2 },
   ];
 
   const hasResults = results && sections.some(s => (results[s.key]?.length || 0) > 0);
@@ -117,14 +123,14 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, width: "100%", maxWidth: 560, boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
           <Search size={16} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-          <input ref={inputRef} data-testid="input-global-search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search contacts, leads, deals, accounts…" aria-label="Search across your CRM" role="searchbox" style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15 }} />
+          <input ref={inputRef} data-testid="input-global-search" value={q} onChange={e => setQ(e.target.value)} placeholder={t("global_search_placeholder", "Search contacts, leads, deals, accounts…")} aria-label={t("global_search_aria", "Search across your CRM")} role="searchbox" style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15 }} />
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", padding: 2 }}><X size={14} /></button>
         </div>
         <div style={{ maxHeight: 400, overflowY: "auto" }}>
           {q.trim().length < 2 ? (
-            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>Type to search across your CRM…</div>
+            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>{t("global_search_hint", "Type to search across your CRM…")}</div>
           ) : !hasResults ? (
-            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>No results for "{q}"</div>
+            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>{`${t("no_results", "No results found")} — "${q}"`}</div>
           ) : sections.map(s => {
             const items = results?.[s.key] || [];
             if (!items.length) return null;
@@ -149,7 +155,7 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
           })}
         </div>
         <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: 12, fontSize: 11, color: "var(--text-muted)" }}>
-          <span>↵ to navigate</span><span>Esc to close</span>
+          <span>{t("search_footer_navigate", "↵ to navigate")}</span><span>{t("search_footer_close", "Esc to close")}</span>
         </div>
       </div>
     </div>
@@ -179,6 +185,12 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setSearchOpen(true); }
+      // "/" focuses search, like GitHub/Gmail — but never while typing in a field
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const el = e.target as HTMLElement | null;
+        const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+        if (!typing) { e.preventDefault(); setSearchOpen(true); }
+      }
       if (e.key === "Escape") setSearchOpen(false);
     }
     document.addEventListener("keydown", handleKey);
@@ -217,9 +229,9 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
       {isTrial && !collapsed && (
         <div style={{ margin: "10px 10px 0", padding: "8px 10px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#fbbf24", display: "flex", alignItems: "center", gap: 4 }}>
-            <Zap size={11} /> Trial Active
+            <Zap size={11} /> {t("trial_active", "Trial Active")}
           </div>
-          {tenant?.trialEndsAt && <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Ends {new Date(tenant.trialEndsAt).toLocaleDateString()}</div>}
+          {tenant?.trialEndsAt && <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{t("trial_ends", "Ends")} {new Date(tenant.trialEndsAt).toLocaleDateString()}</div>}
         </div>
       )}
 
@@ -257,15 +269,15 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
         {/* Platform Owner */}
         {isPlatformOwner && (
           <div style={{ marginTop: 8 }}>
-            {!collapsed && <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#f59e0b", padding: "0 6px", marginBottom: 2 }}>Platform</div>}
+            {!collapsed && <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#f59e0b", padding: "0 6px", marginBottom: 2 }}>{t("nav_platform")}</div>}
             <Link
               href="/superadmin"
               className={`nav-item ${location === "/superadmin" ? "active" : ""}`}
               style={{ color: "#f59e0b" }}
-              title={collapsed ? "Platform Admin" : undefined}
+              title={collapsed ? t("platform_admin", "Platform Admin") : undefined}
             >
               <Shield size={15} style={{ flexShrink: 0 }} />
-              {!collapsed && <span style={{ fontSize: 13 }}>Platform Admin</span>}
+              {!collapsed && <span style={{ fontSize: 13 }}>{t("platform_admin", "Platform Admin")}</span>}
             </Link>
           </div>
         )}
@@ -285,14 +297,14 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
                 </div>
                 <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "capitalize" }}>{user?.role?.replace("_", " ")}</div>
               </div>
-              <button onClick={logout} aria-label="Log out" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "flex", borderRadius: 6 }} title="Log out">
+              <button onClick={logout} aria-label={t("logout")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "flex", borderRadius: 6 }} title={t("logout")}>
                 <LogOut size={14} />
               </button>
             </>
           )}
         </div>
         {collapsed && (
-          <button onClick={logout} style={{ width: "100%", marginTop: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: "6px", display: "flex", justifyContent: "center", borderRadius: 6 }} title="Log out">
+          <button onClick={logout} style={{ width: "100%", marginTop: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: "6px", display: "flex", justifyContent: "center", borderRadius: 6 }} title={t("logout")}>
             <LogOut size={15} />
           </button>
         )}
@@ -374,7 +386,7 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
               {langOpen && (
                 <div style={{ position: "absolute", right: 0, top: "100%", marginTop: 4, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", minWidth: 180, zIndex: 200, overflow: "hidden" }}>
                   <div style={{ padding: "8px 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>{t("language")}</div>
-                  {SUPPORTED_LANGUAGES.map(l => (
+                  {AVAILABLE_LANGUAGES.map(l => (
                     <button
                       key={l.code}
                       data-testid={`button-lang-${l.code}`}
@@ -392,7 +404,7 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
             <button
               data-testid="button-theme-toggle"
               onClick={toggleTheme}
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? t("switch_to_light", "Switch to light mode") : t("switch_to_dark", "Switch to dark mode")}
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 8, display: "flex", borderRadius: 8 }}
             >
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}

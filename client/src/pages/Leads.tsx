@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
 import { toast, confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
+import { useShortcut } from "../lib/useShortcut";
 import { useLanguage } from "../contexts/LanguageContext";
 import { UserPlus, Trash2, Edit, UserCheck, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -62,11 +63,12 @@ export function LeadsPage() {
 
   const delMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/leads/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") }); toast.success("Lead deleted."); },
-    onError: (err: any) => toast.error(err.message || "Failed to delete lead"),
+    onSuccess: () => { qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") }); toast.success(t("leads_deleted", "Lead deleted.")); },
+    onError: (err: any) => toast.error(err.message || t("leads_delete_failed", "Failed to delete lead")),
   });
 
   const openAdd = () => { setEditing(null); setForm(BLANK_LEAD); setError(""); setModal(true); };
+  useShortcut("n", openAdd);
   const openEdit = (l: any) => {
     setEditing(l);
     setForm({ firstName: l.firstName, lastName: l.lastName || "", email: l.email || "", phone: l.phone || "", company: l.company || "", jobTitle: l.jobTitle || "", status: l.status, source: l.source || "", score: String(l.score || 50), estimatedValue: l.estimatedValue || "", notes: l.notes || "" });
@@ -82,21 +84,21 @@ export function LeadsPage() {
       qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") });
       qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
       setModal(false);
-      toast.success(editing ? "Lead updated." : "Lead added.");
+      toast.success(editing ? t("leads_updated", "Lead updated.") : t("leads_added", "Lead added."));
     } catch (err: any) { setError(err.message); }
     finally { setSaving(false); }
   };
 
   const convertToContact = async (lead: any) => {
     const name = [lead.firstName, lead.lastName].filter(Boolean).join(" ");
-    if (!(await confirmDialog({ title: "Convert to contact?", message: `Convert "${name}" to a contact?`, confirmLabel: "Convert" }))) return;
+    if (!(await confirmDialog({ title: t("leads_convert_confirm_title", "Convert to contact?"), message: `${t("convert", "Convert")} "${name}" ${t("leads_convert_suffix", "to a contact?")}`, confirmLabel: t("convert", "Convert") }))) return;
     setConverting(lead.id);
     try {
       const result: any = await apiRequest("POST", `/api/leads/${lead.id}/convert`);
       qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") || String(q.queryKey[0]).startsWith("/api/contacts") });
       qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast.success(result.alreadyExisted ? "Lead marked as converted — contact already existed." : "Lead successfully converted to contact!");
-    } catch (err: any) { toast.error(err.message || "Conversion failed"); }
+      toast.success(result.alreadyExisted ? t("leads_convert_existing", "Lead marked as converted — contact already existed.") : t("leads_convert_success", "Lead successfully converted to contact!"));
+    } catch (err: any) { toast.error(err.message || t("leads_convert_failed", "Conversion failed")); }
     finally { setConverting(null); }
   };
 
@@ -117,7 +119,7 @@ export function LeadsPage() {
               placeholder={t("search") || "Search leads…"}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              aria-label="Search leads"
+              aria-label={t("search_leads", "Search leads…")}
               data-testid="input-search-leads"
             />
           </div>
@@ -126,7 +128,7 @@ export function LeadsPage() {
             placeholder={t("status") || "All statuses"}
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
+            aria-label={t("filter_by_status", "Filter by status")}
             style={{ width: "auto", minWidth: 150 }}
             data-testid="select-filter-status"
           />
@@ -143,9 +145,9 @@ export function LeadsPage() {
           debouncedSearch || statusFilter ? (
             <Empty
               icon={Search}
-              title="No matching leads"
-              desc="Try adjusting your search or filter."
-              action={<button className="btn btn-secondary" onClick={() => { setSearch(""); setStatusFilter(""); }}>Clear filters</button>}
+              title={t("leads_no_match", "No matching leads")}
+              desc={t("leads_no_match_desc", "Try adjusting your search or filter.")}
+              action={<button className="btn btn-secondary" onClick={() => { setSearch(""); setStatusFilter(""); }}>{t("clear_filters", "Clear filters")}</button>}
             />
           ) : (
           <Empty
@@ -213,7 +215,7 @@ export function LeadsPage() {
                   <button
                     className="btn btn-ghost btn-sm"
                     style={{ padding: 6, color: "#10b981" }}
-                    title="Convert to Contact"
+                    title={t("convert_lead", "Convert to Contact")}
                     disabled={converting === l.id}
                     onClick={() => convertToContact(l)}
                     data-testid={`btn-convert-lead-${l.id}`}
@@ -224,7 +226,7 @@ export function LeadsPage() {
                 <button
                   className="btn btn-ghost btn-sm"
                   style={{ padding: 6 }}
-                  title="Edit"
+                  title={t("edit")}
                   onClick={() => openEdit(l)}
                   data-testid={`btn-edit-lead-${l.id}`}
                 >
@@ -233,8 +235,8 @@ export function LeadsPage() {
                 <button
                   className="btn btn-ghost btn-sm"
                   style={{ padding: 6, color: "#ef4444" }}
-                  title="Delete"
-                  onClick={async () => { if (await confirmDialog({ title: "Delete lead?", message: `Delete "${displayName}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(l.id); }}
+                  title={t("delete")}
+                  onClick={async () => { if (await confirmDialog({ title: t("leads_delete_confirm_title", "Delete lead?"), message: `${t("delete")} "${displayName}"? ${t("cannot_be_undone", "This cannot be undone.")}`, confirmLabel: t("delete"), danger: true })) delMut.mutate(l.id); }}
                   data-testid={`btn-delete-lead-${l.id}`}
                 >
                   <Trash2 size={14} />
@@ -248,14 +250,14 @@ export function LeadsPage() {
         {(data?.total || 0) > PAGE_SIZE && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid var(--border)", flexWrap: "wrap", gap: 10 }}>
             <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-              {`${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, data!.total)} of ${data!.total}`}
+              {`${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, data!.total)} ${t("of", "of")} ${data!.total}`}
             </span>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page" data-testid="btn-leads-page-prev">
+              <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label={t("previous")} data-testid="btn-leads-page-prev">
                 <ChevronLeft size={14} />
               </button>
               <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{page} / {totalPages}</span>
-              <button className="btn btn-ghost btn-sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page" data-testid="btn-leads-page-next">
+              <button className="btn btn-ghost btn-sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label={t("next")} data-testid="btn-leads-page-next">
                 <ChevronRight size={14} />
               </button>
             </div>

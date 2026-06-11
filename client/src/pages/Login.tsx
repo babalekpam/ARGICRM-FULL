@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useSeoPage } from "../hooks/useSeoPage";
 
 export default function LoginPage() {
   useSeoPage("Sign In — ARGILETTE CRM", "Sign in to your ARGILETTE CRM workspace. Manage contacts, deals, campaigns and AI agents.");
   const { login } = useAuth();
+  const { t } = useLanguage();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export default function LoginPage() {
       await login(form.email, form.password);
       window.location.href = "/dashboard";
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || t("login_failed", "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -36,8 +38,8 @@ export default function LoginPage() {
             <div style={{ marginBottom: 32 }}>
               <img src="/assets/logo.png" alt="ARGI CRM" style={{ height: 56, width: "auto", objectFit: "contain" }} />
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 8px" }}>Welcome back</h1>
-            <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: 0 }}>Sign in to your workspace</p>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 8px" }}>{t("login_title", "Welcome back")}</h1>
+            <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: 0 }}>{t("login_subtitle", "Sign in to your workspace")}</p>
           </div>
 
           <form onSubmit={submit}>
@@ -48,7 +50,7 @@ export default function LoginPage() {
             )}
 
             <div style={{ marginBottom: 16 }}>
-              <label className="label">Email address</label>
+              <label className="label">{t("email_address", "Email address")}</label>
               <input
                 type="email"
                 className="input"
@@ -61,7 +63,7 @@ export default function LoginPage() {
             </div>
 
             <div style={{ marginBottom: 24 }}>
-              <label className="label">Password</label>
+              <label className="label">{t("password_label", "Password")}</label>
               <div style={{ position: "relative" }}>
                 <input
                   type={showPw ? "text" : "password"}
@@ -83,13 +85,13 @@ export default function LoginPage() {
             </div>
 
             <button type="submit" className="btn btn-primary btn-lg" style={{ width: "100%" }} disabled={loading}>
-              {loading ? <><span className="spinner" style={{ width: 16, height: 16 }} />Signing in...</> : <>Sign in <ArrowRight size={16} /></>}
+              {loading ? <><span className="spinner" style={{ width: 16, height: 16 }} />{t("signing_in", "Signing in...")}</> : <>{t("sign_in", "Sign in")} <ArrowRight size={16} /></>}
             </button>
           </form>
 
           <p style={{ textAlign: "center", marginTop: 24, fontSize: 14, color: "var(--text-muted)" }}>
-            Don't have an account?{" "}
-            <Link href="/register"><a style={{ color: "var(--brand-light)", fontWeight: 600 }}>Start free trial</a></Link>
+            {t("no_account", "Don't have an account?")}{" "}
+            <Link href="/register"><a style={{ color: "var(--brand-light)", fontWeight: 600 }}>{t("start_trial", "Start free trial")}</a></Link>
           </p>
         </div>
       </div>
@@ -101,20 +103,20 @@ export default function LoginPage() {
           <div style={{ textAlign: "center", maxWidth: 400 }}>
             <div style={{ fontSize: 48, marginBottom: 24 }}>🚀</div>
             <h2 style={{ fontSize: 32, fontWeight: 800, color: "var(--text-primary)", marginBottom: 16, lineHeight: 1.2 }}>
-              Your complete <span className="gradient-text">AI business</span> platform
+              {t("login_promo_pre", "Your complete")} <span className="gradient-text">{t("login_promo_highlight", "AI business")}</span> {t("login_promo_post", "platform")}
             </h2>
             <p style={{ fontSize: 16, color: "var(--text-secondary)", lineHeight: 1.7 }}>
-              CRM, email campaigns, deal pipelines, invoicing, and AI automation — all in one place.
+              {t("login_promo_sub", "CRM, email campaigns, deal pipelines, invoicing, and AI automation — all in one place.")}
             </p>
           </div>
 
           {/* Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 48, width: "100%", maxWidth: 360 }}>
             {[
-              { value: "10k+", label: "Active Users" },
-              { value: "50M+", label: "Emails Sent" },
-              { value: "99.9%", label: "Uptime" },
-              { value: "150+", label: "Countries" },
+              { value: "10k+", label: t("login_stat_users", "Active Users") },
+              { value: "50M+", label: t("login_stat_emails", "Emails Sent") },
+              { value: "99.9%", label: t("login_stat_uptime", "Uptime") },
+              { value: "150+", label: t("login_stat_countries", "Countries") },
             ].map(stat => (
               <div key={stat.label} className="card" style={{ padding: "16px 20px", textAlign: "center" }}>
                 <div style={{ fontSize: 22, fontWeight: 800, color: "var(--brand-light)" }}>{stat.value}</div>

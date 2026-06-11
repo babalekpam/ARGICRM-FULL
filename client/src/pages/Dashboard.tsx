@@ -53,10 +53,10 @@ export default function DashboardPage() {
   return (
     <Layout
       title={`${greeting}, ${name} 👋`}
-      subtitle={`Here's what's happening at ${tenant?.name || "your workspace"} today`}
+      subtitle={`${t("dashboard_whats_happening", "Here's what's happening at")} ${tenant?.name || t("your_workspace", "your workspace")} ${t("today").toLowerCase()}`}
       actions={
         <Link href="/contacts">
-          <a className="btn btn-primary btn-sm"><UserPlus size={15} /> Add Contact</a>
+          <a className="btn btn-primary btn-sm"><UserPlus size={15} /> {t("add_contact")}</a>
         </Link>
       }
     >
@@ -90,7 +90,7 @@ export default function DashboardPage() {
               icon={TrendingUp}
               label={t("active_deals")}
               value={stats?.deals?.active ?? 0}
-              sub={`${fmt(stats?.deals?.activeValue ?? 0)} pipeline`}
+              sub={`${fmt(stats?.deals?.activeValue ?? 0)} ${t("pipeline").toLowerCase()}`}
               color="#f59e0b"
               href="/deals"
             />
@@ -114,13 +114,13 @@ export default function DashboardPage() {
                   <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{t("recent_activity")}</h3>
                   <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>{t("dashboard_subtitle")}</p>
                 </div>
-                <Link href="/contacts"><a className="btn btn-ghost btn-sm" style={{ fontSize: 12 }}>View all <ArrowUpRight size={13} /></a></Link>
+                <Link href="/contacts"><a className="btn btn-ghost btn-sm" style={{ fontSize: 12 }}>{t("view_all", "View all")} <ArrowUpRight size={13} /></a></Link>
               </div>
               <div>
                 {(stats?.recentActivities?.length ?? 0) === 0 ? (
                   <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
                     <Activity size={32} style={{ marginBottom: 8, opacity: 0.3 }} />
-                    <p>No activities yet. Start by adding contacts.</p>
+                    <p>{t("no_activities_yet", "No activities yet. Start by adding contacts.")}</p>
                   </div>
                 ) : (
                   stats?.recentActivities?.map((act: any, i: number) => {
@@ -154,12 +154,12 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ padding: "12px 20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Open</span>
+                    <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("status_open")}</span>
                     <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{stats?.tasks?.open ?? 0}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}>
                     <span style={{ fontSize: 13, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
-                      <Clock size={13} style={{ color: "#ef4444" }} /> Overdue
+                      <Clock size={13} style={{ color: "#ef4444" }} /> {t("overdue")}
                     </span>
                     <span style={{ fontSize: 14, fontWeight: 700, color: stats?.tasks?.overdue > 0 ? "#ef4444" : "var(--text-primary)" }}>
                       {stats?.tasks?.overdue ?? 0}

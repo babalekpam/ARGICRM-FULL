@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Loader } from "../components/UI";
 import { toast, confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
+import { useShortcut } from "../lib/useShortcut";
 import { useLanguage } from "../contexts/LanguageContext";
 import { TrendingUp, Plus, Trash2, Edit, DollarSign } from "lucide-react";
 
@@ -32,8 +33,8 @@ export default function DealsPage() {
   const { data, isLoading } = useQuery<{ data: any[]; pipeline: any[] }>({ queryKey: ["/api/deals"] });
   const delMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/deals/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/deals"] }); toast.success("Deal deleted."); },
-    onError: (err: any) => toast.error(err.message || "Failed to delete deal"),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/deals"] }); toast.success(t("deals_deleted", "Deal deleted.")); },
+    onError: (err: any) => toast.error(err.message || t("deals_delete_failed", "Failed to delete deal")),
   });
   const updateStage = useMutation({
     mutationFn: ({ id, stage }: any) => apiRequest("PUT", `/api/deals/${id}`, { stage }),
@@ -48,12 +49,13 @@ export default function DealsPage() {
     },
     onError: (err: any, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(["/api/deals"], ctx.previous);
-      toast.error(err.message || "Failed to move deal");
+      toast.error(err.message || t("deals_move_failed", "Failed to move deal"));
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["/api/deals"] }),
   });
 
   const openAdd = () => { setEditing(null); setForm(BLANK); setModal(true); };
+  useShortcut("n", openAdd);
   const openEdit = (d: any) => { setEditing(d); setForm({ title: d.title, stage: d.stage, value: d.value || "", probability: String(d.probability || 25), notes: d.notes || "" }); setModal(true); };
   const save = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true);
@@ -62,9 +64,9 @@ export default function DealsPage() {
       else await apiRequest("POST", "/api/deals", form);
       qc.invalidateQueries({ queryKey: ["/api/deals"] }); qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
       setModal(false);
-      toast.success(editing ? "Deal updated." : "Deal added.");
+      toast.success(editing ? t("deals_updated", "Deal updated.") : t("deals_added", "Deal added."));
     } catch (err: any) {
-      toast.error(err.message || "Failed to save deal");
+      toast.error(err.message || t("deals_save_failed", "Failed to save deal"));
     } finally { setSaving(false); }
   };
 
@@ -148,14 +150,14 @@ export default function DealsPage() {
                       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{d.title}</div>
                       {d.value && <div style={{ fontSize: 14, fontWeight: 700, color: stage.color }}>${Number(d.value).toLocaleString()}</div>}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{d.probability}% prob.</span>
-                        <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} aria-label={`Delete deal ${d.title}`} onClick={async e => { e.stopPropagation(); if (await confirmDialog({ title: "Delete deal?", message: `Delete "${d.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(d.id); }}><Trash2 size={12} /></button>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{`${d.probability}% ${t("deals_prob_abbr", "prob.")}`}</span>
+                        <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} aria-label={`${t("delete")} ${d.title}`} onClick={async e => { e.stopPropagation(); if (await confirmDialog({ title: t("deals_delete_confirm_title", "Delete deal?"), message: `${t("delete")} "${d.title}"? ${t("cannot_be_undone", "This cannot be undone.")}`, confirmLabel: t("delete"), danger: true })) delMut.mutate(d.id); }}><Trash2 size={12} /></button>
                       </div>
                     </div>
                   ))}
                   {stageDeals.length === 0 && (
                     <div style={{ padding: "20px", textAlign: "center", border: "2px dashed var(--border)", borderRadius: 10, color: "var(--text-muted)", fontSize: 13 }}>
-                      {isDropTarget ? "Drop here" : "No deals"}
+                      {isDropTarget ? t("deals_drop_here", "Drop here") : t("no_deals", "No deals yet")}
                     </div>
                   )}
                 </div>
@@ -165,19 +167,19 @@ export default function DealsPage() {
         </div>
       ) : (
         <div className="card" style={{ overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 120px 100px 80px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-            {["Deal", "Stage", "Value", "Probability", "Actions"].map(h => <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>)}
+          <div className="deals-table-header">
+            {[t("deals_col_deal", "Deal"), t("deal_stage", "Stage"), t("value", "Value"), t("deal_probability", "Probability"), t("actions", "Actions")].map(h => <span key={h}>{h}</span>)}
           </div>
-          {deals.length === 0 ? <Empty icon={TrendingUp} title="No deals yet" action={<button className="btn btn-primary" onClick={openAdd}><Plus size={15} /> Add Deal</button>} /> :
+          {deals.length === 0 ? <Empty icon={TrendingUp} title={t("no_deals", "No deals yet")} action={<button className="btn btn-primary" onClick={openAdd}><Plus size={15} /> {t("add_deal_btn", "Add Deal")}</button>} /> :
             deals.map((d: any) => (
-              <div key={d.id} className="table-row" style={{ gridTemplateColumns: "1fr 140px 120px 100px 80px", gap: 12 }}>
+              <div key={d.id} className="deal-row">
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{d.title}</div>
                 <div><Badge status={d.stage} /></div>
                 <div style={{ fontWeight: 700, color: "var(--brand-light)" }}>${Number(d.value || 0).toLocaleString()}</div>
                 <div style={{ fontSize: 13 }}>{d.probability}%</div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} aria-label={`Edit deal ${d.title}`} onClick={() => openEdit(d)}><Edit size={14} /></button>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: 6, color: "#ef4444" }} aria-label={`Delete deal ${d.title}`} onClick={async () => { if (await confirmDialog({ title: "Delete deal?", message: `Delete "${d.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(d.id); }}><Trash2 size={14} /></button>
+                <div className="deal-cell-actions">
+                  <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} aria-label={`${t("edit")} ${d.title}`} onClick={() => openEdit(d)}><Edit size={14} /></button>
+                  <button className="btn btn-ghost btn-sm" style={{ padding: 6, color: "#ef4444" }} aria-label={`${t("delete")} ${d.title}`} onClick={async () => { if (await confirmDialog({ title: t("deals_delete_confirm_title", "Delete deal?"), message: `${t("delete")} "${d.title}"? ${t("cannot_be_undone", "This cannot be undone.")}`, confirmLabel: t("delete"), danger: true })) delMut.mutate(d.id); }}><Trash2 size={14} /></button>
                 </div>
               </div>
             ))
@@ -185,10 +187,10 @@ export default function DealsPage() {
         </div>
       )}
 
-      <Modal open={modal} onClose={() => setModal(false)} title={editing ? t("edit") + " Deal" : t("add_deal_btn")}>
+      <Modal open={modal} onClose={() => setModal(false)} title={editing ? t("edit_deal", "Edit Deal") : t("add_deal_btn")}>
         <form onSubmit={save}>
           <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-            <FormRow label={t("deal_name")} required><input className="input" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required placeholder="e.g. Enterprise License - Acme Corp" /></FormRow>
+            <FormRow label={t("deal_name")} required><input className="input" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required placeholder={t("deals_name_ph", "e.g. Enterprise License - Acme Corp")} /></FormRow>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <FormRow label={t("deal_stage")}><Select options={STAGES.map(s => ({ value: s.id, label: s.name }))} value={form.stage} onChange={e => setForm(p => ({ ...p, stage: e.target.value }))} /></FormRow>
               <FormRow label={t("deal_value")}><input type="number" className="input" value={form.value} onChange={e => setForm(p => ({ ...p, value: e.target.value }))} min={0} /></FormRow>

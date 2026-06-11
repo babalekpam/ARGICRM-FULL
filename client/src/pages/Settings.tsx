@@ -189,7 +189,8 @@ export default function SettingsPage() {
                   <div>
                     <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Language</label>
                     <select value={profile.preferredLanguage} onChange={e=>setProfile(p=>({...p,preferredLanguage:e.target.value}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>
-                      {[["en","English"],["fr","French"],["es","Spanish"],["de","German"],["pt","Portuguese"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                      {/* Keep in sync with the dictionaries in LanguageContext — only translated languages are offered */}
+                      {[["en","English"],["fr","Français"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
                     </select>
                   </div>
                 </div>

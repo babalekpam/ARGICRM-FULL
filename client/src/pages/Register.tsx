@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import { ArrowRight, ArrowLeft, Check, Building2, User, Lock, Zap } from "lucide-react";
 import { useSeoPage } from "../hooks/useSeoPage";
 import { PLANS as ALL_PLANS } from "@shared/plans";
@@ -11,6 +12,7 @@ const PLANS = ALL_PLANS.filter(p => p.id !== "enterprise");
 export default function RegisterPage() {
   useSeoPage("Get Started Free — ARGILETTE CRM", "Create your ARGILETTE CRM workspace in 2 minutes. Start a free 14-day trial. No credit card required.");
   const { register } = useAuth();
+  const { t } = useLanguage();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ companyName: "", domain: "", firstName: "", lastName: "", email: "", password: "", plan: "trial" });
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export default function RegisterPage() {
       await register(form);
       window.location.href = "/dashboard";
     } catch (err: any) {
-      setError(err.message || "Registration failed");
+      setError(err.message || t("register_failed", "Registration failed"));
       setStep(2); // go back to form step
     } finally {
       setLoading(false);
@@ -62,8 +64,8 @@ export default function RegisterPage() {
           {/* Step 1: Plan */}
           {step === 1 && (
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>Choose your plan</h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>Start free, upgrade anytime.</p>
+              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>{t("register_choose_plan", "Choose your plan")}</h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>{t("register_start_free", "Start free, upgrade anytime.")}</p>
 
               <div style={{ display: "grid", gap: 10 }}>
                 {PLANS.map(plan => (
@@ -90,7 +92,7 @@ export default function RegisterPage() {
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{plan.name}</span>
-                        {plan.popular && <span className="badge badge-purple" style={{ fontSize: 10 }}>Popular</span>}
+                        {plan.popular && <span className="badge badge-purple" style={{ fontSize: 10 }}>{t("popular", "Popular")}</span>}
                       </div>
                       <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{plan.highlights.slice(0, 3).join(" · ")}</div>
                     </div>
@@ -103,7 +105,7 @@ export default function RegisterPage() {
               </div>
 
               <button className="btn btn-primary btn-lg" style={{ width: "100%", marginTop: 24 }} onClick={() => setStep(2)}>
-                Continue <ArrowRight size={16} />
+                {t("continue", "Continue")} <ArrowRight size={16} />
               </button>
             </div>
           )}
@@ -111,8 +113,8 @@ export default function RegisterPage() {
           {/* Step 2: Company + User info */}
           {step === 2 && (
             <form onSubmit={e => { e.preventDefault(); setStep(3); }}>
-              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>Set up your workspace</h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>Just a few details to get started.</p>
+              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>{t("register_setup_title", "Set up your workspace")}</h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>{t("register_setup_sub", "Just a few details to get started.")}</p>
 
               {error && (
                 <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 14, color: "#f87171" }}>
@@ -122,27 +124,27 @@ export default function RegisterPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                 <div>
-                  <label className="label">First name</label>
+                  <label className="label">{t("first_name", "First name")}</label>
                   <input className="input" placeholder="Abel" value={form.firstName} onChange={e => update("firstName", e.target.value)} required />
                 </div>
                 <div>
-                  <label className="label">Last name</label>
+                  <label className="label">{t("last_name", "Last name")}</label>
                   <input className="input" placeholder="Nkawula" value={form.lastName} onChange={e => update("lastName", e.target.value)} />
                 </div>
               </div>
 
               <div style={{ marginBottom: 12 }}>
-                <label className="label">Work email</label>
+                <label className="label">{t("register_work_email", "Work email")}</label>
                 <input type="email" className="input" placeholder="you@company.com" value={form.email} onChange={e => update("email", e.target.value)} required />
               </div>
 
               <div style={{ marginBottom: 12 }}>
-                <label className="label">Company name</label>
+                <label className="label">{t("company_name_label", "Company name")}</label>
                 <input className="input" placeholder="Acme Corp" value={form.companyName} onChange={e => update("companyName", e.target.value)} required />
               </div>
 
               <div style={{ marginBottom: 12 }}>
-                <label className="label">Workspace URL</label>
+                <label className="label">{t("register_workspace_url", "Workspace URL")}</label>
                 <div style={{ position: "relative" }}>
                   <input
                     className="input"
@@ -159,16 +161,16 @@ export default function RegisterPage() {
               </div>
 
               <div style={{ marginBottom: 24 }}>
-                <label className="label">Password</label>
-                <input type="password" className="input" placeholder="Min. 8 characters" value={form.password} onChange={e => update("password", e.target.value)} required minLength={8} />
+                <label className="label">{t("password_label", "Password")}</label>
+                <input type="password" className="input" placeholder={t("register_password_ph", "Min. 8 characters")} value={form.password} onChange={e => update("password", e.target.value)} required minLength={8} />
               </div>
 
               <div style={{ display: "flex", gap: 10 }}>
                 <button type="button" className="btn btn-secondary btn-lg" onClick={() => setStep(1)}>
-                  <ArrowLeft size={16} /> Back
+                  <ArrowLeft size={16} /> {t("back", "Back")}
                 </button>
                 <button type="submit" className="btn btn-primary btn-lg" style={{ flex: 1 }}>
-                  Continue <ArrowRight size={16} />
+                  {t("continue", "Continue")} <ArrowRight size={16} />
                 </button>
               </div>
             </form>
@@ -177,15 +179,15 @@ export default function RegisterPage() {
           {/* Step 3: Review + Submit */}
           {step === 3 && (
             <form onSubmit={submit}>
-              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>Almost there!</h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>Review your workspace details.</p>
+              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>{t("register_almost_there", "Almost there!")}</h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>{t("register_review_sub", "Review your workspace details.")}</p>
 
               <div style={{ background: "var(--bg-overlay)", borderRadius: 10, padding: "16px", marginBottom: 24 }}>
                 {[
-                  { icon: Building2, label: "Company", value: form.companyName },
-                  { icon: User, label: "Admin", value: `${form.firstName} ${form.lastName} · ${form.email}` },
-                  { icon: Lock, label: "Workspace", value: `${form.domain}.argilette.com` },
-                  { icon: Zap, label: "Plan", value: PLANS.find(p => p.id === form.plan)?.name },
+                  { icon: Building2, label: t("company", "Company"), value: form.companyName },
+                  { icon: User, label: t("admin_label", "Admin"), value: `${form.firstName} ${form.lastName} · ${form.email}` },
+                  { icon: Lock, label: t("register_workspace", "Workspace"), value: `${form.domain}.argilette.com` },
+                  { icon: Zap, label: t("plan", "Plan"), value: PLANS.find(p => p.id === form.plan)?.name },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                     <Icon size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
@@ -203,10 +205,10 @@ export default function RegisterPage() {
 
               <div style={{ display: "flex", gap: 10 }}>
                 <button type="button" className="btn btn-secondary btn-lg" onClick={() => setStep(2)}>
-                  <ArrowLeft size={16} /> Back
+                  <ArrowLeft size={16} /> {t("back", "Back")}
                 </button>
                 <button type="submit" className="btn btn-primary btn-lg" style={{ flex: 1 }} disabled={loading}>
-                  {loading ? <><span className="spinner" style={{ width: 16, height: 16 }} />Creating workspace...</> : <>Launch workspace <ArrowRight size={16} /></>}
+                  {loading ? <><span className="spinner" style={{ width: 16, height: 16 }} />{t("register_creating", "Creating workspace...")}</> : <>{t("register_launch", "Launch workspace")} <ArrowRight size={16} /></>}
                 </button>
               </div>
             </form>
@@ -214,8 +216,8 @@ export default function RegisterPage() {
         </div>
 
         <p style={{ textAlign: "center", marginTop: 20, fontSize: 14, color: "var(--text-muted)" }}>
-          Already have an account?{" "}
-          <Link href="/login"><a style={{ color: "var(--brand-light)", fontWeight: 600 }}>Sign in</a></Link>
+          {t("already_account", "Already have an account?")}{" "}
+          <Link href="/login"><a style={{ color: "var(--brand-light)", fontWeight: 600 }}>{t("sign_in_link", "Sign in")}</a></Link>
         </p>
       </div>
     </div>

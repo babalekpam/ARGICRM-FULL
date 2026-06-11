@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Loader } from "../components/UI";
 import { toast, confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
+import { useShortcut } from "../lib/useShortcut";
 import { useLanguage } from "../contexts/LanguageContext";
 import {
   UserPlus, Search, Mail, Phone, Building2, Trash2, Edit,
@@ -91,7 +92,7 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
   const handleFile = (f: File) => {
     const ext = f.name.split(".").pop()?.toLowerCase();
     if (!["csv", "xlsx", "xls"].includes(ext || "")) {
-      setImportError("Please upload a .csv, .xlsx or .xls file.");
+      setImportError(t("import_invalid_file", "Please upload a .csv, .xlsx or .xls file."));
       return;
     }
     setFile(f);
@@ -120,11 +121,11 @@ function ImportModal({ open, onClose, onDone }: { open: boolean; onClose: () => 
         body: fd,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      if (!res.ok) throw new Error(data.error || `${t("upload_failed", "Upload failed")} (${res.status})`);
       setResult(data);
       onDone();
     } catch (e: any) {
-      setImportError(e.message || "Upload failed");
+      setImportError(e.message || t("upload_failed", "Upload failed"));
     } finally {
       setUploading(false);
     }
@@ -344,17 +345,18 @@ export default function ContactsPage() {
   const [promotingId, setPromotingId] = useState<string | null>(null);
   const promoteToLead = async (c: any) => {
     const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ");
-    if (!(await confirmDialog({ title: "Add to leads?", message: `Add "${fullName}" to the Leads list?`, confirmLabel: "Add to Leads" }))) return;
+    if (!(await confirmDialog({ title: t("contacts_add_to_leads_title", "Add to leads?"), message: `${t("add", "Add")} "${fullName}" ${t("contacts_add_to_leads_suffix", "to the Leads list?")}`, confirmLabel: t("contacts_add_to_leads_btn", "Add to Leads") }))) return;
     setPromotingId(c.id);
     try {
       const result: any = await apiRequest("POST", `/api/contacts/${c.id}/to-lead`);
       qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") });
-      toast.success(result.alreadyExisted ? "This contact is already in your leads list." : `${fullName} added to Leads!`);
-    } catch (err: any) { toast.error(err.message || "Failed to add to leads"); }
+      toast.success(result.alreadyExisted ? t("contacts_already_lead", "This contact is already in your leads list.") : `${fullName} ${t("contacts_added_to_leads", "added to Leads!")}`);
+    } catch (err: any) { toast.error(err.message || t("contacts_add_to_leads_failed", "Failed to add to leads")); }
     finally { setPromotingId(null); }
   };
 
   const openAdd = () => { setEditing(null); setForm(BLANK); setError(""); setModalOpen(true); };
+  useShortcut("n", openAdd);
   const openEdit = (c: any) => {
     setEditing(c);
     setForm({
@@ -369,7 +371,7 @@ export default function ContactsPage() {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstName.trim()) return setError("First name is required");
+    if (!form.firstName.trim()) return setError(t("first_name_required", "First name is required"));
     setSaving(true); setError("");
     try {
       if (editing) {
@@ -396,7 +398,7 @@ export default function ContactsPage() {
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={() => setImportOpen(true)} data-testid="btn-open-import">
-            <Upload size={14} /> Import
+            <Upload size={14} /> {t("import")}
           </button>
           <button className="btn btn-primary btn-sm" onClick={openAdd} data-testid="btn-add-contact">
             <UserPlus size={15} /> {t("add_contact_btn")}
