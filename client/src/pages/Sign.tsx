@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "wouter";
 import { CheckCircle, XCircle, FileText, PenLine, Type, AlertCircle } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
+import { toast, confirmDialog } from "../components/Toast";
 
 export default function SignPage() {
   const { t } = useLanguage();
@@ -90,8 +91,8 @@ export default function SignPage() {
   const submit = async (action: "sign" | "decline") => {
     if (action === "sign") {
       const sig = getSignatureData();
-      if (!sig) { alert(mode === "draw" ? "Please draw your signature." : "Please type your name."); return; }
-      if (!agreed) { alert("Please confirm that you agree to sign electronically."); return; }
+      if (!sig) { toast.warning(mode === "draw" ? "Please draw your signature." : "Please type your name."); return; }
+      if (!agreed) { toast.warning("Please confirm that you agree to sign electronically."); return; }
       setSubmitting(true);
       const r = await fetch(`/api/sign/${token}`, {
         method: "POST",
@@ -100,10 +101,10 @@ export default function SignPage() {
       });
       const data = await r.json();
       setSubmitting(false);
-      if (data.error) { alert(data.error); return; }
+      if (data.error) { toast.error(data.error); return; }
       setDone("signed");
     } else {
-      if (!confirm(t("sign_decline_confirm"))) return;
+      if (!(await confirmDialog(t("sign_decline_confirm")))) return;
       setSubmitting(true);
       await fetch(`/api/sign/${token}`, {
         method: "POST",

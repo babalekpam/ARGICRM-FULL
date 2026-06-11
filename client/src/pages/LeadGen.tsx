@@ -676,7 +676,7 @@ export default function LeadGenPage() {
       {/* Campaign Modal */}
       <Modal open={campaignModal} onClose={() => { setCampaignModal(false); setCampaignError(null); }} title={t("new_campaign", "New Campaign")} width={560}>
         <div style={{ padding: "20px", display: "grid", gap: 16 }}>
-          {campaignError && <UpgradeBanner error={campaignError} onDismiss={() => setCampaignError(null)} />}
+          {campaignError ? <UpgradeBanner error={campaignError} onDismiss={() => setCampaignError(null)} /> : null}
           <div style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "#93c5fd" }}>
             Our engine will crawl DuckDuckGo, Yellow Pages, OpenCorporates, GitHub, LinkedIn (public), Indeed, and live websites — no API costs.
           </div>

@@ -117,7 +117,7 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, width: "100%", maxWidth: 560, boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
           <Search size={16} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-          <input ref={inputRef} data-testid="input-global-search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search contacts, leads, deals, accounts…" style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15 }} />
+          <input ref={inputRef} data-testid="input-global-search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search contacts, leads, deals, accounts…" aria-label="Search across your CRM" role="searchbox" style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15 }} />
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", padding: 2 }}><X size={14} /></button>
         </div>
         <div style={{ maxHeight: 400, overflowY: "auto" }}>
@@ -240,6 +240,8 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
                   href={item.path}
                   className={`nav-item ${active ? "active" : ""}`}
                   title={collapsed ? label : undefined}
+                  aria-label={collapsed ? label : undefined}
+                  aria-current={active ? "page" : undefined}
                   style={{ marginBottom: 1 }}
                   onClick={() => setMobileOpen(false)}
                 >
@@ -283,7 +285,7 @@ export default function Layout({ children, title, subtitle, actions }: LayoutPro
                 </div>
                 <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "capitalize" }}>{user?.role?.replace("_", " ")}</div>
               </div>
-              <button onClick={logout} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "flex", borderRadius: 6 }} title="Log out">
+              <button onClick={logout} aria-label="Log out" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "flex", borderRadius: 6 }} title="Log out">
                 <LogOut size={14} />
               </button>
             </>

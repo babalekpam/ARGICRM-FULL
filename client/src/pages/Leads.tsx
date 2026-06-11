@@ -1,11 +1,14 @@
 // ═══ LEADS PAGE ═══════════════════════════════════════════════════════
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
+import { toast, confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
 import { useLanguage } from "../contexts/LanguageContext";
-import { UserPlus, Trash2, Edit, UserCheck } from "lucide-react";
+import { UserPlus, Trash2, Edit, UserCheck, Search, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 50;
 
 const LEAD_STATUS = [
   { value: "new", label: "New" }, { value: "contacted", label: "Contacted" },
@@ -35,11 +38,32 @@ export function LeadsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [converting, setConverting] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useQuery<{ data: any[]; total: number }>({ queryKey: ["/api/leads"] });
+  // Debounce search so we don't refetch on every keystroke
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // Reset to page 1 whenever search or filter changes
+  useEffect(() => { setPage(1); }, [debouncedSearch, statusFilter]);
+
+  const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String((page - 1) * PAGE_SIZE) });
+  if (debouncedSearch) params.set("search", debouncedSearch);
+  if (statusFilter) params.set("status", statusFilter);
+  const queryKey = `/api/leads?${params.toString()}`;
+
+  const { data, isLoading } = useQuery<{ data: any[]; total: number }>({ queryKey: [queryKey] });
+  const totalPages = Math.max(1, Math.ceil((data?.total || 0) / PAGE_SIZE));
+
   const delMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/leads/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/leads"] }),
+    onSuccess: () => { qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") }); toast.success("Lead deleted."); },
+    onError: (err: any) => toast.error(err.message || "Failed to delete lead"),
   });
 
   const openAdd = () => { setEditing(null); setForm(BLANK_LEAD); setError(""); setModal(true); };
@@ -55,24 +79,24 @@ export function LeadsPage() {
     try {
       if (editing) await apiRequest("PUT", `/api/leads/${editing.id}`, form);
       else await apiRequest("POST", "/api/leads", form);
-      qc.invalidateQueries({ queryKey: ["/api/leads"] });
+      qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") });
       qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
       setModal(false);
+      toast.success(editing ? "Lead updated." : "Lead added.");
     } catch (err: any) { setError(err.message); }
     finally { setSaving(false); }
   };
 
   const convertToContact = async (lead: any) => {
     const name = [lead.firstName, lead.lastName].filter(Boolean).join(" ");
-    if (!confirm(`Convert "${name}" to a contact?`)) return;
+    if (!(await confirmDialog({ title: "Convert to contact?", message: `Convert "${name}" to a contact?`, confirmLabel: "Convert" }))) return;
     setConverting(lead.id);
     try {
       const result: any = await apiRequest("POST", `/api/leads/${lead.id}/convert`);
-      qc.invalidateQueries({ queryKey: ["/api/leads"] });
-      qc.invalidateQueries({ queryKey: ["/api/contacts"] });
+      qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") || String(q.queryKey[0]).startsWith("/api/contacts") });
       qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      alert(result.alreadyExisted ? "Lead marked as converted — contact already existed." : "Lead successfully converted to contact!");
-    } catch (err: any) { alert(err.message || "Conversion failed"); }
+      toast.success(result.alreadyExisted ? "Lead marked as converted — contact already existed." : "Lead successfully converted to contact!");
+    } catch (err: any) { toast.error(err.message || "Conversion failed"); }
     finally { setConverting(null); }
   };
 
@@ -83,6 +107,31 @@ export function LeadsPage() {
       actions={<button className="btn btn-primary btn-sm" onClick={openAdd} data-testid="btn-add-lead"><UserPlus size={15} /> {t("add_lead_btn")}</button>}
     >
       <div className="card" style={{ overflow: "hidden" }}>
+        {/* Toolbar: search + status filter */}
+        <div style={{ display: "flex", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border)", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ position: "relative", flex: "1 1 220px", maxWidth: 360 }}>
+            <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} aria-hidden="true" />
+            <input
+              className="input"
+              style={{ paddingLeft: 32 }}
+              placeholder={t("search") || "Search leads…"}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              aria-label="Search leads"
+              data-testid="input-search-leads"
+            />
+          </div>
+          <Select
+            options={LEAD_STATUS}
+            placeholder={t("status") || "All statuses"}
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            aria-label="Filter by status"
+            style={{ width: "auto", minWidth: 150 }}
+            data-testid="select-filter-status"
+          />
+        </div>
+
         {/* Desktop header */}
         <div className="leads-table-header">
           {[t("name"), t("company"), t("status"), t("lead_score"), t("actions")].map(h => (
@@ -91,12 +140,21 @@ export function LeadsPage() {
         </div>
 
         {isLoading ? <Loader /> : !data?.data?.length ? (
+          debouncedSearch || statusFilter ? (
+            <Empty
+              icon={Search}
+              title="No matching leads"
+              desc="Try adjusting your search or filter."
+              action={<button className="btn btn-secondary" onClick={() => { setSearch(""); setStatusFilter(""); }}>Clear filters</button>}
+            />
+          ) : (
           <Empty
             icon={UserPlus}
             title={t("no_leads")}
             desc={t("no_leads_desc")}
             action={<button className="btn btn-primary" onClick={openAdd}><UserPlus size={15} /> {t("add_lead_btn")}</button>}
           />
+          )
         ) : data.data.map((l: any) => {
           const displayName = [l.firstName, l.lastName].filter(Boolean).join(" ") || l.company || "—";
           const score = l.score || 0;
@@ -176,7 +234,7 @@ export function LeadsPage() {
                   className="btn btn-ghost btn-sm"
                   style={{ padding: 6, color: "#ef4444" }}
                   title="Delete"
-                  onClick={() => { if (confirm("Delete lead?")) delMut.mutate(l.id); }}
+                  onClick={async () => { if (await confirmDialog({ title: "Delete lead?", message: `Delete "${displayName}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(l.id); }}
                   data-testid={`btn-delete-lead-${l.id}`}
                 >
                   <Trash2 size={14} />
@@ -185,6 +243,24 @@ export function LeadsPage() {
             </div>
           );
         })}
+
+        {/* Pagination */}
+        {(data?.total || 0) > PAGE_SIZE && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid var(--border)", flexWrap: "wrap", gap: 10 }}>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+              {`${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, data!.total)} of ${data!.total}`}
+            </span>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page" data-testid="btn-leads-page-prev">
+                <ChevronLeft size={14} />
+              </button>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{page} / {totalPages}</span>
+              <button className="btn btn-ghost btn-sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page" data-testid="btn-leads-page-next">
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? t("edit_lead") : t("add_lead_btn")}>

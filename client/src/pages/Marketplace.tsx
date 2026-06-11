@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { useLanguage } from "../contexts/LanguageContext";
 import { apiRequest } from "../lib/api";
+import { toast } from "../components/Toast";
 import {
   Store, Search, Filter, Download, UserPlus, Globe, MapPin,
   Building2, Phone, Mail, Briefcase, RefreshCw, Check, Lock,
@@ -353,7 +354,7 @@ export default function MarketplacePage() {
     setExportResult(null);
     try {
       const res: any = await apiRequest("POST", "/api/marketplace/export", { leadIds: [...selected] });
-      if (res.upgrade) { alert(res.error); return; }
+      if (res.upgrade) { toast.error(res.error); return; }
 
       // Generate CSV
       const headers = ["Name", "Company", "Title", "Email", "Phone", "Website", "Address", "City", "State", "Country", "Industry", "Specialty", "Source", "Market", "Language"];
@@ -378,12 +379,12 @@ export default function MarketplacePage() {
     setExportResult(null);
     try {
       const res: any = await apiRequest("POST", "/api/marketplace/push-to-crm", { leadIds: [...selected] });
-      if (res.error) { alert(res.error); return; }
+      if (res.error) { toast.error(res.error); return; }
       setExportResult({ count: res.pushed || 0, duplicates: res.duplicates || 0, skipped: res.skipped || 0, type: "crm" });
       qc.invalidateQueries({ queryKey: ["/api/marketplace/stats"] });
       setSelected(new Set());
     } catch (e: any) {
-      alert(`Import failed: ${e.message || "Unknown error"}`);
+      toast.error(`Import failed: ${e.message || "Unknown error"}`);
     } finally { setPushingCRM(false); }
   }
 

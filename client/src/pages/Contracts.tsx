@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { apiRequest } from "../lib/api";
+import { confirmDialog } from "../components/Toast";
 import { FileText, Plus, Send, Eye, CheckCircle, XCircle, Clock, Trash2, Copy, Check, Edit2, ChevronDown, ChevronRight, AlertCircle, BookOpen } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 
@@ -171,7 +172,7 @@ export default function ContractsPage() {
   };
 
   const deleteContract = async (id: string) => {
-    if (!confirm(t("contracts_delete_confirm"))) return;
+    if (!(await confirmDialog({ title: "Delete contract?", message: t("contracts_delete_confirm"), confirmLabel: "Delete", danger: true }))) return;
     await apiRequest("DELETE", `/api/contracts/${id}`);
     qc.invalidateQueries({ queryKey: ["/api/contracts"] });
   };
@@ -196,7 +197,7 @@ export default function ContractsPage() {
   };
 
   const deleteTemplate = async (id: string) => {
-    if (!confirm(t("contracts_delete_tpl_confirm"))) return;
+    if (!(await confirmDialog({ title: "Delete template?", message: t("contracts_delete_tpl_confirm"), confirmLabel: "Delete", danger: true }))) return;
     await apiRequest("DELETE", `/api/contracts/templates/${id}`);
     qc.invalidateQueries({ queryKey: ["/api/contracts/templates"] });
   };
@@ -478,7 +479,7 @@ export default function ContractsPage() {
                       fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 13, color: "var(--text-primary)",
                       lineHeight: 1.85, whiteSpace: "pre-wrap", wordBreak: "break-word",
                     }}>
-                      {buildBody().split(/({{[^}]+}})/).map((part, i) => {
+                      {buildBody().split(/({{[^}]+}})/).map((part: string, i: number) => {
                         const isUnfilled = /^\{\{[^}]+\}\}$/.test(part);
                         return isUnfilled ? (
                           <mark key={i} style={{ background: "rgba(245,158,11,0.25)", color: "#d97706", borderRadius: 3, padding: "0 2px" }}>{part}</mark>

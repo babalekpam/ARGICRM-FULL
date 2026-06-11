@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Select, Empty, Badge, Loader, Avatar } from "../components/UI";
+import { confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
 import { Briefcase, Plus, Edit, Trash2, CheckSquare, Users, BarChart2, Calendar, Target, Zap, Megaphone, Globe, Star, Check, FileText, Link, Image, Type, Play } from "lucide-react";
 import { Link as WouterLink } from "wouter";
@@ -65,7 +66,7 @@ export function ProjectsPage() {
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{p.name}</div>
                     <div style={{ display: "flex", gap: 4 }}>
                       <button className="btn btn-ghost btn-sm" style={{ padding: 4 }} onClick={e => { e.stopPropagation(); setEditing(p); setForm({ name: p.name, description: p.description || "", status: p.status, priority: p.priority, color: p.color, budget: p.budget || "" }); setModal(true); }}><Edit size={12} /></button>
-                      <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} onClick={e => { e.stopPropagation(); if (confirm("Delete project?")) delMut.mutate(p.id); }}><Trash2 size={12} /></button>
+                      <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} onClick={async e => { e.stopPropagation(); if (await confirmDialog({ title: "Delete project?", message: `Delete "${p.name}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(p.id); }}><Trash2 size={12} /></button>
                     </div>
                   </div>
                   <div style={{ marginBottom: 10 }}>
@@ -228,7 +229,7 @@ export function EmployeesPage() {
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button className="btn btn-ghost btn-sm" style={{ padding: 4 }} onClick={() => { setEditing(emp); setForm({ firstName: emp.firstName, lastName: emp.lastName || "", email: emp.email || "", phone: emp.phone || "", department: emp.department || "", jobTitle: emp.jobTitle || "", employmentType: emp.employmentType, status: emp.status, salary: emp.salary || "", currency: emp.currency, location: emp.location || "" }); setModal(true); }}><Edit size={12} /></button>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} onClick={() => { if (confirm("Delete employee?")) delMut.mutate(emp.id); }}><Trash2 size={12} /></button>
+                  <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} onClick={async () => { if (await confirmDialog({ title: "Delete employee?", message: `Delete ${[emp.firstName, emp.lastName].filter(Boolean).join(" ")}? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(emp.id); }}><Trash2 size={12} /></button>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

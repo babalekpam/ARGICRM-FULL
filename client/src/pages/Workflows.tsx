@@ -366,7 +366,7 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
                 <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, padding: "8px 10px", background: "var(--bg-overlay)", borderRadius: 8, alignItems: "center" }}>
                   <Icon size={14} style={{ color: "#10b981", flexShrink: 0 }} />
                   <span style={{ fontSize: 12, flex: 1 }}>{at?.label || a.type}{a.config?.title ? `: "${a.config.title}"` : ""}</span>
-                  {form.executionMode === "supervised" && <Eye size={12} style={{ color: "#f59e0b", flexShrink: 0 }} title="Requires approval" />}
+                  {form.executionMode === "supervised" && <span title="Requires approval" style={{ display: "flex", flexShrink: 0 }}><Eye size={12} style={{ color: "#f59e0b" }} /></span>}
                   <button onClick={() => setForm(f => ({ ...f, actions: f.actions.filter((_, j) => j !== i) }))} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 2, display: "flex" }}><X size={13} /></button>
                 </div>
               );

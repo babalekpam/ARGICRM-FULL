@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Loader } from "../components/UI";
+import { toast, confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
 import { useLanguage } from "../contexts/LanguageContext";
 import {
@@ -343,13 +344,13 @@ export default function ContactsPage() {
   const [promotingId, setPromotingId] = useState<string | null>(null);
   const promoteToLead = async (c: any) => {
     const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ");
-    if (!confirm(`Add "${fullName}" to the Leads list?`)) return;
+    if (!(await confirmDialog({ title: "Add to leads?", message: `Add "${fullName}" to the Leads list?`, confirmLabel: "Add to Leads" }))) return;
     setPromotingId(c.id);
     try {
       const result: any = await apiRequest("POST", `/api/contacts/${c.id}/to-lead`);
-      qc.invalidateQueries({ queryKey: ["/api/leads"] });
-      alert(result.alreadyExisted ? "This contact is already in your leads list." : `${fullName} added to Leads!`);
-    } catch (err: any) { alert(err.message || "Failed to add to leads"); }
+      qc.invalidateQueries({ predicate: q => String(q.queryKey[0]).startsWith("/api/leads") });
+      toast.success(result.alreadyExisted ? "This contact is already in your leads list." : `${fullName} added to Leads!`);
+    } catch (err: any) { toast.error(err.message || "Failed to add to leads"); }
     finally { setPromotingId(null); }
   };
 
@@ -622,7 +623,7 @@ export default function ContactsPage() {
                       className="btn btn-ghost btn-sm"
                       style={{ padding: "5px 8px", color: "#ef4444", display: "flex", alignItems: "center" }}
                       title="Delete"
-                      onClick={() => { if (confirm(`Delete ${fullName}?`)) deleteMut.mutate(c.id); }}
+                      onClick={async () => { if (await confirmDialog({ title: "Delete contact?", message: `Delete ${fullName}? This cannot be undone.`, confirmLabel: "Delete", danger: true })) deleteMut.mutate(c.id); }}
                       data-testid={`btn-delete-${c.id}`}
                     >
                       <Trash2 size={14} />

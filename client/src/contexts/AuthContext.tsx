@@ -8,6 +8,9 @@ interface User {
   lastName?: string | null;
   role: string;
   avatar?: string | null;
+  preferredLanguage?: string | null;
+  lastLoginAt?: string | null;
+  emailVerified?: boolean | null;
 }
 
 interface Tenant {

@@ -399,7 +399,7 @@ export default function ARIADialog() {
                         </div>
                       ) : msg.content}
                       {msg.module && msg.role === "assistant" && !msg.pending && (
-                        <div style={{ marginTop: 5, fontSize: 10, color: msg.role === "user" ? "rgba(255,255,255,0.6)" : "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        <div style={{ marginTop: 5, fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                           {MODULE_LABELS[msg.module] || msg.module}
                         </div>
                       )}

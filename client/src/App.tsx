@@ -6,43 +6,58 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { WhiteLabelProvider } from "./contexts/WhiteLabelContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ToastHost } from "./components/Toast";
 
+// Auth-critical pages stay in the main bundle for instant first paint;
+// everything else is lazy-loaded per route to keep the initial download small.
 import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
 import LandingPage from "./pages/Landing";
 import DashboardPage from "./pages/Dashboard";
-import ContactsPage from "./pages/Contacts";
-import LeadsPage from "./pages/Leads";
-import DealsPage from "./pages/Deals";
-import TasksPage from "./pages/Tasks";
-import AccountsPage from "./pages/Accounts";
-import CampaignsPage from "./pages/Campaigns";
-import InvoicesPage from "./pages/Invoices";
-import SettingsPage from "./pages/Settings";
-import TeamPage from "./pages/Team";
-import AgentsPage from "./pages/Agents";
-import IntelligencePage from "./pages/Intelligence";
-import HealingPage from "./pages/Healing";
-import SeoPage from "./pages/Seo";
-import EcommercePage from "./pages/Ecommerce";
-import FinancePage from "./pages/Finance";
-import { ProjectsPage, EmployeesPage, MarketingPage } from "./pages/Operations";
-import LeadGenPage from "./pages/LeadGen";
-import MarketplacePage from "./pages/Marketplace";
-import EmailTrackingPage from "./pages/EmailTracking";
-import SuperAdminPage from "./pages/SuperAdmin";
-import AnalyticsPage from "./pages/Analytics";
-import AIToolsPage from "./pages/AITools";
-import WorkflowsPage from "./pages/Workflows";
-import SkillsPage from "./pages/Skills";
-import ContractsPage from "./pages/Contracts";
-import SignPage from "./pages/Sign";
-import PrivacyPage from "./pages/Privacy";
-import TermsPage from "./pages/Terms";
-import SecurityPage from "./pages/Security";
-import ContactPage from "./pages/Contact";
-import NotFoundPage from "./pages/NotFound";
-import StorefrontPage from "./pages/Storefront";
+
+const ContactsPage = React.lazy(() => import("./pages/Contacts"));
+const LeadsPage = React.lazy(() => import("./pages/Leads"));
+const DealsPage = React.lazy(() => import("./pages/Deals"));
+const TasksPage = React.lazy(() => import("./pages/Tasks"));
+const AccountsPage = React.lazy(() => import("./pages/Accounts"));
+const CampaignsPage = React.lazy(() => import("./pages/Campaigns"));
+const InvoicesPage = React.lazy(() => import("./pages/Invoices"));
+const SettingsPage = React.lazy(() => import("./pages/Settings"));
+const TeamPage = React.lazy(() => import("./pages/Team"));
+const AgentsPage = React.lazy(() => import("./pages/Agents"));
+const IntelligencePage = React.lazy(() => import("./pages/Intelligence"));
+const HealingPage = React.lazy(() => import("./pages/Healing"));
+const SeoPage = React.lazy(() => import("./pages/Seo"));
+const EcommercePage = React.lazy(() => import("./pages/Ecommerce"));
+const FinancePage = React.lazy(() => import("./pages/Finance"));
+const ProjectsPage = React.lazy(() => import("./pages/Operations").then(m => ({ default: m.ProjectsPage })));
+const EmployeesPage = React.lazy(() => import("./pages/Operations").then(m => ({ default: m.EmployeesPage })));
+const MarketingPage = React.lazy(() => import("./pages/Operations").then(m => ({ default: m.MarketingPage })));
+const LeadGenPage = React.lazy(() => import("./pages/LeadGen"));
+const MarketplacePage = React.lazy(() => import("./pages/Marketplace"));
+const EmailTrackingPage = React.lazy(() => import("./pages/EmailTracking"));
+const SuperAdminPage = React.lazy(() => import("./pages/SuperAdmin"));
+const AnalyticsPage = React.lazy(() => import("./pages/Analytics"));
+const AIToolsPage = React.lazy(() => import("./pages/AITools"));
+const WorkflowsPage = React.lazy(() => import("./pages/Workflows"));
+const SkillsPage = React.lazy(() => import("./pages/Skills"));
+const ContractsPage = React.lazy(() => import("./pages/Contracts"));
+const SignPage = React.lazy(() => import("./pages/Sign"));
+const PrivacyPage = React.lazy(() => import("./pages/Privacy"));
+const TermsPage = React.lazy(() => import("./pages/Terms"));
+const SecurityPage = React.lazy(() => import("./pages/Security"));
+const ContactPage = React.lazy(() => import("./pages/Contact"));
+const NotFoundPage = React.lazy(() => import("./pages/NotFound"));
+const StorefrontPage = React.lazy(() => import("./pages/Storefront"));
+
+function PageFallback() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+      <div className="spinner" />
+    </div>
+  );
+}
 
 function useNoIndex() {
   React.useEffect(() => {
@@ -76,6 +91,7 @@ function AppRoutes() {
   );
 
   return (
+    <React.Suspense fallback={<PageFallback />}>
     <Switch>
       <Route path="/">{() => isAuthenticated ? <Redirect to="/dashboard" /> : <LandingPage />}</Route>
       <Route path="/landing">{() => <LandingPage />}</Route>
@@ -117,21 +133,25 @@ function AppRoutes() {
       <Route path="/store/:slug">{() => <StorefrontPage />}</Route>
       <Route>{() => <NotFoundPage />}</Route>
     </Switch>
+    </React.Suspense>
   );
 }
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <LanguageProvider>
-          <AuthProvider>
-            <WhiteLabelProvider>
-              <AppRoutes />
-            </WhiteLabelProvider>
-          </AuthProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <WhiteLabelProvider>
+                <AppRoutes />
+                <ToastHost />
+              </WhiteLabelProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

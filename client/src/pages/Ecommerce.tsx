@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Empty } from "../components/UI";
+import { toast, confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
 import {
   ShoppingCart, Package, Plus, Store, Zap, AlertTriangle, Edit,
@@ -154,12 +155,12 @@ export default function EcommercePage() {
         setIsReady(true);
       } else {
         // No usable data returned — stay on input form with error
-        alert("Could not extract store details. Try describing your store in a bit more detail (e.g. what you sell, who your customers are).");
+        toast.warning("Could not extract store details. Try describing your store in a bit more detail (e.g. what you sell, who your customers are).");
         setIsReady(false);
       }
     } catch (err: any) {
       const msg = err?.message || "Something went wrong. Please try again.";
-      alert(msg.includes("quota") ? msg : "Could not analyse your description — please try again.");
+      toast.error(msg.includes("quota") ? msg : "Could not analyse your description — please try again.");
       setIsReady(false);
     } finally {
       setChatLoading(false);
@@ -724,7 +725,7 @@ export default function EcommercePage() {
                 <div style={{ display: "flex", gap: 4 }}>
                   <button className="btn btn-ghost btn-sm" style={{ padding: 5 }} onClick={() => openEdit(p)}><Edit size={13} /></button>
                   <button className="btn btn-primary btn-sm" style={{ padding: "4px 6px", fontSize: 11 }} disabled={optimizing === p.id} onClick={() => optimizeProduct(p.id)}><Zap size={11} /></button>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: 5, color: "#ef4444" }} onClick={() => { if (confirm("Delete product?")) delProduct.mutate(p.id); }}><Trash2 size={13} /></button>
+                  <button className="btn btn-ghost btn-sm" style={{ padding: 5, color: "#ef4444" }} onClick={async () => { if (await confirmDialog({ title: "Delete product?", message: `Delete "${p.name}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delProduct.mutate(p.id); }}><Trash2 size={13} /></button>
                 </div>
               </div>
             ))

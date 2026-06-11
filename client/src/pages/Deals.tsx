@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Loader } from "../components/UI";
+import { toast, confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
 import { useLanguage } from "../contexts/LanguageContext";
 import { TrendingUp, Plus, Trash2, Edit, DollarSign } from "lucide-react";
@@ -25,10 +26,32 @@ export default function DealsPage() {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<{ data: any[]; pipeline: any[] }>({ queryKey: ["/api/deals"] });
-  const delMut = useMutation({ mutationFn: (id: string) => apiRequest("DELETE", `/api/deals/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/deals"] }) });
-  const updateStage = useMutation({ mutationFn: ({ id, stage }: any) => apiRequest("PUT", `/api/deals/${id}`, { stage }), onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/deals"] }) });
+  const delMut = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/deals/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/deals"] }); toast.success("Deal deleted."); },
+    onError: (err: any) => toast.error(err.message || "Failed to delete deal"),
+  });
+  const updateStage = useMutation({
+    mutationFn: ({ id, stage }: any) => apiRequest("PUT", `/api/deals/${id}`, { stage }),
+    // Optimistic update: move the card immediately, roll back on failure
+    onMutate: async ({ id, stage }: any) => {
+      await qc.cancelQueries({ queryKey: ["/api/deals"] });
+      const previous = qc.getQueryData<{ data: any[]; pipeline: any[] }>(["/api/deals"]);
+      if (previous) {
+        qc.setQueryData(["/api/deals"], { ...previous, data: previous.data.map(d => d.id === id ? { ...d, stage } : d) });
+      }
+      return { previous };
+    },
+    onError: (err: any, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["/api/deals"], ctx.previous);
+      toast.error(err.message || "Failed to move deal");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["/api/deals"] }),
+  });
 
   const openAdd = () => { setEditing(null); setForm(BLANK); setModal(true); };
   const openEdit = (d: any) => { setEditing(d); setForm({ title: d.title, stage: d.stage, value: d.value || "", probability: String(d.probability || 25), notes: d.notes || "" }); setModal(true); };
@@ -39,6 +62,9 @@ export default function DealsPage() {
       else await apiRequest("POST", "/api/deals", form);
       qc.invalidateQueries({ queryKey: ["/api/deals"] }); qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
       setModal(false);
+      toast.success(editing ? "Deal updated." : "Deal added.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save deal");
     } finally { setSaving(false); }
   };
 
@@ -82,8 +108,21 @@ export default function DealsPage() {
         <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 12 }} className="no-scrollbar">
           {STAGES.map(stage => {
             const stageDeals = deals.filter(d => d.stage === stage.id);
+            const isDropTarget = dragOverStage === stage.id && dragId != null;
             return (
-              <div key={stage.id} style={{ minWidth: 240, width: 240, flexShrink: 0 }}>
+              <div
+                key={stage.id}
+                style={{ minWidth: 240, width: 240, flexShrink: 0 }}
+                onDragOver={e => { e.preventDefault(); setDragOverStage(stage.id); }}
+                onDragLeave={() => setDragOverStage(s => (s === stage.id ? null : s))}
+                onDrop={e => {
+                  e.preventDefault();
+                  const id = e.dataTransfer.getData("text/deal-id") || dragId;
+                  setDragOverStage(null); setDragId(null);
+                  const deal = deals.find(d => d.id === id);
+                  if (id && deal && deal.stage !== stage.id) updateStage.mutate({ id, stage: stage.id });
+                }}
+              >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: stage.color }} />
@@ -91,20 +130,32 @@ export default function DealsPage() {
                   </div>
                   <span className="badge badge-gray">{stageDeals.length}</span>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 100 }}>
+                <div style={{
+                  display: "flex", flexDirection: "column", gap: 8, minHeight: 100, borderRadius: 10,
+                  outline: isDropTarget ? `2px dashed ${stage.color}` : "none", outlineOffset: 4,
+                  background: isDropTarget ? `${stage.color}0d` : "transparent", transition: "background 0.15s",
+                }}>
                   {stageDeals.map(d => (
-                    <div key={d.id} className="card" style={{ padding: "12px", cursor: "pointer" }} onClick={() => openEdit(d)}>
+                    <div
+                      key={d.id}
+                      className="card"
+                      style={{ padding: "12px", cursor: "grab", opacity: dragId === d.id ? 0.4 : 1 }}
+                      onClick={() => openEdit(d)}
+                      draggable
+                      onDragStart={e => { e.dataTransfer.setData("text/deal-id", d.id); e.dataTransfer.effectAllowed = "move"; setDragId(d.id); }}
+                      onDragEnd={() => { setDragId(null); setDragOverStage(null); }}
+                    >
                       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{d.title}</div>
                       {d.value && <div style={{ fontSize: 14, fontWeight: 700, color: stage.color }}>${Number(d.value).toLocaleString()}</div>}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
                         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{d.probability}% prob.</span>
-                        <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} onClick={e => { e.stopPropagation(); if (confirm("Delete deal?")) delMut.mutate(d.id); }}><Trash2 size={12} /></button>
+                        <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} aria-label={`Delete deal ${d.title}`} onClick={async e => { e.stopPropagation(); if (await confirmDialog({ title: "Delete deal?", message: `Delete "${d.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(d.id); }}><Trash2 size={12} /></button>
                       </div>
                     </div>
                   ))}
                   {stageDeals.length === 0 && (
                     <div style={{ padding: "20px", textAlign: "center", border: "2px dashed var(--border)", borderRadius: 10, color: "var(--text-muted)", fontSize: 13 }}>
-                      No deals
+                      {isDropTarget ? "Drop here" : "No deals"}
                     </div>
                   )}
                 </div>
@@ -125,8 +176,8 @@ export default function DealsPage() {
                 <div style={{ fontWeight: 700, color: "var(--brand-light)" }}>${Number(d.value || 0).toLocaleString()}</div>
                 <div style={{ fontSize: 13 }}>{d.probability}%</div>
                 <div style={{ display: "flex", gap: 4 }}>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => openEdit(d)}><Edit size={14} /></button>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: 6, color: "#ef4444" }} onClick={() => { if (confirm("Delete?")) delMut.mutate(d.id); }}><Trash2 size={14} /></button>
+                  <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} aria-label={`Edit deal ${d.title}`} onClick={() => openEdit(d)}><Edit size={14} /></button>
+                  <button className="btn btn-ghost btn-sm" style={{ padding: 6, color: "#ef4444" }} aria-label={`Delete deal ${d.title}`} onClick={async () => { if (await confirmDialog({ title: "Delete deal?", message: `Delete "${d.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(d.id); }}><Trash2 size={14} /></button>
                 </div>
               </div>
             ))

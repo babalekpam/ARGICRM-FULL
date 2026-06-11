@@ -1,4 +1,5 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, MutationCache } from "@tanstack/react-query";
+import { toast } from "../components/Toast";
 
 const API_BASE = "";
 
@@ -74,6 +75,16 @@ export async function apiRequest<T = any>(
 }
 
 export const queryClient = new QueryClient({
+  // Global safety net: any mutation without its own onError handler surfaces
+  // failures to the user instead of failing silently. Upgrade-required errors
+  // are excluded — pages render those as inline upgrade banners.
+  mutationCache: new MutationCache({
+    onError: (error, _vars, _ctx, mutation) => {
+      if (mutation.options.onError) return;
+      if (error instanceof UpgradeRequiredError) return;
+      toast.error(error instanceof Error ? error.message : "Something went wrong. Please try again.");
+    },
+  }),
   defaultOptions: {
     queries: {
       queryFn: async ({ queryKey }) => {

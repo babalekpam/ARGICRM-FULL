@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { useLanguage } from "../contexts/LanguageContext";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
+import { toast } from "../components/Toast";
 import { apiRequest } from "../lib/api";
 import {
   Search, Filter, Zap, Target, Plus, Download, Upload,
@@ -38,9 +39,9 @@ export default function IntelligencePage() {
 
   // Forms
   const [searchForm, setSearchForm] = useState({
-    industries: [], titles: ["VP Sales", "Head of Sales"], seniorities: ["vp", "director"],
-    companySizes: ["51-200", "201-500"], countries: ["US"], technologies: [],
-    keywords: [], enrichmentDepth: "standard"
+    industries: [] as string[], titles: ["VP Sales", "Head of Sales"], seniorities: ["vp", "director"],
+    companySizes: ["51-200", "201-500"], countries: ["US"], technologies: [] as string[],
+    keywords: [] as string[], enrichmentDepth: "standard"
   });
   const [seqForm, setSeqForm] = useState({ name: "", targetPersona: "", product: "ARGILETTE CRM", tone: "professional", steps: 5 });
   const [orgForm, setOrgForm] = useState({ company: "", domain: "", focusDepartment: "" });
@@ -100,7 +101,7 @@ export default function IntelligencePage() {
       actions={
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={() => setEmailFinderModal(true)}><Mail size={14} /> Email Finder</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => setOrgForm({ company: "", domain: "", focusDepartment: "" })}><Users size={14} onClick={() => setOrgModal(true)} /> Org Chart</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => { setOrgForm({ company: "", domain: "", focusDepartment: "" }); setOrgModal(true); }}><Users size={14} /> Org Chart</button>
           <button className="btn btn-primary btn-sm" onClick={() => setSearchModal(true)}><Zap size={14} /> Find Prospects</button>
         </div>
       }
@@ -233,7 +234,7 @@ export default function IntelligencePage() {
             </div>
             <button className="btn btn-primary btn-sm" onClick={async () => {
               const val = (document.getElementById("enrich-domain-input") as HTMLInputElement)?.value?.trim();
-              if (!val) { alert("Please enter a company domain or name to enrich."); return; }
+              if (!val) { toast.warning("Please enter a company domain or name to enrich."); return; }
               const isDomain = val.includes(".");
               await apiRequest("POST", "/api/intelligence/companies/enrich", isDomain ? { domain: val } : { name: val });
               qc.invalidateQueries({ queryKey: ["/api/intelligence/companies"] });

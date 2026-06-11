@@ -364,7 +364,7 @@ export default function AgentsPage() {
 
                 {/* Input */}
                 <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
-                  {agentError && <div style={{ marginBottom: 12 }}><UpgradeBanner error={agentError} onDismiss={() => setAgentError(null)} /></div>}
+                  {agentError ? <div style={{ marginBottom: 12 }}><UpgradeBanner error={agentError} onDismiss={() => setAgentError(null)} /></div> : null}
                   <div style={{ display: "flex", gap: 10, background: "var(--bg-overlay)", borderRadius: 12, padding: "8px 12px", border: "1px solid var(--border)" }}>
                     <textarea
                       value={input}

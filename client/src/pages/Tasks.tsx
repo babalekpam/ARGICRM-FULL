@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "../components/Layout";
 import { Modal, FormRow, Select, Empty, Badge, Avatar, Loader } from "../components/UI";
+import { confirmDialog } from "../components/Toast";
 import { apiRequest } from "../lib/api";
 import { useLanguage } from "../contexts/LanguageContext";
 import { CheckSquare, Plus, Trash2, Edit, Building2, Megaphone, FileText, Settings as SettingsIcon, Users, Home, Check, AlertCircle } from "lucide-react";
@@ -69,7 +70,7 @@ export function TasksPage() {
           </div>
           <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
             <button className="btn btn-ghost btn-sm" style={{ padding: 4 }} onClick={() => openEdit(t)}><Edit size={13} /></button>
-            <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} onClick={() => { if (confirm("Delete task?")) delMut.mutate(t.id); }}><Trash2 size={13} /></button>
+            <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444" }} onClick={async () => { if (await confirmDialog({ title: "Delete task?", message: `Delete "${t.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(t.id); }}><Trash2 size={13} /></button>
           </div>
         </div>
       </div>
@@ -160,7 +161,7 @@ export function AccountsPage() {
                   </div>
                   <div style={{ display: "flex", gap: 2 }}>
                     <button className="btn btn-ghost btn-sm" style={{ padding: 5 }} onClick={() => openEdit(a)}><Edit size={13} /></button>
-                    <button className="btn btn-ghost btn-sm" style={{ padding: 5, color: "#ef4444" }} onClick={() => { if (confirm("Delete account?")) delMut.mutate(a.id); }}><Trash2 size={13} /></button>
+                    <button className="btn btn-ghost btn-sm" style={{ padding: 5, color: "#ef4444" }} onClick={async () => { if (await confirmDialog({ title: "Delete account?", message: `Delete "${a.name}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) delMut.mutate(a.id); }}><Trash2 size={13} /></button>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
