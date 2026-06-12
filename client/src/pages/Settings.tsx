@@ -204,16 +204,16 @@ export default function SettingsPage() {
 
           {tab==="organization"&&(
             <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-              <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Organization Settings</div>
-              <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:24}}>Manage your workspace configuration</div>
+              <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>{t("settings_org_heading", "Organization Settings")}</div>
+              <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:24}}>{t("settings_org_sub", "Manage your workspace configuration")}</div>
               <form onSubmit={submitOrg} style={{display:"flex",flexDirection:"column",gap:14}}>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-                  {inp("Workspace Name",org.name,v=>setOrg(p=>({...p,name:v})),"text",false,"My Company")}
-                  {inp("Domain / Subdomain",org.domain,()=>{},"text",true)}
+                  {inp(t("settings_workspace_name","Workspace Name"),org.name,v=>setOrg(p=>({...p,name:v})),"text",false,t("settings_workspace_ph","My Company"))}
+                  {inp(t("settings_domain","Domain / Subdomain"),org.domain,()=>{},"text",true)}
                 </div>
                 <div style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"12px 16px",display:"flex",gap:10,alignItems:"flex-start"}}>
                   <Shield size={14} style={{color:"var(--text-muted)",marginTop:1,flexShrink:0}}/>
-                  <div style={{fontSize:12,color:"var(--text-muted)"}}>To change your domain or plan, contact us at info@argilette.com</div>
+                  <div style={{fontSize:12,color:"var(--text-muted)"}}>{t("settings_domain_note","To change your domain or plan, contact us at info@argilette.com")}</div>
                 </div>
                 <div style={{display:"flex",justifyContent:"flex-end"}}><SaveButton loading={updateOrg.isPending} saved={orgSaved}/></div>
               </form>
@@ -223,30 +223,30 @@ export default function SettingsPage() {
           {tab==="security"&&(
             <div style={{display:"flex",flexDirection:"column",gap:16}}>
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Change Password</div>
-                <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:24}}>Use a strong, unique password</div>
+                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>{t("change_password","Change Password")}</div>
+                <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:24}}>{t("settings_pwd_sub","Use a strong, unique password")}</div>
                 {pwdError&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#f87171",marginBottom:16,display:"flex",gap:8,alignItems:"center"}}><AlertCircle size={14}/>{pwdError}</div>}
-                {pwdOk&&<div style={{background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#4ade80",marginBottom:16,display:"flex",gap:8,alignItems:"center"}}><CheckCircle size={14}/>Password changed successfully!</div>}
+                {pwdOk&&<div style={{background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#4ade80",marginBottom:16,display:"flex",gap:8,alignItems:"center"}}><CheckCircle size={14}/>{t("settings_pwd_changed","Password changed successfully!")}</div>}
                 <form onSubmit={submitPwd} style={{display:"flex",flexDirection:"column",gap:14}}>
-                  {[{l:"Current Password",k:"current" as const},{l:"New Password",k:"next" as const},{l:"Confirm New Password",k:"confirm" as const}].map(f=>(
+                  {[{l:t("current_password","Current Password"),k:"current" as const},{l:t("new_password","New Password"),k:"next" as const},{l:t("settings_confirm_new_pwd","Confirm New Password"),k:"confirm" as const}].map(f=>(
                     <div key={f.k}>
                       <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{f.l}</label>
                       <div style={{position:"relative"}}>
                         <input data-testid={`input-${f.k}-password`} value={pwd[f.k]} onChange={e=>setPwd(p=>({...p,[f.k]:e.target.value}))} type={(f.k!=="confirm"&&showPwd[f.k as "current"|"next"])?"text":"password"} required style={{width:"100%",padding:"9px 36px 9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                         {f.k!=="confirm"&&<button type="button" onClick={()=>setShowPwd(p=>({...p,[f.k]:!p[f.k as "current"|"next"]}))} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex"}}>{showPwd[f.k as "current"|"next"]?<EyeOff size={14}/>:<Eye size={14}/>}</button>}
                       </div>
-                      {f.k==="next"&&pwd.next.length>0&&pwd.next.length<8&&<div style={{fontSize:11,color:"#f59e0b",marginTop:4}}>At least 8 characters required</div>}
+                      {f.k==="next"&&pwd.next.length>0&&pwd.next.length<8&&<div style={{fontSize:11,color:"#f59e0b",marginTop:4}}>{t("settings_pwd_min_chars","At least 8 characters required")}</div>}
                     </div>
                   ))}
-                  <div style={{display:"flex",justifyContent:"flex-end"}}><button type="submit" disabled={changePwd.isPending} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{changePwd.isPending?"Updating…":"Update Password"}</button></div>
+                  <div style={{display:"flex",justifyContent:"flex-end"}}><button type="submit" disabled={changePwd.isPending} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{changePwd.isPending ? t("settings_updating_pwd","Updating…") : t("settings_update_pwd","Update Password")}</button></div>
                 </form>
               </div>
 
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Login Sessions</div>
-                <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:16}}>Your account security information</div>
+                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>{t("settings_login_sessions","Login Sessions")}</div>
+                <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:16}}>{t("settings_login_sessions_sub","Your account security information")}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  {[{l:"Last login",v:user?.lastLoginAt?new Date(user.lastLoginAt).toLocaleString():"Never"},{l:"Email verified",v:user?.emailVerified?"Yes":"No"},{l:"Account role",v:user?.role?.replace("_"," ")}].map(f=>(
+                  {[{l:t("settings_last_login","Last login"),v:user?.lastLoginAt?new Date(user.lastLoginAt).toLocaleString():t("settings_never","Never")},{l:t("settings_email_verified","Email verified"),v:user?.emailVerified?t("yes","Yes"):t("no","No")},{l:t("settings_account_role","Account role"),v:user?.role?.replace("_"," ")}].map(f=>(
                     <div key={f.l} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
                       <span style={{fontSize:13,color:"var(--text-secondary)"}}>{f.l}</span>
                       <span style={{fontSize:13,fontWeight:500}}>{f.v}</span>
@@ -259,16 +259,16 @@ export default function SettingsPage() {
 
           {tab==="notifications"&&(
             <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-              <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Notification Preferences</div>
-              <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:24}}>Choose which updates you receive</div>
+              <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>{t("settings_notif_heading","Notification Preferences")}</div>
+              <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:24}}>{t("settings_notif_sub","Choose which updates you receive")}</div>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 {[
-                  {k:"emailAlerts" as const,l:"Email Alerts",d:"Receive important account notifications via email"},
-                  {k:"dealUpdates" as const,l:"Deal Updates",d:"Get notified when deals change stage"},
-                  {k:"taskReminders" as const,l:"Task Reminders",d:"Receive reminders for upcoming and overdue tasks"},
-                  {k:"newLeads" as const,l:"New Leads",d:"Notifications when new leads are added"},
-                  {k:"weeklyReport" as const,l:"Weekly Summary Report",d:"Receive a weekly digest of your CRM activity"},
-                  {k:"systemAlerts" as const,l:"System Alerts",d:"Platform maintenance and security notifications"},
+                  {k:"emailAlerts" as const,l:t("settings_notif_email_alerts","Email Alerts"),d:t("settings_notif_email_alerts_desc","Receive important account notifications via email")},
+                  {k:"dealUpdates" as const,l:t("settings_notif_deal_updates","Deal Updates"),d:t("settings_notif_deal_updates_desc","Get notified when deals change stage")},
+                  {k:"taskReminders" as const,l:t("settings_notif_task_reminders","Task Reminders"),d:t("settings_notif_task_reminders_desc","Receive reminders for upcoming and overdue tasks")},
+                  {k:"newLeads" as const,l:t("settings_notif_new_leads","New Leads"),d:t("settings_notif_new_leads_desc","Notifications when new leads are added")},
+                  {k:"weeklyReport" as const,l:t("settings_notif_weekly_report","Weekly Summary Report"),d:t("settings_notif_weekly_report_desc","Receive a weekly digest of your CRM activity")},
+                  {k:"systemAlerts" as const,l:t("settings_notif_system_alerts","System Alerts"),d:t("settings_notif_system_alerts_desc","Platform maintenance and security notifications")},
                 ].map(f=>(
                   <div key={f.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 0",borderBottom:"1px solid var(--border)"}}>
                     <div><div style={{fontSize:13,fontWeight:600}}>{f.l}</div><div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{f.d}</div></div>
@@ -279,7 +279,7 @@ export default function SettingsPage() {
                 ))}
               </div>
               <div style={{display:"flex",justifyContent:"flex-end",marginTop:20}}>
-                <button onClick={()=>{}} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}><CheckCircle size={14}/>Save Preferences</button>
+                <button onClick={()=>{}} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}><CheckCircle size={14}/>{t("settings_save_preferences","Save Preferences")}</button>
               </div>
             </div>
           )}
@@ -293,42 +293,42 @@ export default function SettingsPage() {
                   <Paintbrush size={20} color="#fff"/>
                 </div>
                 <div>
-                  <div style={{fontSize:15,fontWeight:700,marginBottom:3}}>White Label Branding</div>
-                  <div style={{fontSize:13,color:"var(--text-muted)"}}>Replace ARGILETTE branding with your own. Your clients will only see your logo, colors and company name.</div>
+                  <div style={{fontSize:15,fontWeight:700,marginBottom:3}}>{t("settings_wl_heading","White Label Branding")}</div>
+                  <div style={{fontSize:13,color:"var(--text-muted)"}}>{t("settings_wl_sub","Replace ARGILETTE branding with your own. Your clients will only see your logo, colors and company name.")}</div>
                 </div>
               </div>
 
               {/* Identity */}
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-                <div style={{fontSize:14,fontWeight:700,marginBottom:4}}>Brand Identity</div>
-                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20}}>These details replace all ARGILETTE references in the platform</div>
+                <div style={{fontSize:14,fontWeight:700,marginBottom:4}}>{t("settings_brand_identity","Brand Identity")}</div>
+                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20}}>{t("settings_brand_identity_sub","These details replace all ARGILETTE references in the platform")}</div>
                 <form onSubmit={submitBrand} style={{display:"flex",flexDirection:"column",gap:14}}>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-                    {inp("Company Name",brand.companyName,v=>setBrand(p=>({...p,companyName:v})),"text",false,"Acme Corp")}
-                    {inp("Support Email",brand.supportEmail,v=>setBrand(p=>({...p,supportEmail:v})),"email",false,"support@yourcompany.com")}
-                    {inp("Logo URL",brand.logoUrl,v=>setBrand(p=>({...p,logoUrl:v})),"url",false,"https://yourcompany.com/logo.png")}
-                    {inp("Favicon URL",brand.faviconUrl,v=>setBrand(p=>({...p,faviconUrl:v})),"url",false,"https://yourcompany.com/favicon.ico")}
+                    {inp(t("company","Company Name"),brand.companyName,v=>setBrand(p=>({...p,companyName:v})),"text",false,"Acme Corp")}
+                    {inp(t("settings_support_email","Support Email"),brand.supportEmail,v=>setBrand(p=>({...p,supportEmail:v})),"email",false,"support@yourcompany.com")}
+                    {inp(t("logo_url","Logo URL"),brand.logoUrl,v=>setBrand(p=>({...p,logoUrl:v})),"url",false,"https://yourcompany.com/logo.png")}
+                    {inp(t("settings_favicon_url","Favicon URL"),brand.faviconUrl,v=>setBrand(p=>({...p,faviconUrl:v})),"url",false,"https://yourcompany.com/favicon.ico")}
                   </div>
 
                   {/* Logo preview */}
                   {brand.logoUrl&&(
                     <div style={{padding:"14px 16px",background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,display:"flex",alignItems:"center",gap:12}}>
                       <img src={brand.logoUrl} alt="Logo preview" style={{height:36,maxWidth:160,objectFit:"contain"}} onError={e=>(e.currentTarget.style.display="none")}/>
-                      <span style={{fontSize:12,color:"var(--text-muted)"}}>Logo preview</span>
+                      <span style={{fontSize:12,color:"var(--text-muted)"}}>{t("settings_logo_preview","Logo preview")}</span>
                     </div>
                   )}
 
                   {/* Colour pickers */}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                     <div>
-                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:8,color:"var(--text-secondary)"}}>Primary Colour</label>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:8,color:"var(--text-secondary)"}}>{t("settings_primary_color","Primary Colour")}</label>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         <input type="color" value={brand.primaryColor} onChange={e=>setBrand(p=>({...p,primaryColor:e.target.value}))} data-testid="input-primary-color" style={{width:40,height:36,padding:2,border:"1px solid var(--border)",borderRadius:6,background:"var(--bg)",cursor:"pointer"}}/>
                         <input value={brand.primaryColor} onChange={e=>setBrand(p=>({...p,primaryColor:e.target.value}))} placeholder="#6366f1" style={{flex:1,padding:"8px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",fontFamily:"monospace"}}/>
                       </div>
                     </div>
                     <div>
-                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:8,color:"var(--text-secondary)"}}>Secondary Colour</label>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:8,color:"var(--text-secondary)"}}>{t("settings_secondary_color","Secondary Colour")}</label>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         <input type="color" value={brand.secondaryColor} onChange={e=>setBrand(p=>({...p,secondaryColor:e.target.value}))} data-testid="input-secondary-color" style={{width:40,height:36,padding:2,border:"1px solid var(--border)",borderRadius:6,background:"var(--bg)",cursor:"pointer"}}/>
                         <input value={brand.secondaryColor} onChange={e=>setBrand(p=>({...p,secondaryColor:e.target.value}))} placeholder="#8b5cf6" style={{flex:1,padding:"8px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",fontFamily:"monospace"}}/>
@@ -340,7 +340,7 @@ export default function SettingsPage() {
                   <div style={{display:"flex",gap:8,alignItems:"center",padding:"12px 16px",background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8}}>
                     <div style={{width:32,height:32,borderRadius:8,background:`linear-gradient(135deg,${brand.primaryColor},${brand.secondaryColor})`}}/>
                     <div>
-                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-primary)"}}>Live preview</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-primary)"}}>{t("settings_live_preview","Live preview")}</div>
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>{brand.primaryColor} → {brand.secondaryColor}</div>
                     </div>
                     <div style={{marginLeft:"auto",display:"flex",gap:6}}>
@@ -351,17 +351,17 @@ export default function SettingsPage() {
 
                   {/* Custom domain */}
                   <div>
-                    <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Custom Domain</label>
+                    <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_custom_domain","Custom Domain")}</label>
                     <div style={{position:"relative"}}>
                       <Globe size={14} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"var(--text-muted)"}}/>
                       <input value={brand.customDomain} onChange={e=>setBrand(p=>({...p,customDomain:e.target.value}))} placeholder="crm.yourcompany.com" style={{width:"100%",padding:"9px 12px 9px 30px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                     </div>
-                    <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>Point this CNAME to your Replit deployment URL, then enter it here</div>
+                    <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>{t("settings_custom_domain_hint","Point this CNAME to your Replit deployment URL, then enter it here")}</div>
                   </div>
 
                   <div style={{background:"rgba(99,102,241,0.06)",border:"1px solid rgba(99,102,241,0.15)",borderRadius:8,padding:"12px 16px",display:"flex",gap:10,alignItems:"flex-start"}}>
                     <ExternalLink size={13} style={{color:"#818cf8",marginTop:1,flexShrink:0}}/>
-                    <div style={{fontSize:12,color:"var(--text-muted)"}}>Changes take effect immediately for all users in your workspace. Your clients will see your brand on every page, email, and report.</div>
+                    <div style={{fontSize:12,color:"var(--text-muted)"}}>{t("settings_brand_effect_note","Changes take effect immediately for all users in your workspace. Your clients will see your brand on every page, email, and report.")}</div>
                   </div>
 
                   <div style={{display:"flex",justifyContent:"flex-end"}}>
@@ -372,17 +372,17 @@ export default function SettingsPage() {
 
               {/* What's included */}
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-                <div style={{fontSize:14,fontWeight:700,marginBottom:16}}>What gets white-labelled</div>
+                <div style={{fontSize:14,fontWeight:700,marginBottom:16}}>{t("settings_wl_what_included","What gets white-labelled")}</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                   {[
-                    {label:"App logo & favicon",done:true},
-                    {label:"Browser tab title",done:true},
-                    {label:"Brand colours (buttons, highlights)",done:true},
-                    {label:"Email templates (from name)",done:true},
-                    {label:"Custom domain (CNAME)",done:true},
-                    {label:"Support email address",done:true},
-                    {label:"PDF reports & invoices",done:false},
-                    {label:"Mobile app icons",done:false},
+                    {label:t("settings_wl_item_logo","App logo & favicon"),done:true},
+                    {label:t("settings_wl_item_tab","Browser tab title"),done:true},
+                    {label:t("settings_wl_item_colors","Brand colours (buttons, highlights)"),done:true},
+                    {label:t("settings_wl_item_emails","Email templates (from name)"),done:true},
+                    {label:t("settings_wl_item_domain","Custom domain (CNAME)"),done:true},
+                    {label:t("settings_wl_item_support","Support email address"),done:true},
+                    {label:t("settings_wl_item_pdf","PDF reports & invoices"),done:false},
+                    {label:t("settings_wl_item_mobile","Mobile app icons"),done:false},
                   ].map(item=>(
                     <div key={item.label} style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>
                       <div style={{width:18,height:18,borderRadius:"50%",background:item.done?"rgba(34,197,94,0.15)":"rgba(107,114,128,0.1)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
