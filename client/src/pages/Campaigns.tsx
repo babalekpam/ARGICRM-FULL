@@ -77,10 +77,15 @@ export default function CampaignsPage() {
 
   return (
     <Layout title={t("campaigns_title")} subtitle={`${filtered.length} ${t("nav_campaigns").toLowerCase()}`} actions={
-      <button data-testid="button-add-campaign" onClick={()=>open()} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}><Plus size={14}/>New Campaign</button>
+      <button data-testid="button-add-campaign" onClick={()=>open()} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}><Plus size={14}/>{t("create_campaign")}</button>
     }>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {[{l:"Total Campaigns",v:campaigns.length,I:Megaphone,c:"#6366f1"},{l:"Active",v:active,I:TrendingUp,c:"#22c55e"},{l:"Total Budget",v:`$${totalBudget.toLocaleString()}`,I:DollarSign,c:"#f59e0b"},{l:"Total Spent",v:`$${totalSpent.toLocaleString()}`,I:Target,c:"#3b82f6"}].map(s=>(
+        {[
+          {l:t("campaigns_stat_total","Total Campaigns"),v:campaigns.length,I:Megaphone,c:"#6366f1"},
+          {l:t("active"),v:active,I:TrendingUp,c:"#22c55e"},
+          {l:t("campaigns_stat_budget","Total Budget"),v:`$${totalBudget.toLocaleString()}`,I:DollarSign,c:"#f59e0b"},
+          {l:t("campaigns_stat_spent","Total Spent"),v:`$${totalSpent.toLocaleString()}`,I:Target,c:"#3b82f6"}
+        ].map(s=>(
           <div key={s.l} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"14px 16px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div><div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{s.l}</div><div style={{fontSize:22,fontWeight:700}}>{s.v}</div></div><div style={{background:`${s.c}20`,borderRadius:8,padding:8}}><s.I size={16} style={{color:s.c}}/></div></div>
           </div>
@@ -88,8 +93,11 @@ export default function CampaignsPage() {
       </div>
 
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
-        <div style={{flex:1,minWidth:200,position:"relative"}}><Search size={14} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"var(--text-muted)"}}/><input data-testid="input-search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search campaigns…" style={{width:"100%",paddingLeft:32,paddingRight:12,paddingTop:8,paddingBottom:8,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
-        {[{v:tf,sv:setTf,opts:["all",...TYPES],label:"All Types"},{v:sf,sv:setSf,opts:["all",...STATUSES],label:"All Statuses"}].map((s,i)=>(
+        <div style={{flex:1,minWidth:200,position:"relative"}}><Search size={14} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"var(--text-muted)"}}/><input data-testid="input-search" value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("campaigns_search_ph","Search campaigns…")} style={{width:"100%",paddingLeft:32,paddingRight:12,paddingTop:8,paddingBottom:8,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+        {[
+          {v:tf,sv:setTf,opts:["all",...TYPES],label:t("campaigns_all_types","All Types")},
+          {v:sf,sv:setSf,opts:["all",...STATUSES],label:t("campaigns_all_statuses","All Statuses")}
+        ].map((s,i)=>(
           <div key={i} style={{position:"relative"}}>
             <select value={s.v} onChange={e=>s.sv(e.target.value)} style={{paddingLeft:12,paddingRight:28,paddingTop:8,paddingBottom:8,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none",cursor:"pointer"}}>
               {s.opts.map(o=><option key={o} value={o}>{o==="all"?s.label:o[0].toUpperCase()+o.slice(1).replace("_"," ")}</option>)}
@@ -100,11 +108,13 @@ export default function CampaignsPage() {
       </div>
 
       <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,overflow:"hidden"}}>
-        {isLoading?<div style={{padding:48,textAlign:"center",color:"var(--text-muted)"}}>Loading…</div>:filtered.length===0?(
-          <div style={{padding:64,textAlign:"center"}}><Megaphone size={36} style={{color:"var(--text-muted)",marginBottom:12,opacity:0.4}}/><div style={{fontSize:15,fontWeight:600,marginBottom:6}}>No campaigns found</div><div style={{fontSize:13,color:"var(--text-muted)",marginBottom:16}}>{search?"Try a different search":"Launch your first campaign"}</div>{!search&&<button onClick={()=>open()} style={{background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,cursor:"pointer",fontWeight:600}}>New Campaign</button>}</div>
+        {isLoading?<div style={{padding:48,textAlign:"center",color:"var(--text-muted)"}}>{t("loading")}</div>:filtered.length===0?(
+          <div style={{padding:64,textAlign:"center"}}><Megaphone size={36} style={{color:"var(--text-muted)",marginBottom:12,opacity:0.4}}/><div style={{fontSize:15,fontWeight:600,marginBottom:6}}>{t("campaigns_empty_title","No campaigns found")}</div><div style={{fontSize:13,color:"var(--text-muted)",marginBottom:16}}>{search?t("campaigns_empty_search","Try a different search"):t("campaigns_empty_desc")}</div>{!search&&<button onClick={()=>open()} style={{background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("create_campaign")}</button>}</div>
         ):(
           <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead><tr style={{borderBottom:"1px solid var(--border)",background:"var(--bg-overlay)"}}>{["Campaign","Type","Status","Budget","Spent","Dates",""].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+            <thead><tr style={{borderBottom:"1px solid var(--border)",background:"var(--bg-overlay)"}}>
+              {[t("campaign_name"),t("type"),t("status"),t("campaign_budget"),t("campaigns_col_spent","Spent"),t("date"),t("actions")].map(h=><th key={h} style={th}>{h}</th>)}
+            </tr></thead>
             <tbody>
               {filtered.map((c:any,i:number)=>(
                 <tr key={c.id} data-testid={`row-campaign-${c.id}`} style={{borderBottom:i<filtered.length-1?"1px solid var(--border)":"none",cursor:"pointer",transition:"background 0.15s"}} onMouseEnter={e=>(e.currentTarget.style.background="var(--bg-overlay)")} onMouseLeave={e=>(e.currentTarget.style.background="transparent")} onClick={()=>setSel(c)}>
@@ -121,8 +131,8 @@ export default function CampaignsPage() {
                   <td style={{padding:"12px 14px",fontSize:12,color:"var(--text-muted)"}}>{c.startDate?new Date(c.startDate).toLocaleDateString():"—"}{c.endDate&&<> → {new Date(c.endDate).toLocaleDateString()}</>}</td>
                   <td style={{padding:"12px 14px"}} onClick={e=>e.stopPropagation()}>
                     <div style={{display:"flex",gap:4}}>
-                      <button data-testid={`button-edit-${c.id}`} onClick={()=>open(c)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:5,borderRadius:6,display:"flex"}}><Edit2 size={13}/></button>
-                      <button data-testid={`button-delete-${c.id}`} onClick={()=>setDel(c.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",padding:5,borderRadius:6,display:"flex"}}><Trash2 size={13}/></button>
+                      <button data-testid={`button-edit-${c.id}`} onClick={()=>open(c)} title={t("edit")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:5,borderRadius:6,display:"flex"}}><Edit2 size={13}/></button>
+                      <button data-testid={`button-delete-${c.id}`} onClick={()=>setDel(c.id)} title={t("delete")} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",padding:5,borderRadius:6,display:"flex"}}><Trash2 size={13}/></button>
                     </div>
                   </td>
                 </tr>
@@ -134,42 +144,50 @@ export default function CampaignsPage() {
 
       {sel&&(
         <div style={{position:"fixed",right:0,top:0,bottom:0,width:340,background:"var(--bg-card)",borderLeft:"1px solid var(--border)",zIndex:50,overflowY:"auto"}}>
-          <div style={{padding:"16px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:15,fontWeight:700}}>Campaign Details</div><button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:4}}><X size={16}/></button></div>
+          <div style={{padding:"16px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:15,fontWeight:700}}>{t("campaigns_details_title","Campaign Details")}</div><button onClick={()=>setSel(null)} aria-label={t("close")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:4}}><X size={16}/></button></div>
           <div style={{padding:20}}>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
               <div style={{width:48,height:48,borderRadius:10,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff"}}><TypeIcon type={sel.type}/></div>
               <div><div style={{fontSize:17,fontWeight:700}}>{sel.name}</div><StatusBadge status={sel.status}/></div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {[{l:"Type",v:sel.type?.replace("_"," ")},{l:"Target Audience",v:sel.targetAudience},{l:"Goals",v:sel.goals},{l:"Budget",v:sel.budget?`$${Number(sel.budget).toLocaleString()}`:null},{l:"Actual Cost",v:sel.actualCost?`$${Number(sel.actualCost).toLocaleString()}`:null},{l:"Start Date",v:sel.startDate?new Date(sel.startDate).toLocaleDateString():null},{l:"End Date",v:sel.endDate?new Date(sel.endDate).toLocaleDateString():null}].filter(f=>f.v).map(f=>(
+              {[
+                {l:t("type"),v:sel.type?.replace("_"," ")},
+                {l:t("campaign_audience"),v:sel.targetAudience},
+                {l:t("campaigns_goals_label","Goals"),v:sel.goals},
+                {l:t("campaign_budget"),v:sel.budget?`$${Number(sel.budget).toLocaleString()}`:null},
+                {l:t("campaigns_actual_cost_label","Actual Cost"),v:sel.actualCost?`$${Number(sel.actualCost).toLocaleString()}`:null},
+                {l:t("campaigns_start_date_label","Start Date"),v:sel.startDate?new Date(sel.startDate).toLocaleDateString():null},
+                {l:t("campaigns_end_date_label","End Date"),v:sel.endDate?new Date(sel.endDate).toLocaleDateString():null}
+              ].filter(f=>f.v).map(f=>(
                 <div key={f.l}><div style={{fontSize:10,color:"var(--text-muted)",marginBottom:2}}>{f.l}</div><div style={{fontSize:13}}>{f.v}</div></div>
               ))}
               {sel.subject&&(
                 <div style={{marginTop:4}}>
-                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>Email Subject</div>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("campaigns_email_subject_label","Email Subject")}</div>
                   <div style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 12px",fontSize:13,fontWeight:600}}>{sel.subject}</div>
                 </div>
               )}
               {sel.content&&(
                 <div style={{marginTop:4}}>
-                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>Email Body</div>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("campaigns_email_body_label","Email Body")}</div>
                   <div style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"12px",fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:280,overflowY:"auto"}}>{sel.content}</div>
                 </div>
               )}
               {!sel.subject&&!sel.content&&sel.type==="email"&&(
-                <div style={{background:"rgba(99,102,241,0.07)",border:"1px dashed rgba(99,102,241,0.3)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--text-muted)"}}>No email content yet. Ask ARIA: "write email content for the [name] campaign"</div>
+                <div style={{background:"rgba(99,102,241,0.07)",border:"1px dashed rgba(99,102,241,0.3)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--text-muted)"}}>{t("campaigns_no_email_content","No email content yet. Ask ARIA: \"write email content for the [name] campaign\"")}</div>
               )}
               {sel.budget&&sel.actualCost&&(
                 <div style={{marginTop:8}}>
-                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>Budget Utilization</div>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t("campaigns_budget_util","Budget Utilization")}</div>
                   <div style={{height:6,background:"var(--bg-overlay)",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",background:"var(--accent)",borderRadius:3,width:`${Math.min(100,Number(sel.actualCost)/Number(sel.budget)*100)}%`}}/></div>
-                  <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>{Math.round(Number(sel.actualCost)/Number(sel.budget)*100)}% used</div>
+                  <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>{Math.round(Number(sel.actualCost)/Number(sel.budget)*100)}% {t("campaigns_used_pct","used")}</div>
                 </div>
               )}
             </div>
             <div style={{display:"flex",gap:8,marginTop:20}}>
-              <button onClick={()=>{open(sel);setSel(null);}} style={{flex:1,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"8px 0",fontSize:13,fontWeight:600,cursor:"pointer"}}>Edit</button>
-              <button onClick={()=>setDel(sel.id)} style={{background:"rgba(239,68,68,0.1)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer"}}>Delete</button>
+              <button onClick={()=>{open(sel);setSel(null);}} style={{flex:1,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"8px 0",fontSize:13,fontWeight:600,cursor:"pointer"}}>{t("edit")}</button>
+              <button onClick={()=>setDel(sel.id)} style={{background:"rgba(239,68,68,0.1)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer"}}>{t("delete")}</button>
             </div>
           </div>
         </div>
@@ -178,8 +196,11 @@ export default function CampaignsPage() {
       {del&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:12,padding:28,maxWidth:380,width:"90%"}}>
-            <div style={{display:"flex",gap:12,marginBottom:16}}><AlertCircle size={20} style={{color:"#ef4444",flexShrink:0,marginTop:2}}/><div><div style={{fontWeight:700,marginBottom:4}}>Delete Campaign?</div><div style={{fontSize:13,color:"var(--text-muted)"}}>This cannot be undone.</div></div></div>
-            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><button onClick={()=>setDel(null)} style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 16px",fontSize:13,cursor:"pointer"}}>Cancel</button><button onClick={()=>rm.mutate(del!)} disabled={rm.isPending} style={{background:"#ef4444",color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{rm.isPending?"Deleting…":"Delete"}</button></div>
+            <div style={{display:"flex",gap:12,marginBottom:16}}><AlertCircle size={20} style={{color:"#ef4444",flexShrink:0,marginTop:2}}/><div><div style={{fontWeight:700,marginBottom:4}}>{t("campaigns_delete_confirm_title","Delete Campaign?")}</div><div style={{fontSize:13,color:"var(--text-muted)"}}>{t("cannot_be_undone")}</div></div></div>
+            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+              <button onClick={()=>setDel(null)} style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 16px",fontSize:13,cursor:"pointer"}}>{t("cancel")}</button>
+              <button onClick={()=>rm.mutate(del!)} disabled={rm.isPending} style={{background:"#ef4444",color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{rm.isPending?t("campaigns_deleting","Deleting…"):t("delete")}</button>
+            </div>
           </div>
         </div>
       )}
@@ -187,32 +208,34 @@ export default function CampaignsPage() {
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
           <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:14,width:"100%",maxWidth:580,maxHeight:"90vh",overflowY:"auto"}}>
-            <div style={{padding:"18px 22px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:16,fontWeight:700}}>{editing?"Edit Campaign":"New Campaign"}</div><button onClick={close} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:4}}><X size={16}/></button></div>
+            <div style={{padding:"18px 22px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:16,fontWeight:700}}>{editing?t("campaigns_edit_title","Edit Campaign"):t("create_campaign")}</div><button onClick={close} aria-label={t("close")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:4}}><X size={16}/></button></div>
             <form onSubmit={submit} style={{padding:"20px 22px"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-                {L("Campaign Name *","name","text",true,true)}
+                {L(`${t("campaign_name")} *`,"name","text",true,true)}
                 <div>
-                  <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Type</label>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("type")}</label>
                   <select value={form.type} onChange={e=>setForm(p=>({...p,type:e.target.value}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>
-                    {TYPES.map(t=><option key={t} value={t}>{t[0].toUpperCase()+t.slice(1).replace("_"," ")}</option>)}
+                    {TYPES.map(tp=><option key={tp} value={tp}>{tp[0].toUpperCase()+tp.slice(1).replace("_"," ")}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Status</label>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("status")}</label>
                   <select value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>
                     {STATUSES.map(s=><option key={s} value={s}>{s[0].toUpperCase()+s.slice(1)}</option>)}
                   </select>
                 </div>
-                {L("Budget ($)","budget","number")}
-                {L("Actual Cost ($)","actualCost","number")}
-                {L("Start Date","startDate","date")}
-                {L("End Date","endDate","date")}
-                <div style={{gridColumn:"1/-1"}}><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Target Audience</label><input value={form.targetAudience} onChange={e=>setForm(p=>({...p,targetAudience:e.target.value}))} placeholder="e.g. SMB decision makers, 50-200 employees" style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
-                <div style={{gridColumn:"1/-1"}}><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Goals</label><textarea value={form.goals} onChange={e=>setForm(p=>({...p,goals:e.target.value}))} rows={2} placeholder="e.g. Generate 50 qualified leads, increase brand awareness" style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",resize:"vertical",boxSizing:"border-box"}}/></div>
+                {L(`${t("campaign_budget")} ($)`,"budget","number")}
+                {L(`${t("campaigns_actual_cost_label","Actual Cost")} ($)`,"actualCost","number")}
+                {L(t("campaigns_start_date_label","Start Date"),"startDate","date")}
+                {L(t("campaigns_end_date_label","End Date"),"endDate","date")}
+                <div style={{gridColumn:"1/-1"}}><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("campaign_audience")}</label><input value={form.targetAudience} onChange={e=>setForm(p=>({...p,targetAudience:e.target.value}))} placeholder={t("campaigns_audience_ph","e.g. SMB decision makers, 50-200 employees")} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+                <div style={{gridColumn:"1/-1"}}><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("campaigns_goals_label","Goals")}</label><textarea value={form.goals} onChange={e=>setForm(p=>({...p,goals:e.target.value}))} rows={2} placeholder={t("campaigns_goals_ph","e.g. Generate 50 qualified leads, increase brand awareness")} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",resize:"vertical",boxSizing:"border-box"}}/></div>
               </div>
               <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-                <button type="button" onClick={close} style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"9px 18px",fontSize:13,cursor:"pointer"}}>Cancel</button>
-                <button data-testid="button-submit-campaign" type="submit" disabled={create.isPending||upd.isPending} style={{background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{create.isPending||upd.isPending?"Saving…":editing?"Save Changes":"Launch Campaign"}</button>
+                <button type="button" onClick={close} style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"9px 18px",fontSize:13,cursor:"pointer"}}>{t("cancel")}</button>
+                <button data-testid="button-submit-campaign" type="submit" disabled={create.isPending||upd.isPending} style={{background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                  {create.isPending||upd.isPending ? t("campaigns_saving","Saving…") : editing ? t("save_changes") : t("campaigns_launch_btn","Launch Campaign")}
+                </button>
               </div>
             </form>
           </div>

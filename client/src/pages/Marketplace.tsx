@@ -47,6 +47,7 @@ const SOURCE_LABELS: Record<string, string> = {
 // ── Sub-components ─────────────────────────────────────────────────
 
 function QuotaMeter({ used, quota }: { used: number; quota: number }) {
+  const { t } = useLanguage();
   const isUnlimited = quota === -1;
   const pct = isUnlimited ? 0 : Math.min(100, (used / quota) * 100);
   const color = pct >= 90 ? "#ef4444" : pct >= 70 ? "#f59e0b" : "#10b981";
@@ -54,9 +55,9 @@ function QuotaMeter({ used, quota }: { used: number; quota: number }) {
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
       <div style={{ flex: 1, minWidth: 180 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "var(--text-muted)" }}>
-          <span style={{ fontWeight: 600 }}>Monthly Export Quota</span>
+          <span style={{ fontWeight: 600 }}>{t("market_monthly_quota", "Monthly Export Quota")}</span>
           <span style={{ fontWeight: 700, color }}>
-            {isUnlimited ? "Unlimited" : `${used} / ${quota}`}
+            {isUnlimited ? t("unlimited", "Unlimited") : `${used} / ${quota}`}
           </span>
         </div>
         {!isUnlimited && (
@@ -68,7 +69,7 @@ function QuotaMeter({ used, quota }: { used: number; quota: number }) {
       {!isUnlimited && (
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 20, fontWeight: 700, color }}>{Math.max(0, quota - used)}</div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>remaining</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("market_remaining", "remaining")}</div>
         </div>
       )}
     </div>
@@ -107,6 +108,7 @@ function QualityDot({ score }: { score: number }) {
 function LeadCard({ lead, selected, onToggle, canExport }: {
   lead: any; selected: boolean; onToggle: () => void; canExport: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <div
       onClick={canExport ? onToggle : undefined}
@@ -163,7 +165,7 @@ function LeadCard({ lead, selected, onToggle, canExport }: {
 
       {lead.blurred && (
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--text-muted)" }}>
-          <Lock size={12} /> Export to unlock
+          <Lock size={12} /> {t("market_export_to_unlock", "Export to unlock")}
         </div>
       )}
     </div>
@@ -172,6 +174,7 @@ function LeadCard({ lead, selected, onToggle, canExport }: {
 
 // ── Admin Panel ─────────────────────────────────────────────────────
 function AdminPanel() {
+  const { t } = useLanguage();
   const { data: adminStats, isLoading } = useQuery<any>({ queryKey: ["/api/marketplace/admin/stats"] });
   const [triggering, setTriggering] = useState<string | null>(null);
   const qc = useQueryClient();
@@ -184,7 +187,7 @@ function AdminPanel() {
     } finally { setTriggering(null); }
   }
 
-  if (isLoading) return <div style={{ padding: 20, color: "var(--text-muted)", fontSize: 13 }}>Loading admin data…</div>;
+  if (isLoading) return <div style={{ padding: 20, color: "var(--text-muted)", fontSize: 13 }}>{t("loading", "Loading...")} </div>;
 
   const logs: any[] = adminStats?.recentLogs || [];
 
@@ -193,11 +196,11 @@ function AdminPanel() {
       {/* Overview cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
         {[
-          { label: "Total Leads", value: adminStats?.totalLeads?.toLocaleString() || "0", color: "#6366f1", icon: Store },
-          { label: "US Leads", value: adminStats?.byMarket?.find((m: any) => m.market === "US")?.count?.toLocaleString() || "0", color: "#3b82f6", icon: Globe },
-          { label: "Africa Leads", value: adminStats?.byMarket?.find((m: any) => m.market === "Africa")?.count?.toLocaleString() || "0", color: "#10b981", icon: Globe },
-          { label: "Total Exports", value: adminStats?.totalExports?.toLocaleString() || "0", color: "#f59e0b", icon: Download },
-          { label: "Low Quality", value: adminStats?.lowQualityLeads?.toLocaleString() || "0", color: "#ef4444", icon: AlertCircle },
+          { label: t("market_total_leads", "Total Leads"), value: adminStats?.totalLeads?.toLocaleString() || "0", color: "#6366f1", icon: Store },
+          { label: t("market_us_leads", "US Leads"), value: adminStats?.byMarket?.find((m: any) => m.market === "US")?.count?.toLocaleString() || "0", color: "#3b82f6", icon: Globe },
+          { label: t("market_africa_leads", "Africa Leads"), value: adminStats?.byMarket?.find((m: any) => m.market === "Africa")?.count?.toLocaleString() || "0", color: "#10b981", icon: Globe },
+          { label: t("market_total_exports", "Total Exports"), value: adminStats?.totalExports?.toLocaleString() || "0", color: "#f59e0b", icon: Download },
+          { label: t("market_low_quality", "Low Quality"), value: adminStats?.lowQualityLeads?.toLocaleString() || "0", color: "#ef4444", icon: AlertCircle },
         ].map(({ label, value, color, icon: Icon }) => (
           <div key={label} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
             <Icon size={16} style={{ color, marginBottom: 8 }} />
@@ -209,7 +212,7 @@ function AdminPanel() {
 
       {/* Source breakdown + manual triggers */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Data Sources</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>{t("leadgen_data_sources", "Data Sources")}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             { key: "npi", label: "NPI Registry (US Healthcare)" },
@@ -221,14 +224,14 @@ function AdminPanel() {
               <div key={key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: "var(--bg-overlay)", borderRadius: 8 }}>
                 <SourceBadge source={key} />
                 <span style={{ flex: 1, fontSize: 13 }}>{label}</span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)", marginRight: 8 }}>{srcData?.count?.toLocaleString() || "0"} records</span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", marginRight: 8 }}>{srcData?.count?.toLocaleString() || "0"} {t("market_records", "records")}</span>
                 <button
                   onClick={() => triggerSource(key)}
                   disabled={triggering !== null || adminStats?.ingestionRunning}
                   data-testid={`btn-trigger-${key}`}
                   style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", background: "#6366f1", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                   {triggering === key ? <RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={12} />}
-                  Run
+                  {t("market_run", "Run")}
                 </button>
               </div>
             );
@@ -240,16 +243,16 @@ function AdminPanel() {
           data-testid="btn-trigger-all"
           style={{ marginTop: 12, width: "100%", padding: "10px 0", background: adminStats?.ingestionRunning ? "var(--bg-overlay)" : "#6366f1", color: adminStats?.ingestionRunning ? "var(--text-muted)" : "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {adminStats?.ingestionRunning
-            ? <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> Ingestion running…</>
-            : <><Zap size={14} /> Run All Sources Now</>}
+            ? <><RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} /> {t("market_ingestion_running", "Ingestion running…")}</>
+            : <><Zap size={14} /> {t("market_run_all_sources", "Run All Sources Now")}</>}
         </button>
       </div>
 
       {/* Ingestion log */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Recent Ingestion Logs</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>{t("market_ingestion_logs", "Recent Ingestion Logs")}</div>
         {logs.length === 0
-          ? <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "20px 0", textAlign: "center" }}>No ingestion logs yet — first run starts 15s after server boot</div>
+          ? <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "20px 0", textAlign: "center" }}>{t("market_no_ingestion_logs", "No ingestion logs yet — first run starts 15s after server boot")}</div>
           : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {logs.map((log: any) => (
@@ -389,16 +392,16 @@ export default function MarketplacePage() {
   }
 
   return (
-    <Layout title="Data Marketplace" subtitle="Verified leads from public sources — included in your plan">
+    <Layout title={t("nav_marketplace", "Data Marketplace")} subtitle={t("market_subtitle", "Verified leads from public sources — included in your plan")}>
       <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1100, margin: "0 auto" }}>
 
         {/* Stats bar */}
         {statsData && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10 }}>
             {[
-              { label: "Total Records", value: Number(statsData.total).toLocaleString(), color: "#6366f1" },
-              { label: "US Records", value: Number(statsData.us).toLocaleString(), color: "#3b82f6" },
-              { label: "Africa Records", value: Number(statsData.africa).toLocaleString(), color: "#10b981" },
+              { label: t("market_total_records", "Total Records"), value: Number(statsData.total).toLocaleString(), color: "#6366f1" },
+              { label: t("market_us_records", "US Records"), value: Number(statsData.us).toLocaleString(), color: "#3b82f6" },
+              { label: t("market_africa_records", "Africa Records"), value: Number(statsData.africa).toLocaleString(), color: "#10b981" },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 16px", textAlign: "center" }}>
                 <div style={{ fontSize: 20, fontWeight: 700, color }}>{value}</div>
@@ -406,7 +409,7 @@ export default function MarketplacePage() {
               </div>
             ))}
             <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 16px", textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Sources Active</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>{t("market_sources_active", "Sources Active")}</div>
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>
                 {(statsData.sources || []).slice(0, 3).map((s: string) => (
                   <span key={s} style={{ fontSize: 9, padding: "2px 6px", background: "rgba(99,102,241,0.1)", color: "#818cf8", borderRadius: 8, fontWeight: 600 }}>{s.split("/")[0]}</span>
@@ -422,13 +425,13 @@ export default function MarketplacePage() {
         {/* Search & filters */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-            <Filter size={16} style={{ color: "#6366f1" }} /> Search & Filter
+            <Filter size={16} style={{ color: "#6366f1" }} /> {t("market_search_filter", "Search & Filter")}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12, marginBottom: 14 }}>
             {/* Market */}
             <div>
-              <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>Market</label>
+              <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>{t("market_filter_market", "Market")}</label>
               <div style={{ display: "flex", gap: 6 }}>
                 {MARKETS.map(m => (
                   <button key={m} onClick={() => setFilter("market", m)} data-testid={`btn-market-${m}`}
@@ -441,7 +444,7 @@ export default function MarketplacePage() {
 
             {/* Industry */}
             <div>
-              <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>Industry</label>
+              <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>{t("account_industry", "Industry")}</label>
               <select value={filters.industry || "All Industries"} onChange={e => setFilter("industry", e.target.value)} data-testid="select-marketplace-industry"
                 style={{ width: "100%", padding: "8px 10px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", fontSize: 12 }}>
                 {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
@@ -450,7 +453,7 @@ export default function MarketplacePage() {
 
             {/* Language */}
             <div>
-              <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>Language</label>
+              <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>{t("language", "Language")}</label>
               <div style={{ display: "flex", gap: 6 }}>
                 {LANGUAGES.map(l => (
                   <button key={l} onClick={() => setFilter("language", l)}
@@ -463,7 +466,7 @@ export default function MarketplacePage() {
 
             {/* Freshness */}
             <div>
-              <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>Data Freshness</label>
+              <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>{t("market_freshness", "Data Freshness")}</label>
               <select value={filters.freshDays} onChange={e => setFilter("freshDays", Number(e.target.value))}
                 style={{ width: "100%", padding: "8px 10px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 7, color: "var(--text-primary)", fontSize: 12 }}>
                 {FRESH_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}

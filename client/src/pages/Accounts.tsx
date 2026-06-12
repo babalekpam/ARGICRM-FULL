@@ -52,10 +52,15 @@ export default function AccountsPage() {
 
   return (
     <Layout title={t("accounts_title")} subtitle={`${filtered.length} ${t("accounts_subtitle")}`} actions={
-      <button data-testid="button-add-account" onClick={()=>open()} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}><Plus size={14}/>New Account</button>
+      <button data-testid="button-add-account" onClick={()=>open()} style={{display:"flex",alignItems:"center",gap:6,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}><Plus size={14}/>{t("accounts_new","New Account")}</button>
     }>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {[{l:"Total Accounts",v:stats.total,I:Building2,c:"#6366f1"},{l:"Active",v:stats.active,I:TrendingUp,c:"#22c55e"},{l:"Annual Revenue",v:`$${(stats.revenue/1e6).toFixed(1)}M`,I:DollarSign,c:"#f59e0b"},{l:"Employees",v:stats.employees.toLocaleString(),I:Users,c:"#3b82f6"}].map(s=>(
+        {[
+          {l:t("accounts_stat_total","Total Accounts"),v:stats.total,I:Building2,c:"#6366f1"},
+          {l:t("active"),v:stats.active,I:TrendingUp,c:"#22c55e"},
+          {l:t("accounts_stat_revenue","Annual Revenue"),v:`$${(stats.revenue/1e6).toFixed(1)}M`,I:DollarSign,c:"#f59e0b"},
+          {l:t("employees"),v:stats.employees.toLocaleString(),I:Users,c:"#3b82f6"}
+        ].map(s=>(
           <div key={s.l} style={cardStyle}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div><div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{s.l}</div><div style={{fontSize:22,fontWeight:700}}>{s.v}</div></div><div style={{background:`${s.c}20`,borderRadius:8,padding:8}}><s.I size={16} style={{color:s.c}}/></div></div></div>
         ))}
       </div>
@@ -63,12 +68,12 @@ export default function AccountsPage() {
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
         <div style={{flex:1,minWidth:200,position:"relative"}}>
           <Search size={14} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"var(--text-muted)"}}/>
-          <input data-testid="input-search-accounts" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search accounts…" style={{width:"100%",paddingLeft:32,paddingRight:12,paddingTop:8,paddingBottom:8,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+          <input data-testid="input-search-accounts" value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("accounts_search_ph","Search accounts…")} style={{width:"100%",paddingLeft:32,paddingRight:12,paddingTop:8,paddingBottom:8,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
         </div>
         <div style={{position:"relative"}}>
           <Filter size={12} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"var(--text-muted)",pointerEvents:"none"}}/>
           <select data-testid="select-status" value={sf} onChange={e=>setSf(e.target.value)} style={{paddingLeft:28,paddingRight:28,paddingTop:8,paddingBottom:8,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none",cursor:"pointer"}}>
-            <option value="all">All Statuses</option>
+            <option value="all">{t("accounts_all_statuses","All Statuses")}</option>
             {STATUSES.map(s=><option key={s} value={s}>{s[0].toUpperCase()+s.slice(1)}</option>)}
           </select>
           <ChevronDown size={12} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",color:"var(--text-muted)",pointerEvents:"none"}}/>
@@ -76,12 +81,12 @@ export default function AccountsPage() {
       </div>
 
       <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,overflow:"hidden"}}>
-        {isLoading?<div style={{padding:48,textAlign:"center",color:"var(--text-muted)"}}>Loading…</div>:filtered.length===0?(
-          <div style={{padding:64,textAlign:"center"}}><Building2 size={36} style={{color:"var(--text-muted)",marginBottom:12,opacity:0.4}}/><div style={{fontSize:15,fontWeight:600,marginBottom:6}}>No accounts found</div><div style={{fontSize:13,color:"var(--text-muted)",marginBottom:16}}>{search?"Try a different search":"Add your first company account"}</div>{!search&&<button onClick={()=>open()} style={{background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,cursor:"pointer",fontWeight:600}}>Add Account</button>}</div>
+        {isLoading?<div style={{padding:48,textAlign:"center",color:"var(--text-muted)"}}>{t("loading")}</div>:filtered.length===0?(
+          <div style={{padding:64,textAlign:"center"}}><Building2 size={36} style={{color:"var(--text-muted)",marginBottom:12,opacity:0.4}}/><div style={{fontSize:15,fontWeight:600,marginBottom:6}}>{t("accounts_empty_title","No accounts found")}</div><div style={{fontSize:13,color:"var(--text-muted)",marginBottom:16}}>{search?t("accounts_empty_search","Try a different search"):t("no_accounts_desc")}</div>{!search&&<button onClick={()=>open()} style={{background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("add_account_btn")}</button>}</div>
         ):(
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid var(--border)",background:"var(--bg-overlay)"}}>
-              {["Company","Industry","Contact","Revenue","Employees","Status",""].map(h=><th key={h} style={th}>{h}</th>)}
+              {[t("company"),t("account_industry"),t("accounts_col_contact","Contact"),t("account_revenue"),t("employees"),t("status"),t("actions")].map(h=><th key={h} style={th}>{h}</th>)}
             </tr></thead>
             <tbody>
               {filtered.map((a:any,i:number)=>(
@@ -99,8 +104,8 @@ export default function AccountsPage() {
                   <td style={{padding:"12px 14px"}}><StatusBadge status={a.status||"active"}/></td>
                   <td style={{padding:"12px 14px"}} onClick={e=>e.stopPropagation()}>
                     <div style={{display:"flex",gap:4}}>
-                      <button data-testid={`button-edit-${a.id}`} onClick={()=>open(a)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:5,borderRadius:6,display:"flex"}}><Edit2 size={13}/></button>
-                      <button data-testid={`button-delete-${a.id}`} onClick={()=>setDel(a.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",padding:5,borderRadius:6,display:"flex"}}><Trash2 size={13}/></button>
+                      <button data-testid={`button-edit-${a.id}`} onClick={()=>open(a)} title={t("edit_account")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:5,borderRadius:6,display:"flex"}}><Edit2 size={13}/></button>
+                      <button data-testid={`button-delete-${a.id}`} onClick={()=>setDel(a.id)} title={t("delete")} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",padding:5,borderRadius:6,display:"flex"}}><Trash2 size={13}/></button>
                     </div>
                   </td>
                 </tr>
@@ -112,20 +117,28 @@ export default function AccountsPage() {
 
       {sel&&(
         <div style={{position:"fixed",right:0,top:0,bottom:0,width:360,background:"var(--bg-card)",borderLeft:"1px solid var(--border)",zIndex:50,overflowY:"auto"}}>
-          <div style={{padding:"16px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:15,fontWeight:700}}>Account Details</div><button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:4}}><X size={16}/></button></div>
+          <div style={{padding:"16px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:15,fontWeight:700}}>{t("accounts_details_title","Account Details")}</div><button onClick={()=>setSel(null)} aria-label={t("close")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:4}}><X size={16}/></button></div>
           <div style={{padding:20}}>
             <div style={{width:56,height:56,borderRadius:12,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:700,color:"#fff",marginBottom:12}}>{sel.name?.[0]?.toUpperCase()||"?"}</div>
             <div style={{fontSize:18,fontWeight:700,marginBottom:8}}>{sel.name}</div>
             <StatusBadge status={sel.status||"active"}/>
             <div style={{marginTop:20,display:"flex",flexDirection:"column",gap:12}}>
-              {[{I:Building2,l:"Industry",v:sel.industry},{I:Globe,l:"Website",v:sel.website},{I:Mail,l:"Email",v:sel.email},{I:Phone,l:"Phone",v:sel.phone},{I:MapPin,l:"Location",v:[sel.city,sel.state,sel.country].filter(Boolean).join(", ")},{I:DollarSign,l:"Revenue",v:sel.annualRevenue?`$${Number(sel.annualRevenue).toLocaleString()}`:null},{I:Users,l:"Employees",v:sel.employeeCount?Number(sel.employeeCount).toLocaleString():null}].filter(f=>f.v).map(f=>(
+              {[
+                {I:Building2,l:t("account_industry"),v:sel.industry},
+                {I:Globe,l:t("account_website"),v:sel.website},
+                {I:Mail,l:t("email"),v:sel.email},
+                {I:Phone,l:t("phone"),v:sel.phone},
+                {I:MapPin,l:t("location"),v:[sel.city,sel.state,sel.country].filter(Boolean).join(", ")},
+                {I:DollarSign,l:t("account_revenue"),v:sel.annualRevenue?`$${Number(sel.annualRevenue).toLocaleString()}`:null},
+                {I:Users,l:t("employees"),v:sel.employeeCount?Number(sel.employeeCount).toLocaleString():null}
+              ].filter(f=>f.v).map(f=>(
                 <div key={f.l} style={{display:"flex",gap:10}}><f.I size={14} style={{color:"var(--text-muted)",flexShrink:0,marginTop:2}}/><div><div style={{fontSize:10,color:"var(--text-muted)",marginBottom:1}}>{f.l}</div><div style={{fontSize:13}}>{f.v}</div></div></div>
               ))}
               {sel.notes&&<div style={{background:"var(--bg-overlay)",borderRadius:8,padding:12,fontSize:13,color:"var(--text-secondary)",lineHeight:1.6}}>{sel.notes}</div>}
             </div>
             <div style={{display:"flex",gap:8,marginTop:20}}>
-              <button onClick={()=>{open(sel);setSel(null);}} style={{flex:1,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"8px 0",fontSize:13,fontWeight:600,cursor:"pointer"}}>Edit</button>
-              <button onClick={()=>setDel(sel.id)} style={{background:"rgba(239,68,68,0.1)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer"}}>Delete</button>
+              <button onClick={()=>{open(sel);setSel(null);}} style={{flex:1,background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"8px 0",fontSize:13,fontWeight:600,cursor:"pointer"}}>{t("edit")}</button>
+              <button onClick={()=>setDel(sel.id)} style={{background:"rgba(239,68,68,0.1)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer"}}>{t("delete")}</button>
             </div>
           </div>
         </div>
@@ -134,10 +147,10 @@ export default function AccountsPage() {
       {del&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:12,padding:28,maxWidth:380,width:"90%"}}>
-            <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:16}}><AlertCircle size={20} style={{color:"#ef4444",flexShrink:0,marginTop:2}}/><div><div style={{fontWeight:700,marginBottom:4}}>Delete Account?</div><div style={{fontSize:13,color:"var(--text-muted)"}}>This action cannot be undone.</div></div></div>
+            <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:16}}><AlertCircle size={20} style={{color:"#ef4444",flexShrink:0,marginTop:2}}/><div><div style={{fontWeight:700,marginBottom:4}}>{t("accounts_delete_confirm_title")}</div><div style={{fontSize:13,color:"var(--text-muted)"}}>{t("cannot_be_undone")}</div></div></div>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-              <button onClick={()=>setDel(null)} style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 16px",fontSize:13,cursor:"pointer"}}>Cancel</button>
-              <button data-testid="button-confirm-delete" onClick={()=>rm.mutate(del!)} disabled={rm.isPending} style={{background:"#ef4444",color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{rm.isPending?"Deleting…":"Delete"}</button>
+              <button onClick={()=>setDel(null)} style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 16px",fontSize:13,cursor:"pointer"}}>{t("cancel")}</button>
+              <button data-testid="button-confirm-delete" onClick={()=>rm.mutate(del!)} disabled={rm.isPending} style={{background:"#ef4444",color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{rm.isPending?t("accounts_deleting","Deleting…"):t("delete")}</button>
             </div>
           </div>
         </div>
@@ -146,24 +159,26 @@ export default function AccountsPage() {
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
           <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:14,width:"100%",maxWidth:560,maxHeight:"90vh",overflowY:"auto"}}>
-            <div style={{padding:"18px 22px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:16,fontWeight:700}}>{editing?"Edit Account":"New Account"}</div><button onClick={close} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:4}}><X size={16}/></button></div>
+            <div style={{padding:"18px 22px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:16,fontWeight:700}}>{editing?t("edit_account"):t("accounts_new","New Account")}</div><button onClick={close} aria-label={t("close")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:4}}><X size={16}/></button></div>
             <form onSubmit={submit} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:14}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                {F("Company Name *","name","text",true,true)}
-                <div><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Industry</label><select value={form.industry} onChange={e=>setForm(p=>({...p,industry:e.target.value}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}><option value="">Select Industry</option>{INDUSTRIES.map(i=><option key={i} value={i}>{i}</option>)}</select></div>
-                <div><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Status</label><select value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>{STATUSES.map(s=><option key={s} value={s}>{s[0].toUpperCase()+s.slice(1)}</option>)}</select></div>
-                {F("Email","email","email")}
-                {F("Phone","phone")}
-                {F("Website","website","text",true,false,"https://...")}
-                {F("Annual Revenue ($)","annualRevenue","number")}
-                {F("Employee Count","employeeCount","number")}
-                {F("City","city")}
-                {F("Country","country")}
-                <div style={{gridColumn:"1/-1"}}><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Notes</label><textarea value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} rows={3} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",resize:"vertical",boxSizing:"border-box"}}/></div>
+                {F(`${t("account_name")} *`,"name","text",true,true)}
+                <div><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("account_industry")}</label><select value={form.industry} onChange={e=>setForm(p=>({...p,industry:e.target.value}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}><option value="">{t("accounts_select_industry")}</option>{INDUSTRIES.map(i=><option key={i} value={i}>{i}</option>)}</select></div>
+                <div><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("status")}</label><select value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>{STATUSES.map(s=><option key={s} value={s}>{s[0].toUpperCase()+s.slice(1)}</option>)}</select></div>
+                {F(t("email"),"email","email")}
+                {F(t("phone"),"phone")}
+                {F(t("account_website"),"website","text",true,false,"https://...")}
+                {F(t("accounts_annual_revenue_label","Annual Revenue ($)"),"annualRevenue","number")}
+                {F(t("accounts_employee_count_label","Employee Count"),"employeeCount","number")}
+                {F(t("city","City"),"city")}
+                {F(t("country","Country"),"country")}
+                <div style={{gridColumn:"1/-1"}}><label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("notes")}</label><textarea value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} rows={3} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",resize:"vertical",boxSizing:"border-box"}}/></div>
               </div>
               <div style={{display:"flex",gap:8,justifyContent:"flex-end",paddingTop:4}}>
-                <button type="button" onClick={close} style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"9px 18px",fontSize:13,cursor:"pointer"}}>Cancel</button>
-                <button data-testid="button-submit-account" type="submit" disabled={create.isPending||upd.isPending} style={{background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{create.isPending||upd.isPending?"Saving…":editing?"Save Changes":"Create Account"}</button>
+                <button type="button" onClick={close} style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:8,padding:"9px 18px",fontSize:13,cursor:"pointer"}}>{t("cancel")}</button>
+                <button data-testid="button-submit-account" type="submit" disabled={create.isPending||upd.isPending} style={{background:"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                  {create.isPending||upd.isPending ? t("accounts_saving","Saving…") : editing ? t("save_changes") : t("accounts_new","New Account")}
+                </button>
               </div>
             </form>
           </div>

@@ -27,13 +27,20 @@ const INDUSTRIES = [
 
 const TITLES = ["CEO", "CTO", "VP Sales", "VP Marketing", "Head of Sales", "Director of Sales", "COO", "CMO", "Founder", "Co-Founder", "CFO", "Head of Marketing"];
 const SENIORITIES = ["c-suite", "vp", "director", "manager"];
-const DEPTHS = [{ value: "fast", label: "Fast (companies only, ~1 min)" }, { value: "standard", label: "Standard (companies + contacts, ~3 min)" }, { value: "deep", label: "Deep (+ tech stack + intent signals, ~8 min)" }];
+// DEPTHS labels are built in the component after t() is available
 
 const TABS = ["Dashboard", "Prospects", "Companies", "Intent Signals", "Email Verifier", "Tech Scanner"] as const;
 
 export default function LeadGenPage() {
   const qc = useQueryClient();
   const { t } = useLanguage();
+
+  const DEPTHS = [
+    { value: "fast",     label: t("leadgen_depth_fast",     "Fast (companies only, ~1 min)") },
+    { value: "standard", label: t("leadgen_depth_standard", "Standard (companies + contacts, ~3 min)") },
+    { value: "deep",     label: t("leadgen_depth_deep",     "Deep (+ tech stack + intent signals, ~8 min)") },
+  ];
+
   const [tab, setTab] = useState<typeof TABS[number]>("Dashboard");
   const [campaignModal, setCampaignModal] = useState(false);
   const [emailVerifyInput, setEmailVerifyInput] = useState("");
@@ -138,14 +145,14 @@ export default function LeadGenPage() {
   }));
 
   const DATA_SOURCES = [
-    { label: "DuckDuckGo Search", icon: Search, color: "#f97316", desc: "Real web search results" },
-    { label: "Yellow Pages", icon: Globe, color: "#f59e0b", desc: "US business directory" },
-    { label: "OpenCorporates", icon: Building2, color: "#3b82f6", desc: "80+ country company registry" },
-    { label: "GitHub API", icon: Github, color: "#64748b", desc: "Tech stack + company signals" },
-    { label: "Company Websites", icon: ExternalLink, color: "#8b5cf6", desc: "Direct HTML scraping" },
-    { label: "Indeed Jobs", icon: Target, color: "#10b981", desc: "Job postings → buying intent" },
-    { label: "DNS/MX Records", icon: Shield, color: "#06b6d4", desc: "Free email verification" },
-    { label: "LinkedIn (public)", icon: Linkedin, color: "#0077b5", desc: "Public company pages" },
+    { label: "DuckDuckGo Search", icon: Search, color: "#f97316", desc: t("leadgen_src_ddg_desc", "Real web search results") },
+    { label: "Yellow Pages", icon: Globe, color: "#f59e0b", desc: t("leadgen_src_yp_desc", "US business directory") },
+    { label: "OpenCorporates", icon: Building2, color: "#3b82f6", desc: t("leadgen_src_oc_desc", "80+ country company registry") },
+    { label: "GitHub API", icon: Github, color: "#64748b", desc: t("leadgen_src_gh_desc", "Tech stack + company signals") },
+    { label: "Company Websites", icon: ExternalLink, color: "#8b5cf6", desc: t("leadgen_src_web_desc", "Direct HTML scraping") },
+    { label: "Indeed Jobs", icon: Target, color: "#10b981", desc: t("leadgen_src_indeed_desc", "Job postings → buying intent") },
+    { label: "DNS/MX Records", icon: Shield, color: "#06b6d4", desc: t("leadgen_src_dns_desc", "Free email verification") },
+    { label: "LinkedIn (public)", icon: Linkedin, color: "#0077b5", desc: t("leadgen_src_li_desc", "Public company pages") },
   ];
 
   return (
@@ -171,11 +178,11 @@ export default function LeadGenPage() {
         <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 12, padding: "14px 18px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
           <CheckCircle size={20} style={{ color: "#10b981", flexShrink: 0 }} />
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: "#10b981" }}>Pipeline completed!</div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "#10b981" }}>{t("leadgen_pipeline_completed", "Pipeline completed!")}</div>
             <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-              Found {jobResult.result?.companies} companies · {jobResult.result?.prospects} prospects · {jobResult.result?.emailsVerified} verified emails · {jobResult.result?.intentSignals} intent signals
+              {t("leadgen_found", "Found")} {jobResult.result?.companies} {t("leadgen_stat_companies", "Companies")} · {jobResult.result?.prospects} {t("leadgen_stat_prospects", "Prospects")} · {jobResult.result?.emailsVerified} {t("leadgen_stat_verified_emails", "Verified Emails")} · {jobResult.result?.intentSignals} {t("leadgen_stat_intent_signals", "Intent Signals")}
               {jobResult.result?.autoImportedToContacts > 0 && (
-                <span style={{ marginLeft: 6, color: "#6366f1", fontWeight: 600 }}>· {jobResult.result.autoImportedToContacts} contacts auto-saved to CRM</span>
+                <span style={{ marginLeft: 6, color: "#6366f1", fontWeight: 600 }}>· {jobResult.result.autoImportedToContacts} {t("leadgen_contacts_auto_saved", "contacts auto-saved to CRM")}</span>
               )}
             </div>
           </div>
@@ -210,11 +217,11 @@ export default function LeadGenPage() {
           {/* Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12, marginBottom: 24 }}>
             {[
-              { label: "Prospects", value: stats?.prospects?.total || 0, sub: `Avg score: ${stats?.prospects?.avgScore || 0}`, icon: Target, color: "#3b82f6" },
-              { label: "Verified Emails", value: stats?.prospects?.verified || 0, sub: "Via DNS MX lookup", icon: Mail, color: "#10b981" },
-              { label: "Companies", value: stats?.companies || 0, sub: "Enriched from web", icon: Building2, color: "#8b5cf6" },
-              { label: "Intent Signals", value: stats?.intentSignals || 0, sub: "Real buying signals", icon: TrendingUp, color: "#f59e0b" },
-              { label: "Tech Findings", value: stats?.techFindings || 0, sub: "From live scans", icon: Activity, color: "#06b6d4" },
+              { label: t("leadgen_stat_prospects", "Prospects"), value: stats?.prospects?.total || 0, sub: `${t("leadgen_avg_score", "Avg score")}: ${stats?.prospects?.avgScore || 0}`, icon: Target, color: "#3b82f6" },
+              { label: t("leadgen_stat_verified_emails", "Verified Emails"), value: stats?.prospects?.verified || 0, sub: t("leadgen_via_dns", "Via DNS MX lookup"), icon: Mail, color: "#10b981" },
+              { label: t("leadgen_stat_companies", "Companies"), value: stats?.companies || 0, sub: t("leadgen_enriched_from_web", "Enriched from web"), icon: Building2, color: "#8b5cf6" },
+              { label: t("leadgen_stat_intent_signals", "Intent Signals"), value: stats?.intentSignals || 0, sub: t("leadgen_real_buying_signals", "Real buying signals"), icon: TrendingUp, color: "#f59e0b" },
+              { label: t("leadgen_stat_tech_findings", "Tech Findings"), value: stats?.techFindings || 0, sub: t("leadgen_from_live_scans", "From live scans"), icon: Activity, color: "#06b6d4" },
             ].map(s => {
               const Icon = s.icon;
               return (
@@ -232,8 +239,8 @@ export default function LeadGenPage() {
 
           {/* Data sources */}
           <div className="card" style={{ padding: "20px", marginBottom: 20 }}>
-            <h3 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700 }}>Data Sources</h3>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 16px" }}>All public sources — zero paid API costs</p>
+            <h3 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700 }}>{t("leadgen_data_sources", "Data Sources")}</h3>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 16px" }}>{t("leadgen_data_sources_sub", "All public sources — zero paid API costs")}</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 10 }}>
               {DATA_SOURCES.map(s => {
                 const Icon = s.icon;
@@ -255,20 +262,20 @@ export default function LeadGenPage() {
 
           {/* How it works */}
           <div className="card" style={{ padding: 20 }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>How the pipeline works</h3>
+            <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>{t("leadgen_pipeline_title", "How the pipeline works")}</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10 }}>
               {[
-                { step: "1", title: "Discover", desc: "DuckDuckGo + Yellow Pages + OpenCorporates find companies matching your ICP", color: "#3b82f6" },
-                { step: "2", title: "Enrich", desc: "Scrapes company website, LinkedIn, GitHub to build full firmographic profile", color: "#8b5cf6" },
-                { step: "3", title: "Contacts", desc: "AI + web search finds decision-makers at each company", color: "#10b981" },
-                { step: "4", title: "Verify", desc: "DNS MX lookup confirms email domains accept mail — no API cost", color: "#f59e0b" },
-                { step: "5", title: "Tech Scan", desc: "Live scan of company website detects their full tech stack", color: "#06b6d4" },
-                { step: "6", title: "Intent", desc: "Job postings + news + funding signals = real buying intent", color: "#ec4899" },
-                { step: "7", title: "Score", desc: "Multi-factor ICP scoring: seniority + email quality + intent + tech fit", color: "#f97316" },
-                { step: "8", title: "Import", desc: "One-click import to CRM as leads or contacts", color: "#10b981" },
+                { step: "1", title: t("leadgen_stage_discover", "Discover"), desc: t("leadgen_stage_discover_desc", "DuckDuckGo + Yellow Pages + OpenCorporates find companies matching your ICP"), color: "#3b82f6" },
+                { step: "2", title: t("leadgen_stage_enrich", "Enrich"), desc: t("leadgen_stage_enrich_desc", "Scrapes company website, LinkedIn, GitHub to build full firmographic profile"), color: "#8b5cf6" },
+                { step: "3", title: t("leadgen_stage_contacts", "Contacts"), desc: t("leadgen_stage_contacts_desc", "AI + web search finds decision-makers at each company"), color: "#10b981" },
+                { step: "4", title: t("leadgen_stage_verify", "Verify"), desc: t("leadgen_stage_verify_desc", "DNS MX lookup confirms email domains accept mail — no API cost"), color: "#f59e0b" },
+                { step: "5", title: t("leadgen_stage_tech", "Tech Scan"), desc: t("leadgen_stage_tech_desc", "Live scan of company website detects their full tech stack"), color: "#06b6d4" },
+                { step: "6", title: t("leadgen_stage_intent", "Intent"), desc: t("leadgen_stage_intent_desc", "Job postings + news + funding signals = real buying intent"), color: "#ec4899" },
+                { step: "7", title: t("leadgen_stage_score", "Score"), desc: t("leadgen_stage_score_desc", "Multi-factor ICP scoring: seniority + email quality + intent + tech fit"), color: "#f97316" },
+                { step: "8", title: t("leadgen_stage_import", "Import"), desc: t("leadgen_stage_import_desc", "One-click import to CRM as leads or contacts"), color: "#10b981" },
               ].map(s => (
                 <div key={s.step} style={{ padding: "12px", background: "var(--bg-overlay)", borderRadius: 9, borderLeft: `3px solid ${s.color}` }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: s.color, marginBottom: 4 }}>STAGE {s.step}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: s.color, marginBottom: 4 }}>{t("leadgen_stage_label", "STAGE")} {s.step}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>{s.title}</div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>{s.desc}</div>
                 </div>
@@ -283,14 +290,14 @@ export default function LeadGenPage() {
         <div>
           <div className="card" style={{ overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 80px 70px 110px 110px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-              {["Prospect", "Company", "Score", "Intent", "Email Status", "Actions"].map(h => (
+              {[t("leadgen_col_prospect", "Prospect"), t("leadgen_col_company", "Company"), t("lead_score", "Score"), t("leadgen_col_intent", "Intent"), t("leadgen_col_email_status", "Email Status"), t("actions", "Actions")].map(h => (
                 <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
               ))}
             </div>
             {!prospectsData?.data?.length ? (
-              <Empty icon={Target} title="No prospects yet"
-                desc='Run a campaign to let the AI engine discover and enrich real prospects from the web'
-                action={<button className="btn btn-primary" onClick={() => setCampaignModal(true)}><Zap size={15} /> Run Campaign</button>}
+              <Empty icon={Target} title={t("no_prospects", "No prospects yet")}
+                desc={t("leadgen_prospects_empty_desc", "Run a campaign to let the AI engine discover and enrich real prospects from the web")}
+                action={<button className="btn btn-primary" onClick={() => setCampaignModal(true)}><Zap size={15} /> {t("run_campaign", "Run Campaign")}</button>}
               />
             ) : prospectsData.data.map((p: any) => (
               <div key={p.id} className="table-row" style={{ gridTemplateColumns: "1fr 160px 80px 70px 110px 110px", gap: 12 }}>
@@ -316,7 +323,7 @@ export default function LeadGenPage() {
                   {p.intentScore > 60 ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981" }} />
-                      <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>High</span>
+                      <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>{t("leadgen_intent_high", "High")}</span>
                     </div>
                   ) : (
                     <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.intentScore || 0}</span>
@@ -324,7 +331,7 @@ export default function LeadGenPage() {
                 </div>
                 <div>
                   <span className={`badge ${STATUS_BADGE[p.emailStatus] || "badge-gray"}`}>
-                    {p.emailStatus === "valid" ? "✓ Valid" : p.emailStatus === "likely" ? "~ Likely" : p.emailStatus || "Unknown"}
+                    {p.emailStatus === "valid" ? `✓ ${t("leadgen_email_valid", "Valid")}` : p.emailStatus === "likely" ? `~ ${t("leadgen_email_likely", "Likely")}` : p.emailStatus || t("unknown", "Unknown")}
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
@@ -336,7 +343,7 @@ export default function LeadGenPage() {
               </div>
             ))}
           </div>
-          {prospectsData && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>{prospectsData.total} prospects — source: public web</div>}
+          {prospectsData && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>{prospectsData.total} {t("leadgen_prospects_source_note", "prospects — source: public web")}</div>}
         </div>
       )}
 
@@ -344,21 +351,21 @@ export default function LeadGenPage() {
       {tab === "Companies" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-            <input id="enrich-domain" className="input" placeholder="Enter domain to scrape (e.g. company.com)" style={{ flex: 1 }} />
+            <input id="enrich-domain" className="input" placeholder={t("leadgen_domain_scrape_ph", "Enter domain to scrape (e.g. company.com)")} style={{ flex: 1 }} />
             <button className="btn btn-primary btn-sm" onClick={async () => {
               const val = (document.getElementById("enrich-domain") as HTMLInputElement)?.value?.trim();
               if (!val) return;
               const domain = val.replace(/^https?:\/\//, "").replace(/\/.*/, "");
               await apiRequest("POST", "/api/leadgen/scrape-website", { domain });
               qc.invalidateQueries({ queryKey: ["/api/intelligence/companies"] });
-            }}><Globe size={14} /> Scrape Website</button>
+            }}><Globe size={14} /> {t("leadgen_scrape_website", "Scrape Website")}</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 14 }}>
             {!companiesData?.data?.length ? (
               <div style={{ gridColumn: "1/-1" }}>
-                <Empty icon={Building2} title="No companies yet"
-                  desc="Run a campaign or enter a domain above to start enriching companies"
-                  action={<button className="btn btn-primary" onClick={() => setCampaignModal(true)}><Zap size={15} /> Run Campaign</button>}
+                <Empty icon={Building2} title={t("no_companies", "No companies yet")}
+                  desc={t("leadgen_companies_empty_desc", "Run a campaign or enter a domain above to start enriching companies")}
+                  action={<button className="btn btn-primary" onClick={() => setCampaignModal(true)}><Zap size={15} /> {t("run_campaign", "Run Campaign")}</button>}
                 />
               </div>
             ) : companiesData.data.map((c: any) => (
@@ -396,15 +403,15 @@ export default function LeadGenPage() {
                 <Search size={18} style={{ color: "#8b5cf6" }} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 3 }}>Public Intent Hunter</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 3 }}>{t("leadgen_intent_hunter_title", "Public Intent Hunter")}</div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                  Scans Reddit, LinkedIn, Quora, Indie Hackers, and Product Hunt for people actively asking for solutions in your industry — right now. Auto-creates them as prospects.
+                  {t("leadgen_intent_hunter_desc", "Scans Reddit, LinkedIn, Quora, Indie Hackers, and Product Hunt for people actively asking for solutions in your industry — right now. Auto-creates them as prospects.")}
                 </div>
               </div>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
               <div style={{ flex: "1 1 200px" }}>
-                <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>INDUSTRY</label>
+                <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>{t("target_industry", "Target Industry").toUpperCase()}</label>
                 <select
                   data-testid="select-intent-industry"
                   className="input"
@@ -416,11 +423,11 @@ export default function LeadGenPage() {
                 </select>
               </div>
               <div style={{ flex: "2 1 280px" }}>
-                <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>KEYWORDS <span style={{ fontWeight: 400 }}>(comma separated, optional)</span></label>
+                <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 5 }}>{t("campaign_keywords", "Keywords").toUpperCase()} <span style={{ fontWeight: 400 }}>({t("leadgen_comma_sep_optional", "comma separated, optional")})</span></label>
                 <input
                   data-testid="input-intent-keywords"
                   className="input"
-                  placeholder="e.g. CRM, agency software, client portal"
+                  placeholder={t("leadgen_intent_keywords_ph", "e.g. CRM, agency software, client portal")}
                   value={intentHuntForm.keywords}
                   onChange={e => setIntentHuntForm(f => ({ ...f, keywords: e.target.value }))}
                   style={{ width: "100%" }}
@@ -453,8 +460,8 @@ export default function LeadGenPage() {
                 style={{ flexShrink: 0, alignSelf: "flex-end" }}
               >
                 {intentHunting
-                  ? <><span className="spinner" style={{ width: 14, height: 14, marginRight: 6 }} />Hunting...</>
-                  : <><Search size={14} style={{ marginRight: 6 }} />Hunt Intent Now</>
+                  ? <><span className="spinner" style={{ width: 14, height: 14, marginRight: 6 }} />{t("leadgen_hunting", "Hunting...")}</>
+                  : <><Search size={14} style={{ marginRight: 6 }} />{t("leadgen_hunt_intent_btn", "Hunt Intent Now")}</>
                 }
               </button>
             </div>
@@ -463,16 +470,16 @@ export default function LeadGenPage() {
             {intentHunting && (
               <div style={{ marginTop: 14, background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#a78bfa", display: "flex", alignItems: "center", gap: 8 }}>
                 <span className="spinner" style={{ width: 13, height: 13 }} />
-                Crawling Reddit, LinkedIn, Quora, Indie Hackers, Product Hunt... this takes 30–60 seconds.
+                {t("leadgen_crawling_msg", "Crawling Reddit, LinkedIn, Quora, Indie Hackers, Product Hunt... this takes 30–60 seconds.")}
               </div>
             )}
             {intentHuntResult && !intentHunting && (
               <div style={{ marginTop: 14, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 8, padding: "12px 16px", fontSize: 13 }}>
                 <div style={{ fontWeight: 700, color: "#10b981", marginBottom: 4 }}>
-                  Hunt complete — {intentHuntResult.signalsFound} intent signals found · {intentHuntResult.prospectsCreated} prospects created
+                  {t("leadgen_hunt_complete", "Hunt complete")} — {intentHuntResult.signalsFound} {t("leadgen_signals_found", "intent signals found")} · {intentHuntResult.prospectsCreated} {t("leadgen_prospects_created", "prospects created")}
                 </div>
                 <div style={{ color: "var(--text-muted)" }}>
-                  Sources crawled: {intentHuntResult.sources.join(", ") || "Reddit, LinkedIn, Quora, Indie Hackers, Product Hunt"}
+                  {t("leadgen_sources_crawled", "Sources crawled")}: {intentHuntResult.sources.join(", ") || "Reddit, LinkedIn, Quora, Indie Hackers, Product Hunt"}
                 </div>
               </div>
             )}
@@ -526,7 +533,7 @@ export default function LeadGenPage() {
                 {publicSignals.length > 0 && (
                   <>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
-                      Public Intent Signals ({publicSignals.length})
+                      {t("leadgen_public_intent_signals", "Public Intent Signals")} ({publicSignals.length})
                     </div>
                     {publicSignals.map((s: any) => (
                       <div key={s.id} data-testid={`row-intent-signal-${s.id}`} className="card" style={{ padding: "12px 16px", marginBottom: 8, display: "flex", alignItems: "flex-start", gap: 14 }}>
@@ -558,7 +565,7 @@ export default function LeadGenPage() {
                 {companySignals.length > 0 && (
                   <>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
-                      Company-Level Intent ({companySignals.length})
+                      {t("leadgen_company_intent", "Company-Level Intent")} ({companySignals.length})
                     </div>
                     {companySignals.map((s: any) => (
                       <div key={s.id} data-testid={`row-company-signal-${s.id}`} className="card" style={{ padding: "12px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 14 }}>
@@ -578,8 +585,8 @@ export default function LeadGenPage() {
                 )}
 
                 {!intentData?.length && !intentHunting && (
-                  <Empty icon={TrendingUp} title="No intent signals yet"
-                    desc='Click "Hunt Intent Now" to find people publicly asking for solutions in your industry, or run a deep campaign for company-level signals.' />
+                  <Empty icon={TrendingUp} title={t("no_intent_signals", "No intent signals detected")}
+                    desc={t("leadgen_intent_empty_desc", "Click \"Hunt Intent Now\" to find people publicly asking for solutions in your industry, or run a deep campaign for company-level signals.")} />
                 )}
               </>
             );
@@ -591,12 +598,12 @@ export default function LeadGenPage() {
       {tab === "Email Verifier" && (
         <div style={{ maxWidth: 600 }}>
           <div className="card" style={{ padding: 24 }}>
-            <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700 }}>DNS MX Email Verifier</h3>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px" }}>Validates emails using DNS MX record lookups — 100% free, no API key required.</p>
+            <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700 }}>{t("leadgen_email_verifier_title", "DNS MX Email Verifier")}</h3>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px" }}>{t("leadgen_email_verifier_desc", "Validates emails using DNS MX record lookups — 100% free, no API key required.")}</p>
             <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
               <input className="input" placeholder="email@company.com" value={emailVerifyInput} onChange={e => setEmailVerifyInput(e.target.value)} onKeyDown={e => e.key === "Enter" && verifyEmail()} style={{ flex: 1 }} />
               <button className="btn btn-primary" onClick={verifyEmail} disabled={emailVerifying || !emailVerifyInput.trim()}>
-                {emailVerifying ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Shield size={14} />} Verify
+                {emailVerifying ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Shield size={14} />} {t("verify_email", "Verify Email")}
               </button>
             </div>
 
@@ -608,17 +615,17 @@ export default function LeadGenPage() {
                    emailResult.status === "invalid" || emailResult.status === "invalid_domain" ? <AlertCircle size={20} style={{ color: "#ef4444" }} /> :
                    <AlertCircle size={20} style={{ color: "#f59e0b" }} />}
                   <div style={{ fontSize: 16, fontWeight: 700, color: emailResult.status === "valid" ? "#10b981" : emailResult.status === "likely" ? "#3b82f6" : "#ef4444" }}>
-                    {emailResult.status === "valid" ? "Valid email domain" : emailResult.status === "likely" ? "Likely valid" : emailResult.status === "risky" ? "Risky — free provider" : "Invalid / No MX record"}
+                    {emailResult.status === "valid" ? t("leadgen_email_valid_domain", "Valid email domain") : emailResult.status === "likely" ? t("leadgen_email_likely_valid", "Likely valid") : emailResult.status === "risky" ? t("leadgen_email_risky", "Risky — free provider") : t("leadgen_email_invalid", "Invalid / No MX record")}
                   </div>
                   <div style={{ marginLeft: "auto", fontSize: 22, fontWeight: 800, color: SCORE_COLOR(emailResult.confidence) }}>{emailResult.confidence}%</div>
                 </div>
                 <div style={{ display: "grid", gap: 8, fontSize: 13 }}>
                   {[
-                    ["Email format", emailResult.format ? "✓ Valid" : "✗ Invalid", emailResult.format],
-                    ["Domain exists", emailResult.domain ? "✓ Resolves" : "✗ No DNS", emailResult.domain],
-                    ["MX record found", emailResult.mxRecord ? `✓ ${emailResult.mxHost || "exists"}` : "✗ No mail server", emailResult.mxRecord],
-                    ["Confidence score", `${emailResult.confidence}%`, emailResult.confidence > 60],
-                    ["Verification cost", "$0.00 — DNS only", true],
+                    [t("leadgen_check_format", "Email format"), emailResult.format ? `✓ ${t("leadgen_email_valid", "Valid")}` : `✗ ${t("leadgen_check_invalid", "Invalid")}`, emailResult.format],
+                    [t("leadgen_check_domain", "Domain exists"), emailResult.domain ? `✓ ${t("leadgen_check_resolves", "Resolves")}` : `✗ ${t("leadgen_check_no_dns", "No DNS")}`, emailResult.domain],
+                    [t("leadgen_check_mx", "MX record found"), emailResult.mxRecord ? `✓ ${emailResult.mxHost || t("leadgen_check_exists", "exists")}` : `✗ ${t("leadgen_check_no_mail_server", "No mail server")}`, emailResult.mxRecord],
+                    [t("confidence", "Confidence score"), `${emailResult.confidence}%`, emailResult.confidence > 60],
+                    [t("leadgen_check_cost", "Verification cost"), "$0.00 — DNS only", true],
                   ].map(([label, val, ok]) => (
                     <div key={String(label)} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <span style={{ color: "var(--text-muted)" }}>{label}</span>
@@ -636,12 +643,12 @@ export default function LeadGenPage() {
       {tab === "Tech Scanner" && (
         <div style={{ maxWidth: 700 }}>
           <div className="card" style={{ padding: 24, marginBottom: 16 }}>
-            <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700 }}>Live Tech Stack Scanner</h3>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px" }}>Scans the target domain's HTML in real-time to detect 30+ technologies. No API cost.</p>
+            <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700 }}>{t("leadgen_tech_scanner_title", "Live Tech Stack Scanner")}</h3>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px" }}>{t("leadgen_tech_scanner_desc", "Scans the target domain's HTML in real-time to detect 30+ technologies. No API cost.")}</p>
             <div style={{ display: "flex", gap: 10 }}>
               <input className="input" placeholder="company.com" value={techScanDomain} onChange={e => setTechScanDomain(e.target.value)} onKeyDown={e => e.key === "Enter" && scanTech()} style={{ flex: 1 }} />
               <button className="btn btn-primary" onClick={scanTech} disabled={techScanning || !techScanDomain.trim()}>
-                {techScanning ? <><span className="spinner" style={{ width: 14, height: 14 }} />Scanning...</> : <><Activity size={14} /> Scan Tech Stack</>}
+                {techScanning ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t("leadgen_scanning", "Scanning...")}</> : <><Activity size={14} /> {t("scan_tech", "Scan Technology")}</>}
               </button>
             </div>
           </div>
@@ -649,10 +656,10 @@ export default function LeadGenPage() {
           {techResult && (
             <div className="card" style={{ padding: 20 }}>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
-                {techResult.technologies?.length > 0 ? `Found ${techResult.technologies.length} technologies` : "No technologies detected"}
+                {techResult.technologies?.length > 0 ? `${t("leadgen_found", "Found")} ${techResult.technologies.length} ${t("leadgen_technologies", "technologies")}` : t("leadgen_no_tech_detected", "No technologies detected")}
               </div>
               {techResult.technologies?.length === 0 && (
-                <p style={{ fontSize: 13, color: "var(--text-muted)" }}>The site may block scraping or use client-side only rendering. Try a different domain.</p>
+                <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("leadgen_no_tech_hint", "The site may block scraping or use client-side only rendering. Try a different domain.")}</p>
               )}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10 }}>
                 {(techResult.technologies || []).map((t: any) => (
@@ -685,7 +692,7 @@ export default function LeadGenPage() {
             <Select options={INDUSTRIES.map(i => ({ value: i, label: i }))} value={campaignForm.targetIndustry} onChange={e => setCampaignForm(p => ({ ...p, targetIndustry: e.target.value }))} />
           </FormRow>
 
-          <FormRow label="Target Job Titles">
+          <FormRow label={t("leadgen_target_titles", "Target Job Titles")}>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: 8, background: "var(--bg-overlay)", borderRadius: 8 }}>
               {TITLES.map(titleOpt => (
                 <button key={titleOpt} type="button" onClick={() => toggleTitle(titleOpt)}

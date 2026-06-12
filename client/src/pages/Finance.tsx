@@ -89,15 +89,15 @@ export function FinancePage() {
 
   return (
     <Layout title={t("finance_title")} subtitle={t("finance_subtitle")}
-      actions={<button className="btn btn-primary btn-sm" onClick={() => { setForm(BLANK_TX); setTxModal(true); }}><Plus size={14} /> Add Transaction</button>}
+      actions={<button className="btn btn-primary btn-sm" onClick={() => { setForm(BLANK_TX); setTxModal(true); }}><Plus size={14} /> {t("finance_add_transaction", "Add Transaction")}</button>}
     >
       {/* KPI bar */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>
         {[
-          { label: "Total Income", value: `$${Number(txData?.totals?.income || 0).toLocaleString()}`, icon: TrendingUp, color: "#10b981", trend: "+12%" },
-          { label: "Total Expenses", value: `$${Number(txData?.totals?.expenses || 0).toLocaleString()}`, icon: TrendingDown, color: "#ef4444", trend: "-3%" },
-          { label: "Net Profit", value: `$${(Number(txData?.totals?.income || 0) - Number(txData?.totals?.expenses || 0)).toLocaleString()}`, icon: DollarSign, color: "#3b82f6", trend: "" },
-          { label: "Transactions", value: txData?.totals?.count || 0, icon: FileText, color: "#8b5cf6", trend: "" },
+          { label: t("finance_total_income", "Total Income"), value: `$${Number(txData?.totals?.income || 0).toLocaleString()}`, icon: TrendingUp, color: "#10b981", trend: "+12%" },
+          { label: t("finance_total_expenses", "Total Expenses"), value: `$${Number(txData?.totals?.expenses || 0).toLocaleString()}`, icon: TrendingDown, color: "#ef4444", trend: "-3%" },
+          { label: t("finance_net_profit", "Net Profit"), value: `$${(Number(txData?.totals?.income || 0) - Number(txData?.totals?.expenses || 0)).toLocaleString()}`, icon: DollarSign, color: "#3b82f6", trend: "" },
+          { label: t("transactions", "Transactions"), value: txData?.totals?.count || 0, icon: FileText, color: "#8b5cf6", trend: "" },
         ].map(k => { const Icon = k.icon; return (
           <div key={k.label} className="card" style={{ padding: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
@@ -111,18 +111,18 @@ export function FinancePage() {
       </div>
 
       <div style={{ display: "flex", gap: 4, marginBottom: 16, flexWrap: "wrap" }}>
-        {TABS_F.map(t => <button key={t} onClick={() => setTab(t)} className={`btn btn-sm ${tab === t ? "btn-primary" : "btn-secondary"}`}>{t}</button>)}
+        {TABS_F.map(tabLabel => <button key={tabLabel} onClick={() => setTab(tabLabel)} className={`btn btn-sm ${tab === tabLabel ? "btn-primary" : "btn-secondary"}`}>{tabLabel}</button>)}
       </div>
 
       {/* ── TRANSACTIONS ── */}
       {tab === "Transactions" && (
         <div className="card" style={{ overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 120px 100px 120px 100px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-            {["Type", "Description", "Amount", "Currency", "Category", "Date"].map(h => (
+            {[t("type","Type"), t("description","Description"), t("amount","Amount"), t("currency","Currency"), t("category","Category"), t("date","Date")].map(h => (
               <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
             ))}
           </div>
-          {!txData?.data?.length ? <Empty icon={DollarSign} title="No transactions yet" action={<button className="btn btn-primary" onClick={() => setTxModal(true)}><Plus size={15} /> Add Transaction</button>} /> :
+          {!txData?.data?.length ? <Empty icon={DollarSign} title={t("finance_no_transactions", "No transactions yet")} action={<button className="btn btn-primary" onClick={() => setTxModal(true)}><Plus size={15} /> {t("finance_add_transaction", "Add Transaction")}</button>} /> :
             txData.data.map((tx: any) => (
               <div key={tx.id} className="table-row" style={{ gridTemplateColumns: "100px 1fr 120px 100px 120px 100px", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -145,12 +145,12 @@ export function FinancePage() {
       {tab === "Reports" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <div className="card" style={{ padding: 20 }}>
-            <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>P&L Summary — {new Date().getFullYear()}</h3>
+            <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>{t("finance_pl_summary", "P&L Summary")} — {new Date().getFullYear()}</h3>
             {[
-              { label: "Revenue", value: plReport?.revenue, color: "#10b981" },
-              { label: "Expenses", value: plReport?.expenses, color: "#ef4444" },
-              { label: "Gross Profit", value: plReport?.grossProfit, color: "#3b82f6" },
-              { label: "Profit Margin", value: `${plReport?.margin || 0}%`, color: "#8b5cf6", raw: true },
+              { label: t("income", "Revenue"), value: plReport?.revenue, color: "#10b981" },
+              { label: t("expenses", "Expenses"), value: plReport?.expenses, color: "#ef4444" },
+              { label: t("finance_gross_profit", "Gross Profit"), value: plReport?.grossProfit, color: "#3b82f6" },
+              { label: t("finance_profit_margin", "Profit Margin"), value: `${plReport?.margin || 0}%`, color: "#8b5cf6", raw: true },
             ].map(r => (
               <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
                 <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>{r.label}</span>
@@ -161,7 +161,7 @@ export function FinancePage() {
             ))}
           </div>
           <div className="card" style={{ padding: 20 }}>
-            <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>Cash Flow — Last 6 Months</h3>
+            <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>{t("finance_cashflow_title", "Cash Flow — Last 6 Months")}</h3>
             {(cashflow?.length || 0) > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={cashflow}>
@@ -173,7 +173,7 @@ export function FinancePage() {
                   <Bar dataKey="expense" fill="#ef4444" radius={[3, 3, 0, 0]} name="Expenses" />
                 </BarChart>
               </ResponsiveContainer>
-            ) : <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>Add transactions to see cash flow chart</div>}
+            ) : <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>{t("finance_cashflow_empty", "Add transactions to see cash flow chart")}</div>}
           </div>
         </div>
       )}
@@ -185,7 +185,7 @@ export function FinancePage() {
           <div style={{ padding: "14px 18px", background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12, marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
             <Bot size={18} style={{ color: "#6366f1", flexShrink: 0, marginTop: 2 }} />
             <div>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>Bank Account Sync — How It Works</div>
+              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{t("finance_bank_sync_title", "Bank Account Sync — How It Works")}</div>
               <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
                 Link a bank account and paste your bank statement CSV export. The platform parses every transaction row and uses AI to automatically categorize each one (Payroll, Rent, Software, Revenue, etc.) before saving them to your bookkeeping ledger. All transactions appear in the Transactions tab immediately after sync.
               </div>
@@ -196,11 +196,11 @@ export function FinancePage() {
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-            <button className="btn btn-primary btn-sm" onClick={() => setBankModal(true)}><Plus size={14} /> Add Account</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setBankModal(true)}><Plus size={14} /> {t("finance_add_account", "Add Account")}</button>
           </div>
 
           {!bankAccts?.length ? (
-            <Empty icon={Landmark} title="No bank accounts linked" desc="Add your first bank account to start syncing transactions for bookkeeping" action={<button className="btn btn-primary" onClick={() => setBankModal(true)}><Plus size={15} /> Add Bank Account</button>} />
+            <Empty icon={Landmark} title={t("finance_no_bank_accounts", "No bank accounts linked")} desc={t("finance_no_bank_accounts_desc", "Add your first bank account to start syncing transactions for bookkeeping")} action={<button className="btn btn-primary" onClick={() => setBankModal(true)}><Plus size={15} /> {t("finance_add_bank_account", "Add Bank Account")}</button>} />
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: 14 }}>
               {bankAccts.map((a: any) => (
@@ -215,7 +215,7 @@ export function FinancePage() {
                       onClick={() => openSync(a)}
                       style={{ display: "flex", alignItems: "center", gap: 6 }}
                     >
-                      <Upload size={13} /> Import CSV
+                      <Upload size={13} /> {t("finance_import_csv", "Import CSV")}
                     </button>
                   </div>
                   <div style={{ fontWeight: 800, fontSize: 16 }}>{a.name}</div>
@@ -224,7 +224,7 @@ export function FinancePage() {
                   {a.lastSyncedAt && (
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, display: "flex", alignItems: "center", gap: 5 }}>
                       <CheckCircle2 size={11} style={{ color: "#10b981" }} />
-                      Last synced {new Date(a.lastSyncedAt).toLocaleDateString()}
+                      {t("finance_last_synced", "Last synced")} {new Date(a.lastSyncedAt).toLocaleDateString()}
                     </div>
                   )}
                 </div>
@@ -238,8 +238,8 @@ export function FinancePage() {
       {tab === "Tax" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <div className="card" style={{ padding: 20 }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>Tax Rates</h3>
-            {!taxRates?.length ? <p style={{ color: "var(--text-muted)", fontSize: 14 }}>No tax rates configured yet.</p> :
+            <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>{t("finance_tax_rates", "Tax Rates")}</h3>
+            {!taxRates?.length ? <p style={{ color: "var(--text-muted)", fontSize: 14 }}>{t("finance_no_tax_rates", "No tax rates configured yet.")}</p> :
               taxRates.map(r => (
                 <div key={r.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
                   <span style={{ fontSize: 14 }}>{r.name} {r.country && `(${r.country})`}</span>
@@ -248,12 +248,12 @@ export function FinancePage() {
               ))
             }
             <button className="btn btn-primary btn-sm" style={{ marginTop: 14 }} onClick={async () => {
-              await apiRequest("POST", "/api/finance/tax-rates", { name: "Standard Tax", rate: "0.20", country: "US" });
+              await apiRequest("POST", "/api/finance/tax-rates", { name: "Standard Tax", rate: "0.20", country: "US" }); // "Standard Tax" is a default data value, not UI chrome
               qc.invalidateQueries({ queryKey: ["/api/finance/tax-rates"] });
-            }}><Plus size={13} /> Add Tax Rate</button>
+            }}><Plus size={13} /> {t("finance_add_tax_rate", "Add Tax Rate")}</button>
           </div>
           <div className="card" style={{ padding: 20 }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>Tax Calculator</h3>
+            <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>{t("finance_tax_calculator", "Tax Calculator")}</h3>
             <TaxCalculatorWidget />
           </div>
         </div>

@@ -12,11 +12,12 @@ const DIFF_COLOR = (d: number) => d >= 70 ? "#ef4444" : d >= 40 ? "#f59e0b" : "#
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useLanguage();
   const copy = () => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   return (
     <button className="btn btn-secondary btn-sm" onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6 }}>
       {copied ? <Check size={13} /> : <Copy size={13} />}
-      {copied ? "Copied!" : "Copy"}
+      {copied ? t("copied") : t("copy")}
     </button>
   );
 }
@@ -130,16 +131,16 @@ export default function SeoPage() {
 
   return (
     <Layout title={t("seo_title")} subtitle={t("seo_subtitle")}
-      actions={<button className="btn btn-primary btn-sm" onClick={() => setProjectModal(true)}><Plus size={14} /> New Project</button>}
+      actions={<button className="btn btn-primary btn-sm" onClick={() => setProjectModal(true)}><Plus size={14} /> {t("seo_new_project", "New Project")}</button>}
     >
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Projects", value: stats?.projects || 0, icon: Globe, color: "#3b82f6" },
-          { label: "Keywords", value: stats?.keywords?.total || 0, sub: `Avg vol: ${stats?.keywords?.avgVolume || 0}`, icon: Search, color: "#8b5cf6" },
-          { label: "Avg Difficulty", value: stats?.keywords?.avgDifficulty || 0, sub: "Keyword competition", icon: Target, color: "#f59e0b" },
-          { label: "Backlinks", value: stats?.backlinks?.total || 0, sub: `Avg DA: ${stats?.backlinks?.avgDA || 0}`, icon: Link, color: "#10b981" },
-          { label: "SEO Score", value: stats?.latestScore ? `${stats.latestScore}/100` : "—", sub: "Latest audit", icon: BarChart2, color: "#06b6d4" },
+          { label: t("projects_title", "Projects"), value: stats?.projects || 0, icon: Globe, color: "#3b82f6" },
+          { label: t("keywords", "Keywords"), value: stats?.keywords?.total || 0, sub: `${t("seo_avg_vol", "Avg vol")}: ${stats?.keywords?.avgVolume || 0}`, icon: Search, color: "#8b5cf6" },
+          { label: t("seo_avg_difficulty", "Avg Difficulty"), value: stats?.keywords?.avgDifficulty || 0, sub: t("seo_keyword_competition", "Keyword competition"), icon: Target, color: "#f59e0b" },
+          { label: t("backlinks", "Backlinks"), value: stats?.backlinks?.total || 0, sub: `${t("seo_avg_da", "Avg DA")}: ${stats?.backlinks?.avgDA || 0}`, icon: Link, color: "#10b981" },
+          { label: t("seo_score", "SEO Score"), value: stats?.latestScore ? `${stats.latestScore}/100` : "—", sub: t("seo_latest_audit", "Latest audit"), icon: BarChart2, color: "#06b6d4" },
         ].map(s => { const Icon = s.icon; return (
           <div key={s.label} className="card" style={{ padding: "14px 16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -159,7 +160,7 @@ export default function SeoPage() {
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
           <AlertCircle size={16} style={{ color: "#ef4444", flexShrink: 0, marginTop: 1 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 13, color: "#ef4444" }}>Action failed</div>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "#ef4444" }}>{t("seo_action_failed", "Action failed")}</div>
             <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{runError}</div>
           </div>
           <button onClick={() => setRunError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}>
@@ -171,7 +172,7 @@ export default function SeoPage() {
       {/* Project selector */}
       {(projectsList?.length || 0) > 0 && (
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          <button onClick={() => setSelectedProject("")} className={`btn btn-sm ${!selectedProject ? "btn-primary" : "btn-secondary"}`}>All Projects</button>
+          <button onClick={() => setSelectedProject("")} className={`btn btn-sm ${!selectedProject ? "btn-primary" : "btn-secondary"}`}>{t("seo_all_projects", "All Projects")}</button>
           {projectsList?.map(p => (
             <button key={p.id} onClick={() => setSelectedProject(p.id)} className={`btn btn-sm ${selectedProject === p.id ? "btn-primary" : "btn-secondary"}`}><Globe size={12} /> {p.name}</button>
           ))}
@@ -180,40 +181,40 @@ export default function SeoPage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-        {TABS.map(t => <button key={t} onClick={() => setTab(t)} className={`btn btn-sm ${tab === t ? "btn-primary" : "btn-secondary"}`}>{t}</button>)}
+        {TABS.map(tabLabel => <button key={tabLabel} onClick={() => setTab(tabLabel)} className={`btn btn-sm ${tab === tabLabel ? "btn-primary" : "btn-secondary"}`}>{tabLabel}</button>)}
       </div>
 
       {/* ── KEYWORDS ── */}
       {tab === "Keywords" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-            <input className="input" placeholder="Seed keyword (e.g. CRM software)" value={researchForm.seed}
+            <input className="input" placeholder={t("seo_seed_kw_ph", "Seed keyword (e.g. CRM software)")} value={researchForm.seed}
               onChange={e => setResearchForm(p => ({ ...p, seed: e.target.value }))}
               onKeyDown={e => e.key === "Enter" && runResearch()} style={{ flex: 1 }} />
             <select className="input" value={researchForm.count} onChange={e => setResearchForm(p => ({ ...p, count: Number(e.target.value) }))} style={{ width: 90 }}>
-              {[10, 20, 50].map(n => <option key={n} value={n}>{n} results</option>)}
+              {[10, 20, 50].map(n => <option key={n} value={n}>{n} {t("seo_results", "results")}</option>)}
             </select>
             <button className="btn btn-primary" disabled={running || !researchForm.seed} onClick={runResearch}>
-              {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Search size={14} />} Research
+              {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Search size={14} />} {t("keyword_research", "Research")}
             </button>
           </div>
 
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             {!keywordsData?.data?.length ? (
-              <Empty icon={Search} title="No keywords yet" desc='Enter a seed keyword above and click "Research" to discover keyword opportunities' />
+              <Empty icon={Search} title={t("seo_no_keywords", "No keywords yet")} desc={t("seo_no_keywords_desc", 'Enter a seed keyword above and click "Research" to discover keyword opportunities')} />
             ) : (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", minWidth: 620, borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
                       {[
-                        { label: "Keyword",       w: "auto" },
-                        { label: "Volume",         w: 100 },
-                        { label: "Difficulty",     w: 130 },
-                        { label: "CPC",            w: 80 },
-                        { label: "Intent",         w: 110 },
-                        { label: "Rank",           w: 70 },
-                        { label: "",               w: 44 },
+                        { label: t("keywords", "Keyword"),         w: "auto" },
+                        { label: t("search_volume", "Volume"),     w: 100 },
+                        { label: t("difficulty", "Difficulty"),    w: 130 },
+                        { label: "CPC",                            w: 80 },
+                        { label: t("seo_intent", "Intent"),        w: 110 },
+                        { label: t("position", "Rank"),            w: 70 },
+                        { label: "",                               w: 44 },
                       ].map(h => (
                         <th key={h.label} style={{ width: h.w, padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                           {h.label}
@@ -272,7 +273,7 @@ export default function SeoPage() {
           </div>
           {keywordsData && keywordsData.total > 0 && (
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
-              {keywordsData.total} keyword{keywordsData.total !== 1 ? "s" : ""} tracked
+              {keywordsData.total} {t("seo_keywords_tracked", "keywords tracked")}
             </div>
           )}
         </div>
@@ -282,8 +283,8 @@ export default function SeoPage() {
       {tab === "Site Audit" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-            <input className="input" placeholder="Domain to audit (e.g. mysite.com)" value={auditDomain} onChange={e => setAuditDomain(e.target.value)} style={{ flex: 1 }} />
-            <button className="btn btn-primary" disabled={running || !auditDomain} onClick={runAudit}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Zap size={14} />} Run Audit</button>
+            <input className="input" placeholder={t("seo_audit_domain_ph", "Domain to audit (e.g. mysite.com)")} value={auditDomain} onChange={e => setAuditDomain(e.target.value)} style={{ flex: 1 }} />
+            <button className="btn btn-primary" disabled={running || !auditDomain} onClick={runAudit}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Zap size={14} />} {t("seo_run_audit", "Run Audit")}</button>
           </div>
 
           {auditResult && (
@@ -292,14 +293,14 @@ export default function SeoPage() {
               <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
                 <div className="card" style={{ padding: 20, textAlign: "center", minWidth: 120 }}>
                   <div style={{ fontSize: 48, fontWeight: 800, color: auditResult.score >= 70 ? "#10b981" : auditResult.score >= 40 ? "#f59e0b" : "#ef4444" }}>{auditResult.score}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>SEO Score</div>
-                  {auditResult.pagesChecked > 0 && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{auditResult.pagesChecked} pages crawled</div>}
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("seo_score", "SEO Score")}</div>
+                  {auditResult.pagesChecked > 0 && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{auditResult.pagesChecked} {t("seo_pages_crawled", "pages crawled")}</div>}
                 </div>
                 <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, minWidth: 260 }}>
                   {[
-                    { label: "Critical Issues", value: auditResult.summary?.critical || 0, color: "#ef4444" },
-                    { label: "Warnings",         value: auditResult.summary?.warnings || 0, color: "#f59e0b" },
-                    { label: "Passed Checks",    value: auditResult.summary?.passed   || 0, color: "#10b981" },
+                    { label: t("seo_critical_issues", "Critical Issues"), value: auditResult.summary?.critical || 0, color: "#ef4444" },
+                    { label: t("seo_warnings", "Warnings"),               value: auditResult.summary?.warnings || 0, color: "#f59e0b" },
+                    { label: t("seo_passed_checks", "Passed Checks"),     value: auditResult.summary?.passed   || 0, color: "#10b981" },
                   ].map(s => (
                     <div key={s.label} className="card" style={{ padding: 16 }}>
                       <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
@@ -322,7 +323,7 @@ export default function SeoPage() {
                     <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{issue.description}</div>
                     {issue.urls?.length > 0 && (
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 5, lineHeight: 1.6 }}>
-                        <strong>Affected:</strong> {issue.urls.slice(0, 5).join("  ·  ")}
+                        <strong>{t("seo_affected", "Affected")}:</strong> {issue.urls.slice(0, 5).join("  ·  ")}
                         {issue.urls.length > 5 && <span> + {issue.urls.length - 5} more</span>}
                       </div>
                     )}
@@ -338,14 +339,14 @@ export default function SeoPage() {
             </div>
           )}
 
-          {!auditResult && audits?.length === 0 && <Empty icon={AlertCircle} title="No audits yet" desc='Enter a domain above and click "Run Audit"' />}
+          {!auditResult && audits?.length === 0 && <Empty icon={AlertCircle} title={t("seo_no_audits", "No audits yet")} desc={t("seo_no_audits_desc", 'Enter a domain above and click "Run Audit"')} />}
           {!auditResult && (audits?.length || 0) > 0 && (
             <div style={{ display: "grid", gap: 10 }}>
               {audits!.map((a: any) => (
                 <div key={a.id} className="card" style={{ padding: 16, cursor: "pointer" }} onClick={() => setAuditResult(a)}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontWeight: 700 }}>Audit — {new Date(a.crawledAt).toLocaleDateString()}</div>
+                      <div style={{ fontWeight: 700 }}>{t("site_audit", "Audit")} — {new Date(a.crawledAt).toLocaleDateString()}</div>
                       <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{a.summary?.critical} critical · {a.summary?.warnings} warnings · {a.summary?.passed} passed</div>
                     </div>
                     <div style={{ fontSize: 32, fontWeight: 800, color: a.score >= 70 ? "#10b981" : "#f59e0b" }}>{a.score}</div>
@@ -361,23 +362,23 @@ export default function SeoPage() {
       {tab === "Backlinks" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-            <input className="input" placeholder="Domain (e.g. mysite.com)" value={backlinksForm.domain} onChange={e => setBacklinksForm(p => ({ ...p, domain: e.target.value }))} style={{ flex: 1 }} />
-            <button className="btn btn-primary" disabled={running || !backlinksForm.domain} onClick={runBacklinks}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Link size={14} />} Analyze Backlinks</button>
+            <input className="input" placeholder={t("seo_domain_ph", "Domain (e.g. mysite.com)")} value={backlinksForm.domain} onChange={e => setBacklinksForm(p => ({ ...p, domain: e.target.value }))} style={{ flex: 1 }} />
+            <button className="btn btn-primary" disabled={running || !backlinksForm.domain} onClick={runBacklinks}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Link size={14} />} {t("seo_analyze_backlinks", "Analyze Backlinks")}</button>
           </div>
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             {!backlinksData?.data?.length ? (
-              <Empty icon={Link} title="No backlinks yet" desc='Enter your domain and click "Analyze Backlinks"' />
+              <Empty icon={Link} title={t("seo_no_backlinks", "No backlinks yet")} desc={t("seo_no_backlinks_desc", 'Enter your domain and click "Analyze Backlinks"')} />
             ) : (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", minWidth: 540, borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
                       {[
-                        { label: "Source Domain", w: "auto" },
-                        { label: "Anchor Text",   w: 160 },
-                        { label: "DA",            w: 70 },
-                        { label: "PA",            w: 70 },
-                        { label: "Type",          w: 100 },
+                        { label: t("seo_source_domain", "Source Domain"), w: "auto" },
+                        { label: t("seo_anchor_text", "Anchor Text"),     w: 160 },
+                        { label: "DA",                                     w: 70 },
+                        { label: "PA",                                     w: 70 },
+                        { label: t("type", "Type"),                        w: 100 },
                       ].map(h => (
                         <th key={h.label} style={{ width: h.w, padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                           {h.label}
@@ -422,7 +423,7 @@ export default function SeoPage() {
           </div>
           {backlinksData && backlinksData.total > 0 && (
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
-              {backlinksData.total} backlink{backlinksData.total !== 1 ? "s" : ""} tracked
+              {backlinksData.total} {t("seo_backlinks_tracked", "backlinks tracked")}
             </div>
           )}
         </div>
@@ -432,14 +433,14 @@ export default function SeoPage() {
       {tab === "Competitor" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-            <input className="input" placeholder="Your domain" value={competitorForm.domain} onChange={e => setCompetitorForm(p => ({ ...p, domain: e.target.value }))} />
-            <input className="input" placeholder="Competitor domain" value={competitorForm.competitor} onChange={e => setCompetitorForm(p => ({ ...p, competitor: e.target.value }))} />
-            <button className="btn btn-primary" disabled={running || !competitorForm.competitor} onClick={runCompetitor}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Zap size={14} />} Analyze</button>
+            <input className="input" placeholder={t("seo_your_domain", "Your domain")} value={competitorForm.domain} onChange={e => setCompetitorForm(p => ({ ...p, domain: e.target.value }))} />
+            <input className="input" placeholder={t("seo_competitor_domain", "Competitor domain")} value={competitorForm.competitor} onChange={e => setCompetitorForm(p => ({ ...p, competitor: e.target.value }))} />
+            <button className="btn btn-primary" disabled={running || !competitorForm.competitor} onClick={runCompetitor}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Zap size={14} />} {t("seo_analyze", "Analyze")}</button>
           </div>
           {competitorResult ? (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div className="card" style={{ padding: 20 }}>
-                <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>Competitor Metrics — {competitorResult.competitor}</h3>
+                <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>{t("seo_competitor_metrics", "Competitor Metrics")} — {competitorResult.competitor}</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   {Object.entries(competitorResult.metrics || {}).map(([k, v]: [string, any]) => (
                     <div key={k} className="card" style={{ padding: "10px 12px", background: "var(--bg-overlay)" }}>
@@ -462,7 +463,7 @@ export default function SeoPage() {
                 ))}
               </div>
             </div>
-          ) : <Empty icon={BarChart2} title="No competitor analysis yet" desc="Enter your domain and a competitor domain to get a full comparison" />}
+          ) : <Empty icon={BarChart2} title={t("seo_no_competitor", "No competitor analysis yet")} desc={t("seo_no_competitor_desc", "Enter your domain and a competitor domain to get a full comparison")} />}
         </div>
       )}
 
@@ -470,18 +471,18 @@ export default function SeoPage() {
       {tab === "Content Ideas" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-            <input className="input" placeholder="Topic (e.g. B2B CRM)" value={contentForm.topic} onChange={e => setContentForm(p => ({ ...p, topic: e.target.value }))} />
-            <input className="input" placeholder="Target audience" value={contentForm.audience} onChange={e => setContentForm(p => ({ ...p, audience: e.target.value }))} />
-            <button className="btn btn-primary" disabled={running || !contentForm.topic} onClick={runContent}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <BookOpen size={14} />} Generate</button>
+            <input className="input" placeholder={t("seo_topic_ph", "Topic (e.g. B2B CRM)")} value={contentForm.topic} onChange={e => setContentForm(p => ({ ...p, topic: e.target.value }))} />
+            <input className="input" placeholder={t("seo_audience_ph", "Target audience")} value={contentForm.audience} onChange={e => setContentForm(p => ({ ...p, audience: e.target.value }))} />
+            <button className="btn btn-primary" disabled={running || !contentForm.topic} onClick={runContent}>{running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <BookOpen size={14} />} {t("generate", "Generate")}</button>
           </div>
-          {contentIdeas.length === 0 ? <Empty icon={BookOpen} title="No content ideas yet" desc="Enter a topic to generate SEO-optimized content ideas" /> : (
+          {contentIdeas.length === 0 ? <Empty icon={BookOpen} title={t("seo_no_content_ideas", "No content ideas yet")} desc={t("seo_no_content_ideas_desc", "Enter a topic to generate SEO-optimized content ideas")} /> : (
             <div style={{ display: "grid", gap: 10 }}>
               {contentIdeas.map((idea: any, i: number) => (
                 <div key={i} className="card" style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{idea.title}</div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Keyword: <strong>{idea.keyword}</strong></div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("keywords", "Keyword")}: <strong>{idea.keyword}</strong></div>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                       <div style={{ textAlign: "center" }}>
@@ -513,41 +514,41 @@ export default function SeoPage() {
           {/* Input form */}
           <div className="card" style={{ padding: 20 }}>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-              <Tag size={16} style={{ color: "var(--brand-light)" }} /> Meta Tag Generator
+              <Tag size={16} style={{ color: "var(--brand-light)" }} /> {t("seo_meta_tag_generator", "Meta Tag Generator")}
             </div>
             <div style={{ display: "grid", gap: 12 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Page Title *</label>
-                <input className="input" placeholder="e.g. Best CRM Software for Agencies" value={metaForm.pageTitle} onChange={e => setMetaForm(p => ({ ...p, pageTitle: e.target.value }))} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("seo_page_title_label", "Page Title")} *</label>
+                <input className="input" placeholder={t("seo_page_title_ph", "e.g. Best CRM Software for Agencies")} value={metaForm.pageTitle} onChange={e => setMetaForm(p => ({ ...p, pageTitle: e.target.value }))} />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Page Description</label>
-                <textarea className="input" rows={3} placeholder="Short description of the page content..." value={metaForm.pageDescription} onChange={e => setMetaForm(p => ({ ...p, pageDescription: e.target.value }))} style={{ resize: "vertical" }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("seo_page_description_label", "Page Description")}</label>
+                <textarea className="input" rows={3} placeholder={t("seo_page_description_ph", "Short description of the page content...")} value={metaForm.pageDescription} onChange={e => setMetaForm(p => ({ ...p, pageDescription: e.target.value }))} style={{ resize: "vertical" }} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Page URL</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("seo_page_url_label", "Page URL")}</label>
                   <input className="input" placeholder="https://yoursite.com/page" value={metaForm.url} onChange={e => setMetaForm(p => ({ ...p, url: e.target.value }))} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Brand Name</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("seo_brand_name_label", "Brand Name")}</label>
                   <input className="input" placeholder="e.g. ARGILETTE" value={metaForm.brand} onChange={e => setMetaForm(p => ({ ...p, brand: e.target.value }))} />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Page Type</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("seo_page_type_label", "Page Type")}</label>
                   <select className="input" value={metaForm.pageType} onChange={e => setMetaForm(p => ({ ...p, pageType: e.target.value }))}>
                     {["website", "article", "product", "profile", "video.other"].map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Focus Keywords</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t("seo_focus_keywords_label", "Focus Keywords")}</label>
                   <input className="input" placeholder="CRM, agency software, AI" value={metaForm.keywords} onChange={e => setMetaForm(p => ({ ...p, keywords: e.target.value }))} />
                 </div>
               </div>
               <button className="btn btn-primary" disabled={running || !metaForm.pageTitle} onClick={runMetaTags} style={{ marginTop: 4 }}>
-                {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Tag size={14} />} Generate Meta Tags
+                {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Tag size={14} />} {t("seo_generate_meta_tags", "Generate Meta Tags")}
               </button>
             </div>
           </div>
@@ -557,7 +558,7 @@ export default function SeoPage() {
             <div style={{ display: "grid", gap: 12 }}>
               {/* Preview card */}
               <div className="card" style={{ padding: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Google Preview</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>{t("seo_google_preview", "Google Preview")}</div>
                 <div style={{ fontSize: 13, color: "#3b82f6", fontWeight: 600, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{metaResult.title}</div>
                 {metaResult.canonical && <div style={{ fontSize: 11, color: "#10b981", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{metaResult.canonical}</div>}
                 <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{metaResult.metaDescription}</div>
@@ -637,12 +638,12 @@ export default function SeoPage() {
           {/* Input form */}
           <div className="card" style={{ padding: 20 }}>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-              <Code2 size={16} style={{ color: "var(--brand-light)" }} /> Structured Data Builder
+              <Code2 size={16} style={{ color: "var(--brand-light)" }} /> {t("seo_structured_data_builder", "Structured Data Builder")}
             </div>
 
             {/* Schema type selector */}
             <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>Schema Type</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>{t("seo_schema_type_label", "Schema Type")}</label>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {SCHEMA_TYPES.map(t => (
                   <button key={t} onClick={() => { setSchemaType(t); setSchemaData({}); setSchemaResult(null); }}
@@ -717,32 +718,32 @@ export default function SeoPage() {
 
               {/* FAQ fields */}
               {schemaType === "FAQ" && (<>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>Add your frequently asked questions below:</div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>{t("seo_faq_add_hint", "Add your frequently asked questions below:")}</div>
                 {faqItems.map((faq, i) => (
                   <div key={i} className="card" style={{ padding: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>Question {i + 1}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>{t("seo_question_n", "Question")} {i + 1}</span>
                       {faqItems.length > 1 && <button className="btn btn-ghost btn-sm" style={{ color: "#ef4444", padding: "2px 6px" }} onClick={() => setFaqItems(p => p.filter((_, j) => j !== i))}><Trash2 size={12} /></button>}
                     </div>
-                    <input className="input" placeholder="Question" value={faq.question} onChange={e => setFaqItems(p => p.map((f, j) => j === i ? { ...f, question: e.target.value } : f))} style={{ marginBottom: 6 }} />
-                    <textarea className="input" rows={2} placeholder="Answer" value={faq.answer} onChange={e => setFaqItems(p => p.map((f, j) => j === i ? { ...f, answer: e.target.value } : f))} style={{ resize: "vertical" }} />
+                    <input className="input" placeholder={t("seo_faq_question_ph", "Question")} value={faq.question} onChange={e => setFaqItems(p => p.map((f, j) => j === i ? { ...f, question: e.target.value } : f))} style={{ marginBottom: 6 }} />
+                    <textarea className="input" rows={2} placeholder={t("seo_faq_answer_ph", "Answer")} value={faq.answer} onChange={e => setFaqItems(p => p.map((f, j) => j === i ? { ...f, answer: e.target.value } : f))} style={{ resize: "vertical" }} />
                   </div>
                 ))}
-                <button className="btn btn-secondary btn-sm" onClick={() => setFaqItems(p => [...p, { question: "", answer: "" }])}><Plus size={12} /> Add Question</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setFaqItems(p => [...p, { question: "", answer: "" }])}><Plus size={12} /> {t("seo_add_question", "Add Question")}</button>
               </>)}
 
               {/* BreadcrumbList fields */}
               {schemaType === "BreadcrumbList" && (<>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>Add your breadcrumb items in order:</div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>{t("seo_breadcrumb_add_hint", "Add your breadcrumb items in order:")}</div>
                 {breadcrumbs.map((crumb, i) => (
                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span style={{ fontSize: 12, color: "var(--text-muted)", minWidth: 16 }}>{i + 1}.</span>
-                    <input className="input" placeholder="Label (e.g. Home)" value={crumb.name} onChange={e => setBreadcrumbs(p => p.map((c, j) => j === i ? { ...c, name: e.target.value } : c))} style={{ flex: 1 }} />
+                    <input className="input" placeholder={t("seo_breadcrumb_label_ph", "Label (e.g. Home)")} value={crumb.name} onChange={e => setBreadcrumbs(p => p.map((c, j) => j === i ? { ...c, name: e.target.value } : c))} style={{ flex: 1 }} />
                     <input className="input" placeholder="URL" value={crumb.url} onChange={e => setBreadcrumbs(p => p.map((c, j) => j === i ? { ...c, url: e.target.value } : c))} style={{ flex: 1 }} />
                     {breadcrumbs.length > 1 && <button className="btn btn-ghost btn-sm" style={{ color: "#ef4444", padding: "2px 6px", flexShrink: 0 }} onClick={() => setBreadcrumbs(p => p.filter((_, j) => j !== i))}><Trash2 size={12} /></button>}
                   </div>
                 ))}
-                <button className="btn btn-secondary btn-sm" onClick={() => setBreadcrumbs(p => [...p, { name: "", url: "" }])}><Plus size={12} /> Add Breadcrumb</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setBreadcrumbs(p => [...p, { name: "", url: "" }])}><Plus size={12} /> {t("seo_add_breadcrumb", "Add Breadcrumb")}</button>
               </>)}
 
               {/* SoftwareApplication fields */}
@@ -762,7 +763,7 @@ export default function SeoPage() {
               </>)}
 
               <button className="btn btn-primary" disabled={running} onClick={runSchema} style={{ marginTop: 4 }}>
-                {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Code2 size={14} />} Generate JSON-LD
+                {running ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Code2 size={14} />} {t("seo_generate_json_ld", "Generate JSON-LD")}
               </button>
             </div>
           </div>
@@ -773,8 +774,8 @@ export default function SeoPage() {
               <div className="card" style={{ padding: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>JSON-LD Output</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Paste this inside your {"<head>"} tag</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{t("seo_json_ld_output", "JSON-LD Output")}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{t("seo_paste_in_head", 'Paste this inside your <head> tag')}</div>
                   </div>
                   <CopyButton text={schemaResult.html} />
                 </div>
@@ -784,12 +785,12 @@ export default function SeoPage() {
               </div>
 
               <div className="card" style={{ padding: 14 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Validation Tips</div>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("seo_validation_tips", "Validation Tips")}</div>
                 {[
-                  { icon: "✓", text: "Test with Google's Rich Results Test tool", color: "#10b981" },
-                  { icon: "✓", text: "Validate JSON syntax at jsonlint.com", color: "#10b981" },
-                  { icon: "✓", text: `Schema type: ${schemaType} — supported by Google`, color: "#3b82f6" },
-                  { icon: "→", text: "Place in <head> before </head> closing tag", color: "var(--text-muted)" },
+                  { icon: "✓", text: t("seo_tip_google_test", "Test with Google's Rich Results Test tool"), color: "#10b981" },
+                  { icon: "✓", text: t("seo_tip_jsonlint", "Validate JSON syntax at jsonlint.com"), color: "#10b981" },
+                  { icon: "✓", text: `${t("seo_schema_type", "Schema type")}: ${schemaType} — ${t("seo_supported_by_google", "supported by Google")}`, color: "#3b82f6" },
+                  { icon: "→", text: t("seo_tip_place_head", "Place in <head> before </head> closing tag"), color: "var(--text-muted)" },
                 ].map((tip, i) => (
                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
                     <span style={{ color: tip.color, fontSize: 13, flexShrink: 0 }}>{tip.icon}</span>
@@ -803,16 +804,16 @@ export default function SeoPage() {
       )}
 
       {/* Project modal */}
-      <Modal open={projectModal} onClose={() => setProjectModal(false)} title="New SEO Project">
+      <Modal open={projectModal} onClose={() => setProjectModal(false)} title={t("seo_new_project", "New SEO Project")}>
         <form onSubmit={createProject}>
           <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-            <FormRow label="Project name" required><input className="input" value={projectForm.name} onChange={e => setProjectForm(p => ({ ...p, name: e.target.value }))} required /></FormRow>
-            <FormRow label="Domain" required><input className="input" placeholder="yourdomain.com" value={projectForm.domain} onChange={e => setProjectForm(p => ({ ...p, domain: e.target.value }))} required /></FormRow>
-            <FormRow label="Country"><input className="input" value={projectForm.country} onChange={e => setProjectForm(p => ({ ...p, country: e.target.value }))} placeholder="US" /></FormRow>
+            <FormRow label={t("seo_project_name_label", "Project name")} required><input className="input" value={projectForm.name} onChange={e => setProjectForm(p => ({ ...p, name: e.target.value }))} required /></FormRow>
+            <FormRow label={t("store_domain", "Domain")} required><input className="input" placeholder="yourdomain.com" value={projectForm.domain} onChange={e => setProjectForm(p => ({ ...p, domain: e.target.value }))} required /></FormRow>
+            <FormRow label={t("seo_country_label", "Country")}><input className="input" value={projectForm.country} onChange={e => setProjectForm(p => ({ ...p, country: e.target.value }))} placeholder="US" /></FormRow>
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setProjectModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Create Project</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setProjectModal(false)}>{t("cancel", "Cancel")}</button>
+            <button type="submit" className="btn btn-primary">{t("seo_create_project", "Create Project")}</button>
           </div>
         </form>
       </Modal>

@@ -54,6 +54,15 @@ export default function IntelligencePage() {
   const { data: intentData } = useQuery<any[]>({ queryKey: ["/api/intelligence/intent"], enabled: tab === "Intent Signals" });
   const { data: visitors } = useQuery<any[]>({ queryKey: ["/api/intelligence/visitors"], enabled: tab === "Visitors" });
 
+  const TAB_LABELS: Record<typeof TABS[number], string> = {
+    "Prospects": t("intel_tab_prospects", "Prospects"),
+    "Companies": t("intel_tab_companies", "Companies"),
+    "Sequences": t("intel_tab_sequences", "Sequences"),
+    "Intent Signals": t("intel_tab_intent", "Intent Signals"),
+    "Visitors": t("intel_tab_visitors", "Visitors"),
+    "Org Charts": t("intel_tab_org_charts", "Org Charts"),
+  };
+
   const runSearch = async () => {
     setSearching(true);
     try {
@@ -100,20 +109,20 @@ export default function IntelligencePage() {
       subtitle={t("intelligence_subtitle")}
       actions={
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => setEmailFinderModal(true)}><Mail size={14} /> Email Finder</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => { setOrgForm({ company: "", domain: "", focusDepartment: "" }); setOrgModal(true); }}><Users size={14} /> Org Chart</button>
-          <button className="btn btn-primary btn-sm" onClick={() => setSearchModal(true)}><Zap size={14} /> Find Prospects</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setEmailFinderModal(true)}><Mail size={14} /> {t("intel_email_finder", "Email Finder")}</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => { setOrgForm({ company: "", domain: "", focusDepartment: "" }); setOrgModal(true); }}><Users size={14} /> {t("intel_org_chart", "Org Chart")}</button>
+          <button className="btn btn-primary btn-sm" onClick={() => setSearchModal(true)}><Zap size={14} /> {t("intel_find_prospects", "Find Prospects")}</button>
         </div>
       }
     >
       {/* Stats bar */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Prospects", value: stats?.prospects?.total || 0, sub: `Avg score: ${stats?.prospects?.avgScore || 0}`, color: "#3b82f6", icon: Users },
-          { label: "Companies", value: stats?.companies || 0, sub: "Enriched", color: "#8b5cf6", icon: Building2 },
-          { label: "Sequences", value: stats?.sequences || 0, sub: "Active", color: "#10b981", icon: Layers },
-          { label: "Intent Signals", value: stats?.intentSignals || 0, sub: "Buying indicators", color: "#f59e0b", icon: TrendingUp },
-          { label: "Website Visitors", value: stats?.visitors || 0, sub: "Identified companies", color: "#06b6d4", icon: Eye },
+          { label: t("intel_stat_prospects", "Prospects"), value: stats?.prospects?.total || 0, sub: `Avg score: ${stats?.prospects?.avgScore || 0}`, color: "#3b82f6", icon: Users },
+          { label: t("intel_stat_companies", "Companies"), value: stats?.companies || 0, sub: t("intel_enriched", "Enriched"), color: "#8b5cf6", icon: Building2 },
+          { label: t("intel_stat_sequences", "Sequences"), value: stats?.sequences || 0, sub: t("active", "Active"), color: "#10b981", icon: Layers },
+          { label: t("intel_stat_intent", "Intent Signals"), value: stats?.intentSignals || 0, sub: t("intel_buying_indicators", "Buying indicators"), color: "#f59e0b", icon: TrendingUp },
+          { label: t("intel_stat_visitors", "Website Visitors"), value: stats?.visitors || 0, sub: t("intel_identified_companies", "Identified companies"), color: "#06b6d4", icon: Eye },
         ].map(s => {
           const Icon = s.icon;
           return (
@@ -133,9 +142,9 @@ export default function IntelligencePage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16, overflowX: "auto", paddingBottom: 4 }} className="no-scrollbar">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`btn btn-sm ${tab === t ? "btn-primary" : "btn-secondary"}`} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-            {t}
+        {TABS.map(tabKey => (
+          <button key={tabKey} onClick={() => setTab(tabKey)} className={`btn btn-sm ${tab === tabKey ? "btn-primary" : "btn-secondary"}`} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+            {TAB_LABELS[tabKey]}
           </button>
         ))}
       </div>
@@ -147,23 +156,30 @@ export default function IntelligencePage() {
           <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
             <div style={{ position: "relative", flex: 1 }}>
               <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
-              <input className="input" placeholder="Search by name, email, company, title..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 36 }} />
+              <input className="input" placeholder={t("intel_search_placeholder", "Search by name, email, company, title...")} value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 36 }} />
             </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => setSearchModal(true)}><Filter size={14} /> Filter</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSearchModal(true)}><Filter size={14} /> {t("filter", "Filter")}</button>
             <button className="btn btn-ghost btn-sm" onClick={() => { apiRequest("GET", "/api/intelligence/export").then(() => {}); }} title="Export CSV"><Download size={14} /></button>
           </div>
 
           <div className="card" style={{ overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 100px 80px 100px 120px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-              {["Prospect", "Company", "Score", "Intent", "Status", "Actions"].map(h => (
+              {[
+                t("intel_col_prospect", "Prospect"),
+                t("intel_col_company", "Company"),
+                t("intel_col_score", "Score"),
+                t("intel_col_intent", "Intent"),
+                t("status", "Status"),
+                t("actions", "Actions"),
+              ].map(h => (
                 <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
               ))}
             </div>
 
             {!prospectsData?.data?.length ? (
-              <Empty icon={Users} title="No prospects yet"
-                desc="Click 'Find Prospects' to search the B2B database and discover your ideal customers"
-                action={<button className="btn btn-primary" onClick={() => setSearchModal(true)}><Zap size={15} /> Find Prospects</button>}
+              <Empty icon={Users} title={t("intel_no_prospects", "No prospects yet")}
+                desc={t("intel_no_prospects_desc", "Click 'Find Prospects' to search the B2B database and discover your ideal customers")}
+                action={<button className="btn btn-primary" onClick={() => setSearchModal(true)}><Zap size={15} /> {t("intel_find_prospects", "Find Prospects")}</button>}
               />
             ) : prospectsData.data.map((p: any) => (
               <div key={p.id} className="table-row" style={{ gridTemplateColumns: "1fr 160px 100px 80px 100px 120px", gap: 12 }}>
@@ -194,7 +210,7 @@ export default function IntelligencePage() {
                   {p.intentScore > 60 ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", animation: "pulse 2s infinite" }} />
-                      <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>High</span>
+                      <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>{t("intel_intent_high", "High")}</span>
                     </div>
                   ) : (
                     <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{p.intentScore}</span>
@@ -205,22 +221,22 @@ export default function IntelligencePage() {
                   <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "4px 8px" }}
                     disabled={!!p.importedAsLeadId}
                     onClick={() => !p.importedAsLeadId && toLeadMut.mutate(p.id)}
-                    title="Add to CRM as Lead"
+                    title={t("intel_add_as_lead", "Add to CRM as Lead")}
                   >
-                    {p.importedAsLeadId ? <Check size={12} /> : "→ Lead"}
+                    {p.importedAsLeadId ? <Check size={12} /> : t("intel_to_lead", "→ Lead")}
                   </button>
                   <button className="btn btn-secondary btn-sm" style={{ fontSize: 11, padding: "4px 8px" }}
                     disabled={!!p.importedAsContactId}
                     onClick={() => !p.importedAsContactId && toContactMut.mutate(p.id)}
-                    title="Add to CRM as Contact"
+                    title={t("intel_add_as_contact", "Add to CRM as Contact")}
                   >
-                    {p.importedAsContactId ? <Check size={12} /> : "Contact"}
+                    {p.importedAsContactId ? <Check size={12} /> : t("intel_to_contact", "Contact")}
                   </button>
                 </div>
               </div>
             ))}
           </div>
-          {prospectsData && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>{prospectsData.total} total prospects in database</div>}
+          {prospectsData && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>{`${prospectsData.total} ${t("intel_total_in_db", "total prospects in database")}`}</div>}
         </div>
       )}
 
@@ -230,21 +246,21 @@ export default function IntelligencePage() {
           <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
             <div style={{ position: "relative", flex: 1 }}>
               <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
-              <input id="enrich-domain-input" className="input" placeholder="Enter domain to enrich (e.g. yourprospect.com)" style={{ paddingLeft: 36 }} />
+              <input id="enrich-domain-input" className="input" placeholder={t("intel_enrich_domain_ph", "Enter domain to enrich (e.g. yourprospect.com)")} style={{ paddingLeft: 36 }} />
             </div>
             <button className="btn btn-primary btn-sm" onClick={async () => {
               const val = (document.getElementById("enrich-domain-input") as HTMLInputElement)?.value?.trim();
-              if (!val) { toast.warning("Please enter a company domain or name to enrich."); return; }
+              if (!val) { toast.warning(t("intel_enrich_warning", "Please enter a company domain or name to enrich.")); return; }
               const isDomain = val.includes(".");
               await apiRequest("POST", "/api/intelligence/companies/enrich", isDomain ? { domain: val } : { name: val });
               qc.invalidateQueries({ queryKey: ["/api/intelligence/companies"] });
-            }}><Zap size={14} /> Enrich Company</button>
+            }}><Zap size={14} /> {t("intel_enrich_company", "Enrich Company")}</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>
             {!companiesData?.data?.length ? (
               <div style={{ gridColumn: "1/-1" }}>
-                <Empty icon={Building2} title="No companies enriched yet"
-                  desc="Enrich a company to see their full profile — size, tech stack, funding, and key contacts"
+                <Empty icon={Building2} title={t("intel_no_companies", "No companies enriched yet")}
+                  desc={t("intel_no_companies_desc", "Enrich a company to see their full profile — size, tech stack, funding, and key contacts")}
                 />
               </div>
             ) : companiesData.data.map((c: any) => (
@@ -278,12 +294,12 @@ export default function IntelligencePage() {
       {tab === "Sequences" && (
         <div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-            <button className="btn btn-primary btn-sm" onClick={() => setSequenceModal(true)}><Plus size={14} /> Generate Sequence</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setSequenceModal(true)}><Plus size={14} /> {t("intel_generate_sequence", "Generate Sequence")}</button>
           </div>
           {!sequences?.length ? (
-            <Empty icon={Layers} title="No sequences yet"
-              desc="Generate AI-powered multi-touch outreach sequences personalized for your target persona"
-              action={<button className="btn btn-primary" onClick={() => setSequenceModal(true)}><Plus size={15} /> Generate Sequence</button>}
+            <Empty icon={Layers} title={t("intel_no_sequences", "No sequences yet")}
+              desc={t("intel_no_sequences_desc", "Generate AI-powered multi-touch outreach sequences personalized for your target persona")}
+              action={<button className="btn btn-primary" onClick={() => setSequenceModal(true)}><Plus size={15} /> {t("intel_generate_sequence", "Generate Sequence")}</button>}
             />
           ) : sequences.map((s: any) => (
             <div key={s.id} className="card" style={{ padding: "16px 20px", marginBottom: 12 }}>
@@ -300,7 +316,7 @@ export default function IntelligencePage() {
               <div style={{ display: "flex", gap: 8, overflowX: "auto" }} className="no-scrollbar">
                 {(s.steps || []).map((step: any, i: number) => (
                   <div key={i} style={{ flexShrink: 0, background: "var(--bg-overlay)", borderRadius: 8, padding: "8px 12px", minWidth: 120 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 4 }}>Day {step.delayDays}</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 4 }}>{t("intel_day", "Day")} {step.delayDays}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
                       {step.type === "email" ? <Mail size={11} style={{ color: "#3b82f6" }} /> : step.type === "linkedin" ? <Linkedin size={11} style={{ color: "#0077b5" }} /> : step.type === "call" ? <Phone size={11} style={{ color: "#10b981" }} /> : <Briefcase size={11} />}
                       {step.type.charAt(0).toUpperCase() + step.type.slice(1)}
@@ -321,10 +337,10 @@ export default function IntelligencePage() {
             <button className="btn btn-primary btn-sm" onClick={async () => {
               await apiRequest("POST", "/api/intelligence/intent", { companyName: "Target Company", companyDomain: "target.com" });
               qc.invalidateQueries({ queryKey: ["/api/intelligence/intent"] });
-            }}><RefreshCw size={14} /> Scan for Signals</button>
+            }}><RefreshCw size={14} /> {t("intel_scan_signals", "Scan for Signals")}</button>
           </div>
           {!intentData?.length ? (
-            <Empty icon={TrendingUp} title="No intent signals yet" desc="Intent signals show which companies are actively researching topics related to your product — a powerful buying indicator" />
+            <Empty icon={TrendingUp} title={t("intel_no_intent", "No intent signals yet")} desc={t("intel_no_intent_desc", "Intent signals show which companies are actively researching topics related to your product — a powerful buying indicator")} />
           ) : intentData.map((s: any) => (
             <div key={s.id} className="card" style={{ padding: "14px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ width: 50, height: 50, borderRadius: 12, background: `${s.strength > 70 ? "#10b981" : s.strength > 50 ? "#f59e0b" : "#64748b"}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -337,7 +353,7 @@ export default function IntelligencePage() {
               </div>
               <div style={{ textAlign: "center", flexShrink: 0 }}>
                 <div style={{ fontSize: 22, fontWeight: 800, color: s.strength > 70 ? "#10b981" : "#f59e0b" }}>{s.strength}</div>
-                <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600 }}>SCORE</div>
+                <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600 }}>{t("intel_score_label", "SCORE")}</div>
               </div>
               <div style={{ flexShrink: 0 }}>
                 <span className="badge badge-gray">{s.signalType?.replace("_", " ")}</span>
@@ -351,11 +367,17 @@ export default function IntelligencePage() {
       {tab === "Visitors" && (
         <div>
           {!visitors?.length ? (
-            <Empty icon={Eye} title="No identified visitors yet" desc="Website visitor intelligence de-anonymizes your B2B traffic, showing which companies are browsing your site" />
+            <Empty icon={Eye} title={t("intel_no_visitors", "No identified visitors yet")} desc={t("intel_no_visitors_desc", "Website visitor intelligence de-anonymizes your B2B traffic, showing which companies are browsing your site")} />
           ) : (
             <div className="card" style={{ overflow: "hidden" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 80px 100px 80px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-                {["Company", "Location", "Pages", "Time", "Score"].map(h => (
+                {[
+                  t("intel_col_company", "Company"),
+                  t("intel_col_location", "Location"),
+                  t("intel_col_pages", "Pages"),
+                  t("intel_col_time", "Time"),
+                  t("intel_col_score_lc", "Score"),
+                ].map(h => (
                   <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
                 ))}
               </div>
@@ -380,10 +402,10 @@ export default function IntelligencePage() {
       {tab === "Org Charts" && (
         <div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-            <button className="btn btn-primary btn-sm" onClick={() => setOrgModal(true)}><Users size={14} /> Build Org Chart</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setOrgModal(true)}><Users size={14} /> {t("intel_build_org_chart", "Build Org Chart")}</button>
           </div>
           {orgChart.length === 0 ? (
-            <Empty icon={Users} title="No org charts yet" desc="Map the decision-making hierarchy of your target accounts to find the right buyer faster" action={<button className="btn btn-primary" onClick={() => setOrgModal(true)}><Users size={15} /> Build Org Chart</button>} />
+            <Empty icon={Users} title={t("intel_no_org_charts", "No org charts yet")} desc={t("intel_no_org_charts_desc", "Map the decision-making hierarchy of your target accounts to find the right buyer faster")} action={<button className="btn btn-primary" onClick={() => setOrgModal(true)}><Users size={15} /> {t("intel_build_org_chart", "Build Org Chart")}</button>} />
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12 }}>
               {orgChart.map((p: any, i: number) => (
@@ -392,7 +414,7 @@ export default function IntelligencePage() {
                   <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{p.title}</div>
                   {p.reportsTo && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>↑ {p.reportsTo}</div>}
                   <div style={{ marginTop: 6 }}>
-                    {p.isDecisionMaker && <span className="badge badge-blue">Decision Maker</span>}
+                    {p.isDecisionMaker && <span className="badge badge-blue">{t("intel_decision_maker", "Decision Maker")}</span>}
                     <span className="badge badge-gray" style={{ marginLeft: 4 }}>{p.seniority}</span>
                   </div>
                 </div>
@@ -405,12 +427,12 @@ export default function IntelligencePage() {
       {/* ═══ MODALS ═══ */}
 
       {/* Prospect Search Modal */}
-      <Modal open={searchModal} onClose={() => setSearchModal(false)} title="🔍 Find Prospects" width={560}>
+      <Modal open={searchModal} onClose={() => setSearchModal(false)} title={t("intel_find_prospects", "Find Prospects")} width={560}>
         <div style={{ padding: "20px", display: "grid", gap: 14 }}>
           <div style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "#93c5fd" }}>
-            Our AI searches millions of B2B profiles to find your ideal customers.
+            {t("intel_search_info", "Our AI searches millions of B2B profiles to find your ideal customers.")}
           </div>
-          <FormRow label="Target Industries">
+          <FormRow label={t("intel_target_industries", "Target Industries")}>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: 8, background: "var(--bg-overlay)", borderRadius: 8 }}>
               {INDUSTRIES.map(ind => (
                 <button key={ind} type="button"
@@ -428,13 +450,13 @@ export default function IntelligencePage() {
               ))}
             </div>
           </FormRow>
-          <FormRow label="Job Titles (comma-separated)">
+          <FormRow label={t("intel_job_titles_label", "Job Titles (comma-separated)")}>
             <input className="input" value={(searchForm.titles as string[]).join(", ")}
-              onChange={e => setSearchForm(p => ({ ...p, titles: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))}
+              onChange={e => setSearchForm(p => ({ ...p, titles: e.target.value.split(",").map(x => x.trim()).filter(Boolean) }))}
               placeholder="VP Sales, Head of Marketing, CTO" />
           </FormRow>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <FormRow label="Seniority">
+            <FormRow label={t("intel_seniority", "Seniority")}>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {SENIORITIES.map(s => (
                   <button key={s} type="button"
@@ -451,7 +473,7 @@ export default function IntelligencePage() {
                 ))}
               </div>
             </FormRow>
-            <FormRow label="Company Size">
+            <FormRow label={t("intel_company_size_label", "Company Size")}>
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {COMPANY_SIZES.map(s => (
                   <button key={s} type="button"
@@ -469,77 +491,85 @@ export default function IntelligencePage() {
               </div>
             </FormRow>
           </div>
-          <FormRow label="Technologies Used (e.g., Salesforce, HubSpot)">
+          <FormRow label={t("intel_technologies_label", "Technologies Used (e.g., Salesforce, HubSpot)")}>
             <input className="input" value={(searchForm.technologies as string[]).join(", ")}
-              onChange={e => setSearchForm(p => ({ ...p, technologies: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))}
+              onChange={e => setSearchForm(p => ({ ...p, technologies: e.target.value.split(",").map(x => x.trim()).filter(Boolean) }))}
               placeholder="Salesforce, Slack, AWS..." />
           </FormRow>
-          <FormRow label="Enrichment Depth">
-            <Select options={[{ value: "basic", label: "Basic (fast)" }, { value: "standard", label: "Standard (recommended)" }, { value: "full", label: "Full (with intent signals)" }]}
+          <FormRow label={t("intel_enrichment_depth", "Enrichment Depth")}>
+            <Select options={[
+              { value: "basic", label: t("intel_depth_basic", "Basic (fast)") },
+              { value: "standard", label: t("intel_depth_standard", "Standard (recommended)") },
+              { value: "full", label: t("intel_depth_full", "Full (with intent signals)") },
+            ]}
               value={searchForm.enrichmentDepth}
               onChange={e => setSearchForm(p => ({ ...p, enrichmentDepth: e.target.value }))} />
           </FormRow>
         </div>
         <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn btn-secondary" onClick={() => setSearchModal(false)}>Cancel</button>
+          <button className="btn btn-secondary" onClick={() => setSearchModal(false)}>{t("cancel", "Cancel")}</button>
           <button className="btn btn-primary" disabled={searching} onClick={runSearch} style={{ background: "linear-gradient(135deg,#3b82f6,#6366f1)" }}>
-            {searching ? <><span className="spinner" style={{ width: 14, height: 14 }} />Searching...</> : <><Zap size={14} /> Find Prospects</>}
+            {searching ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t("intel_searching", "Searching...")}</> : <><Zap size={14} /> {t("intel_find_prospects", "Find Prospects")}</>}
           </button>
         </div>
       </Modal>
 
       {/* Sequence Generator Modal */}
-      <Modal open={sequenceModal} onClose={() => setSequenceModal(false)} title="Generate Outreach Sequence">
+      <Modal open={sequenceModal} onClose={() => setSequenceModal(false)} title={t("intel_gen_seq_title", "Generate Outreach Sequence")}>
         <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-          <FormRow label="Sequence name"><input className="input" value={seqForm.name} onChange={e => setSeqForm(p => ({ ...p, name: e.target.value }))} placeholder="Cold Outreach - VP Sales SaaS" /></FormRow>
-          <FormRow label="Target persona"><input className="input" value={seqForm.targetPersona} onChange={e => setSeqForm(p => ({ ...p, targetPersona: e.target.value }))} placeholder="VP of Sales at 50-200 person SaaS companies" /></FormRow>
-          <FormRow label="Your product/offer"><input className="input" value={seqForm.product} onChange={e => setSeqForm(p => ({ ...p, product: e.target.value }))} /></FormRow>
+          <FormRow label={t("intel_seq_name", "Sequence name")}><input className="input" value={seqForm.name} onChange={e => setSeqForm(p => ({ ...p, name: e.target.value }))} placeholder="Cold Outreach - VP Sales SaaS" /></FormRow>
+          <FormRow label={t("intel_seq_persona", "Target persona")}><input className="input" value={seqForm.targetPersona} onChange={e => setSeqForm(p => ({ ...p, targetPersona: e.target.value }))} placeholder="VP of Sales at 50-200 person SaaS companies" /></FormRow>
+          <FormRow label={t("intel_seq_product", "Your product/offer")}><input className="input" value={seqForm.product} onChange={e => setSeqForm(p => ({ ...p, product: e.target.value }))} /></FormRow>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <FormRow label="Tone"><Select options={[{ value: "professional", label: "Professional" }, { value: "friendly", label: "Friendly" }, { value: "direct", label: "Direct" }]} value={seqForm.tone} onChange={e => setSeqForm(p => ({ ...p, tone: e.target.value }))} /></FormRow>
-            <FormRow label="Steps"><Select options={[3, 4, 5, 6, 7].map(n => ({ value: String(n), label: `${n} touches` }))} value={String(seqForm.steps)} onChange={e => setSeqForm(p => ({ ...p, steps: Number(e.target.value) }))} /></FormRow>
+            <FormRow label={t("intel_seq_tone", "Tone")}><Select options={[
+              { value: "professional", label: t("intel_tone_professional", "Professional") },
+              { value: "friendly", label: t("intel_tone_friendly", "Friendly") },
+              { value: "direct", label: t("intel_tone_direct", "Direct") },
+            ]} value={seqForm.tone} onChange={e => setSeqForm(p => ({ ...p, tone: e.target.value }))} /></FormRow>
+            <FormRow label={t("intel_seq_steps", "Steps")}><Select options={[3, 4, 5, 6, 7].map(n => ({ value: String(n), label: `${n} ${t("intel_touches", "touches")}` }))} value={String(seqForm.steps)} onChange={e => setSeqForm(p => ({ ...p, steps: Number(e.target.value) }))} /></FormRow>
           </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn btn-secondary" onClick={() => setSequenceModal(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={createSequence}><Zap size={14} /> Generate Sequence</button>
+          <button className="btn btn-secondary" onClick={() => setSequenceModal(false)}>{t("cancel", "Cancel")}</button>
+          <button className="btn btn-primary" onClick={createSequence}><Zap size={14} /> {t("intel_generate_sequence", "Generate Sequence")}</button>
         </div>
       </Modal>
 
       {/* Org Chart Modal */}
-      <Modal open={orgModal} onClose={() => setOrgModal(false)} title="Build Org Chart">
+      <Modal open={orgModal} onClose={() => setOrgModal(false)} title={t("intel_build_org_chart", "Build Org Chart")}>
         <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-          <FormRow label="Company name" required><input className="input" value={orgForm.company} onChange={e => setOrgForm(p => ({ ...p, company: e.target.value }))} required /></FormRow>
-          <FormRow label="Domain (optional)"><input className="input" value={orgForm.domain} onChange={e => setOrgForm(p => ({ ...p, domain: e.target.value }))} placeholder="company.com" /></FormRow>
-          <FormRow label="Focus department"><input className="input" value={orgForm.focusDepartment} onChange={e => setOrgForm(p => ({ ...p, focusDepartment: e.target.value }))} placeholder="Sales, Marketing, Engineering..." /></FormRow>
+          <FormRow label={t("intel_co_name", "Company name")} required><input className="input" value={orgForm.company} onChange={e => setOrgForm(p => ({ ...p, company: e.target.value }))} required /></FormRow>
+          <FormRow label={t("intel_co_domain", "Domain (optional)")}><input className="input" value={orgForm.domain} onChange={e => setOrgForm(p => ({ ...p, domain: e.target.value }))} placeholder="company.com" /></FormRow>
+          <FormRow label={t("intel_co_dept", "Focus department")}><input className="input" value={orgForm.focusDepartment} onChange={e => setOrgForm(p => ({ ...p, focusDepartment: e.target.value }))} placeholder="Sales, Marketing, Engineering..." /></FormRow>
         </div>
         <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn btn-secondary" onClick={() => setOrgModal(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={buildOrg}><Users size={14} /> Build Org Chart</button>
+          <button className="btn btn-secondary" onClick={() => setOrgModal(false)}>{t("cancel", "Cancel")}</button>
+          <button className="btn btn-primary" onClick={buildOrg}><Users size={14} /> {t("intel_build_org_chart", "Build Org Chart")}</button>
         </div>
       </Modal>
 
       {/* Email Finder Modal */}
-      <Modal open={emailFinderModal} onClose={() => setEmailFinderModal(false)} title="Email Finder & Verifier">
+      <Modal open={emailFinderModal} onClose={() => setEmailFinderModal(false)} title={t("intel_email_finder_title", "Email Finder & Verifier")}>
         <div style={{ padding: "20px", display: "grid", gap: 12 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <FormRow label="First name"><input className="input" value={emailForm.firstName} onChange={e => setEmailForm(p => ({ ...p, firstName: e.target.value }))} /></FormRow>
-            <FormRow label="Last name"><input className="input" value={emailForm.lastName} onChange={e => setEmailForm(p => ({ ...p, lastName: e.target.value }))} /></FormRow>
+            <FormRow label={t("intel_first_name", "First name")}><input className="input" value={emailForm.firstName} onChange={e => setEmailForm(p => ({ ...p, firstName: e.target.value }))} /></FormRow>
+            <FormRow label={t("intel_last_name", "Last name")}><input className="input" value={emailForm.lastName} onChange={e => setEmailForm(p => ({ ...p, lastName: e.target.value }))} /></FormRow>
           </div>
-          <FormRow label="Company domain" required><input className="input" value={emailForm.domain} onChange={e => setEmailForm(p => ({ ...p, domain: e.target.value }))} placeholder="company.com" required /></FormRow>
+          <FormRow label={t("intel_co_domain_req", "Company domain")} required><input className="input" value={emailForm.domain} onChange={e => setEmailForm(p => ({ ...p, domain: e.target.value }))} placeholder="company.com" required /></FormRow>
           {emailResult && (
             <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 10, padding: "14px 16px" }}>
               <div style={{ fontWeight: 700, fontSize: 16, color: "#34d399", marginBottom: 4 }}>{emailResult.email}</div>
               <div style={{ display: "flex", gap: 10, fontSize: 13, color: "var(--text-secondary)" }}>
-                <span>Status: <strong>{emailResult.status}</strong></span>
-                <span>Confidence: <strong>{emailResult.confidence}%</strong></span>
-                <span>Pattern: <strong>{emailResult.pattern}</strong></span>
+                <span>{t("status", "Status")}: <strong>{emailResult.status}</strong></span>
+                <span>{t("confidence", "Confidence")}: <strong>{emailResult.confidence}%</strong></span>
+                <span>{t("intel_pattern", "Pattern")}: <strong>{emailResult.pattern}</strong></span>
               </div>
             </div>
           )}
         </div>
         <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn btn-secondary" onClick={() => { setEmailFinderModal(false); setEmailResult(null); }}>Close</button>
-          <button className="btn btn-primary" onClick={findEmail} disabled={!emailForm.domain}><Mail size={14} /> Find Email</button>
+          <button className="btn btn-secondary" onClick={() => { setEmailFinderModal(false); setEmailResult(null); }}>{t("close", "Close")}</button>
+          <button className="btn btn-primary" onClick={findEmail} disabled={!emailForm.domain}><Mail size={14} /> {t("intel_find_email", "Find Email")}</button>
         </div>
       </Modal>
     </Layout>

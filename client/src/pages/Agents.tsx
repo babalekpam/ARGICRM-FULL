@@ -166,17 +166,17 @@ export default function AgentsPage() {
           <div className="card" style={{ padding: "12px 14px", display: "flex", gap: 16, alignItems: "center" }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 800 }}>{agentStats?.sessions?.reduce((s: number, a: any) => s + Number(a.count || 0), 0) || 0}</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Sessions</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>{t("agents_sessions", "Sessions")}</div>
             </div>
             <div style={{ width: 1, height: 28, background: "var(--border)" }} />
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 800 }}>{agentStats?.memories?.reduce((s: number, a: any) => s + Number(a.count || 0), 0) || 0}</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Memories</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>{t("agents_memories", "Memories")}</div>
             </div>
             <div style={{ width: 1, height: 28, background: "var(--border)" }} />
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 800 }}>{agentStats?.totalLeadsGenerated || 0}</div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Leads</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>{t("agents_leads", "Leads")}</div>
             </div>
           </div>
 
@@ -227,18 +227,18 @@ export default function AgentsPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }} className="card">
             <div style={{ textAlign: "center", maxWidth: 400 }}>
               <div style={{ fontSize: 56, marginBottom: 16 }}>🤖</div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Your AI Business Team</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>{t("agents_team_heading", "Your AI Business Team")}</h2>
               <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
-                12 specialized agents, each with deep expertise and persistent memory. Select an agent to start a conversation.
+                {t("agents_team_desc", "12 specialized agents, each with deep expertise and persistent memory. Select an agent to start a conversation.")}
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, textAlign: "left" }}>
                 {[
-                  { emoji: "👑", text: "Executive strategy & priorities" },
-                  { emoji: "⚡", text: "Lead generation & outreach" },
-                  { emoji: "✨", text: "Content & campaigns" },
-                  { emoji: "📊", text: "Business intelligence" },
-                  { emoji: "💰", text: "Revenue forecasting" },
-                  { emoji: "🔍", text: "Research & competitive intel" },
+                  { emoji: "👑", text: t("agents_feat_strategy", "Executive strategy & priorities") },
+                  { emoji: "⚡", text: t("agents_feat_leadgen", "Lead generation & outreach") },
+                  { emoji: "✨", text: t("agents_feat_content", "Content & campaigns") },
+                  { emoji: "📊", text: t("agents_feat_bi", "Business intelligence") },
+                  { emoji: "💰", text: t("agents_feat_revenue", "Revenue forecasting") },
+                  { emoji: "🔍", text: t("agents_feat_research", "Research & competitive intel") },
                 ].map(f => (
                   <div key={f.text} style={{ padding: "10px 12px", background: "var(--bg-overlay)", borderRadius: 8, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
                     <span>{f.emoji}</span> {f.text}
@@ -261,26 +261,26 @@ export default function AgentsPage() {
               {/* Tab switcher */}
               <div style={{ marginLeft: "auto", display: "flex", gap: 4, background: "var(--bg-overlay)", padding: 3, borderRadius: 8 }}>
                 {[
-                  { id: "chat", icon: MessageSquare, label: "Chat" },
-                  { id: "memories", icon: Brain, label: "Memory" },
-                  { id: "history", icon: History, label: "History" },
-                  ...(activeAgent === "sales" ? [{ id: "lead-gen", icon: Target, label: "Lead Gen" }] : []),
-                ].map(t => {
-                  const Icon = t.icon;
+                  { id: "chat", icon: MessageSquare, label: t("agents_tab_chat", "Chat") },
+                  { id: "memories", icon: Brain, label: t("agents_tab_memory", "Memory") },
+                  { id: "history", icon: History, label: t("agents_tab_history", "History") },
+                  ...(activeAgent === "sales" ? [{ id: "lead-gen", icon: Target, label: t("agents_tab_leadgen", "Lead Gen") }] : []),
+                ].map(tab => {
+                  const Icon = tab.icon;
                   return (
                     <button
-                      key={t.id}
-                      onClick={() => setActiveView(t.id as any)}
-                      className={`btn btn-sm ${activeView === t.id ? "btn-primary" : "btn-ghost"}`}
+                      key={tab.id}
+                      onClick={() => setActiveView(tab.id as any)}
+                      className={`btn btn-sm ${activeView === tab.id ? "btn-primary" : "btn-ghost"}`}
                       style={{ padding: "4px 10px", fontSize: 12, gap: 4 }}
                     >
-                      <Icon size={12} /> {t.label}
+                      <Icon size={12} /> {tab.label}
                     </button>
                   );
                 })}
               </div>
               {activeView === "chat" && (
-                <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={newChat} title="New conversation">
+                <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={newChat} title={t("agents_new_conversation", "New conversation")}>
                   <Plus size={15} />
                 </button>
               )}
@@ -295,13 +295,13 @@ export default function AgentsPage() {
                     <div style={{ padding: "24px 0" }}>
                       <div style={{ textAlign: "center", marginBottom: 24 }}>
                         <div style={{ fontSize: 40, marginBottom: 8 }}>{selectedAgentDef?.emoji}</div>
-                        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Hi, I'm {selectedAgentDef?.name}</div>
+                        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>{t("agents_hi_im", "Hi, I'm ")}{selectedAgentDef?.name}</div>
                         <div style={{ fontSize: 13, color: "var(--text-muted)", maxWidth: 360, margin: "0 auto" }}>
-                          I specialize in: {selectedAgentDef?.skills?.slice(0, 4).join(", ")} and more.
+                          {t("agents_specializes_in", "I specialize in: ")}{selectedAgentDef?.skills?.slice(0, 4).join(", ")} and more.
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10, textAlign: "center" }}>Try asking me</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10, textAlign: "center" }}>{t("agents_try_asking", "Try asking me")}</div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                           {prompts.map((p, i) => (
                             <button key={i} onClick={() => { setInput(p); }} className="btn btn-secondary btn-sm" style={{ textAlign: "left", justifyContent: "flex-start", fontSize: 12, lineHeight: 1.4, height: "auto", padding: "8px 12px" }}>
@@ -335,9 +335,9 @@ export default function AgentsPage() {
                         </div>
                         {m.toolsUsed && m.toolsUsed.length > 0 && (
                           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-                            {m.toolsUsed.map(t => (
-                              <span key={t} style={{ fontSize: 10, padding: "2px 8px", background: "rgba(59,130,246,0.1)", color: "#60a5fa", borderRadius: 4, fontWeight: 600 }}>
-                                🔧 {t}
+                            {m.toolsUsed.map(tool => (
+                              <span key={tool} style={{ fontSize: 10, padding: "2px 8px", background: "rgba(59,130,246,0.1)", color: "#60a5fa", borderRadius: 4, fontWeight: 600 }}>
+                                🔧 {tool}
                               </span>
                             ))}
                           </div>
@@ -370,7 +370,7 @@ export default function AgentsPage() {
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder={`Message ${selectedAgentDef?.name}... (Enter to send, Shift+Enter for newline)`}
+                      placeholder={`${t("agents_message_placeholder", "Message")} ${selectedAgentDef?.name}... (${t("agents_enter_hint", "Enter to send, Shift+Enter for newline")})`}
                       style={{ flex: 1, background: "none", border: "none", outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14, color: "var(--text-primary)", minHeight: 44, maxHeight: 120 }}
                       rows={1}
                     />
@@ -391,18 +391,18 @@ export default function AgentsPage() {
               <div style={{ flex: 1, overflowY: "auto", padding: 16 }} className="no-scrollbar">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>🧠 Long-term Memory</h3>
-                    <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-muted)" }}>Facts {selectedAgentDef?.name} has learned about your business</p>
+                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>🧠 {t("agents_long_term_memory", "Long-term Memory")}</h3>
+                    <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-muted)" }}>{`${t("agents_facts", "Facts")} ${selectedAgentDef?.name} ${t("agents_has_learned", "has learned about your business")}`}</p>
                   </div>
                   <button className="btn btn-primary btn-sm" onClick={() => {/* Add memory modal */}}>
-                    <Plus size={13} /> Add Memory
+                    <Plus size={13} /> {t("agents_add_memory", "Add Memory")}
                   </button>
                 </div>
 
                 {!memories?.length ? (
                   <div style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
                     <Brain size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
-                    <p>No memories yet. Start chatting and {selectedAgentDef?.name} will learn from your conversations.</p>
+                    <p>{`${t("agents_no_memories_pre", "No memories yet. Start chatting and")} ${selectedAgentDef?.name} ${t("agents_no_memories_post", "will learn from your conversations.")}`}</p>
                   </div>
                 ) : (
                   <div>
@@ -424,8 +424,8 @@ export default function AgentsPage() {
                                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 2 }}>{m.key}</div>
                                 <div style={{ fontSize: 14, color: "var(--text-primary)" }}>{m.value}</div>
                                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, display: "flex", gap: 12 }}>
-                                  <span>Importance: {m.importance}/10</span>
-                                  <span>Source: {m.source}</span>
+                                  <span>{t("agents_importance", "Importance: ")}{m.importance}/10</span>
+                                  <span>{t("agents_source", "Source: ")}{m.source}</span>
                                   <span>{new Date(m.createdAt).toLocaleDateString()}</span>
                                 </div>
                               </div>
@@ -452,11 +452,11 @@ export default function AgentsPage() {
             {/* ── HISTORY VIEW ── */}
             {activeView === "history" && (
               <div style={{ flex: 1, overflowY: "auto", padding: 16 }} className="no-scrollbar">
-                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>💬 Conversation History</h3>
+                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>💬 {t("agents_conv_history", "Conversation History")}</h3>
                 {!(sessions?.filter(s => s.agentType === activeAgent).length) ? (
                   <div style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
                     <History size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
-                    <p>No conversation history yet.</p>
+                    <p>{t("agents_no_history", "No conversation history yet.")}</p>
                   </div>
                 ) : (
                   <div style={{ display: "grid", gap: 8 }}>
@@ -471,7 +471,7 @@ export default function AgentsPage() {
                         }}
                         style={{ background: "var(--bg-overlay)", borderRadius: 10, padding: "12px 14px", cursor: "pointer", textAlign: "left", border: s.id === sessionId ? `1px solid ${meta?.color}44` : "1px solid transparent" }}
                       >
-                        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{s.title || "Conversation"}</div>
+                        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{s.title || t("agents_conversation", "Conversation")}</div>
                         <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", gap: 12 }}>
                           <span>{s.messageCount} messages</span>
                           <span>{new Date(s.updatedAt).toLocaleDateString()}</span>
@@ -488,17 +488,17 @@ export default function AgentsPage() {
               <div style={{ flex: 1, overflowY: "auto", padding: 16 }} className="no-scrollbar">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>⚡ AI Lead Generation</h3>
-                    <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-muted)" }}>BOLT prospects, scores, and writes outreach for your ideal customers</p>
+                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>⚡ {t("agents_leadgen_title", "AI Lead Generation")}</h3>
+                    <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-muted)" }}>{t("agents_leadgen_desc", "BOLT prospects, scores, and writes outreach for your ideal customers")}</p>
                   </div>
                   <button className="btn btn-primary btn-sm" onClick={() => setLeadGenModal(true)}>
-                    <Target size={13} /> Run Campaign
+                    <Target size={13} /> {t("agents_run_campaign", "Run Campaign")}
                   </button>
                 </div>
 
                 {leadGenResults.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 10 }}>Latest Results ({leadGenResults.length} prospects)</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 10 }}>{t("agents_latest_results", "Latest Results")} ({leadGenResults.length} {t("agents_prospects_count", "prospects")})</div>
                     <div style={{ display: "grid", gap: 8 }}>
                       {leadGenResults.map((p: any, i: number) => (
                         <div key={i} style={{ background: "var(--bg-overlay)", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -516,7 +516,7 @@ export default function AgentsPage() {
                             <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)" }}>{p.score}</span>
                           </div>
                           <button className="btn btn-primary btn-sm" style={{ fontSize: 12 }} onClick={() => importLead(p.id || String(i))}>
-                            Import to CRM
+                            {t("agents_import_to_crm", "Import to CRM")}
                           </button>
                         </div>
                       ))}
@@ -526,7 +526,7 @@ export default function AgentsPage() {
 
                 {leadGenHistory && leadGenHistory.length > 0 && (
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 10 }}>All Generated Leads ({leadGenHistory.length})</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 10 }}>{t("agents_all_generated_leads", "All Generated Leads")} ({leadGenHistory.length})</div>
                     <div style={{ display: "grid", gap: 6 }}>
                       {leadGenHistory.map((l: any) => (
                         <div key={l.id} className="table-row" style={{ gridTemplateColumns: "1fr 140px 120px 100px 110px", gap: 12 }}>
@@ -538,12 +538,12 @@ export default function AgentsPage() {
                           <div>
                             <span className="badge badge-gray">{l.source?.replace("_", " ")}</span>
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 700 }}>Score: {l.score}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700 }}>{t("agents_score", "Score: ")}{l.score}</div>
                           <div>
                             {l.importedAsLeadId ? (
-                              <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>✓ Imported</span>
+                              <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>✓ {t("agents_imported", "Imported")}</span>
                             ) : (
-                              <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => importLead(l.id)}>Import</button>
+                              <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => importLead(l.id)}>{t("agents_import", "Import")}</button>
                             )}
                           </div>
                         </div>
@@ -555,7 +555,7 @@ export default function AgentsPage() {
                 {(!leadGenResults.length && !leadGenHistory?.length) && (
                   <div style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
                     <Target size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
-                    <p>No lead generation campaigns yet. Click "Run Campaign" to let BOLT find your ideal customers.</p>
+                    <p>{t("agents_no_leadgen", "No lead generation campaigns yet. Click \"Run Campaign\" to let BOLT find your ideal customers.")}</p>
                   </div>
                 )}
               </div>
@@ -565,21 +565,21 @@ export default function AgentsPage() {
       </div>
 
       {/* Lead Gen Modal */}
-      <Modal open={leadGenModal} onClose={() => setLeadGenModal(false)} title="⚡ AI Lead Generation Campaign">
+      <Modal open={leadGenModal} onClose={() => setLeadGenModal(false)} title={t("agents_leadgen_modal_title", "AI Lead Generation Campaign")}>
         <div style={{ padding: "20px", display: "grid", gap: 14 }}>
           <div style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "#93c5fd" }}>
-            BOLT will find {5} matching prospects, score them, and write personalized outreach.
+            {t("agents_leadgen_modal_desc", "BOLT will find {n} matching prospects, score them, and write personalized outreach.").replace("{n}", "5")}
           </div>
-          <FormRow label="Target Industry"><input className="input" value={leadGenForm.targetIndustry} onChange={e => setLeadGenForm(p => ({ ...p, targetIndustry: e.target.value }))} placeholder="SaaS, Healthcare, Fintech..." /></FormRow>
-          <FormRow label="Target Job Title"><input className="input" value={leadGenForm.targetTitle} onChange={e => setLeadGenForm(p => ({ ...p, targetTitle: e.target.value }))} placeholder="VP Sales, CTO, CEO..." /></FormRow>
-          <FormRow label="Company Size"><input className="input" value={leadGenForm.targetCompanySize} onChange={e => setLeadGenForm(p => ({ ...p, targetCompanySize: e.target.value }))} placeholder="11-50, 51-200, 200+..." /></FormRow>
-          <FormRow label="Estimated Deal Value"><input className="input" value={leadGenForm.value} onChange={e => setLeadGenForm(p => ({ ...p, value: e.target.value }))} placeholder="$25,000" /></FormRow>
-          <FormRow label="Outreach Purpose"><input className="input" value={leadGenForm.outreachPurpose} onChange={e => setLeadGenForm(p => ({ ...p, outreachPurpose: e.target.value }))} placeholder="product demo, free trial, partnership..." /></FormRow>
+          <FormRow label={t("agents_target_industry", "Target Industry")}><input className="input" value={leadGenForm.targetIndustry} onChange={e => setLeadGenForm(p => ({ ...p, targetIndustry: e.target.value }))} placeholder="SaaS, Healthcare, Fintech..." /></FormRow>
+          <FormRow label={t("agents_target_job_title", "Target Job Title")}><input className="input" value={leadGenForm.targetTitle} onChange={e => setLeadGenForm(p => ({ ...p, targetTitle: e.target.value }))} placeholder="VP Sales, CTO, CEO..." /></FormRow>
+          <FormRow label={t("agents_company_size", "Company Size")}><input className="input" value={leadGenForm.targetCompanySize} onChange={e => setLeadGenForm(p => ({ ...p, targetCompanySize: e.target.value }))} placeholder="11-50, 51-200, 200+..." /></FormRow>
+          <FormRow label={t("agents_estimated_deal_value", "Estimated Deal Value")}><input className="input" value={leadGenForm.value} onChange={e => setLeadGenForm(p => ({ ...p, value: e.target.value }))} placeholder="$25,000" /></FormRow>
+          <FormRow label={t("agents_outreach_purpose", "Outreach Purpose")}><input className="input" value={leadGenForm.outreachPurpose} onChange={e => setLeadGenForm(p => ({ ...p, outreachPurpose: e.target.value }))} placeholder="product demo, free trial, partnership..." /></FormRow>
         </div>
         <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn btn-secondary" onClick={() => setLeadGenModal(false)}>Cancel</button>
+          <button className="btn btn-secondary" onClick={() => setLeadGenModal(false)}>{t("cancel", "Cancel")}</button>
           <button className="btn btn-primary" disabled={leadGenRunning} onClick={runLeadGen} style={{ background: "linear-gradient(135deg,#3b82f6,#6366f1)" }}>
-            {leadGenRunning ? <><span className="spinner" style={{ width: 14, height: 14 }} />Running campaign...</> : <><Zap size={14} /> Launch Campaign</>}
+            {leadGenRunning ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t("agents_running_campaign", "Running campaign...")}</> : <><Zap size={14} /> {t("agents_launch_campaign", "Launch Campaign")}</>}
           </button>
         </div>
       </Modal>

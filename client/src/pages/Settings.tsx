@@ -7,20 +7,21 @@ import Layout from "../components/Layout";
 import { useLanguage } from "../contexts/LanguageContext";
 import { User, Building2, Lock, Bell, Shield, CheckCircle, AlertCircle, Eye, EyeOff, Globe, Mail, Phone, Paintbrush, ExternalLink, Wifi, WifiOff, Loader2, Brain, Key, Trash2 } from "lucide-react";
 
-const TABS = [
-  { id:"profile", label:"Profile", icon:User },
-  { id:"organization", label:"Organization", icon:Building2 },
-  { id:"security", label:"Security", icon:Lock },
-  { id:"notifications", label:"Notifications", icon:Bell },
-  { id:"branding", label:"White Label", icon:Paintbrush },
-  { id:"email", label:"Email / SMTP", icon:Mail },
-  { id:"ai", label:"AI Usage", icon:Brain },
+const TAB_DEFS = [
+  { id:"profile", labelKey:"settings_tab_profile", icon:User },
+  { id:"organization", labelKey:"settings_tab_organization", icon:Building2 },
+  { id:"security", labelKey:"settings_tab_security", icon:Lock },
+  { id:"notifications", labelKey:"settings_tab_notifications", icon:Bell },
+  { id:"branding", labelKey:"settings_tab_branding", icon:Paintbrush },
+  { id:"email", labelKey:"settings_tab_email", icon:Mail },
+  { id:"ai", labelKey:"settings_tab_ai", icon:Brain },
 ];
 
 function SaveButton({ loading, saved }: { loading: boolean; saved: boolean }) {
+  const { t } = useLanguage();
   return (
     <button type="submit" disabled={loading} data-testid="button-save" style={{display:"flex",alignItems:"center",gap:6,background:saved?"#22c55e":"var(--accent)",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontSize:13,fontWeight:600,cursor:"pointer",transition:"background 0.3s"}}>
-      {loading?"Saving…":saved?<><CheckCircle size={14}/>Saved!</>:"Save Changes"}
+      {loading ? t("settings_saving", "Saving…") : saved ? <><CheckCircle size={14}/>{t("settings_saved", "Saved!")}</> : t("save_changes", "Save Changes")}
     </button>
   );
 }
@@ -144,18 +145,20 @@ export default function SettingsPage() {
   const plan=settings?.plan||"free";
   const pb=planBadge[plan]||planBadge.free;
 
+  const TABS = TAB_DEFS.map(td => ({ ...td, label: t(td.labelKey, td.labelKey) }));
+
   return (
     <Layout title={t("settings_title")} subtitle={t("settings_subtitle")}>
       <div style={{display:"flex",gap:20,maxWidth:900}}>
         {/* Sidebar nav */}
         <div style={{width:200,flexShrink:0}}>
           <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,overflow:"hidden"}}>
-            {TABS.map(t=>{
-              const Icon=t.icon;
-              const active=tab===t.id;
+            {TABS.map(tabItem=>{
+              const Icon=tabItem.icon;
+              const active=tab===tabItem.id;
               return (
-                <button key={t.id} data-testid={`tab-${t.id}`} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"11px 14px",background:active?"var(--accent-subtle,rgba(99,102,241,0.08))":"transparent",border:"none",borderLeft:active?"2px solid var(--accent)":"2px solid transparent",cursor:"pointer",color:active?"var(--accent)":"var(--text-secondary)",fontSize:13,fontWeight:active?600:400,textAlign:"left"}}>
-                  <Icon size={14}/>{t.label}
+                <button key={tabItem.id} data-testid={`tab-${tabItem.id}`} onClick={()=>setTab(tabItem.id)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"11px 14px",background:active?"var(--accent-subtle,rgba(99,102,241,0.08))":"transparent",border:"none",borderLeft:active?"2px solid var(--accent)":"2px solid transparent",cursor:"pointer",color:active?"var(--accent)":"var(--text-secondary)",fontSize:13,fontWeight:active?600:400,textAlign:"left"}}>
+                  <Icon size={14}/>{tabItem.label}
                 </button>
               );
             })}
@@ -163,9 +166,9 @@ export default function SettingsPage() {
 
           {/* Plan info */}
           <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:14,marginTop:12}}>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>Current Plan</div>
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("settings_current_plan", "Current Plan")}</div>
             <div style={{display:"inline-flex",padding:"3px 10px",borderRadius:6,fontSize:12,fontWeight:700,background:pb.bg,color:pb.color,marginBottom:8}}>{pb.label}</div>
-            {settings?.trialEndsAt&&<div style={{fontSize:11,color:"var(--text-muted)"}}>Trial ends {new Date(settings.trialEndsAt).toLocaleDateString()}</div>}
+            {settings?.trialEndsAt&&<div style={{fontSize:11,color:"var(--text-muted)"}}>{t("settings_trial_ends", "Trial ends")} {new Date(settings.trialEndsAt).toLocaleDateString()}</div>}
           </div>
         </div>
 
@@ -173,8 +176,8 @@ export default function SettingsPage() {
         <div style={{flex:1,minWidth:0}}>
           {tab==="profile"&&(
             <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-              <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Profile Settings</div>
-              <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:24}}>Update your personal information</div>
+              <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>{t("settings_profile_heading", "Profile Settings")}</div>
+              <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:24}}>{t("settings_profile_sub", "Update your personal information")}</div>
               <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:24}}>
                 <div style={{width:64,height:64,borderRadius:"50%",background:"linear-gradient(135deg,#3b82f6,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:700,color:"#fff",flexShrink:0}}>
                   {profile.firstName?.[0]?.toUpperCase()||profile.email?.[0]?.toUpperCase()||"?"}
@@ -183,11 +186,11 @@ export default function SettingsPage() {
               </div>
               <form onSubmit={submitProfile} style={{display:"flex",flexDirection:"column",gap:14}}>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-                  {inp("First Name",profile.firstName,v=>setProfile(p=>({...p,firstName:v})))}
-                  {inp("Last Name",profile.lastName,v=>setProfile(p=>({...p,lastName:v})))}
-                  {inp("Email Address",profile.email,()=>{},"email",true)}
+                  {inp(t("first_name","First Name"),profile.firstName,v=>setProfile(p=>({...p,firstName:v})))}
+                  {inp(t("last_name","Last Name"),profile.lastName,v=>setProfile(p=>({...p,lastName:v})))}
+                  {inp(t("email_address","Email Address"),profile.email,()=>{},"email",true)}
                   <div>
-                    <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Language</label>
+                    <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("language","Language")}</label>
                     <select value={profile.preferredLanguage} onChange={e=>setProfile(p=>({...p,preferredLanguage:e.target.value}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>
                       {/* Keep in sync with the dictionaries in LanguageContext — only translated languages are offered */}
                       {[["en","English"],["fr","Français"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
