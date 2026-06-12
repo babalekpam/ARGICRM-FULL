@@ -107,7 +107,7 @@ function DealIntelligenceTab() {
             disabled={!selectedDeal || mutation.isPending}
             style={{ padding: "9px 18px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, cursor: selectedDeal ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 600, opacity: !selectedDeal ? 0.5 : 1, display: "flex", alignItems: "center", gap: 6 }}
           >
-            {mutation.isPending ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Analyzing…</> : <><Zap size={13} /> Analyze</>}
+            {mutation.isPending ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> {t("aitools_analyzing", "Analyzing…")}</> : <><Zap size={13} /> {t("aitools_analyze", "Analyze")}</>}
           </button>
         </div>
         {mutation.error && <UpgradeBanner error={mutation.error} />}
@@ -115,13 +115,13 @@ function DealIntelligenceTab() {
 
       {result && (
         <>
-          <SectionCard title="Deal Health" icon={TrendingUp} color="#10b981">
+          <SectionCard title={t("aitools_deal_health", "Deal Health")} icon={TrendingUp} color="#10b981">
             <HealthBar score={result.healthScore} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 16 }}>
               {[
-                { label: "Days in Pipeline", value: result.daysInPipeline },
-                { label: "Days Since Activity", value: result.daysSinceLastActivity },
-                { label: "Status", value: result.isStale ? "Stale" : "Active" },
+                { label: t("aitools_days_in_pipeline", "Days in Pipeline"), value: result.daysInPipeline },
+                { label: t("aitools_days_since_activity", "Days Since Activity"), value: result.daysSinceLastActivity },
+                { label: t("status", "Status"), value: result.isStale ? t("aitools_stale", "Stale") : t("active", "Active") },
               ].map(({ label, value }) => (
                 <div key={label} style={{ background: "var(--bg-overlay)", borderRadius: 8, padding: 12 }}>
                   <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{label}</div>
@@ -131,7 +131,7 @@ function DealIntelligenceTab() {
             </div>
             {result.risks.length > 0 && (
               <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#ef4444", marginBottom: 6 }}>Risk Factors</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#ef4444", marginBottom: 6 }}>{t("aitools_risk_factors", "Risk Factors")}</div>
                 {result.risks.map((r: string, i: number) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>
                     <AlertCircle size={13} style={{ color: "#ef4444", flexShrink: 0 }} /> {r}
@@ -142,11 +142,11 @@ function DealIntelligenceTab() {
           </SectionCard>
 
           {result.aiInsights && (
-            <SectionCard title="AI Insights" icon={Brain} color="#8b5cf6">
+            <SectionCard title={t("aitools_ai_insights", "AI Insights")} icon={Brain} color="#8b5cf6">
               <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>{result.aiInsights.summary}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Next Actions</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("aitools_next_actions", "Next Actions")}</div>
                   {result.aiInsights.nextActions?.map((a: string, i: number) => (
                     <div key={i} style={{ display: "flex", gap: 8, fontSize: 13, marginBottom: 6 }}>
                       <span style={{ width: 18, height: 18, background: "#3b82f620", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#3b82f6", fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
@@ -155,7 +155,7 @@ function DealIntelligenceTab() {
                   ))}
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Talking Points</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("aitools_talking_points", "Talking Points")}</div>
                   {result.aiInsights.talkingPoints?.map((p: string, i: number) => (
                     <div key={i} style={{ display: "flex", gap: 8, fontSize: 13, marginBottom: 6 }}>
                       <Lightbulb size={14} style={{ color: "#f59e0b", flexShrink: 0, marginTop: 1 }} /> {p}
@@ -165,7 +165,7 @@ function DealIntelligenceTab() {
               </div>
               {result.aiInsights.recommendation && (
                 <div style={{ marginTop: 14, padding: "10px 14px", background: "#8b5cf620", borderRadius: 8, fontSize: 13, color: "#8b5cf6", fontWeight: 500 }}>
-                  Recommendation: {result.aiInsights.recommendation}
+                  {t("aitools_recommendation", "Recommendation")}: {result.aiInsights.recommendation}
                 </div>
               )}
             </SectionCard>

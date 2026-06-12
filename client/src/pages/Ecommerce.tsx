@@ -1076,26 +1076,26 @@ export default function EcommercePage() {
           <form onSubmit={saveStoreSettings}>
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-                <DollarSign size={14} style={{ color: "#6366f1" }} /> Stripe Payment Integration
+                <DollarSign size={14} style={{ color: "#6366f1" }} /> {t("ecom_stripe_integration","Stripe Payment Integration")}
               </div>
               <div style={{ padding: "10px 14px", background: "var(--bg-elevated)", borderRadius: 8, fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
                 Add your Stripe keys to enable card payments on your storefront. Get them from <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: "#6366f1" }}>dashboard.stripe.com</a>
               </div>
 
-              <FormRow label="Stripe Publishable Key">
+              <FormRow label={t("stripe_public_key","Stripe Publishable Key")}>
                 <input className="input" type="text" placeholder="pk_live_..." value={settingsForm.stripePublishableKey} onChange={e => setSettingsForm((p: any) => ({ ...p, stripePublishableKey: e.target.value }))} />
               </FormRow>
-              <FormRow label="Stripe Secret Key (leave blank to keep existing)">
+              <FormRow label={t("ecom_stripe_secret_label","Stripe Secret Key (leave blank to keep existing)")}>
                 <input className="input" type="password" placeholder="sk_live_... (enter to update)" value={settingsForm.stripeSecretKey} onChange={e => setSettingsForm((p: any) => ({ ...p, stripeSecretKey: e.target.value }))} />
               </FormRow>
 
               <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                <Image size={14} style={{ color: "#6366f1" }} /> Store Branding
+                <Image size={14} style={{ color: "#6366f1" }} /> {t("ecom_store_branding","Store Branding")}
               </div>
-              <FormRow label="Logo URL">
+              <FormRow label={t("logo_url","Logo URL")}>
                 <input className="input" type="url" placeholder="https://cdn.mystore.com/logo.png" value={settingsForm.logoUrl} onChange={e => setSettingsForm((p: any) => ({ ...p, logoUrl: e.target.value }))} />
               </FormRow>
-              <FormRow label="Hero Banner URL">
+              <FormRow label={t("banner_url","Hero Banner URL")}>
                 <input className="input" type="url" placeholder="https://cdn.mystore.com/banner.jpg" value={settingsForm.bannerUrl} onChange={e => setSettingsForm((p: any) => ({ ...p, bannerUrl: e.target.value }))} />
               </FormRow>
               {settingsForm.logoUrl && (
@@ -1103,8 +1103,8 @@ export default function EcommercePage() {
               )}
             </div>
             <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setSettingsModal(false)}>Cancel</button>
-              <button type="submit" className="btn btn-primary" disabled={settingsSaving}>{settingsSaving ? "Saving..." : "Save Settings"}</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setSettingsModal(false)}>{t("cancel","Cancel")}</button>
+              <button type="submit" className="btn btn-primary" disabled={settingsSaving}>{settingsSaving ? t("ecom_saving","Saving...") : t("ecom_save_settings","Save Settings")}</button>
             </div>
           </form>
         </Modal>
