@@ -10,6 +10,12 @@ import { TrendingUp, TrendingDown, Award, Users, Zap, BarChart2, Target, Clock }
 
 const TABS = ["Revenue Forecast", "Win / Loss", "Sales Velocity", "Rep Performance"] as const;
 type Tab = typeof TABS[number];
+const TAB_KEYS: Record<Tab, string> = {
+  "Revenue Forecast": "analytics_tab_forecast",
+  "Win / Loss": "analytics_tab_win_loss",
+  "Sales Velocity": "analytics_tab_velocity",
+  "Rep Performance": "analytics_tab_rep_performance",
+};
 
 const fmt = (n: number) => n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : `$${Math.round(n)}`;
 const STAGE_COLORS: Record<string, string> = {
@@ -19,6 +25,7 @@ const STAGE_COLORS: Record<string, string> = {
 const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#8b5cf6"];
 
 function StatCard({ label, value, sub, icon: Icon, trend, color = "#3b82f6" }: any) {
+  const { t } = useLanguage();
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "16px 20px", display: "flex", alignItems: "flex-start", gap: 14 }}>
       <div style={{ width: 40, height: 40, borderRadius: 10, background: `${color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -31,7 +38,7 @@ function StatCard({ label, value, sub, icon: Icon, trend, color = "#3b82f6" }: a
         {trend !== undefined && (
           <div style={{ fontSize: 11, marginTop: 4, display: "flex", alignItems: "center", gap: 3, color: trend >= 0 ? "#10b981" : "#ef4444" }}>
             {trend >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-            {Math.abs(trend)}% vs last period
+            {Math.abs(trend)}% {t("analytics_vs_last_period", "vs last period")}
           </div>
         )}
       </div>
@@ -40,21 +47,22 @@ function StatCard({ label, value, sub, icon: Icon, trend, color = "#3b82f6" }: a
 }
 
 function ForecastTab() {
+  const { t } = useLanguage();
   const { data, isLoading } = useQuery<any>({ queryKey: ["/api/analytics/forecast"] });
-  if (isLoading) return <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>Loading forecast…</div>;
+  if (isLoading) return <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>{t("loading", "Loading...")}</div>;
   if (!data) return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }}>
-        <StatCard label="Total Pipeline" value={fmt(data.totalPipeline)} icon={TrendingUp} color="#3b82f6" />
-        <StatCard label="Weighted Forecast" value={fmt(data.weightedForecast)} icon={Target} color="#8b5cf6" sub="Probability-adjusted" />
-        <StatCard label="Closed Won (All Time)" value={fmt(data.closedWon)} icon={Award} color="#10b981" />
+        <StatCard label={t("analytics_total_pipeline", "Total Pipeline")} value={fmt(data.totalPipeline)} icon={TrendingUp} color="#3b82f6" />
+        <StatCard label={t("analytics_weighted_forecast", "Weighted Forecast")} value={fmt(data.weightedForecast)} icon={Target} color="#8b5cf6" sub={t("analytics_probability_adjusted", "Probability-adjusted")} />
+        <StatCard label={t("analytics_closed_won_alltime", "Closed Won (All Time)")} value={fmt(data.closedWon)} icon={Award} color="#10b981" />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Revenue Trend (6 months)</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{t("analytics_revenue_trend", "Revenue Trend (6 months)")}</div>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={data.trend}>
               <defs>
@@ -73,7 +81,7 @@ function ForecastTab() {
         </div>
 
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Pipeline by Stage</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{t("analytics_pipeline_by_stage", "Pipeline by Stage")}</div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={data.stageBreakdown} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
@@ -91,11 +99,11 @@ function ForecastTab() {
       </div>
 
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 600 }}>Stage Breakdown</div>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 600 }}>{t("analytics_stage_breakdown", "Stage Breakdown")}</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--bg-overlay)" }}>
-              {["Stage", "Deals", "Total Value", "Weighted Value", "Probability"].map(h => (
+              {[t("analytics_col_stage","Stage"), t("analytics_col_deals","Deals"), t("analytics_col_total_value","Total Value"), t("analytics_col_weighted","Weighted Value"), t("analytics_col_probability","Probability")].map(h => (
                 <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
               ))}
             </tr>
@@ -123,23 +131,24 @@ function ForecastTab() {
 }
 
 function WinLossTab() {
+  const { t } = useLanguage();
   const { data, isLoading } = useQuery<any>({ queryKey: ["/api/analytics/win-loss"] });
-  if (isLoading) return <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>Loading…</div>;
+  if (isLoading) return <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>{t("loading", "Loading...")}</div>;
   if (!data) return null;
   const { summary, monthlyTrend, bySource } = data;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
-        <StatCard label="Win Rate" value={`${summary.winRate}%`} icon={Award} color="#10b981" />
-        <StatCard label="Deals Won" value={summary.won} icon={TrendingUp} color="#3b82f6" sub={`of ${summary.total} closed`} />
-        <StatCard label="Deals Lost" value={summary.lost} icon={TrendingDown} color="#ef4444" />
-        <StatCard label="Avg Won Value" value={fmt(summary.avgWonValue)} icon={Target} color="#8b5cf6" />
+        <StatCard label={t("win_rate", "Win Rate")} value={`${summary.winRate}%`} icon={Award} color="#10b981" />
+        <StatCard label={t("analytics_deals_won", "Deals Won")} value={summary.won} icon={TrendingUp} color="#3b82f6" sub={`of ${summary.total} ${t("analytics_closed","closed")}`} />
+        <StatCard label={t("analytics_deals_lost", "Deals Lost")} value={summary.lost} icon={TrendingDown} color="#ef4444" />
+        <StatCard label={t("analytics_avg_won_value", "Avg Won Value")} value={fmt(summary.avgWonValue)} icon={Target} color="#8b5cf6" />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Won vs Lost (6 months)</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{t("analytics_won_vs_lost", "Won vs Lost (6 months)")}</div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={monthlyTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -154,9 +163,9 @@ function WinLossTab() {
         </div>
 
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>By Source</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{t("analytics_by_source", "By Source")}</div>
           {bySource.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40, fontSize: 13 }}>No closed deals yet</div>
+            <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40, fontSize: 13 }}>{t("analytics_no_closed_deals", "No closed deals yet")}</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {bySource.map((s: any) => (
@@ -179,21 +188,22 @@ function WinLossTab() {
 }
 
 function VelocityTab() {
+  const { t } = useLanguage();
   const { data, isLoading } = useQuery<any>({ queryKey: ["/api/analytics/velocity"] });
-  if (isLoading) return <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>Loading…</div>;
+  if (isLoading) return <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>{t("loading", "Loading...")}</div>;
   if (!data) return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }}>
-        <StatCard label="Avg Sales Cycle" value={`${data.avgCycleLength} days`} icon={Clock} color="#6366f1" sub="Won deals only" />
-        <StatCard label="Avg Deal Age" value={`${data.avgOpenAge} days`} icon={Clock} color="#f59e0b" sub="Open pipeline" />
-        <StatCard label="Sales Velocity" value={fmt(data.salesVelocity) + "/day"} icon={Zap} color="#3b82f6" sub="Revenue generated per day" />
-        <StatCard label="Open Deals" value={data.openDeals} icon={TrendingUp} color="#10b981" sub={`${fmt(data.totalPipeline)} total value`} />
+        <StatCard label={t("analytics_avg_sales_cycle", "Avg Sales Cycle")} value={`${data.avgCycleLength} ${t("analytics_days","days")}`} icon={Clock} color="#6366f1" sub={t("analytics_won_deals_only","Won deals only")} />
+        <StatCard label={t("analytics_avg_deal_age", "Avg Deal Age")} value={`${data.avgOpenAge} ${t("analytics_days","days")}`} icon={Clock} color="#f59e0b" sub={t("analytics_open_pipeline","Open pipeline")} />
+        <StatCard label={t("analytics_sales_velocity", "Sales Velocity")} value={fmt(data.salesVelocity) + "/day"} icon={Zap} color="#3b82f6" sub={t("analytics_revenue_per_day","Revenue generated per day")} />
+        <StatCard label={t("analytics_open_deals", "Open Deals")} value={data.openDeals} icon={TrendingUp} color="#10b981" sub={`${fmt(data.totalPipeline)} ${t("analytics_total_value","total value")}`} />
       </div>
 
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 20 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Average Days in Stage</div>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{t("analytics_avg_days_in_stage", "Average Days in Stage")}</div>
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={data.byStage}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -213,7 +223,7 @@ function VelocityTab() {
       </div>
 
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10 }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 600 }}>Stage Velocity Details</div>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 600 }}>{t("analytics_stage_velocity_details", "Stage Velocity Details")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 0 }}>
           {data.byStage.map((s: any, i: number) => (
             <div key={s.stage} style={{ padding: "16px 20px", borderRight: i < data.byStage.length - 1 ? "1px solid var(--border)" : "none" }}>
@@ -222,7 +232,7 @@ function VelocityTab() {
                 <span style={{ fontSize: 12, color: "var(--text-muted)", textTransform: "capitalize" }}>{s.stage.replace("_", " ")}</span>
               </div>
               <div style={{ fontSize: 24, fontWeight: 700 }}>{s.avgDays}</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>avg days · {s.count} deals</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("analytics_avg_days","avg days")} · {s.count} {t("analytics_col_deals","deals")}</div>
             </div>
           ))}
         </div>
@@ -232,27 +242,28 @@ function VelocityTab() {
 }
 
 function RepPerformanceTab() {
+  const { t } = useLanguage();
   const { data, isLoading } = useQuery<any>({ queryKey: ["/api/analytics/rep-performance"] });
-  if (isLoading) return <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>Loading…</div>;
+  if (isLoading) return <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>{t("loading", "Loading...")}</div>;
   if (!data) return null;
   const { reps } = data;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
-        <StatCard label="Team Members" value={reps.length} icon={Users} color="#3b82f6" />
-        <StatCard label="Total Won Revenue" value={fmt(reps.reduce((s: number, r: any) => s + r.wonValue, 0))} icon={Award} color="#10b981" />
-        <StatCard label="Total Open Deals" value={reps.reduce((s: number, r: any) => s + r.openDeals, 0)} icon={Target} color="#f59e0b" />
+        <StatCard label={t("analytics_team_members", "Team Members")} value={reps.length} icon={Users} color="#3b82f6" />
+        <StatCard label={t("analytics_total_won_revenue", "Total Won Revenue")} value={fmt(reps.reduce((s: number, r: any) => s + r.wonValue, 0))} icon={Award} color="#10b981" />
+        <StatCard label={t("analytics_total_open_deals", "Total Open Deals")} value={reps.reduce((s: number, r: any) => s + r.openDeals, 0)} icon={Target} color="#f59e0b" />
       </div>
 
       {reps.length === 0 ? (
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 60, textAlign: "center", color: "var(--text-muted)" }}>
-          No team members found. Invite your team to see performance data.
+          {t("analytics_no_team_members", "No team members found. Invite your team to see performance data.")}
         </div>
       ) : (
         <>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Revenue by Rep</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{t("analytics_revenue_by_rep", "Revenue by Rep")}</div>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={reps.slice(0, 8).map((r: any) => ({
                 name: r.user?.firstName || r.user?.email?.split("@")[0] || "Rep",
@@ -270,11 +281,11 @@ function RepPerformanceTab() {
           </div>
 
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 600 }}>Leaderboard</div>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 600 }}>{t("analytics_leaderboard", "Leaderboard")}</div>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--bg-overlay)" }}>
-                  {["#", "Rep", "Won", "Lost", "Open", "Win Rate", "Revenue Won", "Activity"].map(h => (
+                  {["#", t("analytics_rep","Rep"), t("analytics_col_won","Won"), t("analytics_col_lost","Lost"), t("analytics_col_open","Open"), t("win_rate","Win Rate"), t("analytics_revenue_won","Revenue Won"), t("analytics_activity","Activity")].map(h => (
                     <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase" }}>{h}</th>
                   ))}
                 </tr>
@@ -310,7 +321,7 @@ function RepPerformanceTab() {
                     <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 600 }}>{fmt(r.wonValue)}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                        {r.tasksCompleted} done · {r.tasksOpen} open
+                        {r.tasksCompleted} {t("analytics_tasks_done","done")} · {r.tasksOpen} {t("analytics_col_open","open")}
                       </div>
                     </td>
                   </tr>
@@ -331,19 +342,19 @@ export default function AnalyticsPage() {
   return (
     <Layout title={t("analytics_title")} subtitle={t("analytics_subtitle")}>
       <div style={{ display: "flex", gap: 6, marginBottom: 20, background: "var(--bg-overlay)", borderRadius: 10, padding: 4, width: "fit-content" }}>
-        {TABS.map(t => (
+        {TABS.map(tabKey => (
           <button
-            key={t}
-            data-testid={`tab-${t.toLowerCase().replace(/\s+/g, "-")}`}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            data-testid={`tab-${tabKey.toLowerCase().replace(/\s+/g, "-")}`}
+            onClick={() => setTab(tabKey)}
             style={{
               padding: "7px 14px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
-              background: tab === t ? "var(--bg-card)" : "transparent",
-              color: tab === t ? "var(--text-primary)" : "var(--text-muted)",
-              boxShadow: tab === t ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+              background: tab === tabKey ? "var(--bg-card)" : "transparent",
+              color: tab === tabKey ? "var(--text-primary)" : "var(--text-muted)",
+              boxShadow: tab === tabKey ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
               transition: "all 0.15s",
             }}
-          >{t}</button>
+          >{t(TAB_KEYS[tabKey], tabKey)}</button>
         ))}
       </div>
 

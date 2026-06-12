@@ -13,6 +13,13 @@ import {
 
 const TABS = ["Deal Intelligence", "Email Composer", "Meeting Summarizer", "Data Enrichment", "Lead Finder"] as const;
 type Tab = typeof TABS[number];
+const TAB_KEYS: Record<Tab, string> = {
+  "Deal Intelligence": "aitools_tab_deal_intelligence",
+  "Email Composer": "aitools_tab_email_composer",
+  "Meeting Summarizer": "aitools_tab_meeting_summarizer",
+  "Data Enrichment": "aitools_tab_data_enrichment",
+  "Lead Finder": "aitools_tab_lead_finder",
+};
 
 const TONES = ["professional", "friendly", "urgent", "consultative", "casual"];
 const PURPOSES = [
@@ -25,6 +32,7 @@ const PURPOSES = [
 ];
 
 function CopyButton({ text }: { text: string }) {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -32,7 +40,7 @@ function CopyButton({ text }: { text: string }) {
       style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}
     >
       {copied ? <Check size={12} style={{ color: "#10b981" }} /> : <Copy size={12} />}
-      {copied ? "Copied" : "Copy"}
+      {copied ? t("copied", "Copied!") : t("copy", "Copy")}
     </button>
   );
 }
@@ -50,11 +58,12 @@ function SectionCard({ title, icon: Icon, color, children }: any) {
 }
 
 function HealthBar({ score }: { score: number }) {
+  const { t } = useLanguage();
   const color = score >= 70 ? "#10b981" : score >= 40 ? "#f59e0b" : "#ef4444";
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Deal Health Score</span>
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("aitools_deal_health_score", "Deal Health Score")}</span>
         <span style={{ fontSize: 20, fontWeight: 700, color }}>{score}</span>
       </div>
       <div style={{ height: 8, background: "var(--bg-overlay)", borderRadius: 4 }}>
@@ -65,6 +74,7 @@ function HealthBar({ score }: { score: number }) {
 }
 
 function DealIntelligenceTab() {
+  const { t } = useLanguage();
   const { data: deals } = useQuery<any[]>({ queryKey: ["/api/deals"] });
   const [selectedDeal, setSelectedDeal] = useState("");
   const [result, setResult] = useState<any>(null);
@@ -78,7 +88,7 @@ function DealIntelligenceTab() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <SectionCard title="Select a Deal to Analyze" icon={BarChart2} color="#3b82f6">
+      <SectionCard title={t("aitools_select_deal_title", "Select a Deal to Analyze")} icon={BarChart2} color="#3b82f6">
         <div style={{ display: "flex", gap: 10 }}>
           <select
             value={selectedDeal}
@@ -86,7 +96,7 @@ function DealIntelligenceTab() {
             data-testid="select-deal"
             style={{ flex: 1, padding: "9px 12px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", fontSize: 13 }}
           >
-            <option value="">Select a deal…</option>
+            <option value="">{t("aitools_select_deal_ph", "Select a deal…")}</option>
             {dealList.map((d: any) => (
               <option key={d.id} value={d.id}>{d.name} — {d.stage}</option>
             ))}

@@ -62,10 +62,10 @@ export default function HealingPage() {
   });
 
   const TABS = [
-    { id: "dashboard", label: "Dashboard", icon: Shield },
-    { id: "errors", label: "Error Log", icon: AlertTriangle },
-    { id: "performance", label: "Performance", icon: BarChart2 },
-    { id: "circuits", label: "Circuit Breakers", icon: ToggleRight },
+    { id: "dashboard", label: t("healing_tab_dashboard", "Dashboard"), icon: Shield },
+    { id: "errors", label: t("healing_tab_errors", "Error Log"), icon: AlertTriangle },
+    { id: "performance", label: t("healing_tab_performance", "Performance"), icon: BarChart2 },
+    { id: "circuits", label: t("healing_tab_circuits", "Circuit Breakers"), icon: ToggleRight },
   ] as const;
 
   const overallStatus = health?.overall || "healthy";
@@ -78,7 +78,7 @@ export default function HealingPage() {
       subtitle={t("healing_subtitle")}
       actions={
         <button className="btn btn-primary btn-sm" onClick={runChecks} disabled={runningCheck}>
-          {runningCheck ? <><span className="spinner" style={{ width: 14, height: 14 }} />Running...</> : <><RefreshCw size={14} /> Run Health Checks</>}
+          {runningCheck ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t("healing_running_checks", "Running...")}</> : <><RefreshCw size={14} /> {t("healing_run_checks", "Run Health Checks")}</>}
         </button>
       }
     >
@@ -88,34 +88,34 @@ export default function HealingPage() {
           <CfgIcon size={22} style={{ color: cfg.color }} />
         </div>
         <div>
-          <div style={{ fontWeight: 800, fontSize: 18, color: cfg.color }}>System {cfg.label}</div>
+          <div style={{ fontWeight: 800, fontSize: 18, color: cfg.color }}>{t("system_health", "System")} {cfg.label}</div>
           <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-            Last checked: {new Date().toLocaleTimeString()} · Auto-healing: Active · Checks every 5 minutes
+            {t("healing_last_checked", "Last checked")}: {new Date().toLocaleTimeString()} · {t("healing_auto_healing", "Auto-healing: Active")} · {t("healing_check_interval", "Checks every 5 minutes")}
           </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 16 }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{stats?.healingRate || 0}%</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>HEAL RATE</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>{t("healing_heal_rate", "HEAL RATE")}</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#f59e0b" }}>{stats?.errors?.unresolved || 0}</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>UNRESOLVED</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>{t("healing_unresolved", "UNRESOLVED")}</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#3b82f6" }}>{stats?.errors?.autoHealed || 0}</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>AUTO-HEALED</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>{t("healing_auto_healed", "AUTO-HEALED")}</div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, background: "var(--bg-overlay)", padding: 4, borderRadius: 10, width: "fit-content" }}>
-        {TABS.map(t => {
-          const Icon = t.icon;
+        {TABS.map(tabItem => {
+          const Icon = tabItem.icon;
           return (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} className={`btn btn-sm ${activeTab === t.id ? "btn-primary" : "btn-ghost"}`} style={{ gap: 6 }}>
-              <Icon size={13} />{t.label}
+            <button key={tabItem.id} onClick={() => setActiveTab(tabItem.id)} className={`btn btn-sm ${activeTab === tabItem.id ? "btn-primary" : "btn-ghost"}`} style={{ gap: 6 }}>
+              <Icon size={13} />{tabItem.label}
             </button>
           );
         })}
@@ -128,31 +128,31 @@ export default function HealingPage() {
           {healthLoading ? <Loader /> : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 14, marginBottom: 24 }}>
               {Object.entries(health?.checks || {}).map(([name, check]: [string, any]) => {
-                const cfg = STATUS_CONFIG[check.status] || STATUS_CONFIG.healthy;
+                const checkCfg = STATUS_CONFIG[check.status] || STATUS_CONFIG.healthy;
                 const Icon = CHECK_ICONS[name] || Activity;
-                const CfgIcon2 = cfg.icon;
+                const CheckCfgIcon = checkCfg.icon;
                 return (
-                  <div key={name} className="card" style={{ padding: 16, borderLeft: `3px solid ${cfg.color}` }}>
+                  <div key={name} className="card" style={{ padding: 16, borderLeft: `3px solid ${checkCfg.color}` }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <Icon size={16} style={{ color: cfg.color }} />
+                        <Icon size={16} style={{ color: checkCfg.color }} />
                         <span style={{ fontWeight: 700, fontSize: 14, textTransform: "capitalize" }}>{name.replace("_", " ")}</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 8px", borderRadius: 6, background: cfg.bg }}>
-                        <CfgIcon2 size={12} style={{ color: cfg.color }} />
-                        <span style={{ fontSize: 11, fontWeight: 700, color: cfg.color }}>{cfg.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 8px", borderRadius: 6, background: checkCfg.bg }}>
+                        <CheckCfgIcon size={12} style={{ color: checkCfg.color }} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: checkCfg.color }}>{checkCfg.label}</span>
                       </div>
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>{check.message}</div>
                     {check.latencyMs > 0 && (
                       <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                        Latency: <strong style={{ color: check.latencyMs > 300 ? "#f59e0b" : "var(--text-primary)" }}>{check.latencyMs}ms</strong>
+                        {t("healing_latency", "Latency")}: <strong style={{ color: check.latencyMs > 300 ? "#f59e0b" : "var(--text-primary)" }}>{check.latencyMs}ms</strong>
                       </div>
                     )}
                     {check.details?.heapPercent !== undefined && (
                       <div style={{ marginTop: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11, color: "var(--text-muted)" }}>
-                          <span>Heap</span>
+                          <span>{t("healing_heap", "Heap")}</span>
                           <span>{check.details.heapPercent}%</span>
                         </div>
                         <div style={{ width: "100%", height: 4, borderRadius: 2, background: "var(--bg-overlay)" }}>
@@ -162,7 +162,7 @@ export default function HealingPage() {
                     )}
                     {check.details?.poolTotal !== undefined && (
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                        Pool: {check.details.poolTotal} total · {check.details.poolIdle} idle
+                        {t("healing_pool", "Pool")}: {check.details.poolTotal} {t("healing_total_lc", "total")} · {check.details.poolIdle} {t("healing_idle", "idle")}
                       </div>
                     )}
                   </div>
@@ -175,7 +175,7 @@ export default function HealingPage() {
           {stats && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div className="card" style={{ padding: 20 }}>
-                <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>Errors by Severity</h3>
+                <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>{t("healing_errors_by_severity", "Errors by Severity")}</h3>
                 {(stats.bySeverity || []).map((s: any) => (
                   <div key={s.severity} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                     <span style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, background: s.severity === "critical" ? "#ef4444" : s.severity === "error" ? "#f97316" : s.severity === "warning" ? "#f59e0b" : "#64748b" }} />
@@ -189,7 +189,7 @@ export default function HealingPage() {
               </div>
 
               <div className="card" style={{ padding: 20 }}>
-                <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>Errors by Category</h3>
+                <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700 }}>{t("healing_errors_by_category", "Errors by Category")}</h3>
                 {(stats.byCategory || []).slice(0, 6).map((c: any) => (
                   <div key={c.category} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                     <span style={{ flex: 1, fontSize: 13 }}>{c.category}</span>
@@ -207,14 +207,21 @@ export default function HealingPage() {
         <div>
           <div className="card" style={{ overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "80px 100px 1fr 100px 80px 120px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-              {["Severity", "Category", "Message", "Attempts", "Status", "Actions"].map(h => (
+              {[
+                t("healing_col_severity", "Severity"),
+                t("healing_col_category", "Category"),
+                t("healing_col_message", "Message"),
+                t("healing_col_attempts", "Attempts"),
+                t("healing_col_status", "Status"),
+                t("actions", "Actions"),
+              ].map(h => (
                 <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
               ))}
             </div>
             {!(errors?.length) ? (
               <div style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)" }}>
                 <CheckCircle size={40} style={{ marginBottom: 12, opacity: 0.3, color: "#10b981" }} />
-                <p>No errors logged. System running clean.</p>
+                <p>{t("healing_no_errors", "No errors logged. System running clean.")}</p>
               </div>
             ) : errors!.map((e: any) => (
               <div key={e.id} className="table-row" style={{ gridTemplateColumns: "80px 100px 1fr 100px 80px 120px", gap: 12 }}>
@@ -229,20 +236,20 @@ export default function HealingPage() {
                   <div style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 400 }}>{e.message}</div>
                   {e.healingLog?.length > 0 && (
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                      Last heal: {e.healingLog[e.healingLog.length - 1]?.action?.slice(0, 60)}
+                      {t("healing_last_heal", "Last heal")}: {e.healingLog[e.healingLog.length - 1]?.action?.slice(0, 60)}
                     </div>
                   )}
                 </div>
-                <div style={{ fontSize: 13 }}>{e.healingAttempts || 0} attempts</div>
+                <div style={{ fontSize: 13 }}>{e.healingAttempts || 0} {t("healing_attempts", "attempts")}</div>
                 <div>
                   {e.resolved
-                    ? <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700 }}>✓ {e.resolvedBy === "auto_healer" ? "Auto" : "Manual"}</span>
-                    : <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700 }}>Pending</span>}
+                    ? <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700 }}>✓ {e.resolvedBy === "auto_healer" ? t("healing_auto", "Auto") : t("healing_manual", "Manual")}</span>
+                    : <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700 }}>{t("pending", "Pending")}</span>}
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   {!e.resolved && <>
-                    <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "4px 8px" }} onClick={() => healMut.mutate(e.id)}><Zap size={11} /> Heal</button>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 8px" }} onClick={() => resolveMut.mutate(e.id)}>Resolve</button>
+                    <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "4px 8px" }} onClick={() => healMut.mutate(e.id)}><Zap size={11} /> {t("healing_heal_btn", "Heal")}</button>
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "4px 8px" }} onClick={() => resolveMut.mutate(e.id)}>{t("healing_resolve_btn", "Resolve")}</button>
                   </>}
                 </div>
               </div>
@@ -260,15 +267,15 @@ export default function HealingPage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 20, fontWeight: 800, color: data.avg > 300 ? "#ef4444" : "#10b981" }}>{data.avg}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>AVG</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{t("healing_perf_avg", "AVG")}</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 20, fontWeight: 800, color: "#f59e0b" }}>{data.max}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>MAX</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{t("healing_perf_max", "MAX")}</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 20, fontWeight: 800 }}>{data.count}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>COUNT</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{t("healing_perf_count", "COUNT")}</div>
                 </div>
               </div>
             </div>
@@ -276,7 +283,7 @@ export default function HealingPage() {
           {!Object.keys(perf?.summary || {}).length && (
             <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
               <BarChart2 size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
-              <p>Performance metrics will appear after API activity.</p>
+              <p>{t("healing_perf_empty", "Performance metrics will appear after API activity.")}</p>
             </div>
           )}
         </div>
@@ -295,15 +302,15 @@ export default function HealingPage() {
                 </div>
                 <div style={{ display: "grid", gap: 6, marginBottom: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--text-secondary)" }}>
-                    <span>Failures</span>
+                    <span>{t("healing_failures", "Failures")}</span>
                     <span style={{ fontWeight: 700, color: c.failures > 0 ? "#f59e0b" : "var(--text-primary)" }}>{c.failures} / {c.threshold}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--text-secondary)" }}>
-                    <span>Timeout</span>
+                    <span>{t("healing_timeout", "Timeout")}</span>
                     <span>{c.timeout / 1000}s</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--text-secondary)" }}>
-                    <span>State</span>
+                    <span>{t("status", "State")}</span>
                     <span style={{ fontWeight: 700, color: stateCfg.color }}>{c.state.toUpperCase()}</span>
                   </div>
                 </div>
@@ -312,7 +319,7 @@ export default function HealingPage() {
                 </div>
                 {c.state !== "closed" && (
                   <button className="btn btn-primary btn-sm" style={{ width: "100%", fontSize: 12 }} onClick={() => resetCircuit.mutate(name)}>
-                    <RefreshCw size={12} /> Reset Circuit
+                    <RefreshCw size={12} /> {t("healing_reset_circuit", "Reset Circuit")}
                   </button>
                 )}
               </div>

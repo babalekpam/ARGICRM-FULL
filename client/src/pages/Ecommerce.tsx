@@ -11,6 +11,7 @@ import {
   Sparkles, ArrowLeft, RefreshCw, DollarSign, Image, Star, Tag, Link, Settings,
 } from "lucide-react";
 
+// Tab labels are rendered via t() at render time; keep identifiers as-is
 const TABS = ["Products", "Orders", "Stores", "Inventory"] as const;
 const BLANK_PRODUCT = {
   name: "", description: "", sku: "", price: "", compareAtPrice: "", currency: "USD",
@@ -277,7 +278,7 @@ export default function EcommercePage() {
   // ── Store Builder Full-Screen Overlay ────────────────────────
   if (storeMode !== "list" && tab === "Stores") {
     return (
-      <Layout title="E-commerce" subtitle="AI Store Builder">
+      <Layout title={t("ecommerce_title")} subtitle={t("ecom_ai_store_builder", "AI Store Builder")}>
         <div style={{ maxWidth: 680, margin: "0 auto" }}>
           {/* Back button */}
           <button
@@ -285,7 +286,7 @@ export default function EcommercePage() {
             onClick={() => setStoreMode("list")}
             style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}
           >
-            <ArrowLeft size={14} /> Back to Stores
+            <ArrowLeft size={14} /> {t("ecom_back_to_stores", "Back to Stores")}
           </button>
 
           {/* ── INTERVIEW MODE (single-step form) ── */}
@@ -306,9 +307,9 @@ export default function EcommercePage() {
                   <Sparkles size={22} color="#fff" />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 17 }}>AI Store Builder</div>
+                  <div style={{ fontWeight: 800, fontSize: 17 }}>{t("ecom_ai_store_builder", "AI Store Builder")}</div>
                   <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
-                    Describe your store in one sentence — ARIA handles the rest
+                    {t("ecom_builder_subtitle", "Describe your store in one sentence — ARIA handles the rest")}
                   </div>
                 </div>
               </div>
@@ -318,7 +319,7 @@ export default function EcommercePage() {
                 {!isReady && (
                   <>
                     <label style={{ display: "block", fontWeight: 700, marginBottom: 10, fontSize: 14 }}>
-                      What does your store sell?
+                      {t("ecom_store_sell_label", "What does your store sell?")}
                     </label>
                     <textarea
                       data-testid="input-store-interview"
@@ -346,13 +347,13 @@ export default function EcommercePage() {
                         style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px" }}
                       >
                         {chatLoading
-                          ? <><RefreshCw size={15} style={{ animation: "spin 0.8s linear infinite" }} /> Analysing…</>
-                          : <><Sparkles size={15} /> Analyse &amp; Preview Store</>
+                          ? <><RefreshCw size={15} style={{ animation: "spin 0.8s linear infinite" }} /> {t("ecom_analysing", "Analysing…")}</>
+                          : <><Sparkles size={15} /> {t("ecom_analyse_preview", "Analyse & Preview Store")}</>
                         }
                       </button>
                     </div>
                     <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
-                      One sentence is enough — ARIA fills in everything else automatically
+                      {t("ecom_one_sentence_hint", "One sentence is enough — ARIA fills in everything else automatically")}
                     </div>
                   </>
                 )}
@@ -362,7 +363,7 @@ export default function EcommercePage() {
                   <>
                     <div style={{ marginBottom: 18, padding: "16px", background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                        Store Preview
+                        {t("ecom_store_preview", "Store Preview")}
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                         {[
@@ -393,7 +394,7 @@ export default function EcommercePage() {
                         onClick={buildStore}
                         style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", background: "linear-gradient(135deg,#6366f1,#3b82f6)", border: "none" }}
                       >
-                        <Sparkles size={16} /> Build My Store
+                        <Sparkles size={16} /> {t("ecom_build_my_store", "Build My Store")}
                       </button>
                       <button
                         className="btn btn-secondary"
@@ -421,8 +422,8 @@ export default function EcommercePage() {
               }}>
                 <Sparkles size={26} color="#fff" />
               </div>
-              <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>Building Your Store</div>
-              <div style={{ color: "var(--text-muted)", marginBottom: 24, fontSize: 13 }}>ARIA is generating your complete store — this takes just a moment</div>
+              <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>{t("ecom_building_store", "Building Your Store")}</div>
+              <div style={{ color: "var(--text-muted)", marginBottom: 24, fontSize: 13 }}>{t("ecom_building_desc", "ARIA is generating your complete store — this takes just a moment")}</div>
 
               <div style={{ textAlign: "left", maxWidth: 400, margin: "0 auto", display: "flex", flexDirection: "column", gap: 10 }}>
                 {buildProgress.map((step, i) => (
@@ -440,7 +441,7 @@ export default function EcommercePage() {
                       animation: "spin 0.8s linear infinite",
                       flexShrink: 0,
                     }} />
-                    <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Working…</span>
+                    <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("ecom_working", "Working…")}</span>
                   </div>
                 )}
               </div>
@@ -460,9 +461,9 @@ export default function EcommercePage() {
                 }}>
                   <CheckCircle2 size={28} color="#10b981" />
                 </div>
-                <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 6 }}>Your Store is Ready!</div>
+                <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 6 }}>{t("ecom_store_ready", "Your Store is Ready!")}</div>
                 <div style={{ color: "var(--text-muted)", marginBottom: 16, fontSize: 14 }}>
-                  <strong>{builtStore.name}</strong> has been built successfully
+                  <strong>{builtStore.name}</strong> {t("ecom_store_built_success", "has been built successfully")}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 20 }}>
                   <span className="badge badge-green">Live</span>
@@ -475,7 +476,7 @@ export default function EcommercePage() {
                   const storeUrl = `${window.location.origin}/store/${builtStore.slug}`;
                   return (
                     <div style={{ padding: "14px 18px", background: "var(--bg-elevated)", borderRadius: 12, border: "1.5px solid rgba(99,102,241,0.25)", marginBottom: 16 }}>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Your Live Store URL</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{t("ecom_live_store_url", "Your Live Store URL")}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
                         <Globe size={14} color="#6366f1" />
                         <a
@@ -501,7 +502,7 @@ export default function EcommercePage() {
                           rel="noopener noreferrer"
                           style={{ padding: "8px 18px", background: "#10b981", borderRadius: 8, color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}
                         >
-                          <CheckCircle2 size={13} /> Open Store
+                          <CheckCircle2 size={13} /> {t("open", "Open")}
                         </a>
                       </div>
                     </div>
@@ -513,13 +514,13 @@ export default function EcommercePage() {
                   onClick={() => setStoreMode("domain")}
                   style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 auto" }}
                 >
-                  <Globe size={15} /> Connect Custom Domain
+                  <Globe size={15} /> {t("ecom_connect_custom_domain", "Connect Custom Domain")}
                 </button>
               </div>
 
               {/* Build log */}
               <div className="card" style={{ padding: 20 }}>
-                <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 14 }}>Build Log</div>
+                <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 14 }}>{t("ecom_build_log", "Build Log")}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {buildProgress.map((step, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -545,12 +546,12 @@ export default function EcommercePage() {
                     <Globe size={20} color="#6366f1" />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: 16 }}>Connect Your Domain</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Point your custom domain to {builtStore?.name || "your store"}</div>
+                    <div style={{ fontWeight: 800, fontSize: 16 }}>{t("ecom_connect_your_domain", "Connect Your Domain")}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("ecom_domain_point_to", "Point your custom domain to")} {builtStore?.name || t("ecom_your_store", "your store")}</div>
                   </div>
                 </div>
 
-                <FormRow label="Your domain (e.g. www.mystore.com)">
+                <FormRow label={t("ecom_your_domain_label", "Your domain (e.g. www.mystore.com)")}>
                   <input
                     data-testid="input-custom-domain"
                     className="input"
@@ -568,7 +569,7 @@ export default function EcommercePage() {
                     disabled={!domainInput.trim() || domainSaving}
                     style={{ flex: 1 }}
                   >
-                    {domainSaving ? "Saving…" : "Save Domain"}
+                    {domainSaving ? t("ecom_saving", "Saving…") : t("ecom_save_domain", "Save Domain")}
                   </button>
                   {builtStore?.customDomain && builtStore?.domainStatus === "pending" && (
                     <button
@@ -579,7 +580,7 @@ export default function EcommercePage() {
                       style={{ display: "flex", alignItems: "center", gap: 6 }}
                     >
                       <RefreshCw size={13} style={{ animation: verifying ? "spin 0.8s linear infinite" : "none" }} />
-                      Verify DNS
+                      {t("ecom_verify_dns", "Verify DNS")}
                     </button>
                   )}
                 </div>
@@ -587,7 +588,7 @@ export default function EcommercePage() {
                 {builtStore?.domainStatus === "verified" && (
                   <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
                     <CheckCircle2 size={14} color="#10b981" />
-                    <span style={{ fontSize: 13, color: "#10b981", fontWeight: 600 }}>Domain verified! Your store is live at {builtStore.customDomain}</span>
+                    <span style={{ fontSize: 13, color: "#10b981", fontWeight: 600 }}>{t("ecom_domain_verified", "Domain verified! Your store is live at")} {builtStore.customDomain}</span>
                   </div>
                 )}
               </div>
@@ -595,9 +596,9 @@ export default function EcommercePage() {
               {/* DNS Records */}
               {builtStore?.customDomain && (
                 <div className="card" style={{ padding: 24 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 14 }}>Required DNS Records</div>
+                  <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 14 }}>{t("ecom_required_dns_records", "Required DNS Records")}</div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>
-                    Add these records at your domain registrar (Namecheap, GoDaddy, etc.)
+                    {t("ecom_dns_registrar_hint", "Add these records at your domain registrar (Namecheap, GoDaddy, etc.)")}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {[
@@ -655,11 +656,11 @@ export default function EcommercePage() {
         <div style={{ display: "flex", gap: 8 }}>
           {tab === "Stores" && (
             <button className="btn btn-primary btn-sm" onClick={() => { setTab("Stores"); openStoreBuilder(); }}>
-              <Bot size={14} /> AI Store Builder
+              <Bot size={14} /> {t("ecom_ai_store_builder", "AI Store Builder")}
             </button>
           )}
           {tab === "Products" && (
-            <button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={14} /> Add Product</button>
+            <button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={14} /> {t("add_product", "Add Product")}</button>
           )}
         </div>
       }
@@ -667,11 +668,11 @@ export default function EcommercePage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Stores", value: stats?.stores || 0, icon: Store, color: "#3b82f6" },
-          { label: "Products", value: stats?.products || 0, icon: Package, color: "#8b5cf6" },
-          { label: "Total Orders", value: stats?.orders?.total || 0, icon: ShoppingCart, color: "#10b981" },
-          { label: "Revenue", value: `$${Number(stats?.orders?.revenue || 0).toLocaleString()}`, icon: DollarSign, color: "#f59e0b" },
-          { label: "Low Stock", value: stats?.lowStockAlerts || 0, icon: AlertTriangle, color: "#ef4444" },
+          { label: t("stores_tab", "Stores"), value: stats?.stores || 0, icon: Store, color: "#3b82f6" },
+          { label: t("products_tab", "Products"), value: stats?.products || 0, icon: Package, color: "#8b5cf6" },
+          { label: t("total_orders", "Total Orders"), value: stats?.orders?.total || 0, icon: ShoppingCart, color: "#10b981" },
+          { label: t("total_revenue_ec", "Revenue"), value: `$${Number(stats?.orders?.revenue || 0).toLocaleString()}`, icon: DollarSign, color: "#f59e0b" },
+          { label: t("low_stock_alerts", "Low Stock Alerts"), value: stats?.lowStockAlerts || 0, icon: AlertTriangle, color: "#ef4444" },
         ].map(s => {
           const Icon = s.icon;
           return (
@@ -687,28 +688,36 @@ export default function EcommercePage() {
       </div>
 
       <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`btn btn-sm ${tab === t ? "btn-primary" : "btn-secondary"}`}>{t}</button>
-        ))}
+        {TABS.map(tabKey => {
+          const tabLabel: Record<string, string> = {
+            Products: t("products_tab", "Products"),
+            Orders: t("orders_tab", "Orders"),
+            Stores: t("stores_tab", "Stores"),
+            Inventory: t("inventory_tab", "Inventory"),
+          };
+          return (
+            <button key={tabKey} onClick={() => setTab(tabKey)} className={`btn btn-sm ${tab === tabKey ? "btn-primary" : "btn-secondary"}`}>{tabLabel[tabKey]}</button>
+          );
+        })}
       </div>
 
       {/* ── PRODUCTS ── */}
       {tab === "Products" && (
         <>
         <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-          <button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={14} /> Add Product</button>
+          <button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={14} /> {t("add_product", "Add Product")}</button>
           <button className="btn btn-secondary btn-sm" onClick={() => { setSupplierResult(null); setSupplierUrl(""); setSupplierModal(true); }} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <Link size={13} /> Import from Supplier
+            <Link size={13} /> {t("import_supplier", "Import from Supplier")}
           </button>
         </div>
         <div className="card" style={{ overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 80px 120px 100px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-            {["Product", "Price", "Inventory", "Status", "Category", "Actions"].map(h => (
+            {[t("product_name","Product"), t("product_price","Price"), t("product_inventory","Inventory"), t("status","Status"), t("product_category","Category"), t("actions","Actions")].map(h => (
               <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
             ))}
           </div>
           {!productsData?.data?.length
-            ? <Empty icon={Package} title="No products yet" action={<button className="btn btn-primary" onClick={openAdd}><Plus size={15} /> Add Product</button>} />
+            ? <Empty icon={Package} title={t("no_products","No products yet")} action={<button className="btn btn-primary" onClick={openAdd}><Plus size={15} /> {t("add_product","Add Product")}</button>} />
             : productsData.data.map((p: any) => (
               <div key={p.id} className="table-row" style={{ gridTemplateColumns: "1fr 100px 100px 80px 120px 100px", gap: 12 }}>
                 <div>
@@ -720,7 +729,7 @@ export default function EcommercePage() {
                   <span style={{ fontWeight: 700, color: (p.inventory || 0) <= (p.lowStockThreshold || 10) ? "#ef4444" : "var(--text-primary)" }}>{p.inventory}</span>
                   {(p.inventory || 0) <= (p.lowStockThreshold || 10) && <AlertTriangle size={12} style={{ color: "#ef4444" }} />}
                 </div>
-                <div><span className={`badge ${p.isAvailable ? "badge-green" : "badge-gray"}`}>{p.isAvailable ? "Active" : "Inactive"}</span></div>
+                <div><span className={`badge ${p.isAvailable ? "badge-green" : "badge-gray"}`}>{p.isAvailable ? t("active","Active") : t("inactive","Inactive")}</span></div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{p.category || "—"}</div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button className="btn btn-ghost btn-sm" style={{ padding: 5 }} onClick={() => openEdit(p)}><Edit size={13} /></button>
@@ -747,17 +756,17 @@ export default function EcommercePage() {
           </div>
           <div className="card" style={{ overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 120px 120px 100px 100px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-              {["Order #", "Customer", "Total", "Status", "Payment", "Date"].map(h => (
+              {[t("order_number","Order #"), t("customer","Customer"), t("total","Total"), t("order_status","Status"), t("payment_status","Payment"), t("order_date","Date")].map(h => (
                 <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
               ))}
             </div>
             {!ordersData?.data?.length
-              ? <Empty icon={ShoppingCart} title="No orders yet" />
+              ? <Empty icon={ShoppingCart} title={t("ecom_no_orders", "No orders yet")} />
               : ordersData.data.map((o: any) => (
                 <div key={o.id} className="table-row" style={{ gridTemplateColumns: "120px 1fr 120px 120px 100px 100px", gap: 12 }}>
                   <div style={{ fontWeight: 700, color: "var(--brand-light)" }}>{o.orderNumber}</div>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{o.customerName || "Unknown"}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{o.customerName || t("unknown","Unknown")}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{o.customerEmail}</div>
                   </div>
                   <div style={{ fontWeight: 700 }}>{o.currency} {Number(o.total).toLocaleString()}</div>
@@ -779,9 +788,9 @@ export default function EcommercePage() {
               <div style={{ width: 64, height: 64, borderRadius: 20, background: "linear-gradient(135deg,rgba(99,102,241,0.15),rgba(59,130,246,0.1))", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Store size={28} color="#6366f1" />
               </div>
-              <div style={{ fontWeight: 800, fontSize: 18 }}>No stores yet</div>
+              <div style={{ fontWeight: 800, fontSize: 18 }}>{t("ecom_no_stores", "No stores yet")}</div>
               <div style={{ color: "var(--text-muted)", textAlign: "center", maxWidth: 360, fontSize: 14 }}>
-                Create your first store using our AI builder — just describe your idea in plain language and ARIA will build it for you.
+                {t("ecom_no_stores_desc", "Create your first store using our AI builder — just describe your idea in plain language and ARIA will build it for you.")}
               </div>
               <button
                 data-testid="button-create-store-ai"
@@ -789,7 +798,7 @@ export default function EcommercePage() {
                 onClick={openStoreBuilder}
                 style={{ display: "flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg,#6366f1,#3b82f6)", border: "none" }}
               >
-                <Bot size={16} /> Create Store with AI
+                <Bot size={16} /> {t("ecom_create_store_ai", "Create Store with AI")}
               </button>
             </div>
           ) : (
@@ -802,8 +811,8 @@ export default function EcommercePage() {
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(59,130,246,0.08))", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Bot size={20} color="#6366f1" />
                 </div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>Create New Store</div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>AI-powered store builder</div>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{t("ecom_create_new_store", "Create New Store")}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("ecom_ai_powered_builder", "AI-powered store builder")}</div>
               </div>
 
               {storesData.map((s: any) => (
@@ -842,14 +851,14 @@ export default function EcommercePage() {
                       className="btn btn-primary btn-sm"
                       style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, textDecoration: "none" }}
                     >
-                      <Globe size={12} /> Visit Store
+                      <Globe size={12} /> {t("visit_store", "Visit Store")}
                     </a>
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => openDomainPanel(s)}
                       style={{ display: "flex", alignItems: "center", gap: 5 }}
                     >
-                      Domain
+                      {t("store_domain", "Domain")}
                     </button>
                     <button
                       className="btn btn-ghost btn-sm"
@@ -873,12 +882,12 @@ export default function EcommercePage() {
           {(lowStock?.length || 0) > 0 && (
             <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
               <AlertTriangle size={18} style={{ color: "#ef4444" }} />
-              <div><strong>{lowStock?.length} products</strong> are low on stock and need restocking</div>
+              <div><strong>{lowStock?.length} {t("ecom_products_lc","products")}</strong> {t("ecom_low_stock_need_restock","are low on stock and need restocking")}</div>
             </div>
           )}
           <div className="card" style={{ overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 120px 120px 100px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-              {["Product", "In Stock", "Low Stock Alert", "Track", "Status"].map(h => (
+              {[t("product_name","Product"), t("ecom_in_stock","In Stock"), t("ecom_low_stock_alert","Low Stock Alert"), t("ecom_track","Track"), t("status","Status")].map(h => (
                 <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
               ))}
             </div>
@@ -889,9 +898,9 @@ export default function EcommercePage() {
                   <div style={{ fontWeight: 600 }}>{p.name}</div>
                   <div style={{ fontWeight: 700, color: isLow ? "#ef4444" : "var(--text-primary)" }}>{p.inventory}</div>
                   <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{p.lowStockThreshold} units</div>
-                  <div><span className={`badge ${p.trackInventory ? "badge-green" : "badge-gray"}`}>{p.trackInventory ? "Tracked" : "Untracked"}</span></div>
+                  <div><span className={`badge ${p.trackInventory ? "badge-green" : "badge-gray"}`}>{p.trackInventory ? t("ecom_tracked","Tracked") : t("ecom_untracked","Untracked")}</span></div>
                   <div>
-                    {isLow ? <span className="badge badge-red">Low Stock</span> : <span className="badge badge-green">OK</span>}
+                    {isLow ? <span className="badge badge-red">{t("low_stock","Low Stock")}</span> : <span className="badge badge-green">{t("ecom_ok","OK")}</span>}
                   </div>
                 </div>
               );
@@ -902,28 +911,28 @@ export default function EcommercePage() {
 
       {/* AI Product Optimization Result Modal */}
       {aiResult && (
-        <Modal open={!!aiResult} onClose={() => setAiResult(null)} title="AI Product Optimization">
+        <Modal open={!!aiResult} onClose={() => setAiResult(null)} title={t("ecom_ai_product_optimization","AI Product Optimization")}>
           <div style={{ padding: "20px", display: "grid", gap: 14 }}>
-            {aiResult.improvedTitle && <div><div className="label">Improved Title</div><div className="card" style={{ padding: "10px 14px", fontWeight: 600 }}>{aiResult.improvedTitle}</div></div>}
-            {aiResult.improvedDescription && <div><div className="label">Improved Description</div><div className="card" style={{ padding: "10px 14px", fontSize: 13, lineHeight: 1.7 }}>{aiResult.improvedDescription}</div></div>}
-            {aiResult.seoTitle && <div><div className="label">SEO Title</div><div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{aiResult.seoTitle}</div></div>}
-            {aiResult.suggestedTags && <div><div className="label">Tags</div><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{aiResult.suggestedTags.map((t: string) => <span key={t} className="badge badge-blue">{t}</span>)}</div></div>}
+            {aiResult.improvedTitle && <div><div className="label">{t("ecom_improved_title","Improved Title")}</div><div className="card" style={{ padding: "10px 14px", fontWeight: 600 }}>{aiResult.improvedTitle}</div></div>}
+            {aiResult.improvedDescription && <div><div className="label">{t("ecom_improved_desc","Improved Description")}</div><div className="card" style={{ padding: "10px 14px", fontSize: 13, lineHeight: 1.7 }}>{aiResult.improvedDescription}</div></div>}
+            {aiResult.seoTitle && <div><div className="label">{t("ecom_seo_title","SEO Title")}</div><div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{aiResult.seoTitle}</div></div>}
+            {aiResult.suggestedTags && <div><div className="label">{t("tags","Tags")}</div><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{aiResult.suggestedTags.map((tg: string) => <span key={tg} className="badge badge-blue">{tg}</span>)}</div></div>}
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end" }}>
-            <button className="btn btn-secondary" onClick={() => setAiResult(null)}>Close</button>
+            <button className="btn btn-secondary" onClick={() => setAiResult(null)}>{t("close","Close")}</button>
           </div>
         </Modal>
       )}
 
       {/* Product Modal */}
-      <Modal open={productModal} onClose={() => setProductModal(false)} title={editing ? "Edit Product" : "Add Product"}>
+      <Modal open={productModal} onClose={() => setProductModal(false)} title={editing ? t("edit_product","Edit Product") : t("add_product","Add Product")}>
         <form onSubmit={saveProduct}>
           <div style={{ padding: "20px", display: "grid", gap: 14, maxHeight: "70vh", overflowY: "auto" }}>
             {/* Store assignment */}
             {storesData && storesData.length > 0 && (
-              <FormRow label="Assign to Store">
+              <FormRow label={t("ecom_assign_to_store","Assign to Store")}>
                 <select className="input" value={form.storeId} onChange={e => setForm((p: any) => ({ ...p, storeId: e.target.value }))}>
-                  <option value="">No store assigned</option>
+                  <option value="">{t("ecom_no_store_assigned","No store assigned")}</option>
                   {storesData.map((s: any) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
@@ -931,18 +940,18 @@ export default function EcommercePage() {
               </FormRow>
             )}
 
-            <FormRow label="Product name" required><input className="input" value={form.name} onChange={e => setForm((p: any) => ({ ...p, name: e.target.value }))} required placeholder="e.g. Organic Cotton T-Shirt" /></FormRow>
-            <FormRow label="Description"><textarea className="input" value={form.description} onChange={e => setForm((p: any) => ({ ...p, description: e.target.value }))} rows={3} placeholder="Describe the product…" /></FormRow>
+            <FormRow label={t("product_name","Product name")} required><input className="input" value={form.name} onChange={e => setForm((p: any) => ({ ...p, name: e.target.value }))} required placeholder="e.g. Organic Cotton T-Shirt" /></FormRow>
+            <FormRow label={t("product_desc","Description")}><textarea className="input" value={form.description} onChange={e => setForm((p: any) => ({ ...p, description: e.target.value }))} rows={3} placeholder={t("ecom_product_desc_ph","Describe the product…")} /></FormRow>
 
             {/* Pricing row */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <FormRow label="Price" required>
+              <FormRow label={t("product_price","Price")} required>
                 <input data-testid="input-product-price" type="number" step="0.01" className="input" value={form.price} onChange={e => setForm((p: any) => ({ ...p, price: e.target.value }))} required placeholder="29.99" />
               </FormRow>
-              <FormRow label="Compare-at Price">
+              <FormRow label={t("compare_price","Compare-at Price")}>
                 <input data-testid="input-product-compare-price" type="number" step="0.01" className="input" value={form.compareAtPrice} onChange={e => setForm((p: any) => ({ ...p, compareAtPrice: e.target.value }))} placeholder="49.99 (original)" />
               </FormRow>
-              <FormRow label="Currency">
+              <FormRow label={t("currency","Currency")}>
                 <select className="input" value={form.currency} onChange={e => setForm((p: any) => ({ ...p, currency: e.target.value }))}>
                   {["USD","EUR","GBP","CAD","AUD","JPY","CHF","CNY"].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -951,13 +960,13 @@ export default function EcommercePage() {
 
             {/* Category / SKU / Inventory */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <FormRow label="Category"><input className="input" value={form.category} onChange={e => setForm((p: any) => ({ ...p, category: e.target.value }))} placeholder="Apparel" /></FormRow>
-              <FormRow label="SKU"><input className="input" value={form.sku} onChange={e => setForm((p: any) => ({ ...p, sku: e.target.value }))} placeholder="SKU-001" /></FormRow>
-              <FormRow label="Inventory"><input type="number" className="input" value={form.inventory} onChange={e => setForm((p: any) => ({ ...p, inventory: e.target.value }))} /></FormRow>
+              <FormRow label={t("product_category","Category")}><input className="input" value={form.category} onChange={e => setForm((p: any) => ({ ...p, category: e.target.value }))} placeholder="Apparel" /></FormRow>
+              <FormRow label={t("product_sku","SKU")}><input className="input" value={form.sku} onChange={e => setForm((p: any) => ({ ...p, sku: e.target.value }))} placeholder="SKU-001" /></FormRow>
+              <FormRow label={t("product_inventory","Inventory")}><input type="number" className="input" value={form.inventory} onChange={e => setForm((p: any) => ({ ...p, inventory: e.target.value }))} /></FormRow>
             </div>
 
             {/* Tags */}
-            <FormRow label="Tags (comma-separated)">
+            <FormRow label={t("ecom_tags_comma","Tags (comma-separated)")}>
               <div style={{ position: "relative" }}>
                 <Tag size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted-foreground)" }} />
                 <input className="input" style={{ paddingLeft: 30 }} value={form.tags} onChange={e => setForm((p: any) => ({ ...p, tags: e.target.value }))} placeholder="sustainable, organic, trending" />
@@ -965,7 +974,7 @@ export default function EcommercePage() {
             </FormRow>
 
             {/* Images */}
-            <FormRow label="Product Images (one URL per line or comma-separated)">
+            <FormRow label={t("ecom_product_images_label","Product Images (one URL per line or comma-separated)")}>
               <div style={{ position: "relative" }}>
                 <Image size={14} style={{ position: "absolute", left: 10, top: 14, color: "var(--muted-foreground)" }} />
                 <textarea className="input" style={{ paddingLeft: 30 }} value={form.images} onChange={e => setForm((p: any) => ({ ...p, images: e.target.value }))} rows={3} placeholder={"https://images.unsplash.com/photo-xxx\nhttps://cdn.mystore.com/img.jpg"} />
@@ -983,34 +992,34 @@ export default function EcommercePage() {
             <div style={{ display: "flex", gap: 20 }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
                 <input type="checkbox" checked={form.isAvailable} onChange={e => setForm((p: any) => ({ ...p, isAvailable: e.target.checked }))} />
-                Available for sale
+                {t("available_sale","Available for sale")}
               </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
                 <Star size={14} style={{ color: form.isFeatured ? "#f59e0b" : "var(--muted-foreground)" }} />
                 <input type="checkbox" checked={form.isFeatured} onChange={e => setForm((p: any) => ({ ...p, isFeatured: e.target.checked }))} />
-                Featured product
+                {t("featured_product","Featured product")}
               </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
                 <input type="checkbox" checked={form.trackInventory} onChange={e => setForm((p: any) => ({ ...p, trackInventory: e.target.checked }))} />
-                Track inventory
+                {t("track_inventory","Track inventory")}
               </label>
             </div>
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setProductModal(false)}>Cancel</button>
-            <button data-testid="button-save-product" type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save Changes" : "Add Product"}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setProductModal(false)}>{t("cancel","Cancel")}</button>
+            <button data-testid="button-save-product" type="submit" className="btn btn-primary" disabled={saving}>{saving ? t("ecom_saving","Saving...") : editing ? t("save_changes","Save Changes") : t("add_product","Add Product")}</button>
           </div>
         </form>
       </Modal>
 
       {/* ── Supplier Import Modal ── */}
-      <Modal open={supplierModal} onClose={() => setSupplierModal(false)} title="Import Products from Supplier">
+      <Modal open={supplierModal} onClose={() => setSupplierModal(false)} title={t("ecom_import_from_supplier","Import Products from Supplier")}>
         <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ padding: "12px 16px", background: "rgba(99,102,241,0.08)", borderRadius: 10, fontSize: 13, color: "var(--text-muted)" }}>
-            <strong style={{ color: "var(--text-primary)" }}>AI-Powered Import</strong>: Enter a supplier website URL and the AI will analyze it to generate matching product listings for your store.
+            <strong style={{ color: "var(--text-primary)" }}>{t("ecom_ai_powered_import","AI-Powered Import")}</strong>: {t("ecom_ai_import_desc","Enter a supplier website URL and the AI will analyze it to generate matching product listings for your store.")}
           </div>
 
-          <FormRow label="Supplier Website URL" required>
+          <FormRow label={t("supplier_url","Supplier Website URL")} required>
             <div style={{ position: "relative" }}>
               <Link size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
               <input
@@ -1026,9 +1035,9 @@ export default function EcommercePage() {
           </FormRow>
 
           {storesData && storesData.length > 0 && (
-            <FormRow label="Import into Store">
+            <FormRow label={t("ecom_import_into_store","Import into Store")}>
               <select className="input" value={supplierStoreId} onChange={e => setSupplierStoreId(e.target.value)}>
-                <option value="">Import without store assignment</option>
+                <option value="">{t("ecom_import_no_store","Import without store assignment")}</option>
                 {storesData.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </FormRow>
@@ -1047,7 +1056,7 @@ export default function EcommercePage() {
           )}
 
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button className="btn btn-secondary" onClick={() => setSupplierModal(false)}>Cancel</button>
+            <button className="btn btn-secondary" onClick={() => setSupplierModal(false)}>{t("cancel","Cancel")}</button>
             <button
               data-testid="button-run-import"
               className="btn btn-primary"
@@ -1055,7 +1064,7 @@ export default function EcommercePage() {
               onClick={runSupplierImport}
               style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
-              {supplierLoading ? <><RefreshCw size={14} style={{ animation: "spin 0.8s linear infinite" }} /> Importing…</> : <><Sparkles size={14} /> Import Products</>}
+              {supplierLoading ? <><RefreshCw size={14} style={{ animation: "spin 0.8s linear infinite" }} /> {t("ecom_importing","Importing…")}</> : <><Sparkles size={14} /> {t("ecom_import_products","Import Products")}</>}
             </button>
           </div>
         </div>

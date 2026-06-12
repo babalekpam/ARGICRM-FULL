@@ -124,8 +124,8 @@ export default function SettingsPage() {
   function submitBrand(e:React.FormEvent){ e.preventDefault(); updateBrand.mutate(brand); }
   function submitPwd(e:React.FormEvent){
     e.preventDefault(); setPwdError("");
-    if(pwd.next.length<8){ setPwdError("New password must be at least 8 characters"); return; }
-    if(pwd.next!==pwd.confirm){ setPwdError("Passwords do not match"); return; }
+    if(pwd.next.length<8){ setPwdError(t("settings_pwd_min_chars","At least 8 characters required")); return; }
+    if(pwd.next!==pwd.confirm){ setPwdError(t("settings_pwd_no_match","Passwords do not match")); return; }
     changePwd.mutate({ currentPassword:pwd.current, newPassword:pwd.next });
   }
 
@@ -632,7 +632,7 @@ export default function SettingsPage() {
                 {!aiData?.hasApiKey&&(
                   <div style={{marginBottom:20}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <span style={{fontSize:13,fontWeight:600}}>Monthly Requests</span>
+                      <span style={{fontSize:13,fontWeight:600}}>{t("settings_ai_monthly_requests","Monthly Requests")}</span>
                       <span style={{fontSize:13,color:"var(--text-muted)"}}>
                         {aiData?.usageCount ?? 0} / {aiData?.usageLimit === -1 ? "∞" : aiData?.usageLimit ?? 50}
                       </span>
@@ -649,7 +649,7 @@ export default function SettingsPage() {
                       </div>
                     )}
                     <div style={{fontSize:12,color:"var(--text-muted)",marginTop:6}}>
-                      Resets on the 1st of each month. Add your own API key below for unlimited access.
+                      {t("settings_ai_reset_note","Resets on the 1st of each month. Add your own API key below for unlimited access.")}
                     </div>
                   </div>
                 )}
@@ -658,8 +658,8 @@ export default function SettingsPage() {
                   <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:8,marginBottom:16}}>
                     <CheckCircle size={15} style={{color:"#22c55e",flexShrink:0}}/>
                     <div>
-                      <div style={{fontSize:13,fontWeight:600,color:"#22c55e"}}>Own API key active</div>
-                      <div style={{fontSize:12,color:"var(--text-muted)"}}>Provider: {aiData.provider || "openai"} · All AI requests use your key</div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#22c55e"}}>{t("settings_ai_own_key_badge","Own API key active")}</div>
+                      <div style={{fontSize:12,color:"var(--text-muted)"}}>{t("settings_ai_provider_label","Provider")}: {aiData.provider || "openai"} · {t("settings_ai_all_requests_key","All AI requests use your key")}</div>
                     </div>
                     <button
                       data-testid="button-remove-ai-key"
@@ -671,14 +671,14 @@ export default function SettingsPage() {
                       disabled={removingKey}
                       style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:6,background:"transparent",color:"#ef4444",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>
                       {removingKey?<Loader2 size={12} style={{animation:"spin 1s linear infinite"}}/>:<Trash2 size={12}/>}
-                      Remove
+                      {t("remove","Remove")}
                     </button>
                   </div>
                 )}
 
                 {/* Plan limits reference */}
                 <div style={{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"14px 16px"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>Plan Quotas</div>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("settings_ai_plan_quotas","Plan Quotas")}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
                     {[["Trial / Free","50 req/mo"],["Starter","200 req/mo"],["Professional","500 req/mo"],["Business","1,000 req/mo"],["Enterprise","Unlimited"],["Own API Key","Unlimited"]].map(([plan,quota])=>(
                       <div key={plan} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
@@ -695,10 +695,10 @@ export default function SettingsPage() {
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                   <Key size={16} style={{color:"var(--accent)"}}/>
-                  <div style={{fontSize:16,fontWeight:700}}>Add Your Own API Key</div>
+                  <div style={{fontSize:16,fontWeight:700}}>{t("settings_ai_add_key","Add Your Own API Key")}</div>
                 </div>
                 <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:20}}>
-                  Plug in your own key from any major provider for unlimited AI access. Your key is stored securely and never exposed.
+                  {t("settings_ai_add_key_sub","Plug in your own key from any major provider for unlimited AI access. Your key is stored securely and never exposed.")}
                 </div>
                 <form onSubmit={async(e)=>{
                   e.preventDefault();
@@ -708,7 +708,7 @@ export default function SettingsPage() {
                 }} style={{display:"flex",flexDirection:"column",gap:14}}>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                     <div>
-                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Provider</label>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_ai_provider","Provider")}</label>
                       <select data-testid="select-ai-provider" value={aiProvider} onChange={e=>setAiProvider(e.target.value)} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>
                         <option value="openai">OpenAI (GPT-4o)</option>
                         <option value="anthropic">Anthropic (Claude)</option>
@@ -720,14 +720,14 @@ export default function SettingsPage() {
                       </select>
                     </div>
                     <div>
-                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>API Key</label>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_ai_api_key","API Key")}</label>
                       <div style={{position:"relative"}}>
                         <input
                           data-testid="input-ai-key"
                           value={aiKey}
                           onChange={e=>setAiKey(e.target.value)}
                           type={showAiKey?"text":"password"}
-                          placeholder={aiData?.hasApiKey?"Key saved (enter new to replace)":"sk-... or your provider key"}
+                          placeholder={aiData?.hasApiKey ? t("settings_ai_key_saved_ph","Key saved (enter new to replace)") : t("settings_ai_key_ph","sk-... or your provider key")}
                           style={{width:"100%",padding:"9px 36px 9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}
                         />
                         <button type="button" onClick={()=>setShowAiKey(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex"}}>
@@ -743,7 +743,7 @@ export default function SettingsPage() {
 
                 {/* Provider key links */}
                 <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid var(--border)"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>Get API Keys</div>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("settings_ai_get_api_keys","Get API Keys")}</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                     {[
                       {name:"OpenAI",url:"https://platform.openai.com/api-keys"},
