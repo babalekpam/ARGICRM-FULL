@@ -392,7 +392,7 @@ export default function SettingsPage() {
                         }
                       </div>
                       <span style={{color:item.done?"var(--text-primary)":"var(--text-muted)"}}>{item.label}</span>
-                      {!item.done&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:"rgba(245,158,11,0.1)",color:"#fbbf24",marginLeft:"auto"}}>Soon</span>}
+                      {!item.done&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:"rgba(245,158,11,0.1)",color:"#fbbf24",marginLeft:"auto"}}>{t("settings_wl_soon","Soon")}</span>}
                     </div>
                   ))}
                 </div>
@@ -410,24 +410,24 @@ export default function SettingsPage() {
                   <Mail size={20} color="#fff"/>
                 </div>
                 <div>
-                  <div style={{fontSize:15,fontWeight:700,marginBottom:3}}>Email / SMTP Configuration</div>
-                  <div style={{fontSize:13,color:"var(--text-muted)"}}>Connect your own email server. All campaign emails will be sent from your domain, not ARGILETTE's.</div>
+                  <div style={{fontSize:15,fontWeight:700,marginBottom:3}}>{t("settings_smtp_heading","Email / SMTP Configuration")}</div>
+                  <div style={{fontSize:13,color:"var(--text-muted)"}}>{t("settings_smtp_sub","Connect your own email server. All campaign emails will be sent from your domain, not ARGILETTE's.")}</div>
                 </div>
               </div>
 
               {/* SMTP Form */}
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-                <div style={{fontSize:14,fontWeight:700,marginBottom:4}}>SMTP Server</div>
-                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20}}>Your email provider credentials. Works with Gmail, Outlook, Zoho, SendGrid, Mailgun, or any SMTP service.</div>
+                <div style={{fontSize:14,fontWeight:700,marginBottom:4}}>{t("settings_smtp_server","SMTP Server")}</div>
+                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20}}>{t("settings_smtp_server_sub","Your email provider credentials. Works with Gmail, Outlook, Zoho, SendGrid, Mailgun, or any SMTP service.")}</div>
 
                 <form onSubmit={submitSmtp} style={{display:"flex",flexDirection:"column",gap:14}}>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                     <div>
-                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>SMTP Host</label>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_smtp_host","SMTP Host")}</label>
                       <input data-testid="input-smtp-host" value={smtp.host} onChange={e=>setSmtp(p=>({...p,host:e.target.value}))} placeholder="smtp.gmail.com" required style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                     </div>
                     <div>
-                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Port</label>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_smtp_port","Port")}</label>
                       <select data-testid="select-smtp-port" value={smtp.port} onChange={e=>setSmtp(p=>({...p,port:e.target.value,secure:e.target.value==="465"}))} style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",appearance:"none"}}>
                         <option value="587">587 (STARTTLS — recommended)</option>
                         <option value="465">465 (SSL)</option>
@@ -435,31 +435,31 @@ export default function SettingsPage() {
                       </select>
                     </div>
                     <div>
-                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Username / Email</label>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_smtp_user","Username / Email")}</label>
                       <input data-testid="input-smtp-user" value={smtp.user} onChange={e=>setSmtp(p=>({...p,user:e.target.value}))} placeholder="you@yourdomain.com" type="email" required style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                     </div>
                     <div>
-                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Password / App Password</label>
+                      <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_smtp_pass","Password / App Password")}</label>
                       <div style={{position:"relative"}}>
-                        <input data-testid="input-smtp-pass" value={smtp.pass} onChange={e=>setSmtp(p=>({...p,pass:e.target.value}))} type={showSmtpPass?"text":"password"} placeholder="Enter password or app password" style={{width:"100%",padding:"9px 36px 9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                        <input data-testid="input-smtp-pass" value={smtp.pass} onChange={e=>setSmtp(p=>({...p,pass:e.target.value}))} type={showSmtpPass?"text":"password"} placeholder={t("settings_smtp_pass_ph","Enter password or app password")} style={{width:"100%",padding:"9px 36px 9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                         <button type="button" onClick={()=>setShowSmtpPass(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex"}}>{showSmtpPass?<EyeOff size={14}/>:<Eye size={14}/>}</button>
                       </div>
-                      <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>For Gmail, use an App Password (not your main password)</div>
+                      <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>{t("settings_smtp_gmail_hint","For Gmail, use an App Password (not your main password)")}</div>
                     </div>
                   </div>
 
                   <div style={{borderTop:"1px solid var(--border)",paddingTop:16,marginTop:4}}>
-                    <div style={{fontSize:13,fontWeight:600,marginBottom:12,color:"var(--text-secondary)"}}>Sender Identity</div>
+                    <div style={{fontSize:13,fontWeight:600,marginBottom:12,color:"var(--text-secondary)"}}>{t("settings_sender_identity","Sender Identity")}</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                       <div>
-                        <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Sender Name</label>
+                        <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_sender_name","Sender Name")}</label>
                         <input data-testid="input-smtp-sender-name" value={smtp.senderName} onChange={e=>setSmtp(p=>({...p,senderName:e.target.value}))} placeholder="Acme Corp" required style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
-                        <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>Appears as the "From" name in inboxes</div>
+                        <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>{t("settings_sender_name_hint","Appears as the \"From\" name in inboxes")}</div>
                       </div>
                       <div>
-                        <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>Sender Email</label>
+                        <label style={{display:"block",fontSize:12,fontWeight:600,marginBottom:5,color:"var(--text-secondary)"}}>{t("settings_sender_email","Sender Email")}</label>
                         <input data-testid="input-smtp-sender-email" value={smtp.senderEmail} onChange={e=>setSmtp(p=>({...p,senderEmail:e.target.value}))} placeholder="campaigns@yourdomain.com" type="email" required style={{width:"100%",padding:"9px 12px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text-primary)",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
-                        <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>Must match or be authorised by your SMTP user</div>
+                        <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>{t("settings_sender_email_hint","Must match or be authorised by your SMTP user")}</div>
                       </div>
                     </div>
                   </div>
@@ -478,7 +478,7 @@ export default function SettingsPage() {
 
                   <div style={{display:"flex",justifyContent:"flex-end",gap:10,flexWrap:"wrap"}}>
                     <button type="button" data-testid="button-test-smtp" onClick={testSmtp} disabled={smtpTest.status==="loading"} style={{display:"flex",alignItems:"center",gap:6,background:"transparent",color:"var(--text-secondary)",border:"1px solid var(--border)",borderRadius:8,padding:"9px 18px",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                      {smtpTest.status==="loading"?<><Loader2 size={13} style={{animation:"spin 1s linear infinite"}}/>Testing…</>:<><Wifi size={13}/>Test Connection</>}
+                      {smtpTest.status==="loading"?<><Loader2 size={13} style={{animation:"spin 1s linear infinite"}}/>{t("settings_smtp_testing","Testing…")}</>:<><Wifi size={13}/>{t("settings_smtp_test_connection","Test Connection")}</>}
                     </button>
                     <SaveButton loading={updateSmtp.isPending} saved={smtpSaved}/>
                   </div>
@@ -487,7 +487,7 @@ export default function SettingsPage() {
 
               {/* Quick guides */}
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-                <div style={{fontSize:14,fontWeight:700,marginBottom:16}}>Provider Quick Reference</div>
+                <div style={{fontSize:14,fontWeight:700,marginBottom:16}}>{t("settings_smtp_provider_ref","Provider Quick Reference")}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:0}}>
                   {[
                     {name:"Gmail",host:"smtp.gmail.com",port:"587",note:"Requires App Password (2FA must be on)"},
@@ -532,14 +532,14 @@ export default function SettingsPage() {
                   {/* Header */}
                   <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12,marginBottom:20}}>
                     <div>
-                      <div style={{fontSize:16,fontWeight:700,marginBottom:2}}>AI Usage Dashboard</div>
+                      <div style={{fontSize:16,fontWeight:700,marginBottom:2}}>{t("settings_ai_usage_dashboard","AI Usage Dashboard")}</div>
                       <div style={{fontSize:13,color:"var(--text-muted)"}}>
-                        {isUnlimited ? "Unlimited — your own API key is active." : `${plan.charAt(0).toUpperCase()+plan.slice(1)} plan · resets on the 1st of each month`}
+                        {isUnlimited ? t("settings_ai_unlimited","Unlimited — your own API key is active.") : `${plan.charAt(0).toUpperCase()+plan.slice(1)} plan · ${t("settings_ai_resets","resets on the 1st of each month")}`}
                       </div>
                     </div>
                     {!isUnlimited && ud?.spendMtd && Number(ud.spendMtd) > 0 && (
                       <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:11,color:"var(--text-muted)"}}>Platform cost MTD</div>
+                        <div style={{fontSize:11,color:"var(--text-muted)"}}>{t("settings_ai_cost_mtd","Platform cost MTD")}</div>
                         <div style={{fontSize:14,fontWeight:700}}>${Number(ud.spendMtd).toFixed(4)}</div>
                       </div>
                     )}
@@ -549,7 +549,7 @@ export default function SettingsPage() {
                   {!isUnlimited && (
                     <>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                        <span style={{fontSize:13,fontWeight:600}}>Credits Used</span>
+                        <span style={{fontSize:13,fontWeight:600}}>{t("settings_ai_credits_used","Credits Used")}</span>
                         <span style={{fontSize:13,fontWeight:700,color:barColor}}>{used} / {limit}</span>
                       </div>
                       <div style={{height:10,background:"var(--border)",borderRadius:5,overflow:"hidden",marginBottom:6}}>
@@ -557,7 +557,7 @@ export default function SettingsPage() {
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
                         <span style={{fontSize:12,color:"var(--text-muted)"}}>
-                          {remaining > 0 ? `${remaining} credits remaining this month` : "Credits exhausted"}
+                          {remaining > 0 ? `${remaining} ${t("settings_ai_credits_remaining","credits remaining this month")}` : t("settings_ai_credits_exhausted","Credits exhausted")}
                         </span>
                         <span style={{fontSize:12,color:barColor,fontWeight:600}}>{pct.toFixed(0)}% used</span>
                       </div>
@@ -572,10 +572,10 @@ export default function SettingsPage() {
                         }}>
                           <div>
                             <div style={{fontSize:13,fontWeight:600,color:pct>=95?"#ef4444":"#f59e0b"}}>
-                              {pct >= 95 ? "Credits almost exhausted" : "Approaching credit limit"}
+                              {pct >= 95 ? t("settings_ai_almost_exhausted","Credits almost exhausted") : t("settings_ai_approaching_limit","Approaching credit limit")}
                             </div>
                             <div style={{fontSize:12,color:"var(--text-muted)"}}>
-                              You have {remaining} credits left — upgrade to keep going.
+                              {t("settings_ai_credits_left_note","You have")} {remaining} {t("settings_ai_credits_left_suffix","credits left — upgrade to keep going.")}
                             </div>
                           </div>
                           <button
@@ -583,7 +583,7 @@ export default function SettingsPage() {
                             onClick={()=>window.open("https://argilette.org/pricing","_blank")}
                             style={{flexShrink:0,background:"var(--accent)",color:"#fff",border:"none",borderRadius:7,padding:"8px 18px",fontSize:12,fontWeight:600,cursor:"pointer"}}
                           >
-                            Upgrade Plan
+                            {t("settings_ai_upgrade_plan","Upgrade Plan")}
                           </button>
                         </div>
                       )}
@@ -593,9 +593,9 @@ export default function SettingsPage() {
                   {/* Breakdown by feature */}
                   {ud?.byFeature?.length > 0 && (
                     <div>
-                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>Usage by Feature — This Month</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("settings_ai_usage_by_feature","Usage by Feature — This Month")}</div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr auto auto auto",gap:"0 16px",alignItems:"center"}}>
-                        {["Feature","Calls","Tokens","Cost"].map(h=>(
+                        {[t("settings_ai_col_feature","Feature"),t("settings_ai_col_calls","Calls"),t("settings_ai_col_tokens","Tokens"),t("settings_ai_col_cost","Cost")].map(h=>(
                           <div key={h} style={{fontSize:11,color:"var(--text-muted)",fontWeight:600,paddingBottom:6,borderBottom:"1px solid var(--border)"}}>{h}</div>
                         ))}
                         {ud.byFeature.map((row:any,i:number)=>[
@@ -613,7 +613,7 @@ export default function SettingsPage() {
                   {/* Empty state */}
                   {(!ud?.byFeature || ud.byFeature.length === 0) && (
                     <div style={{textAlign:"center",padding:"24px 0",color:"var(--text-muted)",fontSize:13}}>
-                      No AI usage yet this month. Start a conversation with ARIA to see your usage here.
+                      {t("settings_ai_no_usage","No AI usage yet this month. Start a conversation with ARIA to see your usage here.")}
                     </div>
                   )}
                 </div>
@@ -622,11 +622,11 @@ export default function SettingsPage() {
 
               {/* Legacy quota card (kept for backward compat) */}
               <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:10,padding:"24px"}}>
-                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>AI Usage</div>
+                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>{t("settings_tab_ai","AI Usage")}</div>
                 <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:20}}>
                   {aiData?.hasApiKey
-                    ? "Using your own API key — unlimited requests."
-                    : `Platform AI quota for your current plan.`}
+                    ? t("settings_ai_own_key_active","Using your own API key — unlimited requests.")
+                    : t("settings_ai_platform_quota","Platform AI quota for your current plan.")}
                 </div>
 
                 {!aiData?.hasApiKey&&(

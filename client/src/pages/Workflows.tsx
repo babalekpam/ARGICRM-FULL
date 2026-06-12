@@ -39,6 +39,7 @@ function TriggerIcon({ type, size = 16 }: { type: string; size?: number }) {
 }
 
 function ModeBadge({ mode }: { mode: string }) {
+  const { t } = useLanguage();
   const isAuto = mode === "auto";
   return (
     <span style={{
@@ -49,13 +50,14 @@ function ModeBadge({ mode }: { mode: string }) {
       border: `1px solid ${isAuto ? "#3b82f640" : "#f59e0b40"}`,
     }}>
       {isAuto ? <Cpu size={10} /> : <Eye size={10} />}
-      {isAuto ? "Auto" : "Supervised"}
+      {isAuto ? t("workflows_mode_auto", "Auto") : t("workflows_mode_supervised", "Supervised")}
     </span>
   );
 }
 
 // ── Approval card ────────────────────────────────────────────────
 function ApprovalCard({ ap, onApprove, onReject }: { ap: any; onApprove: () => void; onReject: () => void }) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState<"approve" | "reject" | null>(null);
   const at = ACTION_TYPES.find(a => a.value === ap.action_type);
@@ -73,7 +75,7 @@ function ApprovalCard({ ap, onApprove, onReject }: { ap: any; onApprove: () => v
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ color: "var(--text-primary)" }}>{at?.label || ap.action_type}</span>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>from</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("workflows_approval_from", "from")}</span>
             <span style={{ color: "#f59e0b" }}>{ap.workflow_name}</span>
           </div>
           {ap.action_config?.title && (
@@ -84,30 +86,30 @@ function ApprovalCard({ ap, onApprove, onReject }: { ap: any; onApprove: () => v
           )}
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
             <Timer size={10} style={{ display: "inline", marginRight: 3 }} />
-            Queued {new Date(ap.created_at).toLocaleString()}
+            {t("workflows_queued", "Queued")} {new Date(ap.created_at).toLocaleString()}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
-          <button onClick={() => setExpanded(e => !e)} title="Details"
+          <button onClick={() => setExpanded(e => !e)} title={t("workflows_details", "Details")}
             style={{ padding: "5px 8px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
             {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
           </button>
           <button onClick={handleReject} disabled={loading !== null} data-testid={`btn-reject-${ap.id}`}
             style={{ padding: "6px 12px", background: "#ef444415", border: "1px solid #ef444440", borderRadius: 7, cursor: loading ? "not-allowed" : "pointer", color: "#ef4444", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, opacity: loading ? 0.6 : 1 }}>
             {loading === "reject" ? <RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> : <X size={12} />}
-            Reject
+            {t("workflows_reject", "Reject")}
           </button>
           <button onClick={handleApprove} disabled={loading !== null} data-testid={`btn-approve-${ap.id}`}
             style={{ padding: "6px 12px", background: "#10b98120", border: "1px solid #10b98140", borderRadius: 7, cursor: loading ? "not-allowed" : "pointer", color: "#10b981", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, opacity: loading ? 0.6 : 1 }}>
             {loading === "approve" ? <RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={12} />}
-            Approve & Run
+            {t("workflows_approve_run", "Approve & Run")}
           </button>
         </div>
       </div>
 
       {expanded && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Action Config</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>{t("workflows_action_config", "Action Config")}</div>
           <pre style={{ fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-overlay)", borderRadius: 7, padding: 10, margin: 0, overflowX: "auto", fontFamily: "monospace" }}>
             {JSON.stringify(ap.action_config, null, 2)}
           </pre>
@@ -119,6 +121,7 @@ function ApprovalCard({ ap, onApprove, onReject }: { ap: any; onApprove: () => v
 
 // ── Workflow card ────────────────────────────────────────────────
 function WorkflowCard({ wf, onToggle, onDelete, onRun, onModeChange }: any) {
+  const { t } = useLanguage();
   const [running, setRunning] = useState(false);
 
   const handleRun = async () => { setRunning(true); await onRun(wf.id); setRunning(false); };
@@ -139,22 +142,22 @@ function WorkflowCard({ wf, onToggle, onDelete, onRun, onModeChange }: any) {
                 background: wf.is_active ? "#10b98120" : "var(--bg-overlay)",
                 color: wf.is_active ? "#10b981" : "var(--text-muted)",
               }}>
-                {wf.is_active ? "Active" : "Inactive"}
+                {wf.is_active ? t("active", "Active") : t("inactive", "Inactive")}
               </span>
             </div>
             {wf.description && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{wf.description}</div>}
             <div style={{ display: "flex", gap: 14, marginTop: 8, flexWrap: "wrap" }}>
               <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
                 <TriggerIcon type={wf.trigger_type} size={11} />
-                {TRIGGER_TYPES.find(t => t.value === wf.trigger_type)?.label || wf.trigger_type}
+                {TRIGGER_TYPES.find(tr => tr.value === wf.trigger_type)?.label || wf.trigger_type}
               </div>
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {(wf.actions || []).length} action{(wf.actions || []).length !== 1 ? "s" : ""}
+                {(wf.actions || []).length} {t("workflow_actions", "action")}{(wf.actions || []).length !== 1 ? "s" : ""}
               </div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Ran {wf.run_count || 0}×</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("workflows_ran", "Ran")} {wf.run_count || 0}×</div>
               {wf.last_run_at && (
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  Last: {new Date(wf.last_run_at).toLocaleDateString()}
+                  {t("workflows_last", "Last")}: {new Date(wf.last_run_at).toLocaleDateString()}
                 </div>
               )}
             </div>
@@ -165,23 +168,23 @@ function WorkflowCard({ wf, onToggle, onDelete, onRun, onModeChange }: any) {
           {/* Mode quick toggle */}
           <button
             onClick={() => onModeChange(wf.id, wf.execution_mode === "auto" ? "supervised" : "auto")}
-            title={`Switch to ${wf.execution_mode === "auto" ? "Supervised" : "Auto"} mode`}
+            title={`${t("workflows_switch_to", "Switch to")} ${wf.execution_mode === "auto" ? t("workflows_mode_supervised", "Supervised") : t("workflows_mode_auto", "Auto")} ${t("workflows_mode_label", "mode")}`}
             data-testid={`btn-mode-${wf.id}`}
             style={{ padding: "6px 10px", background: wf.execution_mode === "supervised" ? "#f59e0b15" : "var(--bg-overlay)", border: `1px solid ${wf.execution_mode === "supervised" ? "#f59e0b40" : "var(--border)"}`, borderRadius: 7, cursor: "pointer", color: wf.execution_mode === "supervised" ? "#f59e0b" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
             {wf.execution_mode === "supervised" ? <Eye size={13} /> : <Cpu size={13} />}
-            {wf.execution_mode === "supervised" ? "Supervised" : "Auto"}
+            {wf.execution_mode === "supervised" ? t("workflows_mode_supervised", "Supervised") : t("workflows_mode_auto", "Auto")}
           </button>
-          <button onClick={handleRun} disabled={running} title="Run now" data-testid={`btn-run-${wf.id}`}
+          <button onClick={handleRun} disabled={running} title={t("workflows_run_now", "Run now")} data-testid={`btn-run-${wf.id}`}
             style={{ padding: "6px 10px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 7, cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
             {running ? <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={13} />}
-            Run
+            {t("workflows_run", "Run")}
           </button>
-          <button onClick={() => onToggle(wf.id)} title={wf.is_active ? "Pause" : "Activate"}
+          <button onClick={() => onToggle(wf.id)} title={wf.is_active ? t("agent_pause", "Pause") : t("agent_activate", "Activate")}
             style={{ padding: "6px 10px", background: wf.is_active ? "#f59e0b15" : "#10b98115", border: `1px solid ${wf.is_active ? "#f59e0b40" : "#10b98140"}`, borderRadius: 7, cursor: "pointer", color: wf.is_active ? "#f59e0b" : "#10b981", display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
             {wf.is_active ? <Pause size={13} /> : <Play size={13} />}
-            {wf.is_active ? "Pause" : "Activate"}
+            {wf.is_active ? t("agent_pause", "Pause") : t("agent_activate", "Activate")}
           </button>
-          <button onClick={() => onDelete(wf.id)} title="Delete"
+          <button onClick={() => onDelete(wf.id)} title={t("delete", "Delete")}
             style={{ padding: "6px 8px", background: "#ef444415", border: "1px solid #ef444430", borderRadius: 7, cursor: "pointer", color: "#ef4444", display: "flex", alignItems: "center" }}>
             <Trash2 size={13} />
           </button>
@@ -208,6 +211,7 @@ function WorkflowCard({ wf, onToggle, onDelete, onRun, onModeChange }: any) {
 
 // ── Builder modal ────────────────────────────────────────────────
 function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data: any) => void }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     name: "", description: "", triggerType: "deal_inactive",
     executionMode: "auto" as "auto" | "supervised",
@@ -225,7 +229,7 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
         <div style={{ padding: "18px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "var(--bg-card)", zIndex: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Zap size={18} style={{ color: "#3b82f6" }} />
-            <span style={{ fontSize: 16, fontWeight: 700 }}>Create Workflow</span>
+            <span style={{ fontSize: 16, fontWeight: 700 }}>{t("create_workflow", "Create Workflow")}</span>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "flex" }}><X size={18} /></button>
         </div>
@@ -234,12 +238,12 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
           {/* Basic info */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
-              <label style={labelStyle}>Workflow Name *</label>
-              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Stale Deal Alert" style={inputStyle} data-testid="input-workflow-name" />
+              <label style={labelStyle}>{t("workflow_name", "Workflow Name")} *</label>
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t("workflows_name_ph", "e.g. Stale Deal Alert")} style={inputStyle} data-testid="input-workflow-name" />
             </div>
             <div>
-              <label style={labelStyle}>Description</label>
-              <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="What does this workflow do?" style={inputStyle} />
+              <label style={labelStyle}>{t("description", "Description")}</label>
+              <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t("workflows_desc_ph", "What does this workflow do?")} style={inputStyle} />
             </div>
           </div>
 
@@ -247,7 +251,7 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 22, height: 22, background: "#6366f1", color: "#fff", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>1</span>
-              Execution Mode
+              {t("workflows_execution_mode", "Execution Mode")}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Auto */}
@@ -260,17 +264,16 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
                     <Cpu size={16} style={{ color: form.executionMode === "auto" ? "#3b82f6" : "var(--text-muted)" }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: form.executionMode === "auto" ? "#3b82f6" : "var(--text-primary)" }}>Fully Automatic</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: form.executionMode === "auto" ? "#3b82f6" : "var(--text-primary)" }}>{t("workflows_fully_automatic", "Fully Automatic")}</div>
                   </div>
                   {form.executionMode === "auto" && <CheckCircle2 size={16} style={{ color: "#3b82f6", marginLeft: "auto" }} />}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                  All actions run instantly when the trigger fires. No human review needed.
-                  Best for high-confidence, low-risk automations.
+                  {t("workflows_auto_desc", "All actions run instantly when the trigger fires. No human review needed. Best for high-confidence, low-risk automations.")}
                 </div>
                 <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {["Task creation", "Notifications", "Stage updates"].map(t => (
-                    <span key={t} style={{ fontSize: 11, padding: "2px 8px", background: "#3b82f615", color: "#3b82f6", borderRadius: 20 }}>{t}</span>
+                  {[t("workflows_example_task", "Task creation"), t("workflows_example_notif", "Notifications"), t("workflows_example_stage", "Stage updates")].map(tag => (
+                    <span key={tag} style={{ fontSize: 11, padding: "2px 8px", background: "#3b82f615", color: "#3b82f6", borderRadius: 20 }}>{tag}</span>
                   ))}
                 </div>
               </button>
@@ -285,17 +288,16 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
                     <Shield size={16} style={{ color: form.executionMode === "supervised" ? "#f59e0b" : "var(--text-muted)" }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: form.executionMode === "supervised" ? "#f59e0b" : "var(--text-primary)" }}>Supervised Mode</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: form.executionMode === "supervised" ? "#f59e0b" : "var(--text-primary)" }}>{t("workflows_mode_supervised_label", "Supervised Mode")}</div>
                   </div>
                   {form.executionMode === "supervised" && <CheckCircle2 size={16} style={{ color: "#f59e0b", marginLeft: "auto" }} />}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                  Each action is queued for your review first. You approve or reject before anything runs.
-                  Best for emails, lead reassignment, and sensitive changes.
+                  {t("workflows_supervised_desc", "Each action is queued for your review first. You approve or reject before anything runs. Best for emails, lead reassignment, and sensitive changes.")}
                 </div>
                 <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {["Email sending", "Lead assignment", "Data changes"].map(t => (
-                    <span key={t} style={{ fontSize: 11, padding: "2px 8px", background: "#f59e0b15", color: "#f59e0b", borderRadius: 20 }}>{t}</span>
+                  {[t("workflows_example_email", "Email sending"), t("workflows_example_assign", "Lead assignment"), t("workflows_example_data", "Data changes")].map(tag => (
+                    <span key={tag} style={{ fontSize: 11, padding: "2px 8px", background: "#f59e0b15", color: "#f59e0b", borderRadius: 20 }}>{tag}</span>
                   ))}
                 </div>
               </button>
@@ -306,17 +308,17 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 22, height: 22, background: "#3b82f6", color: "#fff", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>2</span>
-              Trigger
+              {t("workflow_trigger", "Trigger")}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8 }}>
-              {TRIGGER_TYPES.map(t => {
-                const Icon = t.icon;
-                const selected = form.triggerType === t.value;
+              {TRIGGER_TYPES.map(trig => {
+                const Icon = trig.icon;
+                const selected = form.triggerType === trig.value;
                 return (
-                  <button key={t.value} onClick={() => setForm(f => ({ ...f, triggerType: t.value }))}
-                    style={{ padding: "10px 12px", background: selected ? `${t.color}20` : "var(--bg-overlay)", border: `1px solid ${selected ? t.color : "var(--border)"}`, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, textAlign: "left" }}>
-                    <Icon size={14} style={{ color: t.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, fontWeight: selected ? 600 : 400, color: selected ? t.color : "var(--text-secondary)" }}>{t.label}</span>
+                  <button key={trig.value} onClick={() => setForm(f => ({ ...f, triggerType: trig.value }))}
+                    style={{ padding: "10px 12px", background: selected ? `${trig.color}20` : "var(--bg-overlay)", border: `1px solid ${selected ? trig.color : "var(--border)"}`, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, textAlign: "left" }}>
+                    <Icon size={14} style={{ color: trig.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, fontWeight: selected ? 600 : 400, color: selected ? trig.color : "var(--text-secondary)" }}>{trig.label}</span>
                   </button>
                 );
               })}
@@ -327,7 +329,7 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 22, height: 22, background: "#8b5cf6", color: "#fff", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>3</span>
-              Conditions <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-muted)" }}>(optional filters)</span>
+              {t("workflows_conditions", "Conditions")} <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-muted)" }}>({t("workflows_conditions_optional", "optional filters")})</span>
             </div>
             {form.conditions.map((c, i) => (
               <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, padding: "8px 10px", background: "var(--bg-overlay)", borderRadius: 8, alignItems: "center" }}>
@@ -342,9 +344,9 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
               <select value={newCondition.operator} onChange={e => setNewCondition(c => ({ ...c, operator: e.target.value }))} style={{ ...inputStyle }}>
                 {OPERATORS.map(o => <option key={o} value={o}>{o.replace("_", " ")}</option>)}
               </select>
-              <input value={newCondition.value} onChange={e => setNewCondition(c => ({ ...c, value: e.target.value }))} placeholder="Value" style={inputStyle} />
+              <input value={newCondition.value} onChange={e => setNewCondition(c => ({ ...c, value: e.target.value }))} placeholder={t("value", "Value")} style={inputStyle} />
               <button onClick={() => { if (!newCondition.value) return; setForm(f => ({ ...f, conditions: [...f.conditions, { ...newCondition }] })); setNewCondition({ field: "stage", operator: "equals", value: "" }); }}
-                style={{ padding: "9px 14px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>+ Add</button>
+                style={{ padding: "9px 14px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>+ {t("add", "Add")}</button>
             </div>
           </div>
 
@@ -352,10 +354,10 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 22, height: 22, background: "#10b981", color: "#fff", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>4</span>
-              Actions <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-muted)" }}>(at least one required)</span>
+              {t("workflow_actions", "Actions")} <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-muted)" }}>({t("workflows_actions_required", "at least one required")})</span>
               {form.executionMode === "supervised" && (
                 <span style={{ fontSize: 11, padding: "2px 8px", background: "#f59e0b15", color: "#f59e0b", borderRadius: 20, fontWeight: 400 }}>
-                  Each will need your approval
+                  {t("workflows_needs_approval", "Each will need your approval")}
                 </span>
               )}
             </div>
@@ -366,7 +368,7 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
                 <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, padding: "8px 10px", background: "var(--bg-overlay)", borderRadius: 8, alignItems: "center" }}>
                   <Icon size={14} style={{ color: "#10b981", flexShrink: 0 }} />
                   <span style={{ fontSize: 12, flex: 1 }}>{at?.label || a.type}{a.config?.title ? `: "${a.config.title}"` : ""}</span>
-                  {form.executionMode === "supervised" && <span title="Requires approval" style={{ display: "flex", flexShrink: 0 }}><Eye size={12} style={{ color: "#f59e0b" }} /></span>}
+                  {form.executionMode === "supervised" && <span title={t("workflows_requires_approval", "Requires approval")} style={{ display: "flex", flexShrink: 0 }}><Eye size={12} style={{ color: "#f59e0b" }} /></span>}
                   <button onClick={() => setForm(f => ({ ...f, actions: f.actions.filter((_, j) => j !== i) }))} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 2, display: "flex" }}><X size={13} /></button>
                 </div>
               );
@@ -374,33 +376,33 @@ function BuilderModal({ onClose, onSave }: { onClose: () => void; onSave: (data:
             <div style={{ padding: 14, background: "var(--bg-overlay)", borderRadius: 8, marginTop: 6 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                 <div>
-                  <label style={labelStyle}>Action Type</label>
+                  <label style={labelStyle}>{t("workflows_action_type", "Action Type")}</label>
                   <select value={newAction.type} onChange={e => setNewAction(a => ({ ...a, type: e.target.value }))} style={inputStyle}>
                     {ACTION_TYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Task / Message Title</label>
-                  <input value={newAction.config.title} onChange={e => setNewAction(a => ({ ...a, config: { ...a.config, title: e.target.value } }))} placeholder="e.g. Follow up on {{deal.name}}" style={inputStyle} />
+                  <label style={labelStyle}>{t("workflows_task_title", "Task / Message Title")}</label>
+                  <input value={newAction.config.title} onChange={e => setNewAction(a => ({ ...a, config: { ...a.config, title: e.target.value } }))} placeholder={t("workflows_task_title_ph", "e.g. Follow up on {{deal.name}}")} style={inputStyle} />
                 </div>
               </div>
               <button
                 onClick={() => { setForm(f => ({ ...f, actions: [...f.actions, { ...newAction }] })); setNewAction({ type: "create_task", config: { title: "", description: "", priority: "medium" } }); }}
                 style={{ padding: "8px 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                + Add Action
+                + {t("workflows_add_action", "Add Action")}
               </button>
             </div>
           </div>
         </div>
 
         <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end", position: "sticky", bottom: 0, background: "var(--bg-card)" }}>
-          <button onClick={onClose} style={{ padding: "9px 18px", background: "none", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--text-secondary)" }}>Cancel</button>
+          <button onClick={onClose} style={{ padding: "9px 18px", background: "none", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--text-secondary)" }}>{t("cancel", "Cancel")}</button>
           <button
             onClick={() => onSave(form)}
             disabled={!form.name || !form.actions.length}
             data-testid="btn-save-workflow"
             style={{ padding: "9px 18px", background: !form.name || !form.actions.length ? "var(--bg-overlay)" : form.executionMode === "supervised" ? "#f59e0b" : "#3b82f6", color: !form.name || !form.actions.length ? "var(--text-muted)" : "#fff", border: "none", borderRadius: 8, cursor: !form.name || !form.actions.length ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>
-            Create {form.executionMode === "supervised" ? "Supervised" : "Auto"} Workflow
+            {t("create", "Create")} {form.executionMode === "supervised" ? t("workflows_mode_supervised", "Supervised") : t("workflows_mode_auto", "Auto")} {t("workflows_workflow_label", "Workflow")}
           </button>
         </div>
       </div>
@@ -490,11 +492,11 @@ export default function WorkflowsPage() {
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowTemplates(true)}
             style={{ padding: "8px 14px", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
-            <BookOpen size={14} /> Templates
+            <BookOpen size={14} /> {t("workflows_templates", "Templates")}
           </button>
           <button data-testid="btn-create-workflow" onClick={() => setShowBuilder(true)}
             style={{ padding: "8px 14px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-            <Plus size={14} /> New Workflow
+            <Plus size={14} /> {t("workflows_new", "New Workflow")}
           </button>
         </div>
       }
@@ -502,12 +504,12 @@ export default function WorkflowsPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Total", value: Array.isArray(workflows) ? workflows.length : 0, color: "#3b82f6" },
-          { label: "Active",      value: activeCount,      color: "#10b981" },
-          { label: "Auto",        value: autoCount,        color: "#3b82f6", icon: Cpu },
-          { label: "Supervised",  value: supervisedCount,  color: "#f59e0b", icon: Shield },
-          { label: "Total Runs",  value: totalRuns,        color: "#8b5cf6" },
-          { label: "Pending",     value: pendingCount,     color: "#f59e0b", icon: AlertTriangle },
+          { label: t("total", "Total"), value: Array.isArray(workflows) ? workflows.length : 0, color: "#3b82f6" },
+          { label: t("active", "Active"),      value: activeCount,      color: "#10b981" },
+          { label: t("workflows_mode_auto", "Auto"),        value: autoCount,        color: "#3b82f6", icon: Cpu },
+          { label: t("workflows_mode_supervised", "Supervised"),  value: supervisedCount,  color: "#f59e0b", icon: Shield },
+          { label: t("workflows_total_runs", "Total Runs"),  value: totalRuns,        color: "#8b5cf6" },
+          { label: t("pending", "Pending"),     value: pendingCount,     color: "#f59e0b", icon: AlertTriangle },
         ].map(({ label, value, color, icon: Icon }) => (
           <div key={label} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 18px" }}>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>
@@ -521,9 +523,9 @@ export default function WorkflowsPage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16, padding: "4px", background: "var(--bg-overlay)", borderRadius: 10, width: "fit-content" }}>
-        <TabBtn id="workflows" label="Workflows" />
-        <TabBtn id="approvals" label="Pending Approvals" count={pendingCount} />
-        <TabBtn id="history"   label="Approval History" />
+        <TabBtn id="workflows" label={t("workflows_tab_workflows", "Workflows")} />
+        <TabBtn id="approvals" label={t("workflows_tab_approvals", "Pending Approvals")} count={pendingCount} />
+        <TabBtn id="history"   label={t("workflows_tab_history", "Approval History")} />
       </div>
 
       {/* Run result banner */}
@@ -533,8 +535,8 @@ export default function WorkflowsPage() {
             <span style={{ fontWeight: 600, fontSize: 13, color: runResult.mode === "supervised" ? "#f59e0b" : "#10b981", display: "flex", alignItems: "center", gap: 6 }}>
               {runResult.mode === "supervised" ? <Eye size={14} /> : <Cpu size={14} />}
               {runResult.mode === "supervised"
-                ? `${runResult.message} — check Pending Approvals tab`
-                : "Workflow executed automatically"}
+                ? `${runResult.message} — ${t("workflows_check_approvals", "check Pending Approvals tab")}`
+                : t("workflows_executed_auto", "Workflow executed automatically")}
             </span>
             <button onClick={() => setRunResult(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2, display: "flex" }}><X size={14} /></button>
           </div>
@@ -549,15 +551,15 @@ export default function WorkflowsPage() {
       {/* ── Workflows tab ── */}
       {activeTab === "workflows" && (
         isLoading ? (
-          <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>Loading…</div>
+          <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}>{t("loading", "Loading…")}</div>
         ) : !Array.isArray(workflows) || workflows.length === 0 ? (
           <div style={{ background: "var(--bg-card)", border: "2px dashed var(--border)", borderRadius: 12, padding: 60, textAlign: "center" }}>
             <Zap size={40} style={{ color: "var(--text-muted)", margin: "0 auto 14px" }} />
-            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>No workflows yet</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Start with a template or build your own automation</div>
+            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>{t("no_workflows", "No workflows yet")}</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>{t("workflows_empty_desc", "Start with a template or build your own automation")}</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button onClick={() => setShowTemplates(true)} style={{ padding: "9px 18px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>Browse Templates</button>
-              <button onClick={() => setShowBuilder(true)} style={{ padding: "9px 18px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Create Workflow</button>
+              <button onClick={() => setShowTemplates(true)} style={{ padding: "9px 18px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>{t("workflows_browse_templates", "Browse Templates")}</button>
+              <button onClick={() => setShowBuilder(true)} style={{ padding: "9px 18px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>{t("create_workflow", "Create Workflow")}</button>
             </div>
           </div>
         ) : (
@@ -580,19 +582,19 @@ export default function WorkflowsPage() {
           {pendingCount === 0 ? (
             <div style={{ background: "var(--bg-card)", border: "2px dashed var(--border)", borderRadius: 12, padding: 60, textAlign: "center" }}>
               <CheckCircle2 size={40} style={{ color: "#10b981", margin: "0 auto 14px" }} />
-              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>All clear!</div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>No actions pending your review. Run a supervised workflow to see approval requests here.</div>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>{t("workflows_all_clear", "All clear!")}</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("workflows_no_pending", "No actions pending your review. Run a supervised workflow to see approval requests here.")}</div>
             </div>
           ) : (
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-muted)" }}>
                   <AlertTriangle size={14} style={{ color: "#f59e0b" }} />
-                  <span><strong style={{ color: "var(--text-primary)" }}>{pendingCount}</strong> action{pendingCount !== 1 ? "s" : ""} waiting for your approval before execution</span>
+                  <span><strong style={{ color: "var(--text-primary)" }}>{pendingCount}</strong> {t("workflows_actions_waiting", "action")}{pendingCount !== 1 ? "s" : ""} {t("workflows_waiting_approval", "waiting for your approval before execution")}</span>
                 </div>
                 <button onClick={() => { refetchApprovals(); }}
                   style={{ padding: "5px 10px", background: "var(--bg-overlay)", border: "1px solid var(--border)", borderRadius: 7, cursor: "pointer", fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                  <RefreshCw size={12} /> Refresh
+                  <RefreshCw size={12} /> {t("refresh", "Refresh")}
                 </button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -614,7 +616,7 @@ export default function WorkflowsPage() {
       {activeTab === "history" && (
         <div>
           {!Array.isArray(historyApprovals) || historyApprovals.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)", fontSize: 14 }}>No approval history yet.</div>
+            <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted)", fontSize: 14 }}>{t("workflows_no_history", "No approval history yet.")}</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {(historyApprovals as any[]).map((ap: any) => {
@@ -627,9 +629,9 @@ export default function WorkflowsPage() {
                       <Icon size={15} style={{ color: isApproved ? "#10b981" : "#ef4444" }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>{at?.label || ap.action_type} <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>from</span> {ap.workflow_name}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{at?.label || ap.action_type} <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>{t("workflows_approval_from", "from")}</span> {ap.workflow_name}</div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                        {isApproved ? "Approved" : "Rejected"} · {ap.resolved_at ? new Date(ap.resolved_at).toLocaleString() : "—"}
+                        {isApproved ? t("workflows_approved", "Approved") : t("workflows_rejected", "Rejected")} · {ap.resolved_at ? new Date(ap.resolved_at).toLocaleString() : "—"}
                       </div>
                     </div>
                     {isApproved
@@ -657,21 +659,21 @@ export default function WorkflowsPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ background: "var(--bg-card)", borderRadius: 12, width: "100%", maxWidth: 680, maxHeight: "85vh", overflow: "auto" }}>
             <div style={{ padding: "18px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "var(--bg-card)" }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>Workflow Templates</span>
+              <span style={{ fontSize: 16, fontWeight: 700 }}>{t("workflows_templates_title", "Workflow Templates")}</span>
               <button onClick={() => setShowTemplates(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}><X size={18} /></button>
             </div>
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-              {(templates as any[]).map((t: any, i: number) => (
+              {(templates as any[]).map((tpl: any, i: number) => (
                 <div key={i} style={{ padding: "14px 16px", background: "var(--bg-overlay)", borderRadius: 10, border: "1px solid var(--border)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600 }}>{t.name}</div>
-                        <ModeBadge mode={t.executionMode || "auto"} />
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>{tpl.name}</div>
+                        <ModeBadge mode={tpl.executionMode || "auto"} />
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>{t.description}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>{tpl.description}</div>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {(t.actions || []).map((a: any, j: number) => {
+                        {(tpl.actions || []).map((a: any, j: number) => {
                           const at = ACTION_TYPES.find(x => x.value === a.type);
                           const Icon = at?.icon || Zap;
                           return (
@@ -683,9 +685,9 @@ export default function WorkflowsPage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => createMutation.mutate(t)}
+                      onClick={() => createMutation.mutate(tpl)}
                       style={{ padding: "8px 14px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-                      Use
+                      {t("workflows_use_template", "Use")}
                     </button>
                   </div>
                 </div>

@@ -69,12 +69,12 @@ export default function SkillsPage() {
   return (
     <Layout
       title={t("skills_title")}
-      subtitle={`${skillsData?.total || 0} production-grade skills for every business function`}
+      subtitle={t("skills_subtitle_count", `${skillsData?.total || 0} production-grade skills for every business function`).replace("{count}", String(skillsData?.total || 0))}
       actions={
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <div style={{ position: "relative" }}>
             <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-            <input className="input" placeholder="Search skills..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 30, width: 200, fontSize: 12 }} />
+            <input className="input" placeholder={t("search_skills", "Search skills...")} value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 30, width: 200, fontSize: 12 }} />
           </div>
         </div>
       }
@@ -87,7 +87,7 @@ export default function SkillsPage() {
           {!search && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
               <button onClick={() => setSelectedDomain(null)} className={`btn btn-sm ${!selectedDomain ? "btn-primary" : "btn-secondary"}`} style={{ fontSize: 11 }}>
-                All Domains
+                {t("skills_all_domains", "All Domains")}
               </button>
               {(domains || []).map((d: any) => (
                 <button key={d.id} onClick={() => setSelectedDomain(d.id)}
@@ -111,7 +111,7 @@ export default function SkillsPage() {
                     onClick={() => setSelectedDomain(d.id)}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                       <span style={{ fontSize: 22 }}>{d.emoji}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color, background: `${color}18`, padding: "2px 7px", borderRadius: 4 }}>{d.skillCount} skills</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color, background: `${color}18`, padding: "2px 7px", borderRadius: 4 }}>{d.skillCount} {t("skills_label", "skills")}</span>
                     </div>
                     <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{d.label}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>{d.description}</div>
@@ -126,12 +126,12 @@ export default function SkillsPage() {
             <div>
               {selectedDomain && !search && (
                 <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12, fontSize: 12 }} onClick={() => setSelectedDomain(null)}>
-                  <ArrowLeft size={12} /> Back to all domains
+                  <ArrowLeft size={12} /> {t("skills_back_domains", "Back to all domains")}
                 </button>
               )}
               <div style={{ display: "grid", gap: 8 }}>
                 {gridSkills.length === 0 ? (
-                  <Empty icon={Search} title="No skills found" desc="Try a different search or domain" />
+                  <Empty icon={Search} title={t("no_skills", "No skills found")} desc={t("skills_empty_desc", "Try a different search or domain")} />
                 ) : gridSkills.map((skill: any) => {
                   const color = DOMAIN_COLORS[skill.domain] || "#3b82f6";
                   return (
@@ -147,8 +147,8 @@ export default function SkillsPage() {
                           </div>
                           <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>{skill.description}</div>
                           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-                            {skill.tags?.slice(0, 3).map((t: string) => (
-                              <span key={t} style={{ fontSize: 9, padding: "2px 6px", background: `${color}15`, color, borderRadius: 3, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t}</span>
+                            {skill.tags?.slice(0, 3).map((tag: string) => (
+                              <span key={tag} style={{ fontSize: 9, padding: "2px 6px", background: `${color}15`, color, borderRadius: 3, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{tag}</span>
                             ))}
                           </div>
                         </div>
@@ -164,7 +164,7 @@ export default function SkillsPage() {
           {/* Show all skills when nothing selected */}
           {!selectedDomain && !search && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.08em" }}>All Skills ({skillsData?.total || 0})</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("skills_all_label", "All Skills")} ({skillsData?.total || 0})</div>
               <div style={{ display: "grid", gap: 6 }}>
                 {gridSkills.slice(0, 12).map((skill: any) => {
                   const color = DOMAIN_COLORS[skill.domain] || "#3b82f6";
@@ -184,7 +184,7 @@ export default function SkillsPage() {
                 })}
                 {(skillsData?.total || 0) > 12 && (
                   <div style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", padding: 10 }}>
-                    + {(skillsData?.total || 0) - 12} more — use search or select a domain
+                    + {(skillsData?.total || 0) - 12} {t("skills_more_hint", "more — use search or select a domain")}
                   </div>
                 )}
               </div>
@@ -206,11 +206,11 @@ export default function SkillsPage() {
                     </div>
                     <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>{selectedSkill.description}</p>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                      {selectedSkill.tags?.map((t: string) => (
-                        <span key={t} style={{ fontSize: 10, padding: "2px 8px", background: "var(--bg-overlay)", borderRadius: 4, color: "var(--text-muted)", border: "1px solid var(--border)" }}>{t}</span>
+                      {selectedSkill.tags?.map((tag: string) => (
+                        <span key={tag} style={{ fontSize: 10, padding: "2px 8px", background: "var(--bg-overlay)", borderRadius: 4, color: "var(--text-muted)", border: "1px solid var(--border)" }}>{tag}</span>
                       ))}
                       <span style={{ fontSize: 10, padding: "2px 8px", background: "var(--bg-overlay)", borderRadius: 4, color: "var(--text-muted)", border: "1px solid var(--border)" }}>
-                        ~{selectedSkill.estimatedTokens} tokens
+                        ~{selectedSkill.estimatedTokens} {t("tokens_used", "tokens")}
                       </span>
                     </div>
                   </div>
@@ -244,9 +244,9 @@ export default function SkillsPage() {
                 <button className="btn btn-primary" onClick={runSkill} disabled={running}
                   style={{ background: `linear-gradient(135deg, ${DOMAIN_COLORS[selectedSkill.domain]}, #6366f1)`, border: "none", padding: "12px 20px" }}>
                   {running ? (
-                    <><span className="spinner" style={{ width: 14, height: 14 }} /> Running skill...</>
+                    <><span className="spinner" style={{ width: 14, height: 14 }} /> {t("skills_running", "Running skill...")}</>
                   ) : (
-                    <><Play size={14} /> Run Skill</>
+                    <><Play size={14} /> {t("run_skill", "Run Skill")}</>
                   )}
                 </button>
               </div>
@@ -255,10 +255,10 @@ export default function SkillsPage() {
               {result && (
                 <div style={{ padding: "0 20px 20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Output</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("skill_output", "Output")}</span>
                     <div style={{ display: "flex", gap: 6 }}>
                       <button className="btn btn-secondary btn-sm" onClick={copyResult} style={{ fontSize: 11 }}>
-                        <Copy size={12} /> {copied ? "Copied!" : "Copy"}
+                        <Copy size={12} /> {copied ? t("copied", "Copied!") : t("copy", "Copy")}
                       </button>
                     </div>
                   </div>
