@@ -9,6 +9,7 @@ import { apiRequest } from "../lib/api";
 import { Briefcase, Plus, Edit, Trash2, CheckSquare, Users, BarChart2, Calendar, Target, Zap, Megaphone, Globe, Star, Check, FileText, Link, Image, Type, Play } from "lucide-react";
 import { Link as WouterLink } from "wouter";
 
+// Static option labels are passed through t() at render time inside the components
 const PROJECT_STATUS = [{ value: "planning", label: "Planning" }, { value: "active", label: "Active" }, { value: "on_hold", label: "On Hold" }, { value: "completed", label: "Completed" }, { value: "cancelled", label: "Cancelled" }];
 const PRIORITY = [{ value: "low", label: "Low" }, { value: "medium", label: "Medium" }, { value: "high", label: "High" }, { value: "urgent", label: "Urgent" }];
 const STATUS_COLOR: Record<string, string> = { planning: "#64748b", active: "#3b82f6", on_hold: "#f59e0b", completed: "#10b981", cancelled: "#ef4444" };
@@ -52,13 +53,13 @@ export function ProjectsPage() {
 
   return (
     <Layout title={t("projects_title")} subtitle={t("projects_subtitle")}
-      actions={<button className="btn btn-primary btn-sm" onClick={() => { setEditing(null); setForm(BLANK_P); setModal(true); }}><Plus size={14} /> New Project</button>}
+      actions={<button className="btn btn-primary btn-sm" onClick={() => { setEditing(null); setForm(BLANK_P); setModal(true); }}><Plus size={14} /> {t("ops_new_project","New Project")}</button>}
     >
       <div style={{ display: "grid", gridTemplateColumns: selectedProject ? "280px 1fr" : "1fr", gap: 20 }}>
         {/* Project List */}
         <div>
           <div style={{ display: "grid", gap: 10 }}>
-            {!projects?.length ? <Empty icon={Briefcase} title="No projects yet" action={<button className="btn btn-primary" onClick={() => setModal(true)}><Plus size={15} /> New Project</button>} /> :
+            {!projects?.length ? <Empty icon={Briefcase} title={t("no_projects","No projects yet")} action={<button className="btn btn-primary" onClick={() => setModal(true)}><Plus size={15} /> {t("ops_new_project","New Project")}</button>} /> :
               projects.map((p: any) => (
                 <div key={p.id} className="card" style={{ padding: 16, cursor: "pointer", borderLeft: `3px solid ${STATUS_COLOR[p.status] || "#64748b"}`, border: selectedProject?.id === p.id ? `1.5px solid ${STATUS_COLOR[p.status]}` : undefined }}
                   onClick={() => setSelectedProject(selectedProject?.id === p.id ? null : p)}>
@@ -71,7 +72,7 @@ export function ProjectsPage() {
                   </div>
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
-                      <span>Progress</span><span>{p.progress || 0}%</span>
+                      <span>{t("ops_progress","Progress")}</span><span>{p.progress || 0}%</span>
                     </div>
                     <div style={{ width: "100%", height: 6, borderRadius: 3, background: "var(--bg-overlay)" }}>
                       <div style={{ width: `${p.progress || 0}%`, height: "100%", borderRadius: 3, background: STATUS_COLOR[p.status] || "#3b82f6", transition: "width 0.3s" }} />
@@ -92,13 +93,13 @@ export function ProjectsPage() {
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{selectedProject.name} — Tasks</h3>
-                <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>Progress: {selectedProject.progress || 0}%</p>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{selectedProject.name} — {t("ops_tasks","Tasks")}</h3>
+                <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>{t("ops_progress","Progress")}: {selectedProject.progress || 0}%</p>
               </div>
             </div>
             {/* Add task bar */}
             <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", gap: 8 }}>
-              <input className="input" placeholder="Add task..." value={taskForm.title} onChange={e => setTaskForm(p => ({ ...p, title: e.target.value }))} onKeyDown={e => e.key === "Enter" && addTask()} style={{ flex: 1 }} />
+              <input className="input" placeholder={t("ops_add_task_ph","Add task...")} value={taskForm.title} onChange={e => setTaskForm(p => ({ ...p, title: e.target.value }))} onKeyDown={e => e.key === "Enter" && addTask()} style={{ flex: 1 }} />
               <Select options={PRIORITY} value={taskForm.priority} onChange={e => setTaskForm(p => ({ ...p, priority: e.target.value }))} style={{ width: 110 }} />
               <input type="date" className="input" value={taskForm.dueDate} onChange={e => setTaskForm(p => ({ ...p, dueDate: e.target.value }))} style={{ width: 140 }} />
               <button className="btn btn-primary btn-sm" onClick={addTask}><Plus size={14} /></button>
@@ -108,7 +109,7 @@ export function ProjectsPage() {
               {(["todo", "in_progress", "done"] as const).map(status => {
                 const statusTasks = (tasks || []).filter(t => t.status === status);
                 const colors = { todo: "#64748b", in_progress: "#3b82f6", done: "#10b981" };
-                const labels = { todo: "To Do", in_progress: "In Progress", done: "Done" };
+                const labels = { todo: t("tasks_col_todo","To Do"), in_progress: t("tasks_col_in_progress","In Progress"), done: t("tasks_col_done","Done") };
                 return (
                   <div key={status}>
                     <div style={{ padding: "8px 16px", background: "var(--bg-elevated)", borderTop: "1px solid var(--border)", fontSize: 11, fontWeight: 700, color: colors[status], textTransform: "uppercase", letterSpacing: "0.08em" }}>
@@ -136,7 +137,7 @@ export function ProjectsPage() {
                                 <div style={{ width: `${barWidth}%`, height: "100%", borderRadius: 4, background: isOverdue ? "#ef4444" : colors[status] }} />
                               </div>
                             )}
-                            {task.dueDate && <div style={{ fontSize: 10, color: isOverdue ? "#ef4444" : "var(--text-muted)", marginTop: 2 }}>{isOverdue ? "Overdue" : `Due ${new Date(task.dueDate).toLocaleDateString()}`}</div>}
+                            {task.dueDate && <div style={{ fontSize: 10, color: isOverdue ? "#ef4444" : "var(--text-muted)", marginTop: 2 }}>{isOverdue ? t("overdue","Overdue") : `${t("ops_due","Due")} ${new Date(task.dueDate).toLocaleDateString()}`}</div>}
                           </div>
                           <Badge status={task.priority} />
                           <button className="btn btn-ghost btn-sm" style={{ padding: 4, color: "#ef4444", justifyContent: "center" }} onClick={() => { apiRequest("DELETE", `/api/ops/projects/${selectedProject.id}/tasks/${task.id}`).then(() => qc.invalidateQueries({ queryKey: [`/api/ops/projects/${selectedProject.id}/tasks`] })); }}>
@@ -148,26 +149,26 @@ export function ProjectsPage() {
                   </div>
                 );
               })}
-              {!tasks?.length && <div style={{ padding: 32, textAlign: "center", color: "var(--text-muted)" }}>No tasks yet. Add your first task above.</div>}
+              {!tasks?.length && <div style={{ padding: 32, textAlign: "center", color: "var(--text-muted)" }}>{t("ops_no_tasks_project","No tasks yet. Add your first task above.")}</div>}
             </div>
           </div>
         )}
       </div>
 
-      <Modal open={modal} onClose={() => setModal(false)} title={editing ? "Edit Project" : "New Project"}>
+      <Modal open={modal} onClose={() => setModal(false)} title={editing ? t("ops_edit_project","Edit Project") : t("ops_new_project","New Project")}>
         <form onSubmit={save}>
           <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-            <FormRow label="Project name" required><input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required /></FormRow>
-            <FormRow label="Description"><textarea className="input" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} /></FormRow>
+            <FormRow label={t("project_name","Project name")} required><input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required /></FormRow>
+            <FormRow label={t("description","Description")}><textarea className="input" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} /></FormRow>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <FormRow label="Status"><Select options={PROJECT_STATUS} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} /></FormRow>
-              <FormRow label="Priority"><Select options={PRIORITY} value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))} /></FormRow>
-              <FormRow label="Budget"><input type="number" className="input" value={form.budget} onChange={e => setForm(p => ({ ...p, budget: e.target.value }))} /></FormRow>
+              <FormRow label={t("status","Status")}><Select options={PROJECT_STATUS} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} /></FormRow>
+              <FormRow label={t("task_priority","Priority")}><Select options={PRIORITY} value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))} /></FormRow>
+              <FormRow label={t("project_budget","Budget")}><input type="number" className="input" value={form.budget} onChange={e => setForm(p => ({ ...p, budget: e.target.value }))} /></FormRow>
             </div>
           </div>
           <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save" : "Create"}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>{t("cancel","Cancel")}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t("ops_saving","Saving...") : editing ? t("save","Save") : t("create","Create")}</button>
           </div>
         </form>
       </Modal>
@@ -179,6 +180,7 @@ export function ProjectsPage() {
 const BLANK_E = { firstName: "", lastName: "", email: "", phone: "", department: "", jobTitle: "", employmentType: "full_time", status: "active", salary: "", currency: "USD", location: "" };
 const EMP_STATUS = [{ value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }, { value: "on_leave", label: "On Leave" }];
 const EMP_TYPE = [{ value: "full_time", label: "Full Time" }, { value: "part_time", label: "Part Time" }, { value: "contractor", label: "Contractor" }];
+// Labels for EMP_STATUS and EMP_TYPE are passed through t() at render time where needed
 
 export function EmployeesPage() {
   const qc = useQueryClient();
@@ -205,7 +207,7 @@ export function EmployeesPage() {
 
   return (
     <Layout title={t("employees_title")} subtitle={`${empList?.length || 0} ${t("team_members")} · ${active} ${t("active").toLowerCase()}`}
-      actions={<button className="btn btn-primary btn-sm" onClick={() => { setEditing(null); setForm(BLANK_E); setModal(true); }}><Plus size={14} /> Add Employee</button>}
+      actions={<button className="btn btn-primary btn-sm" onClick={() => { setEditing(null); setForm(BLANK_E); setModal(true); }}><Plus size={14} /> {t("add_employee","Add Employee")}</button>}
     >
       {/* Dept breakdown */}
       {depts.length > 0 && (
