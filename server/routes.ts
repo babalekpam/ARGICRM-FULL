@@ -33,6 +33,7 @@ import contractsRouter from "./routes/contracts.js";
 import developerRouter from "./routes/developer.js";
 import v1Router from "./routes/v1.js";
 import mcpRouter from "./routes/mcp.js";
+import metadataRouter from "./routes/metadata.js";
 import { ensurePlatformTables } from "./platform/schema-init.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -50,6 +51,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── Native MCP server (Streamable HTTP, API-key auth) ──
   app.use("/mcp", mcpRouter);
+
+  // ─── Data-model builder: custom objects, fields, views ──
+  app.use("/api/metadata", metadataRouter);
 
   // ─── Profile (alias for /api/auth/me so all clients agree) ────
   app.get("/api/me", authenticate, async (req: AuthRequest, res) => {
