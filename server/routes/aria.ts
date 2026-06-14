@@ -179,7 +179,7 @@ async function nextInvoiceNumber(tenantId: string): Promise<string> {
   return `INV-${String(n).padStart(4, "0")}`;
 }
 
-async function executeAriaAction(
+export async function executeAriaAction(
   action: any,
   user: any,
   tenantId: string
