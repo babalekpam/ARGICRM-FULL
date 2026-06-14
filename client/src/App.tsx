@@ -43,6 +43,8 @@ import SecurityPage from "./pages/Security";
 import ContactPage from "./pages/Contact";
 import NotFoundPage from "./pages/NotFound";
 import StorefrontPage from "./pages/Storefront";
+import DeveloperPage from "./pages/Developer";
+import DataModelPage from "./pages/DataModel";
 
 function useNoIndex() {
   React.useEffect(() => {
@@ -113,6 +115,8 @@ function AppRoutes() {
       <Route path="/security">{() => <SecurityPage />}</Route>
       <Route path="/contact">{() => <ContactPage />}</Route>
       <Route path="/contracts">{() => <Guard><ContractsPage /></Guard>}</Route>
+      <Route path="/data-model">{() => <Guard><DataModelPage /></Guard>}</Route>
+      <Route path="/developer">{() => <Guard><DeveloperPage /></Guard>}</Route>
       <Route path="/sign/:token">{() => <SignPage />}</Route>
       <Route path="/store/:slug">{() => <StorefrontPage />}</Route>
       <Route>{() => <NotFoundPage />}</Route>

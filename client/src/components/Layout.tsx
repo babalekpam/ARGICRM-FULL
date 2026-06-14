@@ -13,7 +13,7 @@ import {
   Bell, Menu, Shield, Zap, Crown, ChevronRight, UsersRound,
   Bot, Search, Activity, ShoppingCart, DollarSign, Briefcase,
   Globe, Target, Brain, BarChart2, Workflow, Sparkles, Command, X, Store, MailOpen,
-  Sun, Moon, Languages, PenLine, Paintbrush
+  Sun, Moon, Languages, PenLine, Paintbrush, Database, KeyRound
 } from "lucide-react";
 
 const NAV_SECTIONS_DEF = [
@@ -70,6 +70,8 @@ const NAV_SECTIONS_DEF = [
     labelKey: "nav_admin",
     items: [
       { labelKey: "nav_team", icon: UsersRound, path: "/team" },
+      { labelKey: "Data Model", icon: Database, path: "/data-model" },
+      { labelKey: "Developer", icon: KeyRound, path: "/developer" },
       { labelKey: "nav_white_label", icon: Paintbrush, path: "/settings?tab=branding" },
       { labelKey: "nav_settings", icon: Settings, path: "/settings" },
       { labelKey: "nav_code_healing", icon: Activity, path: "/healing" },
