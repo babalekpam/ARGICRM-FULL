@@ -31,6 +31,7 @@ import workflowsRouter from "./routes/workflows.js";
 import skillsRouter from "./routes/skills.js";
 import contractsRouter from "./routes/contracts.js";
 import developerRouter from "./routes/developer.js";
+import v1Router from "./routes/v1.js";
 import { ensurePlatformTables } from "./platform/schema-init.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -42,6 +43,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── Developer settings: API keys + webhooks ────────
   app.use("/api/developer", developerRouter);
+
+  // ─── Public Developer API (API-key auth) ────────────
+  app.use("/api/v1", v1Router);
 
   // ─── Profile (alias for /api/auth/me so all clients agree) ────
   app.get("/api/me", authenticate, async (req: AuthRequest, res) => {
