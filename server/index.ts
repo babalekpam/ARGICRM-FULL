@@ -498,6 +498,10 @@ async function main() {
   const { startWorkflowScheduler } = await import("./routes/workflows.js");
   startWorkflowScheduler();
 
+  // ─── Start Webhook Delivery Worker ──────────────────
+  const { startWebhookWorker } = await import("./platform/webhooks.js");
+  startWebhookWorker();
+
   // ─── Serve frontend ────────────────────────────────────
   if (isProd) {
     const distPath = path.resolve(__dirname, "public");

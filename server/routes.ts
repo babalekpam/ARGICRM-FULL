@@ -30,10 +30,18 @@ import analyticsRouter from "./routes/analytics.js";
 import workflowsRouter from "./routes/workflows.js";
 import skillsRouter from "./routes/skills.js";
 import contractsRouter from "./routes/contracts.js";
+import developerRouter from "./routes/developer.js";
+import { ensurePlatformTables } from "./platform/schema-init.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // ─── Platform tables (API keys, webhooks, metadata, custom fields) ──
+  await ensurePlatformTables();
+
   // ─── Core Auth ──────────────────────────────────────
   app.use("/api/auth", authRouter);
+
+  // ─── Developer settings: API keys + webhooks ────────
+  app.use("/api/developer", developerRouter);
 
   // ─── Profile (alias for /api/auth/me so all clients agree) ────
   app.get("/api/me", authenticate, async (req: AuthRequest, res) => {
